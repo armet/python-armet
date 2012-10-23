@@ -24,5 +24,9 @@ class NotAcceptable(Error):
     status = 406
 
 
+class MethodNotAllowed(Error):
+    status = 405
+
+
 class UnsupportedMediaType(Error):
     status = 415
