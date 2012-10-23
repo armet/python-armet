@@ -10,6 +10,12 @@ from . import authentication as authn
 from . import authorization as authz
 
 
+# class ResourceFactory(type):
+
+#     # def __new__ .. ?
+
+#     def __init__()
+
 class Resource(object):
 
     #! Default list of allowed HTTP methods.
@@ -113,22 +119,18 @@ class Resource(object):
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.encoder = encoders.find_encoder(self.request, **kwargs)
-
-            # TODO: Authn check
-            # TODO: Authz check
+            self.encode = encoders.find(self.request, **kwargs)
 
             # By default, there is no object (for get and delete requests)
             obj = None
             if request.body:
                 # Request a decode and proceed to decode the request.
-                self.decoder = decoders.find_decoder(request)
-                obj = self.decode(request)
+                obj = decoders.find(self.request)(self.request)
 
                 # TODO: Authz check (w/object)
 
             # Delegate to an appropriate method
-            return function(self.request, obj, **kwargs)
+            return function(obj, **kwargs)
 
         except exceptions.Error as ex:
             return ex.response
@@ -142,24 +144,24 @@ class Resource(object):
             # Don't return a body; just notify server failure.
             return HttpResponse(status=500)
 
-    def read(self, request, **kwargs):
+    def read(self, **kwargs):
         raise exceptions.NotImplemented()
 
-    def get(self, request, obj=None, **kwargs):
+    def get(self, obj=None, **kwargs):
         # TODO: caching, pagination
         # Delegate to `read` to actually grab a list of items
-        items = self.read(request, **kwargs)
+        items = self.read(**kwargs)
 
         # encode the list of read items.
         return self.encode(list(items))
 
-    def post(self, request, obj, **kwargs):
+    def post(self, obj, **kwargs):
         raise exceptions.NotImplemented()
 
-    def put(self, request, obj, *args, **kwargs):
+    def put(self, obj, *args, **kwargs):
         raise exceptions.NotImplemented()
 
-    def delete(self, request, obj, *args, **kwargs):
+    def delete(self, obj, *args, **kwargs):
         raise exceptions.NotImplemented()
 
     @cached_property
@@ -179,6 +181,6 @@ class Model(Resource):
     #! The class object of the django model this resource is exposing.
     model = None
 
-    def read(self, request, **kwargs):
+    def read(self, **kwargs):
         # TODO: filtering
         return self.model.objects.all()
