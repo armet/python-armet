@@ -1,6 +1,6 @@
 """ ..
 """
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
@@ -176,7 +176,7 @@ class Resource(object):
                 response.status_code = 501
             else:
                 # Return no body
-                response = http.HttpResponseServerError()
+                response = HttpResponseServerError()
                 del response['Content-Type']
             return response
 
