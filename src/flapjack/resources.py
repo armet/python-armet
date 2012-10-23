@@ -12,7 +12,7 @@ class Resource(object):
 
     #! Default list of allowed HTTP methods.
     http_allowed_methods = [
-        #'get',
+        'get',
         'post',
         'put',
         'delete',
