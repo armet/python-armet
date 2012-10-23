@@ -162,14 +162,15 @@ class Resource(object):
             return ex.response
 
         except BaseException as ex:
+            if settings.DEBUG:
+                # We're debugging; just re-raise the error
+                raise
+
+            # Return no body
             # TODO: `del response['Content-Type']` needs to generalized
             #       somewhere; its everywhere
-            if settings.DEBUG:
-                raise
-            else:
-                # Return no body
-                response = HttpResponseServerError()
-                del response['Content-Type']
+            response = HttpResponseServerError()
+            del response['Content-Type']
             return response
 
     def read(self, request, **kwargs):
