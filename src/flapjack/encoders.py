@@ -4,8 +4,8 @@ import json
 import mimeparse
 
 
-class Emitter(object):
-    #! Applicable mimetypes for this emitter.
+class Encoder(object):
+    #! Applicable mimetypes for this encoder.
     mimetypes = []
 
     @classmethod
@@ -16,14 +16,14 @@ class Emitter(object):
     @classmethod
     def can_emit(cls, accept_header):
         """
-        Determine if this emitter can serialize an appropriate response to
+        Determine if this Encoder can serialize an appropriate response to
         satisfy the ACCEPT header.
         """
         return mimeparse.best_match(cls.mimetypes, accept_header) != ''
 
 
-class Json(Emitter):
-    #! Applicable mimetypes for this emitter.
+class Json(Encoder):
+    #! Applicable mimetypes for this encoder.
     mimetypes = [
         # Offical; as per RFC 4627.
         'application/json',
@@ -49,8 +49,8 @@ class Json(Emitter):
 
 
 # # TODO: JsonP
-# class JsonP(Emitter):
-#     #! Applicable mimetypes for this emitter.
+# class JsonP(Encoder):
+#     #! Applicable mimetypes for this Encoder.
 #     mimetypes = [
 #         # Official; this is 'just' javascript.
 #         'text/javascript',
@@ -63,24 +63,24 @@ class Json(Emitter):
 
     # TODO: emit()...
 
-# TODO: Find a more fun way to keep track of emitters
-emitters = {
+# TODO: Find a more fun way to keep track of Encoders
+encoders = {
     'json': Json,
     # 'jsonp': JsonP
 }
 
 
 def get_by_name(format):
-    return emitters.get(format.lower())
+    return encoders.get(format.lower())
 
 
 def get_by_request(request):
     if 'HTTP_ACCEPT' not in request.META:
         # No accept header provided; default to JSON
-        return emitters.get('json')
+        return encoders.get('json')
 
     accept = request.META['HTTP_ACCEPT']
-    for serializer in emitters.values():
+    for serializer in encoders.values():
         if serializer.can_emit(accept):
             # Serializer matched against the accept header; return it
             return serializer
@@ -90,7 +90,7 @@ def get_by_request(request):
 
 def get_available():
     available = {}
-    for name, item in emitters.items():
+    for name, item in encoders.items():
         available[name] = item.get_mimetype()
 
     return available

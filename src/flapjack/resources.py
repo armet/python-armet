@@ -5,8 +5,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
-from . import emitters, exceptions, parsers
-import json
+from . import encoders, exceptions, decoders
+from . import authentication as authn
+from . import authorization as authz
 
 
 class Resource(object):
@@ -42,13 +43,21 @@ class Resource(object):
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
 
+    #! Authentication class to use when checking authentication.  Do not
+    #! instantiate a class when doing this
+    authentication = authn.Authentication
+
+    #! Authorization class to use when checking authorization.  Do not
+    #! instantiate a class when using this
+    authorization = authz.Authorization
+
     def __init__(self):
         # Initialize name to be the name of the instantiated class if it was
         # not defined in the class definition.
         if self.name is None:
             self.name = self.__class__.__name__.lower()
 
-    def find_emitter(self, request, **kwargs):
+    def find_encoder(self, request, **kwargs):
         """
         Determines the format to emit to and stores it upon success. Raises
         a proper exception if it cannot.
@@ -57,33 +66,33 @@ class Resource(object):
         # precendence.
         if kwargs.get('format') is not None:
             # Format was provided through the URL via `.FORMAT`.
-            self.emitter = emitters.get_by_name(kwargs['format'])
+            self.encoder = encoders.get_by_name(kwargs['format'])
 
         else:
             # TODO: Should not have an else here and allow the header even
             # if the format check failed ?
-            self.emitter = emitters.get_by_request(request)
+            self.encoder = encoders.get_by_request(request)
 
-        if self.emitter is None:
-            # Failed to find an appropriate emitter
+        if self.encoder is None:
+            # Failed to find an appropriate encoder
             # Get dictionary of available formats
-            available = emitters.get_available()
+            available = encoders.get_available()
 
             # TODO: No idea what to emit it with; using JSON for now
             # TODO: This should be a configurable property perhaps ?
-            self.emitter = emitters.Json
+            self.encoder = encoders.Json
 
             # Emit the response using the appropriate exception
             raise exceptions.NotAcceptable(self.emit(available))
 
-    def find_parser(self, request, **kwargs):
+    def find_decoder(self, request, **kwargs):
         """
         Determines the format to parse to and stores it upon success. Raises
         a proper exception if it cannot.
         """
-        self.parser = parsers.get(request)
-        if self.parser is None:
-            # Failed to find an appropriate parser; we have no idea how to
+        self.decoder = decoders.get(request)
+        if self.decoder is None:
+            # Failed to find an appropriate decoder; we have no idea how to
             # handle the data.
             raise exceptions.UnsupportedMediaType()
 
@@ -92,8 +101,8 @@ class Resource(object):
         """
         response = HttpResponse(status=status)
         if obj is not None:
-            response.content = self.emitter.emit(obj)
-            response['Content-Type'] = self.emitter.get_mimetype()
+            response.content = self.encoder.emit(obj)
+            response['Content-Type'] = self.encoder.get_mimetype()
         else:
             # No need to specify the default content-type if we don't
             # have a body.
@@ -104,7 +113,7 @@ class Resource(object):
         """Transforms recieved data to valid python objects.
         """
         # TODO: anything else to do here ?
-        return self.parser.parse(request)
+        return self.decoder.parse(request)
 
     # TODO: add some magic to make this a class method
     @cached_property
@@ -136,7 +145,7 @@ class Resource(object):
             raise exceptions.MethodNotAllowed(response)
 
         # Method is allowed, continue.
-        return method
+        return method, method_name
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -144,11 +153,20 @@ class Resource(object):
         try:
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            method = self.find_method(request)
+            method, method_name = self.find_method(request)
 
-            # Request an emitter as early as possible in order to
+            # Build auth classes and check initial auth
+            self.authn = self.authentication(request)
+            self.authz = self.authorization(request, method_name)
+
+            if not self.authn.is_authenticated:
+                # not authenticated, panic
+                # response =
+                pass
+
+            # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.find_emitter(request, **kwargs)
+            self.find_encoder(request, **kwargs)
 
             # TODO: Authn check
             # TODO: Authz check
@@ -157,7 +175,7 @@ class Resource(object):
             obj = None
             if request.body:
                 # Request a parse and proceed to parse the request.
-                self.find_parser(request)
+                self.find_decoder(request)
                 obj = self.parse(request)
 
                 # TODO: Authz check (w/object)
