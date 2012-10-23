@@ -1,10 +1,10 @@
 """ ..
 """
-from django.http import HttpResponse, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
+from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
 from . import authorization as authz
@@ -57,77 +57,63 @@ class Resource(object):
         if self.name is None:
             self.name = self.__class__.__name__.lower()
 
-    def encode(self, obj=None, status=200):
-        """Transforms python objects to an acceptable format for tansmission.
-        """
-        response = HttpResponse(status=status)
-        if obj is not None:
-            response.content = self.encoder.encode(obj)
-            response['Content-Type'] = self.encoder.get_mimetype()
-        else:
-            # No need to specify the default content-type if we don't
-            # have a body.
-            del response['Content-Type']
-        return response
-
-    def decode(self, request):
-        """Transforms recieved data to valid python objects.
-        """
-        # TODO: anything else to do here ?
-        return self.decoder.decode(request)
-
-    # TODO: add some magic to make this a class method
     @cached_property
-    def allow_header(self):
+    def _allowed_methods_header(self):
         allow = [m.upper() for m in self.http_allowed_methods]
         return ', '.join(allow).strip()
 
-    def find_method(self, request):
-        """Ensures method is acceptable; throws appropriate exception elsewise.
-        """
-        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+    def find_method(self):
+        """Ensures method is acceptable."""
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in self.request.META:
             # Someone is using a client that isn't smart enough
             # to send proper verbs
-            method_name = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+            self.method = self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
         else:
             # Normal client; behave normally
-            method_name = request.method.lower()
+            self.method = self.request.method.lower()
 
-        if method_name not in self.http_method_names:
-            # Method not understood by our library.  Die.
-            response = HttpResponse()
-            raise exceptions.NotImplemented(response)
+        if self.method not in self.http_method_names:
+            # Method not understood by our library; die.
+            raise exceptions.NotImplemented()
 
-        method = getattr(self, method_name, None)
-        if method_name not in self.http_allowed_methods or method is None:
-            # Method understood but not allowed.  Die.
+        if self.method not in self.http_allowed_methods:
+            # Method understood but not allowed; die.
             response = HttpResponse()
-            response['Allow'] = self.allow_header
+            response['Allow'] = self._allowed_methods_header
             raise exceptions.MethodNotAllowed(response)
 
-        # Method is allowed, continue.
-        return method, method_name
+        function = getattr(self, self.method, None)
+        if function is None:
+            # Method understood and allowed but not implemented; die.
+            raise exceptions.NotImplemented()
+
+        # Method is understood, allowed and implemented; continue.
+        return function
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         # ..
         try:
+            # Set request on the instance to allow functions to have it
+            # without lobbing it around
+            self.request = request
+
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            method, method_name = self.find_method(request)
+            function = self.find_method()
 
             # Build auth classes and check initial auth
-            self.authn = self.authentication(request)
-            self.authz = self.authorization(request, method_name)
+            # self.authn = self.authentication(request)
+            # self.authz = self.authorization(request, method_name)
 
-            if not self.authn.is_authenticated:
-                # not authenticated, panic
-                # response =
-                pass
+            # if not self.authn.is_authenticated:
+            #     # not authenticated, panic
+            #     # response =
+            #     pass
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.encoder = encoders.find_encoder(request, **kwargs)
+            self.encoder = encoders.find_encoder(self.request, **kwargs)
 
             # TODO: Authn check
             # TODO: Authz check
@@ -142,10 +128,9 @@ class Resource(object):
                 # TODO: Authz check (w/object)
 
             # Delegate to an appropriate method
-            return method(request, obj, **kwargs)
+            return function(self.request, obj, **kwargs)
 
         except exceptions.Error as ex:
-            # TODO: We need to encode the error response.
             return ex.response
 
         except BaseException as ex:
@@ -153,17 +138,12 @@ class Resource(object):
                 # We're debugging; just re-raise the error
                 raise
 
-            # Return no body
-            # TODO: `del response['Content-Type']` needs to generalized
-            #       somewhere; its everywhere
-            response = HttpResponseServerError()
-            del response['Content-Type']
-            return response
+            # TODO: Log error and report to system admins.
+            # Don't return a body; just notify server failure.
+            return HttpResponse(status=500)
 
     def read(self, request, **kwargs):
-
-        return {'foo': 'bar'}
-        # raise exceptions.NotImplemented()
+        raise exceptions.NotImplemented()
 
     def get(self, request, obj=None, **kwargs):
         # TODO: caching, pagination
@@ -189,7 +169,7 @@ class Resource(object):
         pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
         return patterns('',
             url(pattern.format(''), self.dispatch, name='dispatch'),
-            url(pattern.format('/(?P<id>.*)'), self.dispatch, name='dispatch')
+            url(pattern.format('/(?P<id>.*?)'), self.dispatch, name='dispatch')
         )
 
 
