@@ -20,7 +20,7 @@ class Decoder(object):
 
     @classmethod
     @abc.abstractmethod
-    def parse(cls, request):
+    def decode(cls, request):
         """
         Constructs an object dictionary from the request body according to the
         media-type specified in the `Content-Type` header.
@@ -43,7 +43,7 @@ class Form(Decoder):
     ]
 
     @classmethod
-    def parse(cls, request):
+    def decode(cls, request):
         # Build the initial object as a copy of the POST data
         obj = request.POST
 
@@ -82,8 +82,8 @@ class Json(Decoder):
 
 # TODO: Find a more fun way to keep track of Decoders
 decoders = [
-    Form,
     Json,
+    Form,
 ]
 
 
@@ -108,7 +108,7 @@ def find(request, **kwargs):
     Determines the format to decode to and stores it upon success. Raises
     a proper exception if it cannot.
     """
-    decoder = decoders.get(request)
+    decoder = get(request)
     if decoder is None:
         # Failed to find an appropriate decoder; we have no idea how to
         # handle the data.

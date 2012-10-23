@@ -2,6 +2,7 @@
 """
 import json
 import mimeparse
+from django.http import HttpResponse
 from . import exceptions
 
 
@@ -22,6 +23,20 @@ class Encoder(object):
         """
         return mimeparse.best_match(cls.mimetypes, accept_header) != ''
 
+    @classmethod
+    def encode(self, obj=None):
+            """Transforms python objects to an acceptable format for tansmission.
+            response = HTTP
+            """
+            response = HttpResponse
+            if obj is not None:
+                # We have an object; we need to encode it and set content type, etc
+                response.content = self.encoder.encode(obj)
+                response['Content-Type'] = self.encoder.get_mimetype()
+
+            # Pass on the constructed response
+            return response
+
 
 class Json(Encoder):
     #! Applicable mimetypes for this encoder.
@@ -41,10 +56,8 @@ class Json(Encoder):
     ]
 
     @classmethod
-    def encode(cls, obj):
-        if obj is not None:
-            # Only emit something when we get something
-            return json.dumps(obj)
+    def encode(cls, obj=None):
+        return super(Json, cls).encode(json.dumps(obj))
 
         # Else; return nothing
 
@@ -67,7 +80,6 @@ class Json(Encoder):
 # TODO: Find a more fun way to keep track of Encoders
 encoders = {
     'json': Json,
-    # 'jsonp': JsonP
 }
 
 
@@ -75,14 +87,9 @@ def get_by_name(format):
     return encoders.get(format.lower())
 
 
-def get_by_request(request):
-    if 'HTTP_ACCEPT' not in request.META:
-        # No accept header provided; default to JSON
-        return encoders.get('json')
-
-    accept = request.META['HTTP_ACCEPT']
+def get_by_mimetype(mimetype):
     for serializer in encoders.values():
-        if serializer.can_emit(accept):
+        if serializer.can_emit(mimetype):
             # Serializer matched against the accept header; return it
             return serializer
 
@@ -97,30 +104,36 @@ def get_available():
     return available
 
 
+def default():
+    return Json
+
+
 def find(request, **kwargs):
     """
     Determines the format to encode to and stores it upon success. Raises
     a proper exception if it cannot.
     """
+
     # Check locations where format may be defined in order of
     # precendence.
     if kwargs.get('format') is not None:
         # Format was provided through the URL via `.FORMAT`.
-        encoder = encoders.get_by_name(kwargs['format'])
+        encoder = get_by_name(kwargs['format'])
+
+    elif request.META.get('HTTP_ACCEPT', None) is not None:
+        # Use the encoding specified in the accept header
+        encoder = get_by_mimetype(request.META['HTTP_ACCEPT'])
 
     else:
-        # TODO: Should not have an else here and allow the header even
-        # if the format check failed ?
-        encoder = encoders.get_by_request(request)
+        # Default encoder
+        encoder = Json
 
     if encoder is None:
         # Failed to find an appropriate encoder
         # Get dictionary of available formats
         available = get_available()
 
-        # TODO: No idea what to encode it with; using JSON for now
-        # TODO: This should be a configurable property perhaps ?
-        encoder = encoders.Json
-
         # encode the response using the appropriate exception
         raise exceptions.NotAcceptable(available)
+
+    return encoder
