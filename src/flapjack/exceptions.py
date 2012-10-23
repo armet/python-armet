@@ -30,3 +30,7 @@ class MethodNotAllowed(Error):
 
 class UnsupportedMediaType(Error):
     status = 415
+
+
+class NotImplemented(Error):
+    status = 501
