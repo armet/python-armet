@@ -111,10 +111,17 @@ class Resource(object):
         allow = [m.upper() for m in self.http_allowed_methods]
         return ', '.join(allow).strip()
 
-    def find_method(self, method):
+    def find_method(self, request):
         """Ensures method is acceptable; throws appropriate exception elsewise.
         """
-        method_name = method.lower()
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in request.META:
+            # Someone is using a client that isn't smart enough
+            # to send proper verbs
+            method_name = request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+        else:
+            # Normal client; behave normally
+            method_name = request.method.lower()
+
         if method_name not in self.http_method_names:
             # Method not understood by our library.  Die.
             response = HttpResponse()
@@ -136,7 +143,7 @@ class Resource(object):
         try:
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            method = self.find_method(request.method)
+            method = self.find_method(request)
 
             # Request an emitter as early as possible in order to
             # accurately return errors (if accrued).
