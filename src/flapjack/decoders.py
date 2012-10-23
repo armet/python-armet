@@ -4,14 +4,14 @@ import abc
 import mimeparse
 
 
-class Parser(object):
-    #! Applicable mimetypes for this parser
+class Decoder(object):
+    #! Applicable mimetypes for this Decoder
     mimetypes = []
 
     @classmethod
     def can_parse(cls, content_type_header):
         """
-        Determine if this parser can deserialize an appropriate message
+        Determine if this decoder can deserialize an appropriate message
         specified by the CONTENT-TYPE header.
         """
         return mimeparse.best_match(cls.mimetypes, content_type_header) != ''
@@ -33,8 +33,8 @@ class Parser(object):
         pass
 
 
-class Form(Parser):
-    #! Applicable mimetypes for this parser
+class Form(Decoder):
+    #! Applicable mimetypes for this decoder
     mimetypes = [
         'multipart/form-data',
         'application/x-www-form-urlencoded',
@@ -62,8 +62,8 @@ class Form(Parser):
         return obj
 
 
-# TODO: Find a more fun way to keep track of parsers
-parsers = [
+# TODO: Find a more fun way to keep track of Decoders
+decoders = [
     Form
 ]
 
@@ -76,9 +76,9 @@ def get(request):
         return None
 
     content_type = request.META['CONTENT_TYPE']
-    for parser in parsers:
-        if parser.can_parse(content_type):
-            # Parser matched against the type header; return it
-            return parser
+    for Decoder in decoders:
+        if Decoder.can_parse(content_type):
+            # Decoder matched against the type header; return it
+            return Decoder
 
     # Nothing can be matched; return nothing
