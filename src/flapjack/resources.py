@@ -59,7 +59,7 @@ class Resource(object):
 
     def find_encoder(self, request, **kwargs):
         """
-        Determines the format to emit to and stores it upon success. Raises
+        Determines the format to encode to and stores it upon success. Raises
         a proper exception if it cannot.
         """
         # Check locations where format may be defined in order of
@@ -78,16 +78,16 @@ class Resource(object):
             # Get dictionary of available formats
             available = encoders.get_available()
 
-            # TODO: No idea what to emit it with; using JSON for now
+            # TODO: No idea what to encode it with; using JSON for now
             # TODO: This should be a configurable property perhaps ?
             self.encoder = encoders.Json
 
-            # Emit the response using the appropriate exception
-            raise exceptions.NotAcceptable(self.emit(available))
+            # encode the response using the appropriate exception
+            raise exceptions.NotAcceptable(self.encode(available))
 
     def find_decoder(self, request, **kwargs):
         """
-        Determines the format to parse to and stores it upon success. Raises
+        Determines the format to decode to and stores it upon success. Raises
         a proper exception if it cannot.
         """
         self.decoder = decoders.get(request)
@@ -96,12 +96,12 @@ class Resource(object):
             # handle the data.
             raise exceptions.UnsupportedMediaType()
 
-    def emit(self, obj=None, status=200):
+    def encode(self, obj=None, status=200):
         """Transforms python objects to an acceptable format for tansmission.
         """
         response = HttpResponse(status=status)
         if obj is not None:
-            response.content = self.encoder.emit(obj)
+            response.content = self.encoder.encode(obj)
             response['Content-Type'] = self.encoder.get_mimetype()
         else:
             # No need to specify the default content-type if we don't
@@ -109,11 +109,11 @@ class Resource(object):
             del response['Content-Type']
         return response
 
-    def parse(self, request):
+    def decode(self, request):
         """Transforms recieved data to valid python objects.
         """
         # TODO: anything else to do here ?
-        return self.decoder.parse(request)
+        return self.decoder.decode(request)
 
     # TODO: add some magic to make this a class method
     @cached_property
@@ -174,9 +174,9 @@ class Resource(object):
             # By default, there is no object (for get and delete requests)
             obj = None
             if request.body:
-                # Request a parse and proceed to parse the request.
+                # Request a decode and proceed to decode the request.
                 self.find_decoder(request)
-                obj = self.parse(request)
+                obj = self.decode(request)
 
                 # TODO: Authz check (w/object)
 
@@ -184,7 +184,7 @@ class Resource(object):
             return method(request, obj, **kwargs)
 
         except exceptions.Error as ex:
-            # TODO: We need to emit the error response.
+            # TODO: We need to encode the error response.
             return ex.response
 
         except BaseException as ex:
@@ -207,8 +207,8 @@ class Resource(object):
         # Delegate to `read` to actually grab a list of items
         items = self.read(request, **kwargs)
 
-        # Emit the list of read items.
-        return self.emit(list(items))
+        # encode the list of read items.
+        return self.encode(list(items))
 
     def post(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
