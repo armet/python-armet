@@ -16,6 +16,7 @@ class Parser(object):
         """
         return mimeparse.best_match(cls.mimetypes, content_type_header) != ''
 
+    @classmethod
     @abc.abstractmethod
     def parse(cls, request):
         """

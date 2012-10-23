@@ -11,20 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 # from django.http import HttpResponse
 from django import http
 
-# import mimeparse
-
 from . import emitters, exceptions, parsers
-
-
-class Bundle(object):
-    """Object that gets tossed around.
-    """
-    def __init__(self, request, **kwargs):
-        #! Django request object.
-        self.request = request
-
-        #! Python object that was constructed/fetched from/for the request.
-        self.obj = kwargs.get('obj')
 
 
 class Resource(object):
@@ -102,11 +89,11 @@ class Resource(object):
             del response['Content-Type']
         return response
 
-    def parse(self, bundle):
+    def parse(self, request):
         """Transforms recieved data to valid python objects.
         """
         # TODO: anything else to do here ?
-        bundle.obj = self.parser.parse(bundle.request)
+        return self.parser.parse(request)
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -116,21 +103,18 @@ class Resource(object):
             # accurately return errors (if accrued).
             self.find_emitter(request, **kwargs)
 
-            # Initialize the initial bundle with the request object.
-            bundle = Bundle(request)
-
             # TODO: Authn check
             # TODO: Authz check
 
             if request.body:
                 # Request a parse and proceed to parse the request.
                 self.find_parser(request)
-                self.parse(bundle)
+                obj = self.parse(request)
 
                 # TODO: Authz check (w/object)
 
             # TODO: Method
-            print(bundle.obj)
+            print(obj)
 
             # ..
             # DEBUG: Returning just what we got
@@ -143,7 +127,6 @@ class Resource(object):
     def urls(self):
         """Constructs the URLs that this resource will respond to.
         """
-        # TODO: Implement `.FORMAT` (eg. name.json, name.xml)
         pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
         return patterns('',
             url(pattern.format(''), self.dispatch, name='dispatch'),
