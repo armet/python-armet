@@ -155,11 +155,7 @@ class Resource(object):
                 # TODO: Authz check (w/object)
 
             # Delegate to an appropriate method
-            method = getattr(self, request.method.lower())
             return method(request, obj, **kwargs)
-
-            # DEBUG: Returning just what we got
-            # return self.emit()
 
         except exceptions.Error as ex:
             # TODO: We need to emit the error response.
