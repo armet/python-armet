@@ -1,16 +1,8 @@
 """ ..
 """
-# from django.utils.decorators import classonlymethod
-from django.conf.urls import patterns, url
-from django.views.decorators.csrf import csrf_exempt
-
-# NOTE: Do we really want to inherit from the root django class-based views?
-# https://github.com/django/django/blob/master/django/views/generic/base.py#L27
-# Nothing it adds we could really keep.
-# from django.views.generic.base import View
-# from django.http import HttpResponse
 from django import http
-
+from django.views.decorators.csrf import csrf_exempt
+from django.conf.urls import patterns, url
 from . import emitters, exceptions, parsers
 
 
@@ -22,6 +14,8 @@ class Resource(object):
         'post',
         'put',
         'delete',
+        # TODO: 'patch',
+        # ..
         # TODO: 'head',
         # <http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.4>
         # TODO: 'options'
@@ -99,6 +93,14 @@ class Resource(object):
     def dispatch(self, request, *args, **kwargs):
         # ..
         try:
+            # Ensure the request method is present in the list of
+            # allowed HTTP methods
+            if request.method.lower() not in self.http_allowed_methods:
+                response = http.HttpResponse()
+                allow = [m.upper() for m in self.http_allowed_methods]
+                response['Allow'] = ', '.join(allow).strip()
+                raise exceptions.MethodNotAllowed(response)
+
             # Request an emitter as early as possible in order to
             # accurately return errors (if accrued).
             self.find_emitter(request, **kwargs)
@@ -114,7 +116,7 @@ class Resource(object):
                 # TODO: Authz check (w/object)
 
             # TODO: Method
-            print(obj)
+            #print(obj)
 
             # ..
             # DEBUG: Returning just what we got
