@@ -33,10 +33,11 @@ class Parser(object):
         pass
 
 
-class FormData(Parser):
+class Form(Parser):
     #! Applicable mimetypes for this parser
     mimetypes = [
-        'multipart/form-data'
+        'multipart/form-data',
+        'application/x-www-form-urlencoded',
     ]
 
     @classmethod
@@ -63,7 +64,7 @@ class FormData(Parser):
 
 # TODO: Find a more fun way to keep track of parsers
 parsers = [
-    FormData
+    Form
 ]
 
 
