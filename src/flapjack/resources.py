@@ -122,6 +122,7 @@ class Resource(object):
             # TODO: Authn check
             # TODO: Authz check
 
+            obj = None
             if request.body:
                 # Request a parse and proceed to parse the request.
                 self.find_parser(request)
@@ -131,10 +132,10 @@ class Resource(object):
 
             # Delegate to an appropriate method
             method = getattr(self, request.method.lower())
-            method(request, obj, *args, **kwargs)
+            return method(request, obj, **kwargs)
 
             # DEBUG: Returning just what we got
-            return self.emit()
+            # return self.emit()
 
         except exceptions.Error as ex:
             # TODO: We need to emit the error response.
@@ -184,3 +185,14 @@ class Resource(object):
             url(pattern.format(''), self.dispatch, name='dispatch'),
             url(pattern.format('/(?P<id>.*)'), self.dispatch, name='dispatch')
         )
+
+
+class Model(Resource):
+    """Implementation of `Resource` for django's models.
+    """
+    #! The class object of the django model this resource is exposing.
+    model = None
+
+    def read(self, request, **kwargs):
+        # TODO: filtering
+        return self.model.objects.all()
