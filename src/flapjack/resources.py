@@ -3,6 +3,7 @@
 from django import http
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
+from django.conf import settings
 from . import emitters, exceptions, parsers
 
 
@@ -139,16 +140,39 @@ class Resource(object):
             # TODO: We need to emit the error response.
             return ex.response
 
-    def get(self, request, obj, *args, **kwargs):
+        except BaseException as ex:
+            # TODO: `del response['Content-Type']` needs to generalized
+            #       somewhere; its everywhere
+            if settings.DEBUG:
+                response = self.emit({
+                    'name': ex.__class__.__name__,
+                    'message': str(ex),
+                })
+                response.status_code = 501
+            else:
+                # Return no body
+                response = http.HttpResponseServerError()
+                del response['Content-Type']
+            return response
+
+    def read(self, request, **kwargs):
         raise exceptions.NotImplemented()
 
-    def post(self, request, obj, *args, **kwargs):
+    def get(self, request, obj=None, **kwargs):
+        # TODO: caching, pagination
+        # Delegate to `read` to actually grab a list of items
+        items = self.read(request, **kwargs)
+
+        # Emit the list of read items.
+        return self.emit(items)
+
+    def post(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
 
-    def put(self, request, obj, *args, **kwargs):
+    def put(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
 
-    def delete(self, request, obj, *args, **kwargs):
+    def delete(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
 
     @property
