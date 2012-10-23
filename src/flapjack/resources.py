@@ -89,17 +89,28 @@ class Resource(object):
         # TODO: anything else to do here ?
         return self.parser.parse(request)
 
+    def check_method(self, method):
+        """Ensures method is acceptable; throws appropriate exception elsewise.
+        """
+        if method.lower() not in self.http_allowed_methods:
+            # Nope; not allowed -- need to form an http response containing
+            # the allowed methods
+            response = http.HttpResponse()
+
+            allow = [m.upper() for m in self.http_allowed_methods]
+            response['Allow'] = ', '.join(allow).strip()
+
+            raise exceptions.MethodNotAllowed(response)
+
+        # We're good; continue on
+
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         # ..
         try:
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            if request.method.lower() not in self.http_allowed_methods:
-                response = http.HttpResponse()
-                allow = [m.upper() for m in self.http_allowed_methods]
-                response['Allow'] = ', '.join(allow).strip()
-                raise exceptions.MethodNotAllowed(response)
+            self.check_method(request.method)
 
             # Request an emitter as early as possible in order to
             # accurately return errors (if accrued).
