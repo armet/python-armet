@@ -6,6 +6,8 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from . import encoders, exceptions, decoders
+from . import authentication as authn
+from . import authorization as authz
 
 
 class Resource(object):
@@ -40,6 +42,14 @@ class Resource(object):
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
+
+    #! Authentication class to use when checking authentication.  Do not
+    #! instantiate a class when doing this
+    authentication = authn.Authentication
+
+    #! Authorization class to use when checking authorization.  Do not
+    #! instantiate a class when using this
+    authorization = authz.Authorization
 
     def __init__(self):
         # Initialize name to be the name of the instantiated class if it was
@@ -135,7 +145,7 @@ class Resource(object):
             raise exceptions.MethodNotAllowed(response)
 
         # Method is allowed, continue.
-        return method
+        return method, method_name
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -143,7 +153,16 @@ class Resource(object):
         try:
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            method = self.find_method(request)
+            method, method_name = self.find_method(request)
+
+            # Build auth classes and check initial auth
+            self.authn = self.authentication(request)
+            self.authz = self.authorization(request, method_name)
+
+            if not self.authn.is_authenticated:
+                # not authenticated, panic
+                # response =
+                pass
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
