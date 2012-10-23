@@ -2,6 +2,7 @@
 """
 import abc
 import mimeparse
+from . import exceptions
 
 
 class Decoder(object):
@@ -82,3 +83,14 @@ def get(request):
             return Decoder
 
     # Nothing can be matched; return nothing
+
+    def find_decoder(self, request, **kwargs):
+        """
+        Determines the format to decode to and stores it upon success. Raises
+        a proper exception if it cannot.
+        """
+        self.decoder = decoders.get(request)
+        if self.decoder is None:
+            # Failed to find an appropriate decoder; we have no idea how to
+            # handle the data.
+            raise exceptions.UnsupportedMediaType()

@@ -2,6 +2,7 @@
 """
 import json
 import mimeparse
+from . import exceptions
 
 
 class Encoder(object):
@@ -40,7 +41,7 @@ class Json(Encoder):
     ]
 
     @classmethod
-    def emit(cls, obj):
+    def encode(cls, obj):
         if obj is not None:
             # Only emit something when we get something
             return json.dumps(obj)
@@ -94,3 +95,32 @@ def get_available():
         available[name] = item.get_mimetype()
 
     return available
+
+
+def find_encoder(request, **kwargs):
+    """
+    Determines the format to encode to and stores it upon success. Raises
+    a proper exception if it cannot.
+    """
+    # Check locations where format may be defined in order of
+    # precendence.
+    if kwargs.get('format') is not None:
+        # Format was provided through the URL via `.FORMAT`.
+        encoder = encoders.get_by_name(kwargs['format'])
+
+    else:
+        # TODO: Should not have an else here and allow the header even
+        # if the format check failed ?
+        encoder = encoders.get_by_request(request)
+
+    if encoder is None:
+        # Failed to find an appropriate encoder
+        # Get dictionary of available formats
+        available = get_available()
+
+        # TODO: No idea what to encode it with; using JSON for now
+        # TODO: This should be a configurable property perhaps ?
+        encoder = encoders.Json
+
+        # encode the response using the appropriate exception
+        raise exceptions.NotAcceptable(available)

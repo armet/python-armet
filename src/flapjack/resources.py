@@ -57,45 +57,6 @@ class Resource(object):
         if self.name is None:
             self.name = self.__class__.__name__.lower()
 
-    def find_encoder(self, request, **kwargs):
-        """
-        Determines the format to encode to and stores it upon success. Raises
-        a proper exception if it cannot.
-        """
-        # Check locations where format may be defined in order of
-        # precendence.
-        if kwargs.get('format') is not None:
-            # Format was provided through the URL via `.FORMAT`.
-            self.encoder = encoders.get_by_name(kwargs['format'])
-
-        else:
-            # TODO: Should not have an else here and allow the header even
-            # if the format check failed ?
-            self.encoder = encoders.get_by_request(request)
-
-        if self.encoder is None:
-            # Failed to find an appropriate encoder
-            # Get dictionary of available formats
-            available = encoders.get_available()
-
-            # TODO: No idea what to encode it with; using JSON for now
-            # TODO: This should be a configurable property perhaps ?
-            self.encoder = encoders.Json
-
-            # encode the response using the appropriate exception
-            raise exceptions.NotAcceptable(self.encode(available))
-
-    def find_decoder(self, request, **kwargs):
-        """
-        Determines the format to decode to and stores it upon success. Raises
-        a proper exception if it cannot.
-        """
-        self.decoder = decoders.get(request)
-        if self.decoder is None:
-            # Failed to find an appropriate decoder; we have no idea how to
-            # handle the data.
-            raise exceptions.UnsupportedMediaType()
-
     def encode(self, obj=None, status=200):
         """Transforms python objects to an acceptable format for tansmission.
         """
@@ -166,7 +127,7 @@ class Resource(object):
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.find_encoder(request, **kwargs)
+            self.encoder = encoders.find_encoder(request, **kwargs)
 
             # TODO: Authn check
             # TODO: Authz check
@@ -175,7 +136,7 @@ class Resource(object):
             obj = None
             if request.body:
                 # Request a decode and proceed to decode the request.
-                self.find_decoder(request)
+                self.decoder = decoders.find_decoder(request)
                 obj = self.decode(request)
 
                 # TODO: Authz check (w/object)
@@ -200,7 +161,9 @@ class Resource(object):
             return response
 
     def read(self, request, **kwargs):
-        raise exceptions.NotImplemented()
+
+        return {'foo': 'bar'}
+        # raise exceptions.NotImplemented()
 
     def get(self, request, obj=None, **kwargs):
         # TODO: caching, pagination
