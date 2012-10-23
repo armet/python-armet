@@ -92,7 +92,9 @@ class Resource(object):
     def check_method(self, method):
         """Ensures method is acceptable; throws appropriate exception elsewise.
         """
-        if method.lower() not in self.http_allowed_methods:
+        method = method.lower()
+        if method not in self.http_allowed_methods or \
+                not hasattr(self, method):
             # Nope; not allowed -- need to form an http response containing
             # the allowed methods
             response = http.HttpResponse()
@@ -126,10 +128,10 @@ class Resource(object):
 
                 # TODO: Authz check (w/object)
 
-            # TODO: Method
-            #print(obj)
+            # Delegate to an appropriate method
+            method = getattr(self, request.method.lower())
+            method(request, obj, *args, **kwargs)
 
-            # ..
             # DEBUG: Returning just what we got
             return self.emit()
         except exceptions.Error as ex:
