@@ -134,9 +134,22 @@ class Resource(object):
 
             # DEBUG: Returning just what we got
             return self.emit()
+
         except exceptions.Error as ex:
             # TODO: We need to emit the error response.
             return ex.response
+
+    def get(self, request, obj, *args, **kwargs):
+        raise exceptions.NotImplemented()
+
+    def post(self, request, obj, *args, **kwargs):
+        raise exceptions.NotImplemented()
+
+    def put(self, request, obj, *args, **kwargs):
+        raise exceptions.NotImplemented()
+
+    def delete(self, request, obj, *args, **kwargs):
+        raise exceptions.NotImplemented()
 
     @property
     def urls(self):
