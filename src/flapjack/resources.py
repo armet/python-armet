@@ -1,8 +1,9 @@
 """ ..
 """
-from django import http
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
+from django.utils.functional import cached_property
 from django.conf import settings
 from . import emitters, exceptions, parsers
 
@@ -21,6 +22,20 @@ class Resource(object):
         # <http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.4>
         # TODO: 'options'
         # <http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.2>
+    ]
+
+    #! The list of method names that we understand but do not neccesarily
+    #! support
+    http_method_names = [
+        'get',
+        'post',
+        'put',
+        'delete',
+        'patch',
+        'options',
+        'head',
+        'connect',
+        'trace',
     ]
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
@@ -74,7 +89,7 @@ class Resource(object):
     def emit(self, obj=None, status=200):
         """Transforms python objects to an acceptable format for tansmission.
         """
-        response = http.HttpResponse(status=status)
+        response = HttpResponse(status=status)
         if obj is not None:
             response.content = self.emitter.emit(obj)
             response['Content-Type'] = self.emitter.get_mimetype()
@@ -90,22 +105,30 @@ class Resource(object):
         # TODO: anything else to do here ?
         return self.parser.parse(request)
 
-    def check_method(self, method):
+    # TODO: add some magic to make this a class method
+    @cached_property
+    def allow_header(self):
+        allow = [m.upper() for m in self.http_allowed_methods]
+        return ', '.join(allow).strip()
+
+    def find_method(self, method):
         """Ensures method is acceptable; throws appropriate exception elsewise.
         """
-        method = method.lower()
-        if method not in self.http_allowed_methods or \
-                not hasattr(self, method):
-            # Nope; not allowed -- need to form an http response containing
-            # the allowed methods
-            response = http.HttpResponse()
+        method_name = method.lower()
+        if method_name not in self.http_method_names:
+            # Method not understood by our library.  Die.
+            response = HttpResponse()
+            raise exceptions.NotImplemented(response)
 
-            allow = [m.upper() for m in self.http_allowed_methods]
-            response['Allow'] = ', '.join(allow).strip()
-
+        method = getattr(self, method_name, None)
+        if method_name not in self.http_allowed_methods or method is None:
+            # Method understood but not allowed.  Die.
+            response = HttpResponse()
+            response['Allow'] = self.allow_header()
             raise exceptions.MethodNotAllowed(response)
 
-        # We're good; continue on
+        # Method is allowed, continue.
+        return method
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -113,7 +136,7 @@ class Resource(object):
         try:
             # Ensure the request method is present in the list of
             # allowed HTTP methods
-            self.check_method(request.method)
+            method = self.find_method(request.method)
 
             # Request an emitter as early as possible in order to
             # accurately return errors (if accrued).
@@ -122,6 +145,7 @@ class Resource(object):
             # TODO: Authn check
             # TODO: Authz check
 
+            # By default, there is no object (for get and delete requests)
             obj = None
             if request.body:
                 # Request a parse and proceed to parse the request.
@@ -170,13 +194,13 @@ class Resource(object):
     def post(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
 
-    def put(self, request, obj, **kwargs):
+    def put(self, request, obj, *args, **kwargs):
         raise exceptions.NotImplemented()
 
-    def delete(self, request, obj, **kwargs):
+    def delete(self, request, obj, *args, **kwargs):
         raise exceptions.NotImplemented()
 
-    @property
+    @cached_property
     def urls(self):
         """Constructs the URLs that this resource will respond to.
         """

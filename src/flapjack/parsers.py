@@ -43,7 +43,7 @@ class Form(Parser):
     @classmethod
     def parse(cls, request):
         # Build the initial object as a copy of the POST data
-        obj = dict(request.POST)
+        obj = request.POST
 
         # Iterate through this absurd multi-value-dict and multiplex the
         # values into obj
