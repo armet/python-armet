@@ -2,6 +2,7 @@
 """
 import abc
 import mimeparse
+import json
 from . import exceptions
 
 
@@ -63,9 +64,26 @@ class Form(Decoder):
         return obj
 
 
+class Json(Decoder):
+
+    #! Mimetypes for this decoder.  Very similar to the encoders
+    mimetypes = [
+        'application/json',
+        'application/jsonrequest',
+        'application/x-json',
+        'text/json',
+        'text/x-json',
+    ]
+
+    @classmethod
+    def parse(cls, request):
+        return json.loads(request.body)
+
+
 # TODO: Find a more fun way to keep track of Decoders
 decoders = [
-    Form
+    Form,
+    Json,
 ]
 
 
@@ -84,13 +102,15 @@ def get(request):
 
     # Nothing can be matched; return nothing
 
-    def find_decoder(self, request, **kwargs):
-        """
-        Determines the format to decode to and stores it upon success. Raises
-        a proper exception if it cannot.
-        """
-        self.decoder = decoders.get(request)
-        if self.decoder is None:
-            # Failed to find an appropriate decoder; we have no idea how to
-            # handle the data.
-            raise exceptions.UnsupportedMediaType()
+
+def find(request, **kwargs):
+    """
+    Determines the format to decode to and stores it upon success. Raises
+    a proper exception if it cannot.
+    """
+    decoder = decoders.get(request)
+    if decoder is None:
+        # Failed to find an appropriate decoder; we have no idea how to
+        # handle the data.
+        raise exceptions.UnsupportedMediaType()
+    return decoder

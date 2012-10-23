@@ -97,7 +97,7 @@ def get_available():
     return available
 
 
-def find_encoder(request, **kwargs):
+def find(request, **kwargs):
     """
     Determines the format to encode to and stores it upon success. Raises
     a proper exception if it cannot.
