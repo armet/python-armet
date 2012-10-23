@@ -12,7 +12,7 @@ class Resource(object):
 
     #! Default list of allowed HTTP methods.
     http_allowed_methods = [
-        'get',
+        #'get',
         'post',
         'put',
         'delete',
@@ -124,7 +124,7 @@ class Resource(object):
         if method_name not in self.http_allowed_methods or method is None:
             # Method understood but not allowed.  Die.
             response = HttpResponse()
-            response['Allow'] = self.allow_header()
+            response['Allow'] = self.allow_header
             raise exceptions.MethodNotAllowed(response)
 
         # Method is allowed, continue.
@@ -169,11 +169,7 @@ class Resource(object):
             # TODO: `del response['Content-Type']` needs to generalized
             #       somewhere; its everywhere
             if settings.DEBUG:
-                response = self.emit({
-                    'name': ex.__class__.__name__,
-                    'message': str(ex),
-                })
-                response.status_code = 501
+                raise
             else:
                 # Return no body
                 response = HttpResponseServerError()
