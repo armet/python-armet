@@ -6,6 +6,7 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from . import emitters, exceptions, parsers
+import json
 
 
 class Resource(object):
@@ -189,7 +190,7 @@ class Resource(object):
         items = self.read(request, **kwargs)
 
         # Emit the list of read items.
-        return self.emit(items)
+        return self.emit(list(items))
 
     def post(self, request, obj, **kwargs):
         raise exceptions.NotImplemented()
