@@ -2,6 +2,7 @@
 """
 import abc
 import mimeparse
+import json
 from . import exceptions
 
 
@@ -63,9 +64,26 @@ class Form(Decoder):
         return obj
 
 
+class Json(Decoder):
+
+    #! Mimetypes for this decoder.  Very similar to the encoders
+    mimetypes = [
+        'application/json',
+        'application/jsonrequest',
+        'application/x-json',
+        'text/json',
+        'text/x-json',
+    ]
+
+    @classmethod
+    def parse(cls, request):
+        return json.loads(request.body)
+
+
 # TODO: Find a more fun way to keep track of Decoders
 decoders = [
-    Form
+    Form,
+    Json,
 ]
 
 
