@@ -173,7 +173,7 @@ class Resource(object):
                     'name': ex.__class__.__name__,
                     'message': str(ex),
                 })
-                response.status_code = 501
+                response.status_code = 500
             else:
                 # Return no body
                 response = HttpResponseServerError()
