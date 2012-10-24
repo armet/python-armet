@@ -5,7 +5,6 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from django.forms import Form, ModelForm
-from django.forms.fields import Field as FormField
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
@@ -25,24 +24,38 @@ class Field(object):
 
 class DeclarativeResource(type):
 
+    def _is_visible(cls, name):
+        if cls.form_class._meta.fields is not None:
+            if name not in cls.form_class._meta.fields:
+                # There is a whitelist present on the bound form; this field
+                # is not declared in it.
+                return False
+
+        if cls.form_class._meta.exclude is not None:
+            if name in cls.form_class._meta.exclude:
+                # There is a blacklist present on the bound form; this field
+                # is declared in it.
+                return False
+
+        # Field is good and visible -- as far as we can see here.
+        return True
+
     def __init__(cls, name, bases, attributes):
         # Ensure we have a valid name property.
         if 'name' not in attributes:
             # Default to the lowercased name of the class
             cls.name = name.lower()
 
-        # Generate the list of fields using the provided form
+        # Initialize listing of fields
         cls._fields = {}
-        if hasattr(cls, 'form_class') \
-                and hasattr(cls.form_class, 'declared_fields'):
+
+        # Generate the list of fields using the provided form
+        if hasattr(getattr(cls, 'form_class', None), 'declared_fields'):
             # Iterate through each declared field on the form
             for name, field in cls.form_class.declared_fields.items():
-                if cls.form_class._meta.fields is not None and \
-                        name not in cls.form_class._meta.fields:
-                    continue
-                if name in (cls.form_class._meta.exclude or []):
-                    continue
-                if isinstance(field, FormField):
+                if cls._is_visible(name):
+                    # Field has been declared visible; construct it
+                    # and add it to our list
                     cls._fields[name] = Field(name, **field.__dict__)
 
         # Delegate to python magic to initialize the class object
@@ -172,6 +185,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 response.status_code = self.status
                 return response
             else:
+                # We have no body; just return.
                 return HttpResponse(status=self.status)
 
         except exceptions.Error as ex:
@@ -226,8 +240,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
     @cached_property
     def urls(self):
-        """Constructs the URLs that this resource will respond to.
-        """
+        """Constructs the URLs that this resource will respond to."""
         #! In order to undo a reverse() call (to get the resource from a slug),
         #! call django.core.urlresolvers.resolve(slug).  the resulting object's
         #! func attribute is the entrypoint into the resource.  So, to get the
@@ -236,7 +249,6 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
         name = 'api_dispatch'
         kwargs = {'resource': self.name}
-        print self.name
         return patterns('',
             url(pattern.format(''), self.dispatch, name=name, kwargs=kwargs),
             url(
@@ -256,25 +268,23 @@ class DeclarativeModel(DeclarativeResource):
         # Ensure we have a valid model form instance to use to generate
         # field references
         model_class = getattr(cls, 'model_class', None)
-        if model_class is not None and \
-                not issubclass(getattr(cls, 'form_class', None), ModelForm):
-            class Form(ModelForm):
-                class Meta:
-                    model = model_class
+        if model_class is not None:
+            if not issubclass(getattr(cls, 'form_class', None), ModelForm):
+                # Construct a form class that is bound to our model_class
+                class Form(ModelForm):
+                    class Meta:
+                        model = model_class
 
-            cls.form_class = Form
+                # Declare our use of the form class
+                cls.form_class = Form
 
-        # # Generate the list of fields on the provided model
-        if getattr(cls, 'model_class', None) and \
-                hasattr(cls, 'form_class'):
             # Iterate through each declared field on the model
             for field in cls.model_class._meta.local_fields:
-                if cls.form_class._meta.fields is not None and \
-                        field.name not in cls.form_class._meta.fields:
-                    continue
-                if field.name in (cls.form_class._meta.exclude or []):
-                    continue
-                cls._fields[field.name] = Field(field.name)
+                if cls._is_visible(field.name):
+                    if field.name not in cls._fields:
+                        # Field is visible and not already declared explicitly
+                        # by the model; add it to our list
+                        cls._fields[field.name] = Field(field.name)
 
 
 class Model(six.with_metaclass(DeclarativeModel, Resource)):

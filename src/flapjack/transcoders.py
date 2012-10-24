@@ -15,9 +15,9 @@ class DeclarativeTranscoder(type):
         super(DeclarativeTranscoder, cls).__init__(name, bases, attributes)
 
     @property
-    def mimetype(self):
+    def mimetype(cls):
         # Return the 'default' mimetype.
-        return self.mimetypes[0]
+        return cls.mimetypes[0]
 
 
 class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
