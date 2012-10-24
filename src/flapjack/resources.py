@@ -5,8 +5,6 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from django.forms import Form, ModelForm
-from django.core.exceptions import ImproperlyConfigured
-from django.db import models
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
@@ -54,7 +52,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     name = None
 
     #! Form to use to proxy the validation and clean cycles.
-    form = Form
+    form_class = Form
 
     #! Authentication class to use when checking authentication.  Do not
     #! instantiate a class when doing this
@@ -63,6 +61,18 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     #! Authorization class to use when checking authorization.  Do not
     #! instantiate a class when using this
     authorization = authz.Authorization
+
+    def __init__(self):
+        #! HTTP status of the entire cycle.
+        self.status = 200
+
+        #! Form object to use for the cycle (when we have content).
+        self.form = None
+
+    @cached_property
+    def fields(self):
+        """Fields iterable to use for the preparation cycle."""
+        return self.form_class().fields
 
     @cached_property
     def _allowed_methods_header(self):
@@ -123,28 +133,26 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             self.encode = encoders.find(self.request, **kwargs)
 
             # By default, there is no object (for get and delete requests)
-            obj = None
+            request_obj = None
             if request.body:
                 # Request a decode and proceed to decode the request.
-                obj = decoders.find(self.request)(self.request)
+                request_obj = decoders.find(self.request)(self.request)
 
                 # TODO: Run through form clean cycle
-                # TODO: Authz check (w/object)
+                # TODO: Authz check (w/obj)
 
-            # Delegate to an appropriate method to grab the response
-            obj = function(obj, **kwargs)
-            if obj is not None:
-                # Run object through prepare cycle
-                print(obj)
-                obj = self.prepare(obj)
-                print(obj)
+            # Delegate to an appropriate method to grab the response;
+            items = function(request_obj, **kwargs)
+            if items is not None:
+                # Run items through prepare cycle
+                response_obj = self.prepare(items)
 
                 # Encode and return the object
-                # TODO: Support returning other 2xx ..
-                return self.encode(obj)
+                response = self.encode(response_obj)
+                response.status_code = self.status
+                return response
             else:
-                # TODO: Support returning other 2xx ..
-                return HttpResponse()
+                return HttpResponse(status=self.status)
 
         except exceptions.Error as ex:
             return ex.response
@@ -158,24 +166,27 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # Don't return a body; just notify server failure.
             return HttpResponse(status=500)
 
-    def prepare(self, data):
-        # ..
+    def _prepare_item(self, item):
+        obj = {}
+        for name, field in self.fields.items():
+            # Constuct object containing all properties
+            # from the item
+            obj[name] = getattr(item, name, None)
+
+            # Run it through the (optional) prepare_FOO function
+            prepare_foo = getattr(self, 'prepare_{}'.format(name), None)
+            if prepare_foo is not None:
+                obj[name] = prepare_foo(obj[name])
+
+        return obj
+
+    def prepare(self, items):
         try:
-            print(iter(data))
-            iter(data)
+            # Attempt to iterate and prepare each item
+            return [self._prepare_item(x) for x in items]
         except TypeError:
-            # Not iterable
-            pass
-        else:
-            # Iterable ..
-            print('yo?')
-            objs = []
-            for item in data:
-                obj = {}
-                for name, field in self.form.fields.items():
-                    obj[name] = getattr(item, name, None)
-                objs.append(obj)
-            return objs
+            # Not iterable; we only have one
+            return self._prepare_item(items)
 
     def read(self, **kwargs):
         raise exceptions.NotImplemented()
@@ -211,25 +222,27 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 class DeclarativeModel(DeclarativeResource):
 
     def __init__(cls, name, bases, dct):
-        # Ensure we have a valid model form instance to use to generate
-        # field references
-        if 'form' in dct and not isinstance(dct.get('form'), ModelForm):
-            cls.form = type('Form', (), {
-                    'Meta': type('Meta', (), {
-                            'model': cls.model
-                        })
-                })
-
         # Delegate to more magic to initialize the class object
         super(DeclarativeModel, cls).__init__(name, bases, dct)
+
+        # Ensure we have a valid model form instance to use to generate
+        # field references
+        model_class = getattr(cls, 'model_class', None)
+        if model_class is not None and \
+                not isinstance(getattr(cls, 'form_class', None), ModelForm):
+            class Form(ModelForm):
+                class Meta:
+                    model = model_class
+
+            cls.form_class = Form
 
 
 class Model(six.with_metaclass(DeclarativeModel, Resource)):
     """Implementation of `Resource` for django's models.
     """
     #! The class object of the django model this resource is exposing.
-    model = None
+    model_class = None
 
     def read(self, **kwargs):
         # TODO: filtering
-        return self.model.objects.all()
+        return self.model_class.objects.all()
