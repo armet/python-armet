@@ -176,10 +176,7 @@ class Resource(object):
             for item in data:
                 obj = {}
                 for name, field in self.form.fields.items():
-                    if hasattr(item, name):
-                        obj[name] = getattr(item, name)
-                    else:
-                        obj[name] = None
+                    obj[name] = getattr(item, name, None)
                 objs.append(obj)
             return objs
 
