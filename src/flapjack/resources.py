@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
+from django.forms import Form, ModelForm
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
@@ -48,6 +49,9 @@ class Resource(object):
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
+
+    #! Form to use to proxy the validation and clean cycles.
+    form = Form
 
     #! Authentication class to use when checking authentication.  Do not
     #! instantiate a class when doing this
@@ -127,10 +131,23 @@ class Resource(object):
                 # Request a decode and proceed to decode the request.
                 obj = decoders.find(self.request)(self.request)
 
+                # TODO: Run through form clean cycle
                 # TODO: Authz check (w/object)
 
-            # Delegate to an appropriate method
-            return function(obj, **kwargs)
+            # Delegate to an appropriate method to grab the response
+            obj = function(obj, **kwargs)
+            if obj is not None:
+                # Run object through prepare cycle
+                print(obj)
+                obj = self.prepare(obj)
+                print(obj)
+
+                # Encode and return the object
+                # TODO: Support returning other 2xx ..
+                return self.encode(obj)
+            else:
+                # TODO: Support returning other 2xx ..
+                return HttpResponse()
 
         except exceptions.Error as ex:
             return ex.response
@@ -144,6 +161,28 @@ class Resource(object):
             # Don't return a body; just notify server failure.
             return HttpResponse(status=500)
 
+    def prepare(self, data):
+        # ..
+        try:
+            print(iter(data))
+            iter(data)
+        except TypeError:
+            # Not iterable
+            pass
+        else:
+            # Iterable ..
+            print('yo?')
+            objs = []
+            for item in data:
+                obj = {}
+                for name, field in self.form.fields.items():
+                    if hasattr(item, name):
+                        obj[name] = getattr(item, name)
+                    else:
+                        obj[name] = None
+                objs.append(obj)
+            return objs
+
     def read(self, **kwargs):
         raise exceptions.NotImplemented()
 
@@ -153,7 +192,7 @@ class Resource(object):
         items = self.read(**kwargs)
 
         # encode the list of read items.
-        return self.encode(list(items))
+        return items
 
     def post(self, obj, **kwargs):
         raise exceptions.NotImplemented()
@@ -180,6 +219,16 @@ class Model(Resource):
     """
     #! The class object of the django model this resource is exposing.
     model = None
+
+    def __init__(self):
+        # TODO: Move this to the metaclass
+        class Form(ModelForm):
+            class Meta:
+                model = self.model
+
+        self.form = Form()
+
+        super(Model, self).__init__()
 
     def read(self, **kwargs):
         # TODO: filtering
