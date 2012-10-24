@@ -212,6 +212,11 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     def urls(self):
         """Constructs the URLs that this resource will respond to.
         """
+        #! In order to undo a reverse() call (to get the resource from a slug),
+        #! call django.core.urlresolvers.resolve(slug).  the resulting object's
+        #! func attribute is the entrypoint into the resource.  So, to get the
+        #! resource object, simply
+        #! django.core.urlresolvers.resolve(slug).func.__self__
         pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
         name = 'api_dispatch'
         kwargs = {'resource': self.name}
