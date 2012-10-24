@@ -5,11 +5,22 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from django.forms import Form, ModelForm
+from django.forms.fields import Field as FormField
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
 from . import authorization as authz
 import six
+
+
+class Field(object):
+    # ..
+    def __init__(self, name, **kwargs):
+        #! Name of the field on the object instance.
+        self.name = name
+
+        #! Whether this field can be modified or not.
+        self.editable = kwargs.get('editable', False)
 
 
 class DeclarativeResource(type):
@@ -19,6 +30,20 @@ class DeclarativeResource(type):
         if 'name' not in dct:
             # Default to the lowercased name of the class
             cls.name = name.lower()
+
+        # Generate the list of fields using the provided form
+        cls._fields = {}
+        if hasattr(cls, 'form_class') \
+                and hasattr(cls.form_class, 'declared_fields'):
+            # Iterate through each declared field on the form
+            for name, field in cls.form_class.declared_fields.items():
+                if cls.form_class._meta.fields is not None and \
+                        name not in cls.form_class._meta.fields:
+                    continue
+                if name in (cls.form_class._meta.exclude or []):
+                    continue
+                if isinstance(field, FormField):
+                    cls._fields[name] = Field(name, **field.__dict__)
 
         # Delegate to python magic to initialize the class object
         super(DeclarativeResource, cls).__init__(name, bases, dct)
@@ -69,10 +94,11 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         #! Form object to use for the cycle (when we have content).
         self.form = None
 
-    @cached_property
-    def fields(self):
-        """Fields iterable to use for the preparation cycle."""
-        return self.form_class().fields
+    # @cached_property
+    # def fields(self):
+    #     """Fields iterable to use for the preparation cycle."""
+    #     class DisplayForm:
+    #     # form = type('DisplayForm', self.form_class)
 
     @cached_property
     def _allowed_methods_header(self):
@@ -142,7 +168,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # TODO: Authz check (w/obj)
 
             # Delegate to an appropriate method to grab the response;
-            items = function(request_obj, **kwargs)
+            items = function(request_obj, kwargs.get('id'), **request.GET)
             if items is not None:
                 # Run items through prepare cycle
                 response_obj = self.prepare(items)
@@ -168,7 +194,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
     def _prepare_item(self, item):
         obj = {}
-        for name, field in self.fields.items():
+        for name, field in self._fields.items():
             # Constuct object containing all properties
             # from the item
             obj[name] = getattr(item, name, None)
@@ -188,24 +214,20 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # Not iterable; we only have one
             return self._prepare_item(items)
 
-    def read(self, **kwargs):
+    def read(self, identifier=None, **kwargs):
         raise exceptions.NotImplemented()
 
-    def get(self, obj=None, **kwargs):
-        # TODO: caching, pagination
-        # Delegate to `read` to actually grab a list of items
-        items = self.read(**kwargs)
+    def get(self, obj=None, identifier=None, **kwargs):
+        # Delegate to `read` to actually grab a list of items.
+        return self.read(identifier, **kwargs)
 
-        # encode the list of read items.
-        return items
-
-    def post(self, obj, **kwargs):
+    def post(self, obj, identifier=None, **kwargs):
         raise exceptions.NotImplemented()
 
-    def put(self, obj, *args, **kwargs):
+    def put(self, obj, identifier=None, *args, **kwargs):
         raise exceptions.NotImplemented()
 
-    def delete(self, obj, *args, **kwargs):
+    def delete(self, obj, identifier=None, *args, **kwargs):
         raise exceptions.NotImplemented()
 
     @cached_property
@@ -229,12 +251,24 @@ class DeclarativeModel(DeclarativeResource):
         # field references
         model_class = getattr(cls, 'model_class', None)
         if model_class is not None and \
-                not isinstance(getattr(cls, 'form_class', None), ModelForm):
+                not issubclass(getattr(cls, 'form_class', None), ModelForm):
             class Form(ModelForm):
                 class Meta:
                     model = model_class
 
             cls.form_class = Form
+
+        # # Generate the list of fields on the provided model
+        if getattr(cls, 'model_class', None) and \
+                hasattr(cls, 'form_class'):
+            # Iterate through each declared field on the model
+            for field in cls.model_class._meta.local_fields:
+                if cls.form_class._meta.fields is not None and \
+                        field.name not in cls.form_class._meta.fields:
+                    continue
+                if field.name in (cls.form_class._meta.exclude or []):
+                    continue
+                cls._fields[field.name] = Field(field.name)
 
 
 class Model(six.with_metaclass(DeclarativeModel, Resource)):
@@ -243,6 +277,9 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
     #! The class object of the django model this resource is exposing.
     model_class = None
 
-    def read(self, **kwargs):
+    def read(self, identifier=None, **kwargs):
         # TODO: filtering
-        return self.model_class.objects.all()
+        if identifier is not None:
+            return self.model_class.objects.get(pk=identifier)
+        else:
+            return self.model_class.objects.all()
