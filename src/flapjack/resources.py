@@ -287,13 +287,13 @@ class DeclarativeModel(DeclarativeResource):
 
         # Ensure we have a valid model form instance to use to generate
         # field references
-        model = getattr(cls, 'model', None)
-        if model is not None:
+        model_class = getattr(cls, 'model', None)
+        if model_class is not None:
             if not issubclass(getattr(cls, 'form', None), ModelForm):
                 # Construct a form class that is bound to our model
                 class Form(ModelForm):
                     class Meta:
-                        model = model
+                        model = model_class
 
                 # Declare our use of the form class
                 cls.form = Form
