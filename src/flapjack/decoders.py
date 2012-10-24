@@ -34,6 +34,10 @@ class Decoder(object):
         """
         pass
 
+    @classmethod
+    def __call__(cls, *args, **kwargs):
+        return cls.decode(*args, **kwargs)
+
 
 class Form(Decoder):
     #! Applicable mimetypes for this decoder
@@ -82,8 +86,8 @@ class Json(Decoder):
 
 # TODO: Find a more fun way to keep track of Decoders
 decoders = [
-    Json,
-    Form,
+    Json(),
+    Form(),
 ]
 
 
