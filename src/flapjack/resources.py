@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.forms import Form, ModelForm
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
@@ -212,7 +213,14 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     def prepare(self, items):
         try:
             # Attempt to iterate and prepare each item
-            return [self._prepare_item(x) for x in items]
+            objs = {}
+            kwargs = {'resource': self.name}
+            for item in items:
+                obj = self._prepare_item(item)
+                kwargs['id'] = obj['id']
+                uri = reverse('api_dispatch', kwargs=kwargs)
+                objs[uri] = obj
+            return objs
         except TypeError:
             # Not iterable; we only have one
             return self._prepare_item(items)
@@ -242,7 +250,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         #! resource object, simply
         #! django.core.urlresolvers.resolve(slug).func.__self__
         pattern = '^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
-        name = 'api:dispatch'
+        name = 'api_dispatch'
         kwargs = {'resource': self.name}
         return patterns('',
             # The resource as a whole.

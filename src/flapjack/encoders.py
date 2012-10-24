@@ -74,7 +74,9 @@ def find(request, format=None):
 
     elif request.META.get('HTTP_ACCEPT', None) is not None:
         # Use the encoding specified in the accept header
-        return Encoder.get(request.META['HTTP_ACCEPT'])
+        encoder = Encoder.get(request.META['HTTP_ACCEPT'])
+        if encoder is not None:
+            return encoder
 
     # Failed to find an appropriate encoder
     # Get dictionary of available formats
