@@ -25,14 +25,14 @@ class Field(object):
 class DeclarativeResource(type):
 
     def _is_visible(cls, name):
-        if cls.form_class._meta.fields is not None:
-            if name not in cls.form_class._meta.fields:
+        if cls.form._meta.fields is not None:
+            if name not in cls.form._meta.fields:
                 # There is a whitelist present on the bound form; this field
                 # is not declared in it.
                 return False
 
-        if cls.form_class._meta.exclude is not None:
-            if name in cls.form_class._meta.exclude:
+        if cls.form._meta.exclude is not None:
+            if name in cls.form._meta.exclude:
                 # There is a blacklist present on the bound form; this field
                 # is declared in it.
                 return False
@@ -50,9 +50,9 @@ class DeclarativeResource(type):
         cls._fields = {}
 
         # Generate the list of fields using the provided form
-        if hasattr(getattr(cls, 'form_class', None), 'declared_fields'):
+        if hasattr(getattr(cls, 'form', None), 'declared_fields'):
             # Iterate through each declared field on the form
-            for name, field in cls.form_class.declared_fields.items():
+            for name, field in cls.form.declared_fields.items():
                 if cls._is_visible(name):
                     # Field has been declared visible; construct it
                     # and add it to our list
@@ -69,7 +69,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         'get',
         'post',
         'put',
-        'delete'
+        'delete',
     )
 
     #! The list of method names that we understand but do not neccesarily
@@ -90,7 +90,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     name = None
 
     #! Form to use to proxy the validation and clean cycles.
-    form_class = Form
+    form = Form
 
     #! Authentication class to use when checking authentication.  Do not
     #! instantiate a class when doing this
@@ -103,9 +103,6 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     def __init__(self):
         #! HTTP status of the entire cycle.
         self.status = 200
-
-        #! Form object to use for the cycle (when we have content).
-        self.form = None
 
     @cached_property
     def _allowed_methods_header(self):
@@ -267,19 +264,19 @@ class DeclarativeModel(DeclarativeResource):
 
         # Ensure we have a valid model form instance to use to generate
         # field references
-        model_class = getattr(cls, 'model_class', None)
-        if model_class is not None:
-            if not issubclass(getattr(cls, 'form_class', None), ModelForm):
-                # Construct a form class that is bound to our model_class
+        model = getattr(cls, 'model', None)
+        if model is not None:
+            if not issubclass(getattr(cls, 'form', None), ModelForm):
+                # Construct a form class that is bound to our model
                 class Form(ModelForm):
                     class Meta:
-                        model = model_class
+                        model = model
 
                 # Declare our use of the form class
-                cls.form_class = Form
+                cls.form = Form
 
             # Iterate through each declared field on the model
-            for field in cls.model_class._meta.local_fields:
+            for field in cls.model._meta.local_fields:
                 if cls._is_visible(field.name):
                     if field.name not in cls._fields:
                         # Field is visible and not already declared explicitly
@@ -291,11 +288,11 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
     """Implementation of `Resource` for django's models.
     """
     #! The class object of the django model this resource is exposing.
-    model_class = None
+    model = None
 
     def read(self, identifier=None, **kwargs):
         # TODO: filtering
         if identifier is not None:
-            return self.model_class.objects.get(pk=identifier)
+            return self.model.objects.get(pk=identifier)
         else:
-            return self.model_class.objects.all()
+            return self.model.objects.all()
