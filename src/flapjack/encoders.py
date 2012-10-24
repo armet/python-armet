@@ -31,11 +31,15 @@ class Encoder(object):
             response = HttpResponse
             if obj is not None:
                 # We have an object; we need to encode it and set content type, etc
-                response.content = self.encoder.encode(obj)
+                response.content = obj
                 response['Content-Type'] = self.encoder.get_mimetype()
 
             # Pass on the constructed response
             return response
+
+    @classmethod
+    def __call__(cls, *args, **kwargs):
+        return cls.encode(*args, **kwargs)
 
 
 class Json(Encoder):
@@ -79,7 +83,7 @@ class Json(Encoder):
 
 # TODO: Find a more fun way to keep track of Encoders
 encoders = {
-    'json': Json,
+    'json': Json(),
 }
 
 
