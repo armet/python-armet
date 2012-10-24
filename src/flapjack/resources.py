@@ -213,9 +213,16 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         """Constructs the URLs that this resource will respond to.
         """
         pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
+        name = 'api_dispatch'
+        kwargs = {'resource': self.name}
+        print self.name
         return patterns('',
-            url(pattern.format(''), self.dispatch, name='dispatch'),
-            url(pattern.format('/(?P<id>.*?)'), self.dispatch, name='dispatch')
+            url(pattern.format(''), self.dispatch, name=name, kwargs=kwargs),
+            url(
+                pattern.format('/(?P<id>.*?)'),
+                self.dispatch,
+                name=name,
+                kwargs=kwargs)
         )
 
 
