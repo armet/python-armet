@@ -25,9 +25,9 @@ class Field(object):
 
 class DeclarativeResource(type):
 
-    def __init__(cls, name, bases, dct):
+    def __init__(cls, name, bases, attributes):
         # Ensure we have a valid name property.
-        if 'name' not in dct:
+        if 'name' not in attributes:
             # Default to the lowercased name of the class
             cls.name = name.lower()
 
@@ -46,22 +46,22 @@ class DeclarativeResource(type):
                     cls._fields[name] = Field(name, **field.__dict__)
 
         # Delegate to python magic to initialize the class object
-        super(DeclarativeResource, cls).__init__(name, bases, dct)
+        super(DeclarativeResource, cls).__init__(name, bases, attributes)
 
 
 class Resource(six.with_metaclass(DeclarativeResource)):
 
     #! Default list of allowed HTTP methods.
-    http_allowed_methods = [
+    http_allowed_methods = (
         'get',
         'post',
         'put',
         'delete'
-    ]
+    )
 
     #! The list of method names that we understand but do not neccesarily
     #! support
-    http_method_names = [
+    http_method_names = (
         'get',
         'post',
         'put',
@@ -71,7 +71,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         'head',
         'connect',
         'trace',
-    ]
+    )
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
@@ -93,12 +93,6 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
         #! Form object to use for the cycle (when we have content).
         self.form = None
-
-    # @cached_property
-    # def fields(self):
-    #     """Fields iterable to use for the preparation cycle."""
-    #     class DisplayForm:
-    #     # form = type('DisplayForm', self.form_class)
 
     @cached_property
     def _allowed_methods_header(self):
@@ -156,13 +150,13 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.encode = encoders.find(self.request, **kwargs)
+            self.encoder = encoders.find(self.request, kwargs.get('format'))
 
             # By default, there is no object (for get and delete requests)
             request_obj = None
             if request.body:
                 # Request a decode and proceed to decode the request.
-                request_obj = decoders.find(self.request)(self.request)
+                request_obj = decoders.find(self.request).decode(self.request)
 
                 # TODO: Run through form clean cycle
                 # TODO: Authz check (w/obj)
@@ -174,7 +168,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 response_obj = self.prepare(items)
 
                 # Encode and return the object
-                response = self.encode(response_obj)
+                response = self.encoder.encode(response_obj)
                 response.status_code = self.status
                 return response
             else:
@@ -255,9 +249,9 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
 class DeclarativeModel(DeclarativeResource):
 
-    def __init__(cls, name, bases, dct):
+    def __init__(cls, name, bases, attributes):
         # Delegate to more magic to initialize the class object
-        super(DeclarativeModel, cls).__init__(name, bases, dct)
+        super(DeclarativeModel, cls).__init__(name, bases, attributes)
 
         # Ensure we have a valid model form instance to use to generate
         # field references

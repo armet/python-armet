@@ -1,22 +1,11 @@
 """ ..
 """
 import abc
-import mimeparse
 import json
-from . import exceptions
+from . import exceptions, transcoders
 
 
-class Decoder(object):
-    #! Applicable mimetypes for this Decoder
-    mimetypes = []
-
-    @classmethod
-    def can_parse(cls, content_type_header):
-        """
-        Determine if this decoder can deserialize an appropriate message
-        specified by the CONTENT-TYPE header.
-        """
-        return mimeparse.best_match(cls.mimetypes, content_type_header) != ''
+class Decoder(transcoders.Transcoder):
 
     @classmethod
     @abc.abstractmethod
@@ -35,12 +24,8 @@ class Decoder(object):
         pass
 
 
-class Form(Decoder):
-    #! Applicable mimetypes for this decoder
-    mimetypes = [
-        'multipart/form-data',
-        'application/x-www-form-urlencoded',
-    ]
+@Decoder.register()
+class Form(transcoders.Form, Decoder):
 
     @classmethod
     def decode(cls, request):
@@ -64,53 +49,26 @@ class Form(Decoder):
         return obj
 
 
-class Json(Decoder):
-
-    #! Mimetypes for this decoder.  Very similar to the encoders
-    mimetypes = [
-        'application/json',
-        'application/jsonrequest',
-        'application/x-json',
-        'text/json',
-        'text/x-json',
-    ]
+@Decoder.register()
+class Json(transcoders.Json, Decoder):
 
     @classmethod
-    def parse(cls, request):
+    def decode(cls, request):
         return json.loads(request.body)
 
 
-# TODO: Find a more fun way to keep track of Decoders
-decoders = [
-    Json(),
-    Form(),
-]
+def find(request):
+    """Determines the format to decode to and returns the decoder."""
+    # Grab the content type header to get the mimetypes requested; defaults
+    # to `application/octet-stream` as defined by HTTP/1.1 -- wonder how
+    # we'll support that
+    mimetype = request.META.get('CONTENT_TYPE', 'application/octet-stream')
 
-
-def get(request):
-    if 'CONTENT_TYPE' not in request.META:
-        # No accept header provided; we can do nothing as the default
-        # is application/octet-stream.
-        # TODO: Perhaps devise a way to accept this ?
-        return None
-
-    content_type = request.META['CONTENT_TYPE']
-    for Decoder in decoders:
-        if Decoder.can_parse(content_type):
-            # Decoder matched against the type header; return it
-            return Decoder
-
-    # Nothing can be matched; return nothing
-
-
-def find(request, **kwargs):
-    """
-    Determines the format to decode to and stores it upon success. Raises
-    a proper exception if it cannot.
-    """
-    decoder = get(request)
+    # Attempt to find a decoder and on failure, die.
+    decoder = Decoder.get(mimetype)
     if decoder is None:
         # Failed to find an appropriate decoder; we have no idea how to
         # handle the data.
         raise exceptions.UnsupportedMediaType()
+
     return decoder
