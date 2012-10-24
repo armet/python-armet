@@ -2,7 +2,7 @@
 """
 import json
 import mimeparse
-from django.http import HttpResponse
+from .http import HttpResponse
 from . import exceptions
 
 
@@ -24,15 +24,15 @@ class Encoder(object):
         return mimeparse.best_match(cls.mimetypes, accept_header) != ''
 
     @classmethod
-    def encode(self, obj=None):
+    def encode(cls, obj=None):
             """Transforms python objects to an acceptable format for tansmission.
             response = HTTP
             """
-            response = HttpResponse
+            response = HttpResponse()
             if obj is not None:
                 # We have an object; we need to encode it and set content type, etc
                 response.content = obj
-                response['Content-Type'] = self.encoder.get_mimetype()
+                response['Content-Type'] = cls.get_mimetype()
 
             # Pass on the constructed response
             return response
