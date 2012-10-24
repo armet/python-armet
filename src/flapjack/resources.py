@@ -176,9 +176,18 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # Run items through prepare cycle
                 response_obj = self.prepare(items)
 
-                # Encode and return the object
+                # Encode and the object into a response
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
+
+                # Reverse its location
+                params = {'resource': self.name}
+                if 'id' in kwargs is not None:
+                    params['id'] = kwargs['id']
+
+                response['Location'] = reverse('api_dispatch', kwargs=params)
+
+                # Return the constructed response
                 return response
             else:
                 # We have no body; just return.
