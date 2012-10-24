@@ -5,22 +5,14 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.forms import Form, ModelForm
+from django.forms import Form, ModelForm, MultipleChoiceField
+from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
+from django.db.models import ForeignKey, ManyToManyField
 from .http import HttpResponse
-from . import encoders, exceptions, decoders
-from . import authentication as authn
-from . import authorization as authz
+from . import encoders, exceptions, decoders, fields
+# from . import authentication as authn
+# from . import authorization as authz
 import six
-
-
-class Field(object):
-    # ..
-    def __init__(self, name, **kwargs):
-        #! Name of the field on the object instance.
-        self.name = name
-
-        #! Whether this field can be modified or not.
-        self.editable = kwargs.get('editable', False)
 
 
 class DeclarativeResource(type):
@@ -47,6 +39,10 @@ class DeclarativeResource(type):
             # Default to the lowercased name of the class
             cls.name = name.lower()
 
+        if hasattr(cls, 'Form'):
+            # Allow the form to be specified as a sub-class
+            cls.form = cls.Form
+
         # Initialize listing of fields
         cls._fields = {}
 
@@ -55,9 +51,20 @@ class DeclarativeResource(type):
             # Iterate through each declared field on the form
             for name, field in cls.form.declared_fields.items():
                 if cls._is_visible(name):
-                    # Field has been declared visible; construct it
-                    # and add it to our list
-                    cls._fields[name] = Field(name, **field.__dict__)
+                    # Determine field properties
+                    props = {'collection': isinstance(
+                        field, MultipleChoiceField)}
+
+                    if name in cls.relations:
+                        # Field is some kind of relation and
+                        # is declared by the resource; add it
+                        cls._fields[name] = fields.Related(
+                            name, cls.relations[name], **props)
+
+                    else:
+                        # Field has been declared visible; construct it
+                        # and add it to our list
+                        cls._fields[name] = fields.Field(name, **props)
 
         # Delegate to python magic to initialize the class object
         super(DeclarativeResource, cls).__init__(name, bases, attributes)
@@ -94,10 +101,10 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     form = Form
 
     #! Authentication class to use when checking authentication.
-    authentication = authn.Authentication
+    # authentication = authn.Authentication
 
     #! Authorization class to use when checking authorization.
-    authorization = authz.Authorization
+    # authorization = authz.Authorization
 
     def __init__(self):
         #! HTTP status of the entire cycle.
@@ -179,13 +186,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # Encode and the object into a response
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
-
-                # Reverse its location
-                params = {'resource': self.name}
-                if 'id' in kwargs is not None:
-                    params['id'] = kwargs['id']
-
-                response['Location'] = reverse('api_dispatch', kwargs=params)
+                response['Location'] = self.reverse(kwargs.get('id'))
 
                 # Return the constructed response
                 return response
@@ -205,6 +206,44 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # Don't return a body; just notify server failure.
             return HttpResponse(status=500)
 
+    @classmethod
+    def reverse(cls, item=None):
+        kwargs = {'resource': cls.name}
+        if item is not None:
+            try:
+                # Attempt to get the identifier off of the item
+                # by treating it as a dictionary
+                kwargs['id'] = item['id']
+            except:
+                try:
+                    # That failed; let's try direct access -- maybe we have
+                    # an object
+                    kwargs['id'] = item.id
+                except:
+                    # We're done, it must be an id
+                    kwargs['id'] = item
+        return reverse('api_dispatch', kwargs=kwargs)
+
+    def _prepare_related(self, item, relation):
+         # This is a related field; transform the object to to its uri
+        try:
+            # Attempt to resolve the relation if it can be
+            item = item()
+        except:
+            # It can't be; oh well
+            pass
+
+        try:
+            # Iterate and reverse each relation
+            item = [relation.reverse(x) for x in item]
+
+        except TypeError:
+            # Not iterable; reverse just the one
+            item = relation.reverse(item)
+
+        # Return our new-fangled list
+        return item
+
     def _prepare_item(self, item):
         obj = {}
         for name, field in self._fields.items():
@@ -217,17 +256,30 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             if prepare_foo is not None:
                 obj[name] = prepare_foo(obj[name])
 
+            if isinstance(field, fields.Related) and obj[name] is not None:
+                obj[name] = self._prepare_related(obj[name], field.relation)
+
+            if field.collection:
+                # Ensure we always have a collection on collection fields
+                if obj[name] is None:
+                    obj[name] = []
+                elif isinstance(obj[name], basestring):
+                    obj[name] = obj[name],
+                else:
+                    try:
+                        iter(obj[name])
+                    except TypeError:
+                        obj[name] = obj[name],
+
         return obj
 
     def prepare(self, items):
         try:
             # Attempt to iterate and prepare each item
             objs = {}
-            kwargs = {'resource': self.name}
             for item in items:
                 obj = self._prepare_item(item)
-                kwargs['id'] = obj['id']
-                uri = reverse('api_dispatch', kwargs=kwargs)
+                uri = self.reverse(obj)
                 objs[uri] = obj
             return objs
         except TypeError:
@@ -299,12 +351,33 @@ class DeclarativeModel(DeclarativeResource):
                 cls.form = Form
 
             # Iterate through each declared field on the model
-            for field in cls.model._meta.local_fields:
+            model_fields = cls.model._meta.local_fields
+            model_fields += cls.model._meta.many_to_many
+            for field in model_fields:
                 if cls._is_visible(field.name):
                     if field.name not in cls._fields:
-                        # Field is visible and not already declared explicitly
-                        # by the model; add it to our list
-                        cls._fields[field.name] = Field(field.name)
+                        if isinstance(field, ForeignKey):
+                            relation = cls.relations.get(field.name)
+                            if relation is not None:
+                                # Field is a foreignkey and its relation
+                                # is declared by the resource; add it
+                                cls._fields[field.name] = fields.Related(
+                                    field.name, relation,
+                                    editable=field.editable)
+                        elif isinstance(field, ManyToManyField):
+                            relation = cls.relations.get(field.name)
+                            if relation is not None:
+                                # Field is a m2m and its relation
+                                # is declared by the resource; add it
+                                cls._fields[field.name] = fields.Related(
+                                    field.name, relation,
+                                    editable=field.editable,
+                                    collection=True)
+                        else:
+                            # Field is visible and not already declared
+                            # explicitly by the model; add it to our list
+                            cls._fields[field.name] = fields.Field(field.name,
+                                editable=field.editable)
 
 
 class Model(six.with_metaclass(DeclarativeModel, Resource)):
@@ -312,6 +385,17 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
     """
     #! The class object of the django model this resource is exposing.
     model = None
+
+    def _prepare_related(self, item, relation):
+        try:
+            # First attempt to resolve the item as queryset
+            item = item.all()
+        except:
+            # No dice; move along
+            pass
+
+        # Finish us up
+        return super(Model, self)._prepare_related(item, relation)
 
     def read(self, identifier=None, **kwargs):
         # TODO: filtering
