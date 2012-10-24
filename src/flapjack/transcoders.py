@@ -66,8 +66,15 @@ class Form(object):
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = (
-        'application/x-www-form-urlencoded',
         'multipart/form-data',
+    )
+
+
+class Url(object):
+
+    #! Applicable mimetypes for this transcoder.
+    mimetypes = (
+        'application/x-www-form-urlencoded',
     )
 
 

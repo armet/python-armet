@@ -50,6 +50,11 @@ class Form(transcoders.Form, Decoder):
 
 
 @Decoder.register()
+class Url(transcoders.Url, Decoder):
+    decode = Form.decode
+
+
+@Decoder.register()
 class Json(transcoders.Json, Decoder):
 
     @classmethod
