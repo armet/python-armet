@@ -73,7 +73,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     )
 
     #! The list of method names that we understand but do not neccesarily
-    #! support
+    #! support.
     http_method_names = (
         'get',
         'post',
@@ -92,12 +92,10 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     #! Form to use to proxy the validation and clean cycles.
     form = Form
 
-    #! Authentication class to use when checking authentication.  Do not
-    #! instantiate a class when doing this
+    #! Authentication class to use when checking authentication.
     authentication = authn.Authentication
 
-    #! Authorization class to use when checking authorization.  Do not
-    #! instantiate a class when using this
+    #! Authorization class to use when checking authorization.
     authorization = authz.Authorization
 
     def __init__(self):
@@ -243,16 +241,24 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         #! func attribute is the entrypoint into the resource.  So, to get the
         #! resource object, simply
         #! django.core.urlresolvers.resolve(slug).func.__self__
-        pattern = '^{}{{}}(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
-        name = 'api_dispatch'
+        pattern = '^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
+        name = 'api:dispatch'
         kwargs = {'resource': self.name}
         return patterns('',
-            url(pattern.format(''), self.dispatch, name=name, kwargs=kwargs),
+            # The resource as a whole.
+            url(pattern.format(''),
+                self.dispatch,
+                name=name,
+                kwargs=kwargs
+            ),
+
+            # Individual item of this resource.
             url(
                 pattern.format('/(?P<id>.*?)'),
                 self.dispatch,
                 name=name,
-                kwargs=kwargs)
+                kwargs=kwargs
+            )
         )
 
 
