@@ -5,32 +5,35 @@ from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
 from django.forms import Form, ModelForm
+from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 from .http import HttpResponse
 from . import encoders, exceptions, decoders
 from . import authentication as authn
 from . import authorization as authz
+import six
 
 
-# class ResourceFactory(type):
+class DeclarativeResource(type):
 
-#     # def __new__ .. ?
+    def __init__(cls, name, bases, dct):
+        # Ensure we have a valid name property.
+        if 'name' not in dct:
+            # Default to the lowercased name of the class
+            cls.name = name.lower()
 
-#     def __init__()
+        # Delegate to python magic to initialize the class object
+        super(DeclarativeResource, cls).__init__(name, bases, dct)
 
-class Resource(object):
+
+class Resource(six.with_metaclass(DeclarativeResource)):
 
     #! Default list of allowed HTTP methods.
     http_allowed_methods = [
         'get',
         'post',
         'put',
-        'delete',
-        # TODO: 'patch',
-        # ..
-        # TODO: 'head',
-        # <http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.4>
-        # TODO: 'options'
-        # <http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.2>
+        'delete'
     ]
 
     #! The list of method names that we understand but do not neccesarily
@@ -60,12 +63,6 @@ class Resource(object):
     #! Authorization class to use when checking authorization.  Do not
     #! instantiate a class when using this
     authorization = authz.Authorization
-
-    def __init__(self):
-        # Initialize name to be the name of the instantiated class if it was
-        # not defined in the class definition.
-        if self.name is None:
-            self.name = self.__class__.__name__.lower()
 
     @cached_property
     def _allowed_methods_header(self):
@@ -211,21 +208,27 @@ class Resource(object):
         )
 
 
-class Model(Resource):
+class DeclarativeModel(DeclarativeResource):
+
+    def __init__(cls, name, bases, dct):
+        # Ensure we have a valid model form instance to use to generate
+        # field references
+        if 'form' in dct and not isinstance(dct.get('form'), ModelForm):
+            cls.form = type('Form', (), {
+                    'Meta': type('Meta', (), {
+                            'model': cls.model
+                        })
+                })
+
+        # Delegate to more magic to initialize the class object
+        super(DeclarativeModel, cls).__init__(name, bases, dct)
+
+
+class Model(six.with_metaclass(DeclarativeModel, Resource)):
     """Implementation of `Resource` for django's models.
     """
     #! The class object of the django model this resource is exposing.
     model = None
-
-    def __init__(self):
-        # TODO: Move this to the metaclass
-        class Form(ModelForm):
-            class Meta:
-                model = self.model
-
-        self.form = Form()
-
-        super(Model, self).__init__()
 
     def read(self, **kwargs):
         # TODO: filtering
