@@ -5,8 +5,11 @@ from django.conf.urls import patterns, url
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 from django.forms import Form
-from .http import HttpResponse
-from . import encoders, exceptions, decoders, meta, fields
+from ..http import HttpResponse
+from .. import encoders, exceptions, decoders
+from .meta import Model as ModelMeta
+from .meta import Resource as ResourceMeta
+from .fields import Related
 from collections import OrderedDict
 # from . import authentication as authn
 # from . import authorization as authz
@@ -14,7 +17,7 @@ from django.utils.functional import cached_property
 import six
 
 
-class Resource(six.with_metaclass(meta.Resource)):
+class Resource(six.with_metaclass(ResourceMeta)):
 
     #! Default list of allowed HTTP methods.
     http_allowed_methods = (
@@ -65,6 +68,7 @@ class Resource(six.with_metaclass(meta.Resource)):
             # Someone is using a client that isn't smart enough
             # to send proper verbs
             self.method = self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE']
+
         else:
             # Normal client; behave normally
             self.method = self.request.method.lower()
@@ -98,11 +102,12 @@ class Resource(six.with_metaclass(meta.Resource)):
             # We start off with a successful response; let's see what happens..
             self.status = 200
 
+            # We start off nowhere
+            self.location = None
+
             # Ensure the request method is present in the list of
             # allowed HTTP methods
             function = self.find_method()
-
-            #raise exceptions.NotImplemented()
 
             # Build auth classes and check initial auth
             # self.authn = self.authentication(request)
@@ -138,12 +143,12 @@ class Resource(six.with_metaclass(meta.Resource)):
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
 
-                try:
-                    # Attempt to get an identifier
-                    response['Location'] = self.reverse(response_obj.get('id'))
-                except:
-                    # This must be a plain list
-                    response['Location'] = self.reverse()
+                # Get current location
+                response['Location'] = self.reverse(kwargs)
+
+                # Do we have an alternative location ?
+                if self.location is not None:
+                    response['Content-Location'] = self.location
 
                 # Return the constructed response
                 return response
@@ -170,7 +175,11 @@ class Resource(six.with_metaclass(meta.Resource)):
             try:
                 # Attempt to get the identifier off of the item
                 # by treating it as a dictionary
-                kwargs['id'] = item['id']
+                if 'id' in item:
+                    kwargs['id'] = item['id']
+
+                if 'components' in item:
+                    kwargs['components'] = item['components']
             except:
                 try:
                     # That failed; let's try direct access -- maybe we have
@@ -233,7 +242,7 @@ class Resource(six.with_metaclass(meta.Resource)):
             if prepare_foo is not None:
                 obj[name] = prepare_foo(obj[name])
 
-            if isinstance(field, fields.Related) and obj[name] is not None:
+            if isinstance(field, Related) and obj[name] is not None:
                 obj[name] = self._prepare_related(obj[name], field.relation)
 
             if field.collection:
@@ -251,7 +260,7 @@ class Resource(six.with_metaclass(meta.Resource)):
         # Return the constructed object
         return obj
 
-    def prepare(self, items, components):
+    def prepare(self, items, components=None):
         try:
             # Attempt to iterate and prepare each item
             response = []
@@ -265,10 +274,30 @@ class Resource(six.with_metaclass(meta.Resource)):
 
         # Are we accessing a sub-resource on this item ?
         if components is not None:
+            # Parse the component list
             components = components.split('/')
-            if not self._fields[components[0]].collection:
+            name = components[0]
+
+            if name not in self._fields:
+                # Field not found; die
+                raise exceptions.NotFound()
+
+            # Grab the field in question
+            field = self._fields[name]
+
+            if isinstance(field, Related):
+                if not field.collection:
+                    # Damn; related field; send it back through
+                    resolution = resolve(response[name])
+
+                    obj = resolution.func.__self__.get(
+                        identifier=resolution.kwargs['id'])
+                    response = resolution.func.__self__.prepare(obj)
+                    self.location = resolution.func.__self__.reverse(obj)
+
+            elif not field.collection:
                 # Yes; simple sub-resource access
-                response = response[components[0]]
+                response = response[name]
 
         # Pass it along
         return response
@@ -277,7 +306,7 @@ class Resource(six.with_metaclass(meta.Resource)):
         # Before the object goes anywhere its relations need to be resolved.
         for field in self._fields.values():
             if field.name in obj:
-                if isinstance(field, fields.Related):
+                if isinstance(field, Related):
                     value = obj[field.name]
                     if field.collection:
                         value = [field.relation.resolve(x) for x in value]
@@ -357,7 +386,7 @@ class Resource(six.with_metaclass(meta.Resource)):
             )
 
 
-class Model(six.with_metaclass(meta.Model, Resource)):
+class Model(six.with_metaclass(ModelMeta, Resource)):
     """Implementation of `Resource` for django's models.
     """
 
@@ -380,7 +409,7 @@ class Model(six.with_metaclass(meta.Model, Resource)):
         if identifier is not None:
             try:
                 return self.model.objects.get(pk=identifier)
-            except self.model.DoesNotExist:
+            except:
                 raise exceptions.NotFound()
         else:
             return self.model.objects.all()
@@ -393,7 +422,7 @@ class Model(six.with_metaclass(meta.Model, Resource)):
                 # Isn't here; move along
                 continue
 
-            if isinstance(field, fields.Related) and field.collection:
+            if isinstance(field, Related) and field.collection:
                 # This is a m2m field; move along for now
                 continue
 
@@ -409,7 +438,7 @@ class Model(six.with_metaclass(meta.Model, Resource)):
                 # Isn't here; move along
                 continue
 
-            if isinstance(field, fields.Related) and field.collection:
+            if isinstance(field, Related) and field.collection:
                 # This is a m2m field; we can set this now
                 setattr(model, field.name, obj[field.name])
 
