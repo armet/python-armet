@@ -56,14 +56,21 @@ class Text(transcoders.Text, Encoder):
 
     @staticmethod
     def _encode_item(item):
-        return '\n'.join(
-            ' '.join((x, Text._encode_value(y))) for x, y in item.items())
+        try:
+            # Pretend we got a dictionary
+            return '\n'.join(
+                ' '.join((x, Text._encode_value(y))) for x, y in item.items())
+
+        except AttributeError:
+            # We didn't; just return it
+            return str(item)
 
     @classmethod
     def encode(cls, obj=None):
         if isinstance(obj, list):
             # Encode all the items
             text = '\n\n'.join(Text._encode_item(x) for x in obj)
+
         else:
             # Encode just the one item
             text = Text._encode_item(obj)

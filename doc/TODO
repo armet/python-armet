@@ -1,8 +1,9 @@
- ☐ sub-resources
+ ✔ sub-resources @done (12-10-25 14:15)
+ ☐ many-to-many sub-resources
  ☐ `update`
  ☐ `put`
  ☐ authorization
  ☐ authentication
  ☐ xml (decoder + encoder)
  ☐ kryptonite
- ☐
+ ☐ API registry

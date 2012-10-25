@@ -63,11 +63,6 @@ class Resource(type):
         # Delegate to python magic to initialize the class object
         super(Resource, cls).__init__(name, bases, attributes)
 
-    @cached_property
-    def _allowed_methods_header(cls):
-        allow = [m.upper() for m in cls.http_allowed_methods]
-        return ', '.join(allow).strip()
-
 
 class Model(Resource):
 

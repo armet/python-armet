@@ -58,6 +58,11 @@ class Resource(six.with_metaclass(ResourceMeta)):
     #! Authorization class to use when checking authorization.
     # authorization = authz.Authorization
 
+    @cached_property
+    def _allowed_methods_header(cls):
+        allow = [m.upper() for m in cls.http_allowed_methods]
+        return ', '.join(allow).strip()
+
     def __init__(self):
         #! HTTP status of the entire cycle.
         self.status = 200
@@ -91,54 +96,76 @@ class Resource(six.with_metaclass(ResourceMeta)):
         # Method is understood, allowed and implemented; continue.
         return function
 
+    def process(self,
+                request,
+                identifier=None,
+                components=None,
+                encoder=None
+            ):
+
+        # Set request on the instance to allow functions to have it
+        # without lobbing it around
+        self.request = request
+
+        # TODO: Get rid of the need for this
+        #self.encoder = encoder
+
+        # Ensure the request method is present in the list of
+        # allowed HTTP methods
+        function = self.find_method()
+
+        # Build auth classes and check initial auth
+        # self.authn = self.authentication(request)
+        # self.authz = self.authorization(request, method_name)
+
+        # if not self.authn.is_authenticated:
+        #     # not authenticated, panic
+        #     # response =
+        #     pass
+
+        # By default, there is no object (for get and delete requests)
+        request_obj = None
+        if request.body:
+            # Request a decode and proceed to decode the request.
+            request_obj = decoders.find(self.request).decode(self.request)
+
+            # Run through form clean cycle
+            request_obj = self.clean(request_obj)
+
+            # TODO: Authz check (w/obj)
+
+        # Delegate to an appropriate method to grab the response;
+        items = function(request_obj, identifier, **request.GET)
+
+        if items is not None:
+            # Run items through prepare cycle
+            return self.prepare(items, components)
+
+        # Nothing got from method; return nothing
+
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         # ..
         try:
-            # Set request on the instance to allow functions to have it
-            # without lobbing it around
-            self.request = request
-
             # We start off with a successful response; let's see what happens..
             self.status = 200
 
             # We start off nowhere
             self.location = None
 
-            # Ensure the request method is present in the list of
-            # allowed HTTP methods
-            function = self.find_method()
-
-            # Build auth classes and check initial auth
-            # self.authn = self.authentication(request)
-            # self.authz = self.authorization(request, method_name)
-
-            # if not self.authn.is_authenticated:
-            #     # not authenticated, panic
-            #     # response =
-            #     pass
-
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
-            self.encoder = encoders.find(self.request, kwargs.get('format'))
+            self.encoder = encoders.find(request, kwargs.get('format'))
 
-            # By default, there is no object (for get and delete requests)
-            request_obj = None
-            if request.body:
-                # Request a decode and proceed to decode the request.
-                request_obj = decoders.find(self.request).decode(self.request)
+            # Fire us off
+            response_obj = self.process(
+                    request,
+                    identifier=kwargs.get('id'),
+                    components=kwargs.get('components'),
+                    #encoder=encoder
+                )
 
-                # Run through form clean cycle
-                request_obj = self.clean(request_obj)
-
-                # TODO: Authz check (w/obj)
-
-            # Delegate to an appropriate method to grab the response;
-            items = function(request_obj, kwargs.get('id'), **request.GET)
-            if items is not None:
-                # Run items through prepare cycle
-                response_obj = self.prepare(items, kwargs.get('components'))
-
+            if response_obj is not None:
                 # Encode and the object into a response
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
@@ -273,7 +300,7 @@ class Resource(six.with_metaclass(ResourceMeta)):
             response = self._prepare_item(items)
 
         # Are we accessing a sub-resource on this item ?
-        if components is not None:
+        if components:
             # Parse the component list
             components = components.split('/')
             name = components[0]
@@ -289,11 +316,11 @@ class Resource(six.with_metaclass(ResourceMeta)):
                 if not field.collection:
                     # Damn; related field; send it back through
                     resolution = resolve(response[name])
-
-                    obj = resolution.func.__self__.get(
-                        identifier=resolution.kwargs['id'])
-                    response = resolution.func.__self__.prepare(obj)
-                    self.location = resolution.func.__self__.reverse(obj)
+                    response = resolution.func.__self__.process(
+                        request=self.request,
+                        identifier=resolution.kwargs['id'],
+                        components='/'.join(components[1:]))
+                        #encoder=self.encoder)
 
             elif not field.collection:
                 # Yes; simple sub-resource access
