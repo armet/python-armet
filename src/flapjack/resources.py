@@ -81,6 +81,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         'post',
         'put',
         'delete',
+        'patch',
     )
 
     #! The list of method names that we understand but do not neccesarily
@@ -158,6 +159,9 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # without lobbing it around
             self.request = request
 
+            # We start off with a successful response; let's see what happens..
+            self.status = 200
+
             # Ensure the request method is present in the list of
             # allowed HTTP methods
             function = self.find_method()
@@ -187,7 +191,6 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # TODO: Authz check (w/obj)
 
             # Delegate to an appropriate method to grab the response;
-            self.status = 200
             items = function(request_obj, kwargs.get('id'), **request.GET)
             if items is not None:
                 # Run items through prepare cycle
@@ -234,8 +237,8 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                     kwargs['id'] = item
         return reverse('api_dispatch', kwargs=kwargs)
 
-    @classmethod
-    def resolve(cls, path):
+    @staticmethod
+    def resolve(path):
         try:
             # Attempt to resolve the path
             resolution = resolve(path)
@@ -351,7 +354,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         if identifier is None:
             # Delegate to `create` to actually create a new item.
             # TODO: Where should the configuration option go for
-            #   returning 201 and no body v/s returning a body?
+            #   returning no body v/s returning a body?
             self.status = 201
             return self.create(obj)
 
@@ -359,8 +362,9 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # Attempting to create a sub-resource.
             raise exceptions.NotImplemented()
 
-    def put(self, obj, identifier=None, *args, **kwargs):
-        raise exceptions.NotImplemented()
+    # def put(self, obj, identifier=None, *args, **kwargs):
+    #     if identifier is None:
+    #         # Attempting to overwrite everything
 
     def delete(self, obj, identifier=None, *args, **kwargs):
         if identifier is None:
@@ -518,6 +522,9 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
 
         # Return the fully constructed model
         return model
+
+    def update(self):
+        pass
 
     def destroy(self, identifier):
         # Delegate to django to perform the creation
