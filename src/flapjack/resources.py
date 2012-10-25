@@ -73,6 +73,11 @@ class DeclarativeResource(type):
         # Delegate to python magic to initialize the class object
         super(DeclarativeResource, cls).__init__(name, bases, attributes)
 
+    @cached_property
+    def _allowed_methods_header(cls):
+        allow = [m.upper() for m in cls.http_allowed_methods]
+        return ', '.join(allow).strip()
+
 
 class Resource(six.with_metaclass(DeclarativeResource)):
 
@@ -118,11 +123,6 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     def __init__(self):
         #! HTTP status of the entire cycle.
         self.status = 200
-
-    @cached_property
-    def _allowed_methods_header(self):
-        allow = [m.upper() for m in self.http_allowed_methods]
-        return ', '.join(allow).strip()
 
     def find_method(self):
         """Ensures method is acceptable."""

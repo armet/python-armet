@@ -31,10 +31,15 @@ class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
 
     @classmethod
     def get(cls, mimetype):
-        for transcoder in cls.registry.values():
-            if transcoder.can_transcode(mimetype):
-                # Transcoder matched against the mimetype; return it
-                return transcoder
+        try:
+            for transcoder in cls.registry.values():
+                if transcoder.can_transcode(mimetype):
+                    # Transcoder matched against the mimetype; return it
+                    return transcoder
+
+        except:
+            # Mimetype is so badly formatted mimeparse died; return nothing
+            pass
 
         # Nothing can be matched; return nothing
 
@@ -60,12 +65,8 @@ class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
     @classmethod
     def can_transcode(cls, media_ranges):
         """Determine if this transcoder can encode or decode appropriately."""
-        try:
-            # Attempt to use mimeparse to determine if the mimetype matches
-            return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
-        except:
-            # Mimetype is so badly formatted mimeparse died
-            return False
+        # Attempt to use mimeparse to determine if the mimetype matches
+        return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
 
 
 class Form(object):
