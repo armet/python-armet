@@ -187,6 +187,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # TODO: Authz check (w/obj)
 
             # Delegate to an appropriate method to grab the response;
+            self.status = 200
             items = function(request_obj, kwargs.get('id'), **request.GET)
             if items is not None:
                 # Run items through prepare cycle
@@ -477,7 +478,10 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
     def read(self, identifier=None, **kwargs):
         # TODO: filtering
         if identifier is not None:
-            return self.model.objects.get(pk=identifier)
+            try:
+                return self.model.objects.get(pk=identifier)
+            except self.model.DoesNotExist:
+                raise exceptions.NotFound()
         else:
             return self.model.objects.all()
 

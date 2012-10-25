@@ -15,6 +15,10 @@ class BadRequest(Error):
     status = 400
 
 
+class NotFound(Error):
+    status = 404
+
+
 class NotAcceptable(Error):
     status = 406
 
