@@ -6,7 +6,6 @@ from django.utils.functional import cached_property
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 from django.forms import Form, ModelForm, MultipleChoiceField
-from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.db.models import ForeignKey, ManyToManyField
 from .http import HttpResponse
 from . import encoders, exceptions, decoders, fields
@@ -196,7 +195,7 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # Encode and the object into a response
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
-                response['Location'] = self.reverse(kwargs.get('id'))
+                response['Location'] = self.reverse(response_obj.get('id'))
 
                 # Return the constructed response
                 return response
@@ -236,7 +235,13 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
     @classmethod
     def resolve(cls, path):
-        resolution = resolve(path)
+        try:
+            # Attempt to resolve the path
+            resolution = resolve(path)
+        except:
+            # Assume we're already resolved
+            return path
+
         try:
             return resolution.func.__self__.read(resolution.kwargs['id']).id
         except:
@@ -331,18 +336,40 @@ class Resource(six.with_metaclass(DeclarativeResource)):
     def read(self, identifier=None, **kwargs):
         raise exceptions.NotImplemented()
 
+    def create(self, obj):
+        raise exceptions.NotImplemented()
+
+    def destroy(self, identifier):
+        raise exceptions.NotImplemented()
+
     def get(self, obj=None, identifier=None, **kwargs):
         # Delegate to `read` to actually grab a list of items.
         return self.read(identifier, **kwargs)
 
     def post(self, obj, identifier=None, **kwargs):
-        raise exceptions.NotImplemented()
+        if identifier is None:
+            # Delegate to `create` to actually create a new item.
+            # TODO: Where should the configuration option go for
+            #   returning 201 and no body v/s returning a body?
+            self.status = 201
+            return self.create(obj)
+
+        else:
+            # Attempting to create a sub-resource.
+            raise exceptions.NotImplemented()
 
     def put(self, obj, identifier=None, *args, **kwargs):
         raise exceptions.NotImplemented()
 
     def delete(self, obj, identifier=None, *args, **kwargs):
-        raise exceptions.NotImplemented()
+        if identifier is None:
+            # Attempting to delete everything.
+            raise exceptions.NotImplemented()
+
+        else:
+            # Delegate to `destroy` to actually delete the item.
+            self.status = 204
+            self.destroy(identifier)
 
     @cached_property
     def urls(self):
@@ -393,8 +420,9 @@ class DeclarativeModel(DeclarativeResource):
                 cls.form = Form
 
             # Iterate through each declared field on the model
-            model_fields = cls.model._meta.local_fields
-            model_fields += cls.model._meta.many_to_many
+            #model_fields = []
+            model_fields = list(cls.model._meta.local_fields)
+            model_fields += list(cls.model._meta.local_many_to_many)
             for field in model_fields:
                 if cls._is_visible(field.name):
                     if field.name not in cls._fields:
@@ -452,3 +480,41 @@ class Model(six.with_metaclass(DeclarativeModel, Resource)):
             return self.model.objects.get(pk=identifier)
         else:
             return self.model.objects.all()
+
+    def create(self, obj):
+        # Iterate through and set all fields that we can initially
+        params = {}
+        for field in self._fields.values():
+            if field.name not in obj:
+                # Isn't here; move along
+                continue
+
+            if isinstance(field, fields.Related) and field.collection:
+                # This is a m2m field; move along for now
+                continue
+
+            # This is not a m2m field; we can set this now
+            params[field.name] = obj[field.name]
+
+        # Perform the initial create
+        model = self.model.objects.create(**params)
+
+        # Iterate through again and set the m2m bits
+        for field in self._fields.values():
+            if field.name not in obj:
+                # Isn't here; move along
+                continue
+
+            if isinstance(field, fields.Related) and field.collection:
+                # This is a m2m field; we can set this now
+                setattr(model, field.name, obj[field.name])
+
+        # Perform a final save
+        model.save()
+
+        # Return the fully constructed model
+        return model
+
+    def destroy(self, identifier):
+        # Delegate to django to perform the creation
+        self.model.objects.get(pk=identifier).delete()
