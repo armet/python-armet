@@ -9,6 +9,7 @@ from django.forms import Form, ModelForm, MultipleChoiceField
 from django.db.models import ForeignKey, ManyToManyField
 from .http import HttpResponse
 from . import encoders, exceptions, decoders, fields
+from collections import OrderedDict
 # from . import authentication as authn
 # from . import authorization as authz
 import six
@@ -47,7 +48,7 @@ class DeclarativeResource(type):
             cls.form = cls.Form
 
         # Initialize listing of fields
-        cls._fields = {}
+        cls._fields = OrderedDict()
 
         # Generate the list of fields using the provided form
         if hasattr(getattr(cls, 'form', None), 'declared_fields'):
@@ -166,6 +167,8 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             # allowed HTTP methods
             function = self.find_method()
 
+            #raise exceptions.NotImplemented()
+
             # Build auth classes and check initial auth
             # self.authn = self.authentication(request)
             # self.authz = self.authorization(request, method_name)
@@ -194,12 +197,18 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             items = function(request_obj, kwargs.get('id'), **request.GET)
             if items is not None:
                 # Run items through prepare cycle
-                response_obj = self.prepare(items)
+                response_obj = self.prepare(items, kwargs.get('components'))
 
                 # Encode and the object into a response
                 response = self.encoder.encode(response_obj)
                 response.status_code = self.status
-                response['Location'] = self.reverse(response_obj.get('id'))
+
+                try:
+                    # Attempt to get an identifier
+                    response['Location'] = self.reverse(response_obj.get('id'))
+                except:
+                    # This must be a plain list
+                    response['Location'] = self.reverse()
 
                 # Return the constructed response
                 return response
@@ -273,7 +282,12 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         return item
 
     def _prepare_item(self, item):
-        obj = {}
+        obj = OrderedDict()
+
+        # Append the URI
+        # TODO: Need some configuration so the name can be changed
+        obj['.'] = self.reverse(item)
+
         for name, field in self._fields.items():
             # Constuct object containing all properties
             # from the item
@@ -299,20 +313,30 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                     except TypeError:
                         obj[name] = obj[name],
 
+        # Return the constructed object
         return obj
 
-    def prepare(self, items):
+    def prepare(self, items, components):
         try:
             # Attempt to iterate and prepare each item
-            objs = {}
+            response = []
             for item in items:
                 obj = self._prepare_item(item)
-                uri = self.reverse(obj)
-                objs[uri] = obj
-            return objs
+                response.append(obj)
+            return response
         except TypeError:
             # Not iterable; we only have one
-            return self._prepare_item(items)
+            response = self._prepare_item(items)
+
+        # Are we accessing a sub-resource on this item ?
+        if components is not None:
+            components = components.split('/')
+            if not self._fields[components[0]].collection:
+                # Yes; simple sub-resource access
+                response = response[components[0]]
+
+        # Pass it along
+        return response
 
     def clean(self, obj):
         # Before the object goes anywhere its relations need to be resolved.
@@ -376,33 +400,26 @@ class Resource(six.with_metaclass(DeclarativeResource)):
             self.status = 204
             self.destroy(identifier)
 
+    def url(self, regex=''):
+        format = r'(?:\.(?P<format>[^/]*?))?'
+        pattern = r'^{}{{}}/??{}/?$'.format(self.name, format)
+        return url(pattern.format(regex),
+                self.dispatch,
+                name='api_dispatch',
+                kwargs={
+                    'resource': self.name
+                }
+            )
+
     @cached_property
     def urls(self):
         """Constructs the URLs that this resource will respond to."""
-        #! In order to undo a reverse() call (to get the resource from a slug),
-        #! call django.core.urlresolvers.resolve(slug).  the resulting object's
-        #! func attribute is the entrypoint into the resource.  So, to get the
-        #! resource object, simply
-        #! django.core.urlresolvers.resolve(slug).func.__self__
-        pattern = '^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(self.name)
-        name = 'api_dispatch'
-        kwargs = {'resource': self.name}
+        identifier = r'/(?P<id>[^/]*?)'
         return patterns('',
-            # The resource as a whole.
-            url(pattern.format(''),
-                self.dispatch,
-                name=name,
-                kwargs=kwargs
-            ),
-
-            # Individual item of this resource.
-            url(
-                pattern.format('/(?P<id>.*?)'),
-                self.dispatch,
-                name=name,
-                kwargs=kwargs
+                self.url(),
+                self.url(identifier),
+                self.url(r'{}/(?P<components>.*?)'.format(identifier)),
             )
-        )
 
 
 class DeclarativeModel(DeclarativeResource):

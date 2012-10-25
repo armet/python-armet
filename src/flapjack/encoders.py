@@ -32,7 +32,19 @@ class Json(transcoders.Json, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        return super(Json, cls).encode(json.dumps(obj))
+        # Is this not a dictionary or an array?
+        if not isinstance(obj, dict) and not isinstance(obj, list):
+            # We need this to be at least a list for valid JSON
+            obj = obj,
+
+        # Encode nicely
+        text = json.dumps(obj,
+                ensure_ascii=True,
+                separators=(',', ':')
+            )
+
+        # Encode it normally; move along
+        return super(Json, cls).encode(text)
 
 
 @Encoder.register()
