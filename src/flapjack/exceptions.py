@@ -1,18 +1,18 @@
 """..
 """
-from .http import HttpResponse
+from . import http
 
 
 class Error(Exception):
     status = None
 
-    def __init__(self, response=None):
-        self.response = response or HttpResponse()
-        self.response.status_code = self.status
+    def __init__(self, content=None):
+        #! Body of the exception message.
+        self.content = content
 
 
 class BadRequest(Error):
-    status = 400
+    status = http.BAD_REQUEST
 
 
 class NotFound(Error):

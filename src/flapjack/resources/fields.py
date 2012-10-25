@@ -14,10 +14,11 @@ class Field(object):
         #! Whether this field is a collection or not.
         self.collection = kwargs.get('collection', False)
 
-
-class Related(Field):
-    # ..
-    def __init__(self, name, relation, **kwargs):
         #! Resource in relation to this.
-        self.relation = relation
-        super(Related, self).__init__(name, **kwargs)
+        self.relation = kwargs.get('relation')
+
+
+class Model(Field):
+    # ..
+    def __init__(self, name, **kwargs):
+        super(Model, self).__init__(name, **kwargs)
