@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.utils.functional import cached_property
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, resolve
 from django.forms import Form, ModelForm, MultipleChoiceField
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.db.models import ForeignKey, ManyToManyField
@@ -38,6 +38,10 @@ class DeclarativeResource(type):
         if 'name' not in attributes:
             # Default to the lowercased name of the class
             cls.name = name.lower()
+
+        # Ensure we have an empty relations dict if none was defined
+        if hasattr(cls, 'relations') and cls.relations is None:
+            cls.relations = {}
 
         if hasattr(cls, 'Form'):
             # Allow the form to be specified as a sub-class
@@ -96,6 +100,10 @@ class Resource(six.with_metaclass(DeclarativeResource)):
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
+
+    #! Dictionary of the relations for this resource mapping the names of the
+    #! fields to the resources they relate to.
+    relations = None
 
     #! Form to use to proxy the validation and clean cycles.
     form = Form
@@ -174,7 +182,9 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                 # Request a decode and proceed to decode the request.
                 request_obj = decoders.find(self.request).decode(self.request)
 
-                # TODO: Run through form clean cycle
+                # Run through form clean cycle
+                request_obj = self.clean(request_obj)
+
                 # TODO: Authz check (w/obj)
 
             # Delegate to an appropriate method to grab the response;
@@ -223,6 +233,15 @@ class Resource(six.with_metaclass(DeclarativeResource)):
                     # We're done, it must be an id
                     kwargs['id'] = item
         return reverse('api_dispatch', kwargs=kwargs)
+
+    @classmethod
+    def resolve(cls, path):
+        resolution = resolve(path)
+        try:
+            return resolution.func.__self__.read(resolution.kwargs['id']).id
+        except:
+            # Return the id; its not valid -- let the form tell us so
+            return resolution.kwargs['id']
 
     def _prepare_related(self, item, relation):
          # This is a related field; transform the object to to its uri
@@ -285,6 +304,29 @@ class Resource(six.with_metaclass(DeclarativeResource)):
         except TypeError:
             # Not iterable; we only have one
             return self._prepare_item(items)
+
+    def clean(self, obj):
+        # Before the object goes anywhere its relations need to be resolved.
+        for field in self._fields.values():
+            if field.name in obj:
+                if isinstance(field, fields.Related):
+                    value = obj[field.name]
+                    if field.collection:
+                        value = [field.relation.resolve(x) for x in value]
+                    else:
+                        value = field.relation.resolve(value)
+                    obj[field.name] = value
+
+        # Create form to proxy validation
+        form = self.form(data=obj)
+
+        # Attempt to validate the form
+        if not form.is_valid():
+            # We got invalid data; tsk.. tsk..; throw a bad request
+            raise exceptions.BadRequest(self.encoder.encode(form.errors))
+
+        # We should have good, sanitized data now (thank you, forms)
+        return form.cleaned_data
 
     def read(self, identifier=None, **kwargs):
         raise exceptions.NotImplemented()
@@ -356,23 +398,30 @@ class DeclarativeModel(DeclarativeResource):
             for field in model_fields:
                 if cls._is_visible(field.name):
                     if field.name not in cls._fields:
+                        # Gather properties for the field
+                        props = {
+                                'editable': field.editable,
+                                'collection': isinstance(field,
+                                    ManyToManyField)
+                            }
+
+                        relation = cls.relations.get(field.name)
+                        if relation is not None:
+                            # Field is a foreignkey and its relation
+                            # is declared by the resource; add it
+                            cls._fields[field.name] = fields.Related(
+                                field.name, relation, **props)
+
                         if isinstance(field, ForeignKey):
-                            relation = cls.relations.get(field.name)
-                            if relation is not None:
-                                # Field is a foreignkey and its relation
-                                # is declared by the resource; add it
-                                cls._fields[field.name] = fields.Related(
-                                    field.name, relation,
-                                    editable=field.editable)
-                        elif isinstance(field, ManyToManyField):
-                            relation = cls.relations.get(field.name)
-                            if relation is not None:
-                                # Field is a m2m and its relation
-                                # is declared by the resource; add it
-                                cls._fields[field.name] = fields.Related(
-                                    field.name, relation,
-                                    editable=field.editable,
-                                    collection=True)
+                            # Field is a related model field but was not
+                            # declared as a relation
+                            continue
+
+                        if isinstance(field, ManyToManyField):
+                            # Field is a related model field but was not
+                            # declared as a relation
+                            continue
+
                         else:
                             # Field is visible and not already declared
                             # explicitly by the model; add it to our list

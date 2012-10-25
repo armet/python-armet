@@ -28,6 +28,14 @@ class Encoder(transcoders.Transcoder):
 
 
 @Encoder.register()
+class Json(transcoders.Json, Encoder):
+
+    @classmethod
+    def encode(cls, obj=None):
+        return super(Json, cls).encode(json.dumps(obj))
+
+
+@Encoder.register()
 class Text(transcoders.Text, Encoder):
 
     @staticmethod
@@ -49,14 +57,6 @@ class Text(transcoders.Text, Encoder):
             text = Text._encode_item(obj)
 
         return super(Text, cls).encode(text)
-
-
-@Encoder.register()
-class Json(transcoders.Json, Encoder):
-
-    @classmethod
-    def encode(cls, obj=None):
-        return super(Json, cls).encode(json.dumps(obj))
 
 
 def find(request, format=None):

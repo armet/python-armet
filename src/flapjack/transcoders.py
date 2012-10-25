@@ -3,13 +3,14 @@
 import six
 import mimeparse
 from django.core.exceptions import ImproperlyConfigured
+from collections import OrderedDict
 
 
 class DeclarativeTranscoder(type):
 
     def __init__(cls, name, bases, attributes):
         # Instantiate a fresh registry for this class object
-        cls.registry = {}
+        cls.registry = OrderedDict()
 
         # Delegate to python magic to initialize the class object
         super(DeclarativeTranscoder, cls).__init__(name, bases, attributes)
