@@ -46,19 +46,15 @@ class Resource(type):
             for name, field in cls.form.declared_fields.items():
                 if cls._is_visible(name):
                     # Determine field properties
-                    props = {'collection': isinstance(
-                        field, MultipleChoiceField)}
+                    props = {
+                            'collection': isinstance(field,
+                                MultipleChoiceField),
+                            'relation': cls.relations.get(name)
+                        }
 
-                    if name in cls.relations:
-                        # Field is some kind of relation and
-                        # is declared by the resource; add it
-                        cls._fields[name] = fields.Related(
-                            name, cls.relations[name], **props)
-
-                    else:
-                        # Field has been declared visible; construct it
-                        # and add it to our list
-                        cls._fields[name] = fields.Field(name, **props)
+                    # Field has been declared visible; construct it
+                    # and add it to our list
+                    cls._fields[name] = fields.Field(name, **props)
 
         # Delegate to python magic to initialize the class object
         super(Resource, cls).__init__(name, bases, attributes)
@@ -94,28 +90,22 @@ class Model(Resource):
                         props = {
                                 'editable': field.editable,
                                 'collection': isinstance(field,
-                                    ManyToManyField)
+                                    ManyToManyField),
+                                'relation': cls.relations.get(field.name)
                             }
 
-                        relation = cls.relations.get(field.name)
-                        if relation is not None:
-                            # Field is a foreignkey and its relation
-                            # is declared by the resource; add it
-                            cls._fields[field.name] = fields.Related(
-                                field.name, relation, **props)
+                        if props['relation'] is None:
+                            if isinstance(field, ForeignKey):
+                                # Field is a related model field but was not
+                                # declared as a relation
+                                continue
 
-                        if isinstance(field, ForeignKey):
-                            # Field is a related model field but was not
-                            # declared as a relation
-                            continue
+                            if isinstance(field, ManyToManyField):
+                                # Field is a related model field but was not
+                                # declared as a relation
+                                continue
 
-                        if isinstance(field, ManyToManyField):
-                            # Field is a related model field but was not
-                            # declared as a relation
-                            continue
-
-                        else:
-                            # Field is visible and not already declared
-                            # explicitly by the model; add it to our list
-                            cls._fields[field.name] = fields.Field(field.name,
-                                editable=field.editable)
+                        # Field is visible and not already declared
+                        # explicitly by the model; add it to our list
+                        cls._fields[field.name] = fields.Model(field.name,
+                            **props)

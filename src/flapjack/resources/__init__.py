@@ -1,3 +1,4 @@
+# coding=utf-8
 """ ..
 """
 from django.views.decorators.csrf import csrf_exempt
@@ -9,7 +10,6 @@ from ..http import HttpResponse
 from .. import encoders, exceptions, decoders
 from .meta import Model as ModelMeta
 from .meta import Resource as ResourceMeta
-from .fields import Related
 from collections import OrderedDict
 # from . import authentication as authn
 # from . import authorization as authz
@@ -57,6 +57,10 @@ class Resource(six.with_metaclass(ResourceMeta)):
 
     #! Authorization class to use when checking authorization.
     # authorization = authz.Authorization
+
+    @classmethod
+    def get_field(cls, name):
+        return cls._fields[name]
 
     @cached_property
     def _allowed_methods_header(cls):
@@ -269,7 +273,7 @@ class Resource(six.with_metaclass(ResourceMeta)):
             if prepare_foo is not None:
                 obj[name] = prepare_foo(obj[name])
 
-            if isinstance(field, Related) and obj[name] is not None:
+            if field.relation is not None and obj[name] is not None:
                 obj[name] = self._prepare_related(obj[name], field.relation)
 
             if field.collection:
@@ -312,7 +316,7 @@ class Resource(six.with_metaclass(ResourceMeta)):
             # Grab the field in question
             field = self._fields[name]
 
-            if isinstance(field, Related):
+            if field.relation is not None:
                 if not field.collection:
                     # Damn; related field; send it back through
                     resolution = resolve(response[name])
@@ -333,7 +337,7 @@ class Resource(six.with_metaclass(ResourceMeta)):
         # Before the object goes anywhere its relations need to be resolved.
         for field in self._fields.values():
             if field.name in obj:
-                if isinstance(field, Related):
+                if field.relation is not None:
                     value = obj[field.name]
                     if field.collection:
                         value = [field.relation.resolve(x) for x in value]
@@ -377,9 +381,11 @@ class Resource(six.with_metaclass(ResourceMeta)):
             # Attempting to create a sub-resource.
             raise exceptions.NotImplemented()
 
-    # def put(self, obj, identifier=None, *args, **kwargs):
-    #     if identifier is None:
-    #         # Attempting to overwrite everything
+    def put(self, obj, identifier=None, *args, **kwargs):
+        if identifier is None:
+            # Attempting to overwrite everything in the list..
+            # Yeah; not implemented (perhaps later)
+            raise exceptions.NotImplemented()
 
     def delete(self, obj, identifier=None, *args, **kwargs):
         if identifier is None:
@@ -392,6 +398,7 @@ class Resource(six.with_metaclass(ResourceMeta)):
             self.destroy(identifier)
 
     def url(self, regex=''):
+        """Constructs a single URL by wrapping django's `url` method."""
         format = r'(?:\.(?P<format>[^/]*?))?'
         pattern = r'^{}{{}}/??{}/?$'.format(self.name, format)
         return url(pattern.format(regex),
@@ -449,7 +456,7 @@ class Model(six.with_metaclass(ModelMeta, Resource)):
                 # Isn't here; move along
                 continue
 
-            if isinstance(field, Related) and field.collection:
+            if field.relation is not None and field.collection:
                 # This is a m2m field; move along for now
                 continue
 
@@ -465,7 +472,7 @@ class Model(six.with_metaclass(ModelMeta, Resource)):
                 # Isn't here; move along
                 continue
 
-            if isinstance(field, Related) and field.collection:
+            if field.relation is not None and field.collection:
                 # This is a m2m field; we can set this now
                 setattr(model, field.name, obj[field.name])
 
