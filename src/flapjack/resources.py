@@ -465,6 +465,7 @@ class DeclarativeModel(DeclarativeResource):
 class Model(six.with_metaclass(DeclarativeModel, Resource)):
     """Implementation of `Resource` for django's models.
     """
+
     #! The class object of the django model this resource is exposing.
     model = None
 
