@@ -9,9 +9,8 @@ from . import exceptions
 
 class Filter(object):
     """docstring for Model"""
-    def __init__(self, fields, allowed):
+    def __init__(self, fields):
         self.fields = fields
-        self.allowed = allowed
 
     @cached_property
     def terminators(self):
@@ -26,14 +25,33 @@ class Filter(object):
 
     def can_filter(self, filtermap):
         # Make sure the first field is in the allowable list of fields
-        if filtermap[0] not in self.allowed:
+        fields = self.fields
+        try:
+            for idx, field_string in enumerate(filtermap):
+                field = fields[field_string]
+
+                # Make sure the field is filterable
+                if not field.filterable:
+                    raise exceptions.BadRequest(
+                        'Filtering is not allowed on {}'.format(filtermap[0]))
+
+                # Navigate to a relation
+                if idx < len(filtermap):
+                    if field.relation is None:
+                        # This is not a relational field
+                        raise exceptions.BadRequest(
+                            '{} is not a related field'.format(field.name))
+                    fields = field.relation
+
+        except KeyError as e:
+            # Happens when field_string can't be found in the fields lookup
             raise exceptions.BadRequest(
-                '{} is not filterable'.format(filtermap[0]))
-        # TODO: navigate to other resources
+                '{} is not a valid field'.filter(e.message))
 
     def parse(self, filter):
         """Parses filters and checks to see if our filter params are valid.
-        Filters that do not appear in the fields list are not valid.
+        Filters that do not appear in the fields list are not valid.  Returns
+        a string
         """
         # Slice up the parameter into its components
         items = filter.split('__')
@@ -66,15 +84,17 @@ class Filter(object):
 
 
 class Model(Filter):
+    """model specific filtering stuff
+    """
 
     def filter(self, iterable, filters):
         query = Q()
-        for x in filters:
-            qstring, inverted = self.parse(x)
+        for k, v in filters:
+            qstring, inverted = self.parse(k)
             if inverted:
-                q = not Q(qstring)
+                q = ~Q(**{qstring: v})
             else:
-                q = Q(qstring)
+                q = Q(**{qstring: v})
             query &= q
 
         return iterable.filter(query)
