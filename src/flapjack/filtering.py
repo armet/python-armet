@@ -15,13 +15,13 @@ LIST_CASES_EXACT_TWO = ('range',)
 DEFAULT_FILTER = 'exact'
 
 
-class InvalidFilter(Exception):
+class FilterError(Exception):
     """Class for throwing internally when theres a filter error
     """
     def __init__(self, name, message):
-        super(InvalidFilter, self).__init__()
         self.name = name
         self.message = message
+        super(Exception, self).__init__()
 
 
 class Filter(object):
@@ -38,11 +38,13 @@ class Filter(object):
     def filter(self, iterable, filters):
         """Translates an iterable into a filtered iterable
         """
-        raise NotImplemented()
+        raise exceptions.NotImplemented()
+        # raise NotImplementedError()
 
     def can_filter(self, filtermap):
         # Make sure the first field is in the allowable list of fields
         fields = self.fields
+        #print(id(fields), fields, self)
         try:
             for idx, field_string in enumerate(filtermap, 1):
                 field = fields[field_string]
@@ -51,22 +53,22 @@ class Filter(object):
                 # if not field.filterable:
                 #     raise InvalidFilter(
                 #         FILTER_SEPARATOR.join(filtermap),
-                #         'Filtering is not allowed on {}'.format(filtermap[0]))
+                #        'Filtering is not allowed on {}'.format(filtermap[0]))
 
                 # Navigate to a relation
                 if idx < len(filtermap):
                     if field.relation is None:
                         # This is not a relational field
-                        raise InvalidFilter(
+                        raise FilterError(
                             FILTER_SEPARATOR.join(filtermap),
                             '{} is not a related field'.format(field_string))
                     fields = field.relation._fields
 
         except KeyError as e:
             # Happens when field_string can't be found in the fields lookup
-            raise InvalidFilter(
+            raise FilterError(
                 FILTER_SEPARATOR.join(filtermap),
-                '{} is not a valid field'.filter(e.message))
+                '{} is not a valid field'.format(e.message))
 
     def parse(self, name):
         """Parses filters and checks to see if our filter params are valid.
@@ -95,7 +97,7 @@ class Filter(object):
         # Make sure that we're allowed to filter this
         try:
             self.can_filter(items)
-        except InvalidFilter as e:
+        except FilterError as e:
             # can_filter doesn't have access to the entire filter string
             # correct the filter string and re-throw it
             e.name = name
@@ -125,10 +127,10 @@ class Model(Filter):
         # AND all top level items in the values list, OR all sub-items
         for orable in values:
             # Do some checking for the number of items
-            if range(orable) > 1 and qverb in LIST_CASES_EXACT_TWO:
-                raise InvalidFilter(
-                    name,
-                    '{} requires at least two parameters'.filter(qverb))
+            # if range(orable) > 1 and qverb in LIST_CASES_EXACT_TWO:
+            #     raise InvalidFilter(
+            #         name,
+            #         '{} requires at least two parameters'.filter(qverb))
             # If the verb is in one of the list cases, don't generate a ton of
             # queries, instead just generate one for the array (x__exact=[2,3])
             if qverb in LIST_CASES:
@@ -149,13 +151,13 @@ class Model(Filter):
         # Tidy the filters list
         # filters = self.tidy(filters)
         # Get the list of Q objects
-        queries = [self.q(k, v) for k, v in filters.items()]
+        # queries = [self.q(k, v) for k, v in filters.items()]
         queries = []
         errors = []
         for k, v in filters.items():
             try:
                 queries.append(self.q(k, v))
-            except InvalidFilter as e:
+            except FilterError as e:
                 # Collect our filtering errors and present them all to the
                 # user at the same time
                 errors.append(e)

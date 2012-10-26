@@ -14,6 +14,7 @@ from collections import OrderedDict
 # from . import authorization as authz
 import six
 from .. import utils
+# from .. import filtering
 
 
 class Resource(six.with_metaclass(Resource)):
@@ -190,6 +191,7 @@ class Resource(six.with_metaclass(Resource)):
                 identifier=None,
                 components=None,
                 method=None,
+                params=None
             ):
         """Initialize ourself and prepare for the dispatch process."""
         #! Status of the request cycle.
@@ -208,6 +210,10 @@ class Resource(six.with_metaclass(Resource)):
 
         #! Components list that is for sub resource resolution.
         self.components = components
+
+        #! Parameters are arguments in addition to the body or kwargs that
+        #! overrides them both (for foriegn key navigation).
+        self.params = params
 
     def dispatch(self):
         # Determine the method; returns our delegation function
@@ -263,8 +269,8 @@ class Resource(six.with_metaclass(Resource)):
         """Asserts that the passed is an allowed method."""
         if not self.is_method_allowed(method):
             raise exceptions.Forbidden({
-                    'message': 'operation not allowed; see `allowed` '
-                        'for allowed methods',
+                    'message': 'operation not allowed on `{}`; see `allowed` '
+                        'for allowed methods'.format(self.name),
                     'allowed': self.get_allowed_methods()
                 })
 
@@ -369,17 +375,37 @@ class Resource(six.with_metaclass(Resource)):
                 response = response[self.resource_uri]
 
             else:
-                if field is None or field.collection:
+                if field is None:
                     # Sub-relation not found
                     raise exceptions.NotFound()
 
                 if field.relation is not None:
-                    # Related field; send it back through dispatch
-                    response = field.relation.resolve(path=response[name],
-                            method=self.method,
-                            components=self.components[1:],
-                            full=True
-                        )
+                    if not field.collection:
+                        # Related field; send it back through dispatch
+                        response = field.relation.resolve(path=response[name],
+                                method=self.method,
+                                components=self.components[1:],
+                                full=True
+                            )
+
+                    else:
+                        # We may have a sub-resource index; figure out how
+                        # components looks
+                        if len(self.components) == 1:
+                            # Related field; send it back through dispatch
+                            response = field.relation(
+                                    method=self.method,
+                                    params={self.name: self.identifier}
+                                ).dispatch()
+
+                        if len(self.components) >= 2:
+                            # Related field; send it back through dispatch
+                            response = field.relation(
+                                    method=self.method,
+                                    identifier=self.components[1],
+                                    components=self.components[2:],
+                                    params={self.name: self.identifier}
+                                ).dispatch()
 
                 else:
                     # Simple access; move along
@@ -493,9 +519,9 @@ class Resource(six.with_metaclass(Resource)):
         # Delegate to `read` to actually grab a list of items.
         response = self.read()
 
-        # TODO: Invoke our filterer (if we have one) to filter our response
-        # if self.filterer is not None:
-        #     response = self.filterer.filter(response, self.request.GET)
+        # Invoke our filterer (if we have one) to filter our response
+        if self._filterer is not None:
+            response = self._filterer.filter(response, self.request.GET)
 
         # Return our (maybe filtered) response.
         return response
@@ -562,6 +588,10 @@ class Model(six.with_metaclass(Model, Resource)):
     #! Is overridden by the model option in the ModelForm form if specified.
     model = None
 
+    #! Class object of the filter class to proxy filtering to for filtering
+    #! filterables, specialized for model resources.
+    # filterer = filtering.Model
+
     @classmethod
     def resolve(cls, path, full=False, **kwargs):
         # Delegate to the base resource to do the actual resolution
@@ -581,18 +611,23 @@ class Model(six.with_metaclass(Model, Resource)):
         # Pass us on
         return resolution
 
-    @utils.classproperty
-    @utils.memoize
-    def queryset(cls):
+    @property
+    def queryset(self):
         """Queryset that is used to read and filter data."""
-        return cls.model.objects.all
+        if self.params is not None:
+            # Parameter-based filtering (for foreign key navigation).
+            return self.model.objects.filter(**self.params)
+
+        else:
+            # No parameters; just return them all
+            return self.model.objects.all()
 
     def read(self):
         """Implementation of `read` using django models."""
         if self.identifier is not None:
             try:
                 # This is an individual resource; attempt to get it
-                return self.queryset().get(**{self.slug: self.identifier})
+                return self.queryset.get(**{self.slug: self.identifier})
 
             except:
                 # Well damn; we don't have one -- die
@@ -600,7 +635,7 @@ class Model(six.with_metaclass(Model, Resource)):
 
         else:
             # Just get them all; hehehe..
-            return self.queryset()
+            return self.queryset
 
     def create(self, obj):
         # Iterate through and set all fields that we can initially
