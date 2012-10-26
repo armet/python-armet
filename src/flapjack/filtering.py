@@ -40,7 +40,7 @@ class Filter(object):
                     if field.relation is None:
                         # This is not a relational field
                         raise exceptions.BadRequest(
-                            '{} is not a related field'.format(field.name))
+                            '{} is not a related field'.format(field_string))
                     fields = field.relation._fields
 
         except KeyError as e:
@@ -58,7 +58,7 @@ class Filter(object):
 
         # Check to see if our filter ends with a 'neq' and slice it off the
         # search query
-        if items[-1] == 'neq':
+        if items[-1] == 'not':
             items = items[:-1]
             invert = True
         else:
@@ -89,13 +89,24 @@ class Model(Filter):
 
     def filter(self, iterable, filters):
         query = Q()
-        for k, v in filters.items():
+        for k, value in filters.items():
             qstring, inverted = self.parse(k)
-            print qstring, v
+            # Values may be lists of things, in which case they must be "or"ed
+            if not isinstance(value, basestring):
+                # Not a string, try iterating over it
+                try:
+                    q = [Q(**{qstring:x}) for x in value]
+                    query &= reduce(lambda x, y: x | y, q)
+                    # It was an iterable, continue to the next item
+                    continue
+                except TypeError:
+                    # This isn't iterable, its probably an int or something
+                    pass
+            # Its not a list, proceed as usual doing the and stuff
+            print qstring, value
+            q = Q(**{qstring: value})
             if inverted:
-                q = ~Q(**{qstring: v})
-            else:
-                q = Q(**{qstring: v})
+                q = ~q
             query &= q
 
         return iterable.filter(query)
