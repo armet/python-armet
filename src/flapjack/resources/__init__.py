@@ -4,6 +4,7 @@
 from collections import Sequence
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
+from django.forms import ValidationError
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 from ..http import HttpResponse, constants
@@ -122,7 +123,7 @@ class Resource(six.with_metaclass(Resource)):
     http_post_return_data = True
 
     #! Specifies that PUT should return data; defaults to False.
-    http_put_return_data = False
+    http_put_return_data = True
 
     #! Name of the URL that is used in the url configuration.
     url_name = "api_dispatch"
@@ -140,6 +141,8 @@ class Resource(six.with_metaclass(Resource)):
             # accurately return errors (if accrued).
             encoder = None
             encoder = encoders.find(request, kwargs.get('format'))
+            if encoder is None:
+                encoder = cls.default_encoder
 
             # Initiate the dispatch and return the response
             content = resource.dispatch()
@@ -214,6 +217,12 @@ class Resource(six.with_metaclass(Resource)):
         #! Parameters are arguments in addition to the body or kwargs that
         #! overrides them both (for foriegn key navigation).
         self.params = params or {}
+
+        #! A filterer needs to be made.
+        if self.filterer is not None:
+            self._filterer = self.filterer(self.fields)
+        else:
+            self._filterer = None
 
     def dispatch(self):
         # Determine the method; returns our delegation function
@@ -619,21 +628,41 @@ class Resource(six.with_metaclass(Resource)):
             raise exceptions.NotImplemented()
 
         else:
-            # TODO: Need to coerce type here
-            obj[self.slug] = self.fields[self.slug].parse(self.identifier)
+            try:
+                # Coerce the slug type
+                obj[self.slug] = self.fields[self.slug].parse(self.identifier)
+            except ValidationError:
+                # Bad slug; we're not here
+                raise exceptions.NotFound()
+
             if self.exists():
+                # Set our status initially so `create` can change it
+                self.status = constants.OK
+
                 # Ensure we're allowed to update (but not read, hehe)
                 self.assert_method_allowed('update')
 
                 # Send us off to create
-                return self.update(self.read(), obj)
+                response = self.update(self.read(), obj)
 
             else:
+                # Set our status initially so `create` can change it
+                self.status = constants.CREATED
+
                 # Ensure we're allowed to create
                 self.assert_method_allowed('create')
 
                 # Send us off to create
-                return self.create(obj)
+                response = self.create(obj)
+
+            # Do we return data ?
+            if not self.http_put_return_data:
+                # We're not supposed to return our data; so, well, return it
+                if self.status != constants.CREATED:
+                    self.status = constants.NO_CONTENT
+
+            else:
+                return response
 
     def delete(self, obj=None):
         if self.identifier is None:

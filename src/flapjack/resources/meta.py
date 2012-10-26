@@ -58,15 +58,6 @@ class Resource(type):
             # A form as been declared; discover its fields
             self.discover_fields()
 
-            try:
-                # Instantiate anything that needs it
-                self._filterer = self.filterer(self.fields)
-
-            except TypeError:
-                # Filterer wasn't defined because it didn't want to be.
-                self._filterer = None
-                pass
-
             # Is the defined resource URI one of the found fields ?
             if self.resource_uri in self.fields:
                 # Yes; die
