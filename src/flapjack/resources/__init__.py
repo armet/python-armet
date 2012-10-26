@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 from django.forms import Form
 from ..http import HttpResponse
-from .. import encoders, exceptions, decoders
+from .. import encoders, exceptions, decoders, filtering, utils
 from .meta import Model as ModelMeta
 from .meta import Resource as ResourceMeta
 from collections import OrderedDict
@@ -427,6 +427,12 @@ class Model(six.with_metaclass(ModelMeta, Resource)):
     #! The class object of the django model this resource is exposing.
     model = None
 
+    filterer = filtering.Model
+
+    def __init__(self):
+        self.filterer = self.filterer(self._fields)
+        pass
+
     def _prepare_related(self, item, relation):
         try:
             # First attempt to resolve the item as queryset
@@ -440,13 +446,20 @@ class Model(six.with_metaclass(ModelMeta, Resource)):
 
     def read(self, identifier=None, **kwargs):
         # TODO: filtering
+        print(type(self.request.GET))
+        print(self.request.GET.getlist('n'))
+        print(self.request.GET.get('n'))
+        print(kwargs)
+        # kwargs = utils.flatten_parameters(kwargs)
+        kwargs = {k: decoders.coerce_type(v) for k, v in kwargs.items()}
+        objects = self.filterer.filter(self.model.objects, kwargs)
         if identifier is not None:
             try:
-                return self.model.objects.get(pk=identifier)
+                return objects.get(pk=identifier)
             except:
                 raise exceptions.NotFound()
         else:
-            return self.model.objects.all()
+            return objects.all()
 
     def create(self, obj):
         # Iterate through and set all fields that we can initially

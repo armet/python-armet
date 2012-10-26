@@ -66,7 +66,7 @@ class Filter(object):
             # Happens when field_string can't be found in the fields lookup
             raise InvalidFilter(
                 FILTER_SEPARATOR.join(filtermap),
-                '{} is not a valid field'.filter(e.message))
+                '{} is not a valid field'.format(e.message))
 
     def parse(self, name):
         """Parses filters and checks to see if our filter params are valid.
@@ -99,7 +99,7 @@ class Filter(object):
             # can_filter doesn't have access to the entire filter string
             # correct the filter string and re-throw it
             e.name = name
-            raise e
+            raise
 
         # Tack on the terminator again
         if terminator is not None:
@@ -125,7 +125,7 @@ class Model(Filter):
         # AND all top level items in the values list, OR all sub-items
         for orable in values:
             # Do some checking for the number of items
-            if range(orable) > 1 and qverb in LIST_CASES_EXACT_TWO:
+            if len(orable) > 1 and qverb in LIST_CASES_EXACT_TWO:
                 raise InvalidFilter(
                     name,
                     '{} requires at least two parameters'.filter(qverb))
@@ -149,7 +149,7 @@ class Model(Filter):
         # Tidy the filters list
         # filters = self.tidy(filters)
         # Get the list of Q objects
-        queries = [self.q(k, v) for k, v in filters.items()]
+        # queries = [self.q(k, v) for k, v in filters.items()]
         queries = []
         errors = []
         for k, v in filters.items():
