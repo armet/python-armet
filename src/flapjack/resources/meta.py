@@ -60,6 +60,14 @@ class Resource(type):
             if self.filterer is not None:
                 self.filterer = self.filterer()
 
+            # Is the defined resource URI one of the found fields ?
+            if self.resource_uri in self.fields:
+                # Yes; die
+                raise ImproperlyConfigured(
+                    'The field name defined for the `resource_uri` (`{}`) '
+                    'conflicts with a declared field on the resource.'.format(
+                        self.resource_uri))
+
         # Delegate to python to finish us up.
         super(Resource, self).__init__(name, bases, attributes)
 
@@ -94,7 +102,7 @@ class Resource(type):
 
 class Model(Resource):
 
-    def __new__(meta, name, bases, attributes):
+    def __new__(cls, name, bases, attributes):
         # Ensure we have a valid model form.
         # First check if we have a model form.
         if attributes.get('form'):
@@ -108,6 +116,9 @@ class Model(Resource):
                 warnings.warn("'model' is overriden by 'form'; "
                     "there is no need to declare 'model'.")
 
+            # Ensure model is set properly for easier access
+            attributes['model'] = attributes['form']._meta.model
+
         elif 'model' in attributes:
             # Form wasn't declared; be nice and auto-generate a class
             # for them.
@@ -118,18 +129,21 @@ class Model(Resource):
             # Store the nicely generated one
             attributes['form'] = form
 
+        if attributes.get('model'):
+            # Ensure the slug is initially the pk field of the model
+            attributes['slug'] = attributes['model']._meta.pk.name
+
         # Delegate to python to instantiate us.
-        return super(Model, meta).__new__(meta, name, bases, attributes)
+        return super(Model, cls).__new__(cls, name, bases, attributes)
 
     def discover_fields(self):
         # Discover explicitly declared fields first.
         super(Model, self).discover_fields()
 
         # Discover additional model fields.
-        model = self.form._meta.model
-        if model is not None:
-            # Iterate through the list of fields using the provided form
-            for field in model._meta.local_fields:
+        if self.model is not None:
+            # Iterate through the list of normal fields
+            for field in self.model._meta.local_fields:
                 name = field.name
                 if self.is_field_visible(name):
                     # Grab the relation if there is one
@@ -141,7 +155,20 @@ class Model(Resource):
 
                     # Determine properties of the field and store it
                     self.fields[name] = fields.Model(
-                            collection=isinstance(field, MultipleChoiceField),
                             relation=relation,
                             filterable=self.filterable.get(name)
                         )
+
+            # Iterate through the list of m2m fields
+            for field in self.model._meta.local_many_to_many:
+                name = field.name
+                if self.is_field_visible(name):
+                    # Grab the relation if there is one
+                    relation = self.relations.get(name)
+                    if relation:
+                        # Determine properties of the field and store it
+                        self.fields[name] = fields.Model(
+                                collection=True,
+                                relation=relation,
+                                filterable=self.filterable.get(name)
+                            )
