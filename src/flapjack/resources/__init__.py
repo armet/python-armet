@@ -217,7 +217,7 @@ class Resource(six.with_metaclass(Resource)):
 
     def dispatch(self):
         # Determine the method; returns our delegation function
-        method = self.determine_method()
+        function = self.determine_method()
 
         # Grab the request object if we can
         obj = None
@@ -228,8 +228,13 @@ class Resource(six.with_metaclass(Resource)):
             # Run the object through a clean cycle
             obj = self.clean(obj)
 
+        # Let's see how far down the rabbit hole we can go
+        function = self.traverse(function)
+        print(function)
+        print(function.__self__)
+
         # Execute the function found earlier
-        response = method(obj)
+        response = function(obj)
 
         # If we got anything back ..
         if response is not None:
@@ -237,6 +242,46 @@ class Resource(six.with_metaclass(Resource)):
             return self.prepare(response)
 
         # Didn't get anything back; return nothing
+
+    def traverse(self, function):
+        # We need to `traverse` down the rabbit hole to find the actual
+        # resource we need to invoke the method on -- we don't need to
+        # actually perform a `get` or anything; just keep recursing down
+        if not self.components or not self.components[0]:
+            # No fancy sub-resouce access or we are at the end;
+            # just return ourself
+            return function
+
+        # We have at least one component
+        field = self.fields.get(self.components[0])
+        if not field:
+            # Field doesn't exist on this resource.
+            raise exceptions.NotFound()
+
+        if not field.relation:
+            # This is a different (simple) kind of sub-resource access;
+            # move along
+            return function
+
+        # if field.collection: pass
+        # else:
+        #     # Append to our param hash
+        #     #if self.params is None:
+        #     #    self.params = OrderedDict()
+
+        #     #self.params[self.name] = self.identifier
+
+        #     splice = 1
+        #     identifier = self.components[0]
+        #     obj = field.relation(
+        #             method=self.method,
+        #             identifier=identifier,
+        #             components=self.components[splice:],
+        #             params=self.params
+        #         )
+
+        # See how far down we can go
+        #return obj.traverse(function)
 
     @property
     def http_allowed_methods_header(self):
@@ -366,50 +411,50 @@ class Resource(six.with_metaclass(Resource)):
         # Just prepare the one item.
         response = self.item_prepare(obj)
 
-        # Are we accessing a sub-resource on this item?
-        if self.components and self.components[0]:
-            name = self.components[0]
-            field = self.fields.get(name)
-            if name == self.resource_uri:
-                # Just a resource URI; move along
-                response = response[self.resource_uri]
+        # # Are we accessing a sub-resource on this item?
+        # if self.components and self.components[0]:
+        #     name = self.components[0]
+        #     field = self.fields.get(name)
+        #     if name == self.resource_uri:
+        #         # Just a resource URI; move along
+        #         response = response[self.resource_uri]
 
-            else:
-                if field is None:
-                    # Sub-relation not found
-                    raise exceptions.NotFound()
+        #     else:
+        #         if field is None:
+        #             # Sub-relation not found
+        #             raise exceptions.NotFound()
 
-                if field.relation is not None:
-                    if not field.collection:
-                        # Related field; send it back through dispatch
-                        response = field.relation.resolve(path=response[name],
-                                method=self.method,
-                                components=self.components[1:],
-                                full=True
-                            )
+        #         if field.relation is not None:
+        #             if not field.collection:
+        #                 # Related field; send it back through dispatch
+        #                 response = field.relation.resolve(path=response[name],
+        #                         method=self.method,
+        #                         components=self.components[1:],
+        #                         full=True
+        #                     )
 
-                    else:
-                        # We may have a sub-resource index; figure out how
-                        # components looks
-                        if len(self.components) == 1:
-                            # Related field; send it back through dispatch
-                            response = field.relation(
-                                    method=self.method,
-                                    params={self.name: self.identifier}
-                                ).dispatch()
+        #             else:
+        #                 # We may have a sub-resource index; figure out how
+        #                 # components looks
+        #                 if len(self.components) == 1:
+        #                     # Related field; send it back through dispatch
+        #                     response = field.relation(
+        #                             method=self.method,
+        #                             params={self.name: self.identifier}
+        #                         ).dispatch()
 
-                        if len(self.components) >= 2:
-                            # Related field; send it back through dispatch
-                            response = field.relation(
-                                    method=self.method,
-                                    identifier=self.components[1],
-                                    components=self.components[2:],
-                                    params={self.name: self.identifier}
-                                ).dispatch()
+        #                 if len(self.components) >= 2:
+        #                     # Related field; send it back through dispatch
+        #                     response = field.relation(
+        #                             method=self.method,
+        #                             identifier=self.components[1],
+        #                             components=self.components[2:],
+        #                             params={self.name: self.identifier}
+        #                         ).dispatch()
 
-                else:
-                    # Simple access; move along
-                    response = response[name]
+        #         else:
+        #             # Simple access; move along
+        #             response = response[name]
 
         # Pass us along.
         return response
@@ -567,7 +612,7 @@ class Resource(six.with_metaclass(Resource)):
         # No sane defaults for cRud exist on this base, abstract resource.
         raise exceptions.NotImplemented()
 
-    def create(self):
+    def create(self, obj):
         # No sane defaults for Crud exist on this base, abstract resource.
         raise exceptions.NotImplemented()
 
@@ -640,8 +685,8 @@ class Model(six.with_metaclass(Model, Resource)):
     def create(self, obj):
         # Iterate through and set all fields that we can initially
         params = {}
-        for field in self.fields.values():
-            if field.name not in obj:
+        for name, field in self.fields.iteritems():
+            if name not in obj:
                 # Isn't here; move along
                 continue
 
@@ -650,20 +695,20 @@ class Model(six.with_metaclass(Model, Resource)):
                 continue
 
             # This is not a m2m field; we can set this now
-            params[field.name] = obj[field.name]
+            params[name] = obj[name]
 
         # Perform the initial create
         model = self.model.objects.create(**params)
 
         # Iterate through again and set the m2m bits
-        for field in self.fields.values():
-            if field.name not in obj:
+        for name, field in self.fields.iteritems():
+            if name not in obj:
                 # Isn't here; move along
                 continue
 
             if field.relation is not None and field.collection:
                 # This is a m2m field; we can set this now
-                setattr(model, field.name, obj[field.name])
+                setattr(model, field.name, obj[name])
 
         # Perform a final save
         model.save()
