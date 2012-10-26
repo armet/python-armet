@@ -3,7 +3,6 @@
 import abc
 import json
 from . import exceptions, transcoders
-from datetime import date, time, datetime
 
 
 class Decoder(transcoders.Transcoder):
@@ -78,31 +77,3 @@ def find(request):
         raise exceptions.UnsupportedMediaType()
 
     return decoder
-
-
-def coerce_type(thing):
-    """Return thing as a more native python type
-    Tries datetime, date, time, boolean, int, slug
-    """
-    try:
-        return datetime(thing)
-    except:
-        pass
-    try:
-        return date(thing)
-    except:
-        pass
-    try:
-        return time(thing)
-    except:
-        pass
-    try:
-        return {'true': True, 'false': False}[thing.strip().lower()]
-    except:
-        pass
-    try:
-        return int(thing)
-    except:
-        pass
-    # TODO: Slug resolution
-    return thing
