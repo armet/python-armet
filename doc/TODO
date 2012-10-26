@@ -1,8 +1,8 @@
  ✔ sub-resources @done (12-10-25 14:15)
  ✔ many-to-many sub-resources (`GET` only) @done (12-10-26 09:18)
- ☐ `POST`, `DELETE` (generic), `PUT` to sub-resources
- ☐ `update`
- ☐ `put`
+ ✔ `POST`, `DELETE` (generic), `PUT` to sub-resources @done (12-10-26 11:09)
+ ✔ `update` @done (12-10-26 11:09)
+ ✔ `put` @done (12-10-26 11:09)
  ☐ authorization
  ☐ authentication
  ☐ xml (decoder + encoder)
