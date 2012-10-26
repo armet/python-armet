@@ -103,7 +103,8 @@ class Resource(type):
                 self.fields[name] = fields.Field(
                         collection=isinstance(field, MultipleChoiceField),
                         relation=self.relations.get(name),
-                        filterable=self.filterable.get(name)
+                        filterable=self.filterable.get(name),
+                        parse=field.to_python,
                     )
 
 
@@ -152,9 +153,19 @@ class Model(Resource):
 
         return False
 
+    def is_direct(self, field):
+        return not isinstance(field, RelatedObject)
+
+    def get_related_name(self, field):
+        try:
+            return field.get_accessor_name()
+        except:
+            return field.name
+
     def get_field(self, name):
         try:
             return self.model._meta.get_field(name)
+
         except FieldDoesNotExist:
             # May still be a reverse relation field
             for obj in self.model._meta.get_all_related_objects():
@@ -165,29 +176,52 @@ class Model(Resource):
                 if obj.var_name == name:
                     return obj
 
+    def is_collection(self, name):
+        if name in (x.name for x in self.model._meta.local_many_to_many):
+            return True
+
+        for obj in self.model._meta.get_all_related_many_to_many_objects():
+            if obj.var_name == name:
+                return obj
+
+    def get_parse(self, field):
+        try:
+            return field.field.to_python
+        except:
+            return field.to_python
+
     def discover_fields(self):
         # Discover explicitly declared fields first.
         super(Model, self).discover_fields()
 
         # Discover additional model fields.
         if self.model is not None:
-            m2m = [x.name for x in self.model._meta.local_many_to_many]
+
             for name in self.model._meta.get_all_field_names():
                 # Iterate through the list of all ze fields
                 field = self.get_field(name)
-                print(self.name, name, field)
                 if self.is_field_visible(name):
                     # Grab the relation if there is one
                     relation = self.relations.get(name)
                     related = self.is_related(field)
+                    direct = self.is_direct(field)
+                    hidden = False
+                    related_name = self.get_related_name(field)
                     if not relation and related:
-                        # Field is a related model field but was not
-                        # declared as a relation
-                        continue
+                        if direct:
+                            # Field is a related model field but was not
+                            # declared as a relation
+                            continue
+                        else:
+                            hidden = True
 
                     # Determine properties of the field and store it
                     self.fields[name] = fields.Model(
-                            collection=name in m2m,
+                            collection=self.is_collection(name),
                             relation=relation,
-                            filterable=self.filterable.get(name)
+                            filterable=self.filterable.get(name),
+                            direct=direct,
+                            hidden=hidden,
+                            related_name=related_name,
+                            parse=self.get_parse(field)
                         )

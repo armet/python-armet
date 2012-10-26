@@ -14,6 +14,12 @@ class Field(object):
         #! Resource in relation to this.
         self.relation = kwargs.get('relation')
 
+        self.direct = kwargs.get('direct', True)
+        self.hidden = kwargs.get('hidden', False)
+        self.name = kwargs.get('name', None)  # Need this really
+        self.related_name = kwargs.get('related_name', self.name)
+        self.parse = kwargs.get('parse')
+
 
 class Model(Field):
     # ..

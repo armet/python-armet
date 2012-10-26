@@ -213,7 +213,7 @@ class Resource(six.with_metaclass(Resource)):
 
         #! Parameters are arguments in addition to the body or kwargs that
         #! overrides them both (for foriegn key navigation).
-        self.params = params
+        self.params = params or {}
 
     def dispatch(self):
         # Determine the method; returns our delegation function
@@ -280,6 +280,7 @@ class Resource(six.with_metaclass(Resource)):
             if len(self.components) >= 2:
                 identifier = self.components[1]
                 splice = 2
+
             else:
                 identifier = None
                 splice = 1
@@ -290,6 +291,10 @@ class Resource(six.with_metaclass(Resource)):
                     components=self.components[splice:],
                     params=params
                 )
+
+            # TODO: Stupid check needed here for those that forget
+            # relation defines
+            resource.fields[self.name].relation = self.__class__
         else:
             # Grab the object that we would have got
             item = self.get()
@@ -468,11 +473,16 @@ class Resource(six.with_metaclass(Resource)):
 
         # Iterate through the fields and build the object from the item.
         for name, field in self.fields.iteritems():
+            if field.hidden:
+                # Hidden; skip it here
+                continue
+
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
             try:
                 # Attempt to grab this field from the item.
                 value = getattr(item, name, None)
+
             except:
                 # Something fun happened here.. ?
                 value = None
@@ -508,7 +518,10 @@ class Resource(six.with_metaclass(Resource)):
                     value = value,
 
             # Set us on the result object (finally)
-            obj[name] = value
+            try:
+                obj[name] = field.parse(value)
+            except:
+                obj[name] = value
 
         # Pass our object back
         return obj
@@ -579,10 +592,10 @@ class Resource(six.with_metaclass(Resource)):
         return response
 
     def post(self, obj):
-        if self.identifier is None:
-            # Ensure we're allowed to create
-            self.assert_method_allowed('create')
+        # Ensure we're allowed to create
+        self.assert_method_allowed('create')
 
+        if self.identifier is None:
             # Set our status initially so `create` can change it
             self.status = constants.CREATED
 
@@ -596,16 +609,35 @@ class Resource(six.with_metaclass(Resource)):
             # Don't return a thing normally
 
         else:
-            # Attempting to create a sub-resource; go away
+            # Attempting to create a sub-resource; go away (for now)
             # TODO: What are we supposed to do here..
             raise exceptions.NotImplemented()
 
     def put(self, obj):
-        raise exceptions.NotImplemented()
+        if self.identifier is None:
+            # Attempting to change everything; go away (for now)
+            raise exceptions.NotImplemented()
+
+        else:
+            # TODO: Need to coerce type here
+            obj[self.slug] = self.fields[self.slug].parse(self.identifier)
+            if self.exists():
+                # Ensure we're allowed to update (but not read, hehe)
+                self.assert_method_allowed('update')
+
+                # Send us off to create
+                return self.update(self.read(), obj)
+
+            else:
+                # Ensure we're allowed to create
+                self.assert_method_allowed('create')
+
+                # Send us off to create
+                return self.create(obj)
 
     def delete(self, obj=None):
         if self.identifier is None:
-            # Attempting to delete everything; go away
+            # Attempting to delete everything; go away (for now)
             raise exceptions.NotImplemented()
 
         else:
@@ -614,6 +646,10 @@ class Resource(six.with_metaclass(Resource)):
 
             # Delegate to `destroy` to actually delete the item.
             self.destroy()
+
+    def exists(self):
+        # No sane defaults for cRud exist on this base, abstract resource.
+        raise exceptions.NotImplemented()
 
     def read(self):
         # No sane defaults for cRud exist on this base, abstract resource.
@@ -674,6 +710,10 @@ class Model(six.with_metaclass(Model, Resource)):
             # No parameters; just return them all
             return self.model.objects.all()
 
+    def exists(self):
+        """Implementation of `exists` using django models."""
+        return self.queryset.filter(**{self.slug: self.identifier}).exists()
+
     def read(self):
         """Implementation of `read` using django models."""
         if self.identifier is not None:
@@ -709,7 +749,7 @@ class Model(six.with_metaclass(Model, Resource)):
 
         # Iterate through again and set the m2m bits
         for name, field in self.fields.iteritems():
-            if name not in obj:
+            if name not in obj or not obj[name]:
                 # Isn't here; move along
                 continue
 
@@ -717,18 +757,40 @@ class Model(six.with_metaclass(Model, Resource)):
                 # This is a m2m field; we can set this now
                 setattr(model, field.name, obj[name])
 
+        # Iterate through and set all direct parameters
+        for param in self.params:
+            field = self.fields.get(param)
+            if field is not None and field.direct:
+                setattr(model, field.name, param)
+
         # Perform a final save
         model.save()
 
-        # TODO .. ?
-
+        # Iterate through and set all "in"direct parameters
+        for param, value in self.params.items():
+            field = self.fields.get(param)
+            if field is not None and not field.direct:
+                if field.collection:
+                    getattr(model, field.related_name).add(value)
+                    model.save()
 
         # Return the fully constructed model
         return model
 
-    def update(self):
-        # Nothing here yet..
-        pass
+    def update(self, old, obj):
+        # `old` comes from `read` which is in my control and I return a model
+        # Iterate through the fields and set or destroy them
+        for name, field in self.fields.iteritems():
+            if field.direct:
+                value = obj[name] if name in obj else None
+                # TODO: Need to coerce type here
+                setattr(old, name, value)
+
+        # Save and we're off
+        old.save()
+
+        # Return the new model
+        return old
 
     def destroy(self):
         # Delegate to django to perform the creation
