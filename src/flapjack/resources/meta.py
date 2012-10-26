@@ -1,5 +1,5 @@
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 #from django.utils.functional import cached_property
 from django.forms import MultipleChoiceField, ModelForm
 from django.db.models.fields.related import RelatedField
@@ -9,44 +9,46 @@ from . import fields
 
 class Resource(type):
 
-    def __new__(cls, name, bases, attributes):
+    @staticmethod
+    def coerce_allowed(attrs, name, defualt):
+        if not attrs.get(name):
+            attrs[name] = attrs[defualt]
+
+        if not isinstance(attrs[name], Iterable) \
+                or isinstance(attrs[name], basestring):
+            # Always coerce these to be lists
+            attrs[name] = attrs[name],
+
+    def __new__(cls, name, bases, attrs):
         # Ensure we have a valid name.
-        if not attributes.get('name'):
+        if not attrs.get('name'):
             # Defaults to the lowercase'd class name.
-            attributes['name'] = name.lower()
+            attrs['name'] = name.lower()
 
-        if not attributes.get('relations'):
+        if not attrs.get('relations'):
             # Initialize us to an empty dictionary to simplify logic
-            attributes['relations'] = {}
+            attrs['relations'] = {}
 
-        if not attributes.get('filterable'):
+        if not attrs.get('filterable'):
             # Initialize us to an empty dictionary to simplify logic
-            attributes['filterable'] = {}
+            attrs['filterable'] = {}
 
         # We need to build our list of allowed HTTP methods
-        if attributes.get('http_allowed_methods'):
-            if not attributes.get('http_list_allowed_methods'):
-                attributes['http_list_allowed_methods'] = \
-                    attributes['http_allowed_methods']
-
-            if not attributes.get('http_detail_allowed_methods'):
-                attributes['http_detail_allowed_methods'] = \
-                    attributes['http_allowed_methods']
+        name = 'http_allowed_methods'
+        if attrs.get(name):
+            cls.coerce_allowed(attrs, 'http_list_allowed_methods', name)
+            cls.coerce_allowed(attrs, 'http_detail_allowed_methods', name)
 
         # We need to build our list of allowed methods
-        if attributes.get('allowed_methods'):
-            if not attributes.get('list_allowed_methods'):
-                attributes['list_allowed_methods'] = \
-                    attributes['allowed_methods']
-
-            if not attributes.get('detail_allowed_methods'):
-                attributes['detail_allowed_methods'] = \
-                    attributes['allowed_methods']
+        name = 'allowed_methods'
+        if attrs.get(name):
+            cls.coerce_allowed(attrs, 'list_allowed_methods', name)
+            cls.coerce_allowed(attrs, 'detail_allowed_methods', name)
 
         # Delegate to python to instantiate us.
-        return super(Resource, cls).__new__(cls, name, bases, attributes)
+        return super(Resource, cls).__new__(cls, name, bases, attrs)
 
-    def __init__(self, name, bases, attributes):
+    def __init__(self, name, bases, attrs):
         form = getattr(self, 'form', None)
         if form is not None:
             # Make a new fields list
@@ -69,7 +71,7 @@ class Resource(type):
                         self.resource_uri))
 
         # Delegate to python to finish us up.
-        super(Resource, self).__init__(name, bases, attributes)
+        super(Resource, self).__init__(name, bases, attrs)
 
     def is_field_visible(self, name):
         """Discover if a field is visible."""
@@ -102,39 +104,39 @@ class Resource(type):
 
 class Model(Resource):
 
-    def __new__(cls, name, bases, attributes):
+    def __new__(cls, name, bases, attrs):
         # Ensure we have a valid model form.
         # First check if we have a model form.
-        if attributes.get('form'):
-            if not issubclass(attributes['form'], ModelForm):
+        if attrs.get('form'):
+            if not issubclass(attrs['form'], ModelForm):
                 # Found a form; wasn't a model form -- tell the user to RTFM.
                 raise ImproperlyConfigured('Use of a model resource requires '
                     "'form' to be a model form.")
 
-            elif 'model' in attributes:
+            elif 'model' in attrs:
                 # Let the user know this is unneccessary -- form overrides it
                 warnings.warn("'model' is overriden by 'form'; "
                     "there is no need to declare 'model'.")
 
             # Ensure model is set properly for easier access
-            attributes['model'] = attributes['form']._meta.model
+            attrs['model'] = attrs['form']._meta.model
 
-        elif 'model' in attributes:
+        elif 'model' in attrs:
             # Form wasn't declared; be nice and auto-generate a class
             # for them.
             class form(ModelForm):
                 class Meta:
-                    model = attributes['model']
+                    model = attrs['model']
 
             # Store the nicely generated one
-            attributes['form'] = form
+            attrs['form'] = form
 
-        if attributes.get('model'):
+        if attrs.get('model'):
             # Ensure the slug is initially the pk field of the model
-            attributes['slug'] = attributes['model']._meta.pk.name
+            attrs['slug'] = attrs['model']._meta.pk.name
 
         # Delegate to python to instantiate us.
-        return super(Model, cls).__new__(cls, name, bases, attributes)
+        return super(Model, cls).__new__(cls, name, bases, attrs)
 
     def discover_fields(self):
         # Discover explicitly declared fields first.

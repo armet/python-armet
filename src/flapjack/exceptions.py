@@ -24,6 +24,10 @@ class BadRequest(Error):
     status = constants.BAD_REQUEST
 
 
+class Forbidden(Error):
+    status = constants.FORBIDDEN
+
+
 class NotFound(Error):
     status = constants.NOT_FOUND
 

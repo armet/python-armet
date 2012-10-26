@@ -245,6 +245,26 @@ class Resource(six.with_metaclass(Resource)):
         """Checks if the passed is an allowed HTTP method."""
         return method in self.get_http_allowed_methods()
 
+    def get_allowed_methods(self):
+        """Gets list of allowed methods for the current request."""
+        if self.identifier is not None:
+            return self.detail_allowed_methods
+        else:
+            return self.list_allowed_methods
+
+    def is_method_allowed(self, method):
+        """Checks if the passed is an allowed method."""
+        return method in self.get_allowed_methods()
+
+    def assert_method_allowed(self, method):
+        """Asserts that the passed is an allowed method."""
+        if not self.is_method_allowed(method):
+            raise exceptions.Forbidden({
+                    'message': 'operation not allowed; see `allowed` '
+                        'for allowed methods',
+                    'allowed': self.get_allowed_methods()
+                })
+
     def determine_method(self):
         """Ensures HTTP method is acceptable."""
         if self.method is None:
@@ -464,6 +484,9 @@ class Resource(six.with_metaclass(Resource)):
         return reverse(cls.url_name, kwargs=kwargs)
 
     def get(self, obj=None):
+        # Ensure we're allowed to read
+        self.assert_method_allowed('read')
+
         # Delegate to `read` to actually grab a list of items.
         response = self.read()
 
@@ -476,6 +499,9 @@ class Resource(six.with_metaclass(Resource)):
 
     def post(self, obj):
         if self.identifier is None:
+            # Ensure we're allowed to create
+            self.assert_method_allowed('create')
+
             # Set our status initially so `create` can change it
             self.status = constants.CREATED
 
