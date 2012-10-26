@@ -144,7 +144,10 @@ class Resource(six.with_metaclass(Resource)):
             content = resource.dispatch()
 
             # Encode the content (if any) and return the response
-            response = encoder.encode(content) if content else HttpResponse()
+            if content is None:
+                response = HttpResponse()
+            else:
+                response = encoder.encode(content)
             response.status_code = resource.status
             # TODO: response['Location'] (self.reverse(kwargs)) ?
             # TODO: response['Content-Location'] (self.location) ?
