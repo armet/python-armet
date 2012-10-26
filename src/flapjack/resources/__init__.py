@@ -128,6 +128,9 @@ class Resource(six.with_metaclass(Resource)):
     #! Name of the URL that is used in the url configuration.
     url_name = "api_dispatch"
 
+    #! Whether to allow `create` on a `PUT` request.
+    allow_create_on_put = False
+
     @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
@@ -644,6 +647,7 @@ class Resource(six.with_metaclass(Resource)):
             try:
                 # Coerce the slug type
                 obj[self.slug] = self.fields[self.slug].parse(self.identifier)
+
             except ValidationError:
                 # Bad slug; we're not here
                 raise exceptions.NotFound()
@@ -658,7 +662,7 @@ class Resource(six.with_metaclass(Resource)):
                 # Send us off to create
                 response = self.update(self.read(), obj)
 
-            else:
+            elif self.allow_create_on_put:
                 # Set our status initially so `create` can change it
                 self.status = constants.CREATED
 
@@ -667,6 +671,10 @@ class Resource(six.with_metaclass(Resource)):
 
                 # Send us off to create
                 response = self.create(obj)
+
+            else:
+                # Not allowed to create on put; damn
+                raise exceptions.NotImplemented()
 
             # Do we return data ?
             if not self.http_put_return_data:
@@ -825,7 +833,6 @@ class Model(six.with_metaclass(Model, Resource)):
         for name, field in self.fields.iteritems():
             if field.direct:
                 value = obj[name] if name in obj else None
-                # TODO: Need to coerce type here
                 setattr(old, name, value)
 
         # Save and we're off
