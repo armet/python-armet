@@ -1,111 +1,147 @@
+import warnings
 from collections import OrderedDict
-from django.utils.functional import cached_property
-from django.forms import ModelForm, MultipleChoiceField
-from django.db.models import ForeignKey, ManyToManyField
+#from django.utils.functional import cached_property
+from django.forms import MultipleChoiceField, ModelForm
+from django.db.models.fields.related import RelatedField
+from django.core.exceptions import ImproperlyConfigured
 from . import fields
 
 
 class Resource(type):
 
-    def _is_visible(cls, name):
-        if cls.form._meta.fields is not None:
-            if name not in cls.form._meta.fields:
-                # There is a whitelist present on the bound form; this field
-                # is not declared in it.
-                return False
+    def __new__(cls, name, bases, attributes):
+        # Ensure we have a valid name.
+        if not attributes.get('name'):
+            # Defaults to the lowercase'd class name.
+            attributes['name'] = name.lower()
 
-        if cls.form._meta.exclude is not None:
-            if name in cls.form._meta.exclude:
-                # There is a blacklist present on the bound form; this field
-                # is declared in it.
-                return False
+        if not attributes.get('relations'):
+            # Initialize us to an empty dictionary to simplify logic
+            attributes['relations'] = {}
 
-        # Field is good and visible -- as far as we can see here.
+        if not attributes.get('filterable'):
+            # Initialize us to an empty dictionary to simplify logic
+            attributes['filterable'] = {}
+
+        # We need to build our list of allowed HTTP methods
+        if attributes.get('http_allowed_methods'):
+            if not attributes.get('http_list_allowed_methods'):
+                attributes['http_list_allowed_methods'] = \
+                    attributes['http_allowed_methods']
+
+            if not attributes.get('http_detail_allowed_methods'):
+                attributes['http_detail_allowed_methods'] = \
+                    attributes['http_allowed_methods']
+
+        # We need to build our list of allowed methods
+        if attributes.get('allowed_methods'):
+            if not attributes.get('list_allowed_methods'):
+                attributes['list_allowed_methods'] = \
+                    attributes['allowed_methods']
+
+            if not attributes.get('detail_allowed_methods'):
+                attributes['detail_allowed_methods'] = \
+                    attributes['allowed_methods']
+
+        # Delegate to python to instantiate us.
+        return super(Resource, cls).__new__(cls, name, bases, attributes)
+
+    def __init__(self, name, bases, attributes):
+        form = getattr(self, 'form', None)
+        if form is not None:
+            # Make a new fields list
+            self.fields = OrderedDict()
+
+            # A form as been declared; discover its fields
+            self.discover_fields()
+
+            # Instantiate anything that needs it
+            # TODO: Cool to support 'x.y.z' notation here ?
+            if self.filterer is not None:
+                self.filterer = self.filterer()
+
+        # Delegate to python to finish us up.
+        super(Resource, self).__init__(name, bases, attributes)
+
+    def is_field_visible(self, name):
+        """Discover if a field is visible."""
+        whitelist = self.form._meta.fields
+        if whitelist is not None and name not in whitelist:
+            # There is a whitelist present on the bound form; this field
+            # is not declared in it.
+            return False
+
+        blacklist = self.form._meta.exclude
+        if blacklist is not None and name in blacklist:
+            # There is a blacklist present on the bound form; this field
+            # is declared in it.
+            return False
+
+        # Field is good and visible.
         return True
 
-    def __init__(cls, name, bases, attributes):
-        # Ensure we have a valid name property.
-        if 'name' not in attributes:
-            # Default to the lowercased name of the class
-            cls.name = name.lower()
-
-        # Ensure we have an empty relations dict if none was defined
-        if hasattr(cls, 'relations') and cls.relations is None:
-            cls.relations = {}
-
-        if hasattr(cls, 'Form'):
-            # Allow the form to be specified as a sub-class
-            cls.form = cls.Form
-
-        # Initialize listing of fields
-        cls._fields = OrderedDict()
-
-        # Generate the list of fields using the provided form
-        if hasattr(getattr(cls, 'form', None), 'declared_fields'):
-            # Iterate through each declared field on the form
-            for name, field in cls.form.declared_fields.items():
-                if cls._is_visible(name):
-                    # Determine field properties
-                    props = {
-                            'collection': isinstance(field,
-                                MultipleChoiceField),
-                            'relation': cls.relations.get(name)
-                        }
-
-                    # Field has been declared visible; construct it
-                    # and add it to our list
-                    cls._fields[name] = fields.Field(name, **props)
-
-        # Delegate to python magic to initialize the class object
-        super(Resource, cls).__init__(name, bases, attributes)
+    def discover_fields(self):
+        # Iterate through the list of fields using the provided form
+        for name, field in getattr(self.form, 'declared_fields', {}).items():
+            if self.is_field_visible(name):
+                # Determine properties of the field
+                self.fields[name] = fields.Field(
+                        collection=isinstance(field, MultipleChoiceField),
+                        relation=self.relations.get(name),
+                        filterable=self.filterable.get(name)
+                    )
 
 
 class Model(Resource):
 
-    def __init__(cls, name, bases, attributes):
-        # Delegate to more magic to initialize the class object
-        super(Model, cls).__init__(name, bases, attributes)
+    def __new__(meta, name, bases, attributes):
+        # Ensure we have a valid model form.
+        # First check if we have a model form.
+        if attributes.get('form'):
+            if not issubclass(attributes['form'], ModelForm):
+                # Found a form; wasn't a model form -- tell the user to RTFM.
+                raise ImproperlyConfigured('Use of a model resource requires '
+                    "'form' to be a model form.")
 
-        # Ensure we have a valid model form instance to use to generate
-        # field references
-        model_class = getattr(cls, 'model', None)
-        if model_class is not None:
-            if not issubclass(getattr(cls, 'form', None), ModelForm):
-                # Construct a form class that is bound to our model
-                class Form(ModelForm):
-                    class Meta:
-                        model = model_class
+            elif 'model' in attributes:
+                # Let the user know this is unneccessary -- form overrides it
+                warnings.warn("'model' is overriden by 'form'; "
+                    "there is no need to declare 'model'.")
 
-                # Declare our use of the form class
-                cls.form = Form
+        elif 'model' in attributes:
+            # Form wasn't declared; be nice and auto-generate a class
+            # for them.
+            class form(ModelForm):
+                class Meta:
+                    model = attributes['model']
 
-            # Iterate through each declared field on the model
-            #model_fields = []
-            model_fields = list(cls.model._meta.local_fields)
-            model_fields += list(cls.model._meta.local_many_to_many)
-            for field in model_fields:
-                if cls._is_visible(field.name):
-                    if field.name not in cls._fields:
-                        # Gather properties for the field
-                        props = {
-                                'editable': field.editable,
-                                'collection': isinstance(field,
-                                    ManyToManyField),
-                                'relation': cls.relations.get(field.name)
-                            }
+            # Store the nicely generated one
+            attributes['form'] = form
 
-                        if props['relation'] is None:
-                            if isinstance(field, ForeignKey):
-                                # Field is a related model field but was not
-                                # declared as a relation
-                                continue
+        # Delegate to python to instantiate us.
+        return super(Model, meta).__new__(meta, name, bases, attributes)
 
-                            if isinstance(field, ManyToManyField):
-                                # Field is a related model field but was not
-                                # declared as a relation
-                                continue
+    def discover_fields(self):
+        # Discover explicitly declared fields first.
+        super(Model, self).discover_fields()
 
-                        # Field is visible and not already declared
-                        # explicitly by the model; add it to our list
-                        cls._fields[field.name] = fields.Model(field.name,
-                            **props)
+        # Discover additional model fields.
+        model = self.form._meta.model
+        if model is not None:
+            # Iterate through the list of fields using the provided form
+            for field in model._meta.local_fields:
+                name = field.name
+                if self.is_field_visible(name):
+                    # Grab the relation if there is one
+                    relation = self.relations.get(name)
+                    if not relation and isinstance(field, RelatedField):
+                        # Field is a related model field but was not
+                        # declared as a relation
+                        continue
+
+                    # Determine properties of the field and store it
+                    self.fields[name] = fields.Model(
+                            collection=isinstance(field, MultipleChoiceField),
+                            relation=relation,
+                            filterable=self.filterable.get(name)
+                        )

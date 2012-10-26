@@ -102,4 +102,4 @@ def find(request, format=None):
     available = {k: v.mimetype for k, v in Encoder.registry.items()}
 
     # Encode the response using the appropriate exception
-    raise exceptions.NotAcceptable(Text.encode(available))
+    raise exceptions.NotAcceptable(available)
