@@ -306,6 +306,7 @@ class Resource(six.with_metaclass(Resource)):
                 splice = 1
 
             resource = relation(
+                    request=self.request,
                     method=self.method,
                     identifier=identifier,
                     components=self.components[splice:],
@@ -323,6 +324,7 @@ class Resource(six.with_metaclass(Resource)):
                 relation.resolve(getattr(item, name)), relation.slug)
 
             resource = relation(
+                    request=self.request,
                     method=self.method,
                     identifier=identifier,
                     components=self.components[1:],
@@ -605,8 +607,7 @@ class Resource(six.with_metaclass(Resource)):
         response = self.read()
 
         # Invoke our filterer (if we have one) to filter our response
-        print self.request.GET
-        if self._filterer is not None:
+        if self.identifier is None and self._filterer is not None:
             response = self._filterer.filter(response, self.request.GET)
 
         # Return our (maybe filtered) response.

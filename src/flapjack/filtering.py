@@ -83,11 +83,9 @@ class Filter(object):
     def can_filter(self, filtermap):
         # Make sure the first field is in the allowable list of fields
         fields = self.fields
-        print fields
         try:
             for idx, field_string in enumerate(filtermap, 1):
                 field = fields[field_string]
-                print "new field", field
 
                 # Make sure the field is filterable
                 if not field.filterable:
@@ -102,7 +100,7 @@ class Filter(object):
                         raise FilterError(
                             FILTER_SEPARATOR.join(filtermap),
                             '{} is not a related field'.format(field_string))
-                    fields = field.relation._fields
+                    fields = field.relation.fields
 
         except KeyError as e:
             # Happens when field_string can't be found in the fields lookup
@@ -110,7 +108,6 @@ class Filter(object):
                 FILTER_SEPARATOR.join(filtermap),
                 '{} is not a valid field'.format(e.message))
 
-        print field
         return field
 
     def pythonify(self, item, action):
@@ -157,9 +154,9 @@ class Filter(object):
         # search query
         if items[-1] == FILTER_NOT:
             items = items[:-1]
-            action.name = True
+            action.negated = True
         else:
-            action.name = False
+            action.negated = False
 
         action.name = LOOKUP_SEP.join(items)
         # Grab the last item and see if its a valid terminator.  Remove valid
@@ -222,14 +219,19 @@ class Model(Filter):
                 query.append(reduce(lambda x, y: x | y, inner))
 
             # AND the outer list
-            queries.append(reduce(lambda x, y: x | y, query))
+            q = reduce(lambda x, y: x & y, query)
+
+            # Not them if needed
+            if f_action.negated:
+                q = ~q
+
+            queries.append(q)
 
         # AND all Q objects in the list
         return reduce(lambda x, y: x & y, queries)
 
     def filter(self, iterable, filters):
         # Short circuit if there are no filters
-        print filters
         if not filters:
             return iterable.all()
 
