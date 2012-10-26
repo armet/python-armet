@@ -119,7 +119,7 @@ class Resource(six.with_metaclass(Resource)):
     default_encoder = encoders.Json
 
     #! Specifies that POST should return data; defaults to False.
-    http_post_return_data = False
+    http_post_return_data = True
 
     #! Specifies that PUT should return data; defaults to False.
     http_put_return_data = False
@@ -229,10 +229,9 @@ class Resource(six.with_metaclass(Resource)):
             obj = self.clean(obj)
 
         # Let's see how far down the rabbit hole we can go
-        function = self.traverse(function)
-        print(function)
-        print(function.__self__)
+        return self.traverse(self.process, function, obj)
 
+    def process(self, function, obj):
         # Execute the function found earlier
         response = function(obj)
 
@@ -243,17 +242,22 @@ class Resource(six.with_metaclass(Resource)):
 
         # Didn't get anything back; return nothing
 
-    def traverse(self, function):
+    def traverse(self, process, method, obj):
         # We need to `traverse` down the rabbit hole to find the actual
         # resource we need to invoke the method on -- we don't need to
         # actually perform a `get` or anything; just keep recursing down
         if not self.components or not self.components[0]:
             # No fancy sub-resouce access or we are at the end;
             # just return ourself
-            return function
+            return process(method, obj)
 
         # We have at least one component
-        field = self.fields.get(self.components[0])
+        name = self.components[0]
+        field = self.fields.get(name)
+        if name == self.resource_uri:
+            # Just a URI
+            return process(method, obj)
+
         if not field:
             # Field doesn't exist on this resource.
             raise exceptions.NotFound()
@@ -261,27 +265,52 @@ class Resource(six.with_metaclass(Resource)):
         if not field.relation:
             # This is a different (simple) kind of sub-resource access;
             # move along
-            return function
+            return process(method, obj)
 
-        # if field.collection: pass
-        # else:
-        #     # Append to our param hash
-        #     #if self.params is None:
-        #     #    self.params = OrderedDict()
+        # Append to our param hash
+        if self.params is None:
+            self.params = OrderedDict()
 
-        #     #self.params[self.name] = self.identifier
+        params = dict(self.params)
+        params[self.name] = self.identifier
 
-        #     splice = 1
-        #     identifier = self.components[0]
-        #     obj = field.relation(
-        #             method=self.method,
-        #             identifier=identifier,
-        #             components=self.components[splice:],
-        #             params=self.params
-        #         )
+        relation = field.relation
 
-        # See how far down we can go
-        #return obj.traverse(function)
+        if field.collection:
+            if len(self.components) >= 2:
+                identifier = self.components[1]
+                splice = 2
+            else:
+                identifier = None
+                splice = 1
+
+            resource = relation(
+                    method=self.method,
+                    identifier=identifier,
+                    components=self.components[splice:],
+                    params=params
+                )
+        else:
+            # Grab the object that we would have got
+            item = self.get()
+            relation = field.relation
+            identifier = getattr(
+                relation.resolve(getattr(item, name)), relation.slug)
+
+            resource = relation(
+                    method=self.method,
+                    identifier=identifier,
+                    components=self.components[1:],
+                    params=params
+                )
+
+        # Determine method here
+        method = resource.determine_method()
+
+        # Pass it through
+        response = resource.traverse(resource.process, method, obj)
+        self.status = resource.status
+        return response
 
     @property
     def http_allowed_methods_header(self):
@@ -382,6 +411,10 @@ class Resource(six.with_metaclass(Resource)):
 
     @classmethod
     def resolve(cls, path, method='get', components=None, full=False):
+        if path is None:
+            # Come on.. return none
+            return None
+
         try:
             # Attempt to resolve the path normally.
             resolution = resolve(path)
@@ -412,49 +445,15 @@ class Resource(six.with_metaclass(Resource)):
         response = self.item_prepare(obj)
 
         # # Are we accessing a sub-resource on this item?
-        # if self.components and self.components[0]:
-        #     name = self.components[0]
-        #     field = self.fields.get(name)
-        #     if name == self.resource_uri:
-        #         # Just a resource URI; move along
-        #         response = response[self.resource_uri]
+        if self.components and self.components[0]:
+            name = self.components[0]
+            if name == self.resource_uri:
+                # Just a resource URI; move along
+                response = response[self.resource_uri]
 
-        #     else:
-        #         if field is None:
-        #             # Sub-relation not found
-        #             raise exceptions.NotFound()
-
-        #         if field.relation is not None:
-        #             if not field.collection:
-        #                 # Related field; send it back through dispatch
-        #                 response = field.relation.resolve(path=response[name],
-        #                         method=self.method,
-        #                         components=self.components[1:],
-        #                         full=True
-        #                     )
-
-        #             else:
-        #                 # We may have a sub-resource index; figure out how
-        #                 # components looks
-        #                 if len(self.components) == 1:
-        #                     # Related field; send it back through dispatch
-        #                     response = field.relation(
-        #                             method=self.method,
-        #                             params={self.name: self.identifier}
-        #                         ).dispatch()
-
-        #                 if len(self.components) >= 2:
-        #                     # Related field; send it back through dispatch
-        #                     response = field.relation(
-        #                             method=self.method,
-        #                             identifier=self.components[1],
-        #                             components=self.components[2:],
-        #                             params={self.name: self.identifier}
-        #                         ).dispatch()
-
-        #         else:
-        #             # Simple access; move along
-        #             response = response[name]
+            else:
+                # Simple access; move along
+                response = response[name]
 
         # Pass us along.
         return response
@@ -469,10 +468,14 @@ class Resource(six.with_metaclass(Resource)):
 
         # Iterate through the fields and build the object from the item.
         for name, field in self.fields.iteritems():
-            # Attempt to grab this field from the item.
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
-            value = getattr(item, name, None)
+            try:
+                # Attempt to grab this field from the item.
+                value = getattr(item, name, None)
+            except:
+                # Something fun happened here.. ?
+                value = None
 
             # Run it through the `prepare_FOO` method (if defined).
             prepare = self.__dict__.get('prepare_{}'.format(name))
@@ -552,6 +555,10 @@ class Resource(six.with_metaclass(Resource)):
             except:
                 # We'll damn; item must be just an id (hopefully)
                 kwargs['id'] = item
+
+        else:
+            # We have no item; return nothing.
+            return None
 
         # Pass this along to django's URL resolver; it should figure the
         # rest out for us.
@@ -712,6 +719,9 @@ class Model(six.with_metaclass(Model, Resource)):
 
         # Perform a final save
         model.save()
+
+        # TODO .. ?
+
 
         # Return the fully constructed model
         return model

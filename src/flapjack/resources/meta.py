@@ -2,9 +2,10 @@ import warnings
 from collections import OrderedDict, Iterable
 #from django.utils.functional import cached_property
 from django.forms import MultipleChoiceField, ModelForm
-from django.db.models.fields.related import RelatedField
+from django.db.models.fields.related import RelatedField, RelatedObject
 from django.core.exceptions import ImproperlyConfigured
 from . import fields
+from django.db.models.fields import FieldDoesNotExist
 
 
 class Resource(type):
@@ -137,10 +138,32 @@ class Model(Resource):
 
         if attrs.get('model'):
             # Ensure the slug is initially the pk field of the model
-            attrs['slug'] = attrs['model']._meta.pk.name
+            attrs['slug'] = attrs['model']._meta.pk.column
 
         # Delegate to python to instantiate us.
         return super(Model, cls).__new__(cls, name, bases, attrs)
+
+    def is_related(self, field):
+        if isinstance(field, RelatedField):
+            return True
+
+        if isinstance(field, RelatedObject):
+            return self.is_related(field.field)
+
+        return False
+
+    def get_field(self, name):
+        try:
+            return self.model._meta.get_field(name)
+        except FieldDoesNotExist:
+            # May still be a reverse relation field
+            for obj in self.model._meta.get_all_related_objects():
+                if obj.var_name == name:
+                    return obj
+
+            for obj in self.model._meta.get_all_related_many_to_many_objects():
+                if obj.var_name == name:
+                    return obj
 
     def discover_fields(self):
         # Discover explicitly declared fields first.
@@ -148,33 +171,23 @@ class Model(Resource):
 
         # Discover additional model fields.
         if self.model is not None:
-            # Iterate through the list of normal fields
-            for field in self.model._meta.local_fields:
-                name = field.name
+            m2m = [x.name for x in self.model._meta.local_many_to_many]
+            for name in self.model._meta.get_all_field_names():
+                # Iterate through the list of all ze fields
+                field = self.get_field(name)
+                print(self.name, name, field)
                 if self.is_field_visible(name):
                     # Grab the relation if there is one
                     relation = self.relations.get(name)
-                    if not relation and isinstance(field, RelatedField):
+                    related = self.is_related(field)
+                    if not relation and related:
                         # Field is a related model field but was not
                         # declared as a relation
                         continue
 
                     # Determine properties of the field and store it
                     self.fields[name] = fields.Model(
+                            collection=name in m2m,
                             relation=relation,
                             filterable=self.filterable.get(name)
                         )
-
-            # Iterate through the list of m2m fields
-            for field in self.model._meta.local_many_to_many:
-                name = field.name
-                if self.is_field_visible(name):
-                    # Grab the relation if there is one
-                    relation = self.relations.get(name)
-                    if relation:
-                        # Determine properties of the field and store it
-                        self.fields[name] = fields.Model(
-                                collection=True,
-                                relation=relation,
-                                filterable=self.filterable.get(name)
-                            )
