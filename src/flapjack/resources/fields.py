@@ -4,10 +4,7 @@
 
 class Field(object):
     # ..
-    def __init__(self, name, **kwargs):
-        #! Name of the field on the object instance.
-        self.name = name
-
+    def __init__(self, **kwargs):
         #! Whether this field can be modified or not.
         self.editable = kwargs.get('editable', False)
 
@@ -17,8 +14,14 @@ class Field(object):
         #! Resource in relation to this.
         self.relation = kwargs.get('relation')
 
+        self.direct = kwargs.get('direct', True)
+        self.hidden = kwargs.get('hidden', False)
+        self.name = kwargs.get('name', None)  # Need this really
+        self.related_name = kwargs.get('related_name', self.name)
+        self.parse = kwargs.get('parse')
+
 
 class Model(Field):
     # ..
-    def __init__(self, name, **kwargs):
-        super(Model, self).__init__(name, **kwargs)
+    def __init__(self, **kwargs):
+        super(Model, self).__init__(**kwargs)

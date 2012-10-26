@@ -31,7 +31,7 @@ class Form(transcoders.Form, Decoder):
     @classmethod
     def decode(cls, request):
         # Build the initial object as a copy of the POST data
-        obj = request.POST
+        obj = dict(request.POST)
 
         # Iterate through this absurd multi-value-dict and multiplex the
         # values into obj

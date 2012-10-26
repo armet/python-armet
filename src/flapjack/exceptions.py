@@ -1,6 +1,6 @@
 """..
 """
-from . import http
+from .http import constants, HttpResponse
 
 
 class Error(Exception):
@@ -10,26 +10,48 @@ class Error(Exception):
         #! Body of the exception message.
         self.content = content
 
+    def encode(self, encoder):
+        if self.content:
+            response = encoder.encode(self.content)
+        else:
+            response = HttpResponse()
+
+        response.status_code = self.status
+        return response
+
 
 class BadRequest(Error):
-    status = http.BAD_REQUEST
+    status = constants.BAD_REQUEST
+
+
+class Forbidden(Error):
+    status = constants.FORBIDDEN
 
 
 class NotFound(Error):
-    status = 404
+    status = constants.NOT_FOUND
 
 
 class NotAcceptable(Error):
-    status = 406
+    status = constants.NOT_ACCEPTABLE
 
 
 class MethodNotAllowed(Error):
-    status = 405
+    status = constants.METHOD_NOT_ALLOWED
+
+    def __init__(self, allowed):
+        self.allowed = allowed
+        super(MethodNotAllowed, self).__init__()
+
+    def encode(self, encoder):
+        response = super(MethodNotAllowed, self).encode(encoder)
+        response['Allow'] = self.allowed
+        return response
 
 
 class UnsupportedMediaType(Error):
-    status = 415
+    status = constants.UNSUPPORTED_MEDIA_TYPE
 
 
 class NotImplemented(Error):
-    status = 501
+    status = constants.NOT_IMPLEMENTED

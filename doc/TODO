@@ -1,9 +1,11 @@
  ✔ sub-resources @done (12-10-25 14:15)
- ☐ many-to-many sub-resources
+ ✔ many-to-many sub-resources (`GET` only) @done (12-10-26 09:18)
+ ☐ `POST`, `DELETE` (generic), `PUT` to sub-resources
  ☐ `update`
  ☐ `put`
  ☐ authorization
  ☐ authentication
  ☐ xml (decoder + encoder)
- ☐ kryptonite
+ ✔ kryptonite @done (12-10-26 09:18)
  ☐ API registry
+ ✔ filtering @done (12-10-25 19:23)

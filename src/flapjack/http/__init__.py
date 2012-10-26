@@ -1,16 +1,4 @@
-# coding=utf-8
-""" ..
-"""
 from django import http
-
-
-#! Bad request [RFC 2616 § 10.4.1]
-#! The request could not be understood by the server due to malformed syntax.
-BAD_REQUEST = 400
-
-
-#! Not found [RFC 2616 §10.4.5]
-NOT_FOUND = 404
 
 
 class HttpResponse(http.HttpResponse):
