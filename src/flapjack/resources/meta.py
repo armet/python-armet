@@ -103,7 +103,7 @@ class Resource(type):
                 self.fields[name] = fields.Field(
                         collection=isinstance(field, MultipleChoiceField),
                         relation=self.relations.get(name),
-                        filterable=self.filterable.get(name),
+                        filterable=name in self.filterable,
                         parse=field.to_python,
                     )
 
@@ -219,7 +219,7 @@ class Model(Resource):
                     self.fields[name] = fields.Model(
                             collection=self.is_collection(name),
                             relation=relation,
-                            filterable=self.filterable.get(name),
+                            filterable=name in self.filterable,
                             direct=direct,
                             hidden=hidden,
                             related_name=related_name,

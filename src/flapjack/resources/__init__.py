@@ -14,7 +14,7 @@ from collections import OrderedDict
 # from . import authorization as authz
 import six
 from .. import utils
-# from .. import filtering
+from .. import filtering
 
 
 class Resource(six.with_metaclass(Resource)):
@@ -585,6 +585,7 @@ class Resource(six.with_metaclass(Resource)):
         response = self.read()
 
         # Invoke our filterer (if we have one) to filter our response
+        print self.request.GET
         if self._filterer is not None:
             response = self._filterer.filter(response, self.request.GET)
 
@@ -678,7 +679,7 @@ class Model(six.with_metaclass(Model, Resource)):
 
     #! Class object of the filter class to proxy filtering to for filtering
     #! filterables, specialized for model resources.
-    # filterer = filtering.Model
+    filterer = filtering.Model
 
     @classmethod
     def resolve(cls, path, full=False, **kwargs):

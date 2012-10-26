@@ -19,6 +19,7 @@ class Field(object):
         self.name = kwargs.get('name', None)  # Need this really
         self.related_name = kwargs.get('related_name', self.name)
         self.parse = kwargs.get('parse')
+        self.filterable = kwargs.get('filterable', False)
 
 
 class Model(Field):
