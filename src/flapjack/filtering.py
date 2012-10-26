@@ -27,13 +27,13 @@ class Filter(object):
         # Make sure the first field is in the allowable list of fields
         fields = self.fields
         try:
-            for idx, field_string in enumerate(filtermap):
+            for idx, field_string in enumerate(filtermap, 1):
                 field = fields[field_string]
 
                 # Make sure the field is filterable
-                if not field.filterable:
-                    raise exceptions.BadRequest(
-                        'Filtering is not allowed on {}'.format(filtermap[0]))
+                # if not field.filterable:
+                #     raise exceptions.BadRequest(
+                #         'Filtering is not allowed on {}'.format(filtermap[0]))
 
                 # Navigate to a relation
                 if idx < len(filtermap):
@@ -41,7 +41,7 @@ class Filter(object):
                         # This is not a relational field
                         raise exceptions.BadRequest(
                             '{} is not a related field'.format(field.name))
-                    fields = field.relation
+                    fields = field.relation._fields
 
         except KeyError as e:
             # Happens when field_string can't be found in the fields lookup
@@ -58,7 +58,7 @@ class Filter(object):
 
         # Check to see if our filter ends with a 'neq' and slice it off the
         # search query
-        if items[-1] is 'neq':
+        if items[-1] == 'neq':
             items = items[:-1]
             invert = True
         else:
@@ -89,8 +89,9 @@ class Model(Filter):
 
     def filter(self, iterable, filters):
         query = Q()
-        for k, v in filters:
+        for k, v in filters.items():
             qstring, inverted = self.parse(k)
+            print qstring, v
             if inverted:
                 q = ~Q(**{qstring: v})
             else:
