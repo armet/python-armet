@@ -99,11 +99,11 @@ class Resource(six.with_metaclass(Resource)):
     #! Form class to use to provide the validation and sanitization cycle.
     form = None
 
-    #! Authentication class to proxy authentication requests to; leave
+    #! Authentication object to proxy authentication requests to; leave
     #! unspecified for no authentication.
     authentication = None
 
-    #! Authorization class to proxy authorization requests to; leave
+    #! Authorization object to proxy authorization requests to; leave
     #! unspecified for no authorization.
     authorization = None
 
@@ -136,6 +136,17 @@ class Resource(six.with_metaclass(Resource)):
             resource = cls(request,
                 kwargs.get('id'),
                 kwargs.get('components', '').split('/'))
+
+            # Are we authenticated; probably should check that now
+            if resource.authentication is not None:
+                user = resource.authentication.authenticate(request)
+                if user is not None:
+                    # Cool; we're in -- set the request appropriately
+                    resource.request.user = user
+
+                else:
+                    # Died; bummer
+                    return resource.authentication.unauthenticated
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
