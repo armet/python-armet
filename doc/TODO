@@ -4,7 +4,7 @@
  ✔ `update` @done (12-10-26 11:09)
  ✔ `put` @done (12-10-26 11:09)
  ☐ authorization
- ☐ authentication
+ ✔ authentication @done (12-10-26 12:48)
  ☐ xml (decoder + encoder)
  ✔ kryptonite @done (12-10-26 09:18)
  ☐ API registry

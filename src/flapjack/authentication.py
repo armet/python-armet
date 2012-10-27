@@ -2,7 +2,6 @@
 """
 from .http import HttpResponse, constants
 from django.contrib.auth import authenticate
-from . import utils
 
 
 class Authentication(object):
@@ -24,8 +23,7 @@ class Authentication(object):
         """Checks if the user is active; served as a point of extension."""
         return user.is_active if self.require_active else False
 
-    @utils.classproperty
-    @utils.memoize
+    @property
     def unauthenticated(self):
         """What response to return upon failing authentication."""
         return HttpResponse(status=constants.FORBIDDEN)
