@@ -11,11 +11,9 @@ from ..http import HttpResponse, constants
 from .. import encoders, exceptions, decoders
 from .meta import Model, Resource
 from collections import OrderedDict
-# from . import authentication as authn
-# from . import authorization as authz
-import six
 from .. import utils
 from .. import filtering
+import six
 
 
 class Resource(six.with_metaclass(Resource)):
@@ -61,11 +59,6 @@ class Resource(six.with_metaclass(Resource)):
 
     #! List of allowed resource operations (on accessing a specific resource).
     detail_allowed_methods = None
-
-    #! Name of the django application; used for namespacing.
-    #! Defaults to the actual application label -- no need to set this unless
-    #! you want to be strange.
-    app_label = None
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
@@ -131,6 +124,15 @@ class Resource(six.with_metaclass(Resource)):
     #! Whether to allow `create` on a `PUT` request.
     allow_create_on_put = False
 
+    #! Whitelist of fields to allow through the preparation process.
+    fields = None
+
+    #! Blacklist of fields to disallow through the preparation process.
+    exclude = None
+
+    #! Additional fields to prepare from the source object or dictionary.
+    include = None
+
     @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
@@ -162,10 +164,7 @@ class Resource(six.with_metaclass(Resource)):
             content = resource.dispatch()
 
             # Encode the content (if any) and return the response
-            if content is None:
-                response = HttpResponse()
-            else:
-                response = encoder.encode(content)
+            response = encoder.encode(content) if content else HttpResponse()
             response.status_code = resource.status
             # TODO: response['Location'] (self.reverse(kwargs)) ?
             # TODO: response['Content-Location'] (self.location) ?
@@ -233,10 +232,7 @@ class Resource(six.with_metaclass(Resource)):
         self.params = params or {}
 
         #! A filterer needs to be made.
-        if self.filterer is not None:
-            self._filterer = self.filterer(self.fields)
-        else:
-            self._filterer = None
+        self._filterer = self.filterer(self.fields) if self.filterer else None
 
     def dispatch(self):
         # Determine the method; returns our delegation function
@@ -465,14 +461,14 @@ class Resource(six.with_metaclass(Resource)):
         try:
             # Attempt to iterate and prepare each individual item as this could
             # easily be an iterable.
-            return [self.item_prepare(x) for x in obj]
+            return [self._item_prepare(x) for x in obj]
 
         except TypeError:
             # Not iterable; we have but one.
             pass
 
         # Just prepare the one item.
-        response = self.item_prepare(obj)
+        response = self._item_prepare(obj)
 
         # # Are we accessing a sub-resource on this item?
         if self.components and self.components[0]:
@@ -488,7 +484,7 @@ class Resource(six.with_metaclass(Resource)):
         # Pass us along.
         return response
 
-    def item_prepare(self, item):
+    def _item_prepare(self, item):
         # Initialize the item object; we like to remember the order of the
         # fields.
         obj = OrderedDict()
