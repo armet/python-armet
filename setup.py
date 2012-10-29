@@ -9,7 +9,7 @@ def read(filename):
 
 setup(
         name='flapjack',
-        version=read('version'),
+        version=read('VERSION'),
         description=read('description'),
         long_description=read('README.md'),
         author='Concordus Applications',
