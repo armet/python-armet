@@ -8,9 +8,6 @@ class Authorization(object):
     authorized.
     """
 
-    def __init__(self):
-        pass
-
     def is_accessible(self, request, identifier):
         """Immediate authorization (eg, only admins may access a resource)."""
         return True
@@ -31,13 +28,10 @@ class Model(Authorization):
     permissions.
     """
 
-    def __init__(self):
-        pass
-
     def is_accessible(self, request, method):
         """Immediate authorization (eg, only admins may access a resource)."""
         if method == 'create':
-            # Creating a new object; no object is neccessary
+            # Creating a new object; no object is neccessary.
             return self.request.user.has_perm('can_add')
         # ?
         return True
@@ -45,11 +39,11 @@ class Model(Authorization):
     def is_authorized(self, request, identifier, method, obj):
         """Authorization pass after the object has been constructed."""
         if method == 'update':
-            # Updating; we should have an object
+            # Updating; we should have an object.
             return self.request.user.has_perm('can_change', obj)
 
         if method == 'destroy':
-            # Destroying an existing object; check the perms
+            # Destroying an existing object; check the perms.
             return self.request.user.has_perm('can_delete', obj)
 
         # Nothing interesting to check; reads, etc are filtered
