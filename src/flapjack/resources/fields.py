@@ -19,9 +19,6 @@ class Field(object):
         #! Whether this field may be filtered or not.
         self.filterable = kwargs.get('filterable', False)
 
-        #! The underlying python type of this field.
-        self.type = kwargs.get('type', str)
-
         #! A function to sanitize a string to the presented python type.
         self.clean = kwargs.get('clean', lambda x: x)
 
@@ -31,5 +28,5 @@ class Field(object):
 
 
 class Model(Field):
-    def __init__(self, **kwargs):
-        super(Model, self).__init__(**kwargs)
+    def __init__(self, name, **kwargs):
+        super(Model, self).__init__(name, **kwargs)

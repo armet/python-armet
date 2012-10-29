@@ -232,7 +232,7 @@ class Resource(six.with_metaclass(Resource)):
         self.params = params or {}
 
         #! A filterer needs to be made.
-        self._filterer = self.filterer(self.fields) if self.filterer else None
+        self._filterer = self.filterer(self._fields) if self.filterer else None
 
     def dispatch(self):
         # Determine the method; returns our delegation function
@@ -272,7 +272,7 @@ class Resource(six.with_metaclass(Resource)):
 
         # We have at least one component
         name = self.components[0]
-        field = self.fields.get(name)
+        field = self._fields.get(name)
         if name == self.resource_uri:
             # Just a URI
             return process(method, obj)
@@ -406,7 +406,7 @@ class Resource(six.with_metaclass(Resource)):
     def clean(self, obj):
         # Before the object goes anywhere its relations need to be resolved and
         # other things need to happen to make everything more python'y
-        for name, field in self.fields.iteritems():
+        for name, field in self._fields.iteritems():
             value = obj.get(name)
             if value is not None and field.relation is not None:
                 obj[name] = self.relation_clean(field, value)
@@ -461,14 +461,14 @@ class Resource(six.with_metaclass(Resource)):
         try:
             # Attempt to iterate and prepare each individual item as this could
             # easily be an iterable.
-            return [self._item_prepare(x) for x in obj]
+            return [self.item_prepare(x) for x in obj]
 
         except TypeError:
             # Not iterable; we have but one.
             pass
 
         # Just prepare the one item.
-        response = self._item_prepare(obj)
+        response = self.item_prepare(obj)
 
         # # Are we accessing a sub-resource on this item?
         if self.components and self.components[0]:
@@ -484,7 +484,7 @@ class Resource(six.with_metaclass(Resource)):
         # Pass us along.
         return response
 
-    def _item_prepare(self, item):
+    def item_prepare(self, item):
         # Initialize the item object; we like to remember the order of the
         # fields.
         obj = OrderedDict()
@@ -493,11 +493,7 @@ class Resource(six.with_metaclass(Resource)):
         obj[self.resource_uri] = self.reverse(item)
 
         # Iterate through the fields and build the object from the item.
-        for name, field in self.fields.iteritems():
-            if field.hidden:
-                # Hidden; skip it here
-                continue
-
+        for name, field in self._fields.iteritems():
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
             try:
@@ -509,7 +505,7 @@ class Resource(six.with_metaclass(Resource)):
                 value = None
 
             # Run it through the `prepare_FOO` method (if defined).
-            prepare = self.__dict__.get('prepare_{}'.format(name))
+            prepare = getattr(self, 'prepare_{}'.format(name), None)
             if prepare is not None:
                 value = prepare(value)
 
@@ -525,7 +521,24 @@ class Resource(six.with_metaclass(Resource)):
             # Run it through the relation preparation method if we have
             # a relation.
             if field.relation is not None:
-                value = self.relation_prepare(value, field.relation)
+                try:
+                    # Perhaps this is a many-to-many to models? Django gives us
+                    # a model related manager
+                    value = value.all()
+
+                except:
+                    # Guess not; move along
+                    pass
+
+                # Attempt to resolve the related field; we need to transform
+                # the object to its URI.
+                try:
+                    # Attempt to iterate over each item to resolve it.
+                    value = [field.relation.reverse(x) for x in value]
+
+                except TypeError:
+                    # Not iterable; reverse the one.
+                    value = field.relation.reverse(value)
 
             # Ensure we "always" have an iterable for a collection field
             if field.collection:
@@ -539,32 +552,10 @@ class Resource(six.with_metaclass(Resource)):
                     value = value,
 
             # Set us on the result object (finally)
-            try:
-                obj[name] = field.parse(value)
-            except:
-                obj[name] = value
+            obj[name] = value
 
         # Pass our object back
         return obj
-
-    def relation_prepare(self, value, relation):
-        try:
-            # Perhaps this is a many-to-many to models? Django gives us
-            # a model related manager instead of anything pyhton'y
-            value = value.all()
-        except:
-            # Guess not; move along
-            pass
-
-        # Attempt to resolve the related field; we need to transform the
-        # object to its URI.
-        try:
-            # Attempt to iterate over each item to resolve it.
-            return [relation.reverse(x) for x in value]
-
-        except TypeError:
-            # Not iterable; reverse the one.
-            return relation.reverse(value)
 
     @classmethod
     def reverse(cls, item):
@@ -642,7 +633,7 @@ class Resource(six.with_metaclass(Resource)):
         else:
             try:
                 # Coerce the slug type
-                obj[self.slug] = self.fields[self.slug].parse(self.identifier)
+                obj[self.slug] = self._fields[self.slug].parse(self.identifier)
 
             except ValidationError:
                 # Bad slug; we're not here
@@ -778,7 +769,7 @@ class Model(six.with_metaclass(Model, Resource)):
     def create(self, obj):
         # Iterate through and set all fields that we can initially
         params = {}
-        for name, field in self.fields.iteritems():
+        for name, field in self._fields.iteritems():
             if name not in obj:
                 # Isn't here; move along
                 continue
@@ -794,7 +785,7 @@ class Model(six.with_metaclass(Model, Resource)):
         model = self.model.objects.create(**params)
 
         # Iterate through again and set the m2m bits
-        for name, field in self.fields.iteritems():
+        for name, field in self._fields.iteritems():
             if name not in obj or not obj[name]:
                 # Isn't here; move along
                 continue
@@ -805,7 +796,7 @@ class Model(six.with_metaclass(Model, Resource)):
 
         # Iterate through and set all direct parameters
         for param in self.params:
-            field = self.fields.get(param)
+            field = self._fields.get(param)
             if field is not None and field.direct:
                 setattr(model, field.name, param)
 
@@ -814,7 +805,7 @@ class Model(six.with_metaclass(Model, Resource)):
 
         # Iterate through and set all "in"direct parameters
         for param, value in self.params.items():
-            field = self.fields.get(param)
+            field = self._fields.get(param)
             if field is not None and not field.direct:
                 if field.collection:
                     getattr(model, field.related_name).add(value)
@@ -826,7 +817,7 @@ class Model(six.with_metaclass(Model, Resource)):
     def update(self, old, obj):
         # `old` comes from `read` which is in my control and I return a model
         # Iterate through the fields and set or destroy them
-        for name, field in self.fields.iteritems():
+        for name, field in self._fields.iteritems():
             if field.direct:
                 value = obj[name] if name in obj else None
                 setattr(old, name, value)

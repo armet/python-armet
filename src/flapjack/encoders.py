@@ -1,6 +1,7 @@
 """ ..
 """
 import json
+import datetime
 from .http import HttpResponse
 from . import exceptions, transcoders
 
@@ -30,6 +31,19 @@ class Encoder(transcoders.Transcoder):
 @Encoder.register()
 class Json(transcoders.Json, Encoder):
 
+    @staticmethod
+    def default(obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+
+        if isinstance(obj, datetime.date):
+            return obj.isoformat()
+
+        if isinstance(obj, datetime.time):
+            return obj.isoformat()
+
+        raise TypeError('{} is not JSON encodable.'.format(obj))
+
     @classmethod
     def encode(cls, obj=None):
         # Is this not a dictionary or an array?
@@ -40,7 +54,8 @@ class Json(transcoders.Json, Encoder):
         # Encode nicely
         text = json.dumps(obj,
                 ensure_ascii=True,
-                separators=(',', ':')
+                separators=(',', ':'),
+                default=cls.default
             )
 
         # Encode it normally; move along
