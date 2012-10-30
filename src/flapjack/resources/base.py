@@ -250,7 +250,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # Grab the request data if we can
         data = None
-        if self.request is not None and self.request.body:
+        if self.request is not None and self.request.body is not None:
             # Request a decoder and decode away
             data = decoders.find(self.request).decode(self.request)
 
@@ -535,11 +535,16 @@ class Base(six.with_metaclass(meta.Resource)):
             #   of execution goes up by a factor of 10
             try:
                 # Attempt to grab this field from the item.
-                value = getattr(item, name, None)
+                value = getattr(item, name)
 
             except:
-                # Something fun happened here.. ?
-                value = None
+                try:
+                    # Maybe we have a dictionary
+                    value = item.get(name)
+
+                except:
+                    # Something fun happened here.. ?
+                    value = None
 
             # Run it through the `prepare_FOO` method (if defined).
             prepare = getattr(self, 'prepare_{}'.format(name), None)
@@ -621,7 +626,6 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # Pass this along to django's URL resolver; it should figure the
         # rest out for us.
-        print('reverse: ', item, kwargs, cls.slug)
         return reverse(cls.url_name, kwargs=kwargs)
 
     def get(self, obj=None):
@@ -732,7 +736,7 @@ class Base(six.with_metaclass(meta.Resource)):
             self.status = constants.NO_CONTENT
 
             # Delegate to `destroy` to actually delete the item.
-            self.destroy()
+            self.destroy(self.get())
 
     def exists(self):
         # No sane defaults for cRud exist on this base, abstract resource.

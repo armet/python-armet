@@ -58,18 +58,22 @@ class Resource(type):
         return super(Resource, cls).__new__(cls, name, bases, attrs)
 
     def __init__(self, name, bases, attrs):
-        self._fields = OrderedDict()
-        if getattr(self, 'form', None) is not None:
-            # Make a new fields list and discover any fields we can
-            self.discover_fields()
+        if getattr(self, 'form', None) is None:
+            # No form declared; just use one
+            self.form = forms.Form
 
-            # Provide simple sanity checking..
-            # Is the defined resource URI one of the found fields ?
-            if self.resource_uri in self._fields:
-                raise ImproperlyConfigured(
-                    'The field name defined for the `resource_uri` (`{}`) '
-                    'conflicts with a declared field on the resource.'.format(
-                        self.resource_uri))
+        # Make a new fields list and discover any fields we can
+        self._fields = OrderedDict()
+        self.discover_fields()
+
+        # Provide simple sanity checking..
+        # Is the defined resource URI one of the found fields ?
+        resource_uri = getattr(self, 'resource_uri', None)
+        if resource_uri in self._fields:
+            raise ImproperlyConfigured(
+                'The field name defined for the `resource_uri` (`{}`) '
+                'conflicts with a declared field on the resource.'.format(
+                    resource_uri))
 
         # Delegate to python to finish us up.
         super(Resource, self).__init__(name, bases, attrs)
@@ -84,7 +88,7 @@ class Resource(type):
     def discover_fields(self):
         # Iterate through the list of declared fields using the provided form
         declared = getattr(self.form, 'declared_fields', {})
-        meta = self.form._meta
+        meta = getattr(self.form, '_meta', None)
         for name, item in declared.iteritems():
             if not self.is_field_visible(name):
                 continue
@@ -157,7 +161,7 @@ class Model(Resource):
         # Discover the fields explicitly declared on the model first.
         super(Model, self).discover_fields()
 
-        if self.model is None:
+        if getattr(self, 'model', None) is None:
             # No model so we're done here
             return
 

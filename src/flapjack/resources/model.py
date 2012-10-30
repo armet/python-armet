@@ -69,11 +69,11 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
             # Just get them all; hehehe..
             return self.queryset
 
-    def create(self, obj):
+    def create(self, data):
         # Iterate through and set all fields that we can initially
         params = {}
         for name, field in self._fields.iteritems():
-            if name not in obj:
+            if name not in data:
                 # Isn't here; move along
                 continue
 
@@ -82,20 +82,20 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
                 continue
 
             # This is not a m2m field; we can set this now
-            params[name] = obj[name]
+            params[name] = data[name]
 
         # Perform the initial create
         model = self.model.objects.create(**params)
 
         # Iterate through again and set the m2m bits
         for name, field in self._fields.iteritems():
-            if name not in obj or not obj[name]:
+            if name not in data or not data[name]:
                 # Isn't here; move along
                 continue
 
             if field.relation is not None and field.collection:
                 # This is a m2m field; we can set this now
-                setattr(model, field.name, obj[name])
+                setattr(model, field.name, data[name])
 
         # Iterate through and set all direct parameters
         for param in self.params:
@@ -130,6 +130,6 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
         # Return the new model
         return obj
 
-    def destroy(self):
+    def destroy(self, obj):
         # Delegate to django to perform the creation
-        self.model.objects.get(**{self.slug: self.identifier}).delete()
+        obj.delete()
