@@ -34,6 +34,14 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
         # Pass us on
         return resolution
 
+    # def form_clean(self, obj):
+    #     if self.identifier is not None:
+    #         # Get the model instance; this allows the form to validate even
+    #         # without the presence of `required` model fields.
+    #         return self.form(data=obj, instance=self.queryset[0])
+
+    #     return super(Model, self).form_clean(obj)
+
     @property
     def queryset(self):
         """Queryset that is used to read and filter data."""
@@ -109,19 +117,18 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
         # Return the fully constructed model
         return model
 
-    def update(self, old, obj):
-        # `old` comes from `read` which is in my control and I return a model
+    def update(self, obj, data):
+        # `obj` comes from `read` which is in my control and I return a model
         # Iterate through the fields and set or destroy them
         for name, field in self._fields.iteritems():
-            if field.direct:
-                value = obj[name] if name in obj else None
-                setattr(old, name, value)
+            value = data[name] if name in data else None
+            setattr(obj, name, value)
 
         # Save and we're off
-        old.save()
+        obj.save()
 
         # Return the new model
-        return old
+        return obj
 
     def destroy(self):
         # Delegate to django to perform the creation

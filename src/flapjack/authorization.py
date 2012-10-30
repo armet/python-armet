@@ -8,17 +8,13 @@ class Authorization(object):
     authorized.
     """
 
-    def is_accessible(self, request, identifier):
+    def is_accessible(self, request, method):
         """Immediate authorization (eg, only admins may access a resource)."""
         return True
 
-    def is_authorized(self, obj):
+    def is_authorized(self, request, method, obj):
         """Authorization pass after the object has been constructed."""
         return True
-
-    def filter(self, items, user):
-        """Apply any limits based on authorization."""
-        return items
 
 
 class Model(Authorization):
@@ -27,57 +23,29 @@ class Model(Authorization):
     permissions.
     """
 
+    # FIXME: Switch to use method names instead of http method names after
+    #   refactor of the determine_method function is done.
+
     def is_accessible(self, request, method):
         """Immediate authorization (eg, only admins may access a resource)."""
-        if method == 'create':
+        # if method == 'create':
+        if method == 'post':
             # Creating a new object; no object is neccessary.
-            return self.request.user.has_perm('can_add')
+            return request.user.has_perm('can_add')
         # ?
         return True
 
-    def is_authorized(self, request, identifier, method, obj):
+    def is_authorized(self, request, method, obj):
         """Authorization pass after the object has been constructed."""
-        if method == 'update':
+        # if method == 'update':
+        if method == 'put':
             # Updating; we should have an object.
-            return self.request.user.has_perm('can_change', obj)
+            return request.user.has_perm('can_change', obj)
 
-        if method == 'destroy':
+        if method == 'delete':
+        # if method == 'destroy':
             # Destroying an existing object; check the perms.
-            return self.request.user.has_perm('can_delete', obj)
+            return request.user.has_perm('can_delete', obj)
 
         # Nothing interesting to check; reads, etc are filtered
         return True
-
-    def filter(self, queryset, user):
-        """Apply any limits based on authorization."""
-        return queryset.authorized(user)
-
-    # def is_authorized(self, request, obj=None):
-    #     """Checks if the user is authorized to do the requested action."""
-    #     # GET-style methods are always allowed.
-    #     if request.method in ('GET', 'OPTIONS', 'HEAD'):
-    #         return True
-
-    #     klass = self.resource_meta.object_class
-
-    #     # If it doesn't look like a model, we can't check permissions.
-    #     if not klass or not getattr(klass, '_meta', None):
-    #         return True
-
-    #     permission_map = {
-    #         'POST': ['can_add'],
-    #         'PUT': ['can_change'],
-    #         'DELETE': ['can_delete'],
-    #         'PATCH': ['can_add', 'can_change', 'can_delete'],
-    #     }
-
-    #     # If we don't recognize the HTTP method, we don't know what
-    #     # permissions to check. Deny.
-    #     if request.method not in permission_map:
-    #         return False
-
-    #     # User must be logged in to check permissions.
-    #     if not hasattr(request, 'user'):
-    #         return False
-
-    #     return request.user.has_perms(permission_map[request.method], obj)

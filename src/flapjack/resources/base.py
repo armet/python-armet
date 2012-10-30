@@ -2,6 +2,7 @@ from collections import OrderedDict, Sequence
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.forms import ValidationError
+from django.forms.models import model_to_dict
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 import six
@@ -136,21 +137,21 @@ class Base(six.with_metaclass(meta.Resource)):
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
         try:
+            # Are we authenticated; probably should check that now
+            if cls.authentication is not None:
+                user = cls.authentication.authenticate(request)
+                if user is not None:
+                    # Cool; we're in -- set the request appropriately
+                    request.user = user
+
+                else:
+                    # Died; bummer
+                    return cls.authentication.unauthenticated
+
             # Instantiate the resource to use for the cycle
             resource = cls(request,
                 kwargs.get('id'),
                 kwargs.get('components', '').split('/'))
-
-            # Are we authenticated; probably should check that now
-            if resource.authentication is not None:
-                user = resource.authentication.authenticate(request)
-                if user is not None:
-                    # Cool; we're in -- set the request appropriately
-                    resource.request.user = user
-
-                else:
-                    # Died; bummer
-                    return resource.authentication.unauthenticated
 
             # Request an encoder as early as possible in order to
             # accurately return errors (if accrued).
@@ -240,17 +241,34 @@ class Base(six.with_metaclass(meta.Resource)):
         # Determine the method; returns our delegation function
         function = self.determine_method()
 
-        # Grab the request object if we can
-        obj = None
+        # Check for initial accessiblity
+        if self.authorization is not None \
+                and not self.authorization.is_accessible(
+                    self.request, self.method):
+            # Failed pre-test; bail
+            raise exceptions.Forbidden()
+
+        # Grab the request data if we can
+        data = None
         if self.request is not None and self.request.body:
             # Request a decoder and decode away
-            obj = decoders.find(self.request).decode(self.request)
+            data = decoders.find(self.request).decode(self.request)
 
-            # Run the object through a clean cycle
-            obj = self.clean(obj)
+            # Run the data through a clean cycle
+            data = self.clean(data)
+
+            # Check for authorization on the object if we have a real one
+            if self.identifier is not None:
+                # FIXME: We call `self.get()` frequently and special-case if
+                #   we are directly accessing the resource..
+                if self.authorization is not None \
+                        and not self.authorization.is_authorized(
+                            self.request, self.method, self.get()):
+                    # Failed post-test; bail
+                    raise exceptions.Forbidden()
 
         # Let's see how far down the rabbit hole we can go
-        return self.traverse(self.process, function, obj)
+        return self.traverse(self.process, function, data)
 
     def process(self, function, obj):
         # Execute the function found earlier
@@ -291,6 +309,8 @@ class Base(six.with_metaclass(meta.Resource)):
         # Append to our param hash
         if self.params is None:
             self.params = OrderedDict()
+
+        # FIXME: This method is a complete mess. re-write it
 
         params = dict(self.params)
         params[self.name] = self.identifier
@@ -378,6 +398,11 @@ class Base(six.with_metaclass(meta.Resource)):
 
     def determine_method(self):
         """Ensures HTTP method is acceptable."""
+        # FIXME: This method should follow other conventions elsewhere:
+        #   - `determine_http_method` as the name
+        #   - should set self.request.method instead of self.method
+        #   - probably should have an actual `determine_method` call as well
+        #       to move error checking and authz earlier
         if self.method is None:
             # Method override wasn't set; determine the HTTP method.
             if 'HTTP_X_HTTP_METHOD_OVERRIDE' in self.request.META:
@@ -405,16 +430,30 @@ class Base(six.with_metaclass(meta.Resource)):
         # Method is understood, allowed and implemented; continue.
         return function
 
-    def clean(self, obj):
+    def clean(self, data):
         # Before the object goes anywhere its relations need to be resolved and
         # other things need to happen to make everything more python'y
         for name, field in self._fields.iteritems():
-            value = obj.get(name)
+            value = data.get(name)
             if value is not None and field.relation is not None:
-                obj[name] = self.relation_clean(field, value)
+                data[name] = self.relation_clean(field, value)
+
+        # If this is a individual resource; we need to first get the
+        # object being accessed; modify it according to the data, and pass
+        # that into the form. This is done to allow both partial updates and
+        # full updates to be done here.
+        if self.identifier is not None:
+            # Get the object being accessed as a data dictionary
+            obj = self.get()
+
+            # Update data dictionary with what was not (allowed to be)
+            # provided
+            for name, item in model_to_dict(obj).iteritems():
+                if name not in self._fields:
+                    data[name] = item
 
         # Create a form instance to proxy validation
-        form = self.form(data=obj)
+        form = self.form(data=data)
 
         # Attempt to validate the form
         if not form.is_valid():
@@ -648,7 +687,7 @@ class Base(six.with_metaclass(meta.Resource)):
         else:
             try:
                 # Coerce the slug type
-                obj[self.slug] = self._fields[self.slug].parse(self.identifier)
+                obj[self.slug] = self._fields[self.slug].clean(self.identifier)
 
             except ValidationError:
                 # Bad slug; we're not here
@@ -662,7 +701,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 self.assert_method_allowed('update')
 
                 # Send us off to create
-                response = self.update(self.read(), obj)
+                response = self.update(self.get(), obj)
 
             elif self.allow_create_on_put:
                 # Set our status initially so `create` can change it

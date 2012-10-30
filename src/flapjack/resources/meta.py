@@ -75,9 +75,11 @@ class Resource(type):
         super(Resource, self).__init__(name, bases, attrs)
 
     def is_field_visible(self, name):
-        visible = self.fields is not None and name not in self.fields
-        visible = self.exclude is not None and name in self.exclude
-        return visible
+        if self.fields is not None and name not in self.fields \
+                or self.exclude is not None and name in self.exclude:
+            return False
+
+        return True
 
     def discover_fields(self):
         # Iterate through the list of declared fields using the provided form
@@ -90,7 +92,7 @@ class Resource(type):
             # Field is good and visible; instantiate and set initial
             # properties.
             field = fields.Field(name, relation=self.relations.get(name))
-            field.clean = field.to_python
+            field.clean = item.to_python
             field.filterable = name in self.filterable
 
             # Field is editable if it is not hidden from the bound form.
@@ -162,6 +164,9 @@ class Model(Resource):
         # Discover additional fields declared on the model.
         meta = self.model._meta
         for name in meta.get_all_field_names():
+            if not self.is_field_visible(name):
+                continue
+
             # Initial declaration of field properties
             props = {}
 
@@ -175,7 +180,7 @@ class Model(Resource):
                     if obj.var_name == name:
                         # Found a reverse relation; record and get out
                         item = obj.field
-                        props['name'] = obj.get_accessor_name()
+                        name = obj.get_accessor_name()
                         break
 
                 else:
@@ -183,7 +188,7 @@ class Model(Resource):
                         if obj.var_name == name:
                             # Found a m2m reverse relation; record and get out
                             item = obj.field
-                            props['name'] = obj.get_accessor_name()
+                            name = obj.get_accessor_name()
                             props['collection'] = True
                             break
 

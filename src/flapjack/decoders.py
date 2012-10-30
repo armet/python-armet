@@ -2,6 +2,8 @@
 """
 import abc
 import json
+import datetime
+from dateutil.parser import parse
 from . import exceptions, transcoders
 
 
@@ -57,9 +59,26 @@ class Url(transcoders.Url, Decoder):
 @Decoder.register()
 class Json(transcoders.Json, Decoder):
 
+    @staticmethod
+    def object_hook(obj):
+        # Iterate and attempt to parse any date/time like values
+        for name, value in obj.iteritems():
+            if not isinstance(value, basestring):
+                # Not a string; move along.
+                continue
+
+            try:
+                obj[name] = parse(value)
+
+            except ValueError:
+                # Guess it wasn't a date
+                pass
+
+        return obj
+
     @classmethod
     def decode(cls, request):
-        return json.loads(request.body)
+        return json.loads(request.body, object_hook=cls.object_hook)
 
 
 def find(request):
