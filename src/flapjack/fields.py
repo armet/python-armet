@@ -42,6 +42,9 @@ class Field(object):
         #! A function to sanitize a string to the presented python type.
         self.clean = kwargs.get('clean', lambda x: x)
 
+        #! Visibility of the field.
+        self.visible = kwargs.get('visible', False)
+
 
 class Model(Field):
     def __init__(self, name, **kwargs):

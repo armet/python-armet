@@ -131,6 +131,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
     def filter(self, items):
         """Point of extension to filter the results returned from `read`."""
+        # FIXME: Where should this go...
         return items
 
     @classmethod
@@ -139,14 +140,22 @@ class Base(six.with_metaclass(meta.Resource)):
         try:
             # Are we authenticated; probably should check that now
             if cls.authentication is not None:
-                user = cls.authentication.authenticate(request)
+                user = None
+                unauthenticated = HttpResponse(status=constants.FORBIDDEN)
+                for auth in cls.authentication:
+                    user = auth.authenticate(request)
+                    if user is not None:
+                        break
+
+                    unauthenticated = auth.unauthenticated
+
                 if user is not None:
                     # Cool; we're in -- set the request appropriately
                     request.user = user
 
                 else:
                     # Died; bummer
-                    return cls.authentication.unauthenticated
+                    return unauthenticated
 
             # Instantiate the resource to use for the cycle
             resource = cls(request,
@@ -250,7 +259,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # Grab the request data if we can
         data = None
-        if self.request is not None and self.request.body is not None:
+        if self.request is not None and self.request.body:
             # Request a decoder and decode away
             data = decoders.find(self.request).decode(self.request)
 
@@ -342,7 +351,8 @@ class Base(six.with_metaclass(meta.Resource)):
             item = self.get()
             relation = field.relation
             identifier = getattr(
-                relation.resolve(getattr(item, name)), relation.slug)
+                relation.resolve(getattr(item, name), self.request),
+                    relation.slug)
 
             resource = relation(
                     request=self.request,
@@ -449,7 +459,7 @@ class Base(six.with_metaclass(meta.Resource)):
             # Update data dictionary with what was not (allowed to be)
             # provided
             for name, item in model_to_dict(obj).iteritems():
-                if name not in self._fields:
+                if name not in self._fields or not self._fields[name].visible:
                     data[name] = item
 
         # Create a form instance to proxy validation
@@ -467,17 +477,17 @@ class Base(six.with_metaclass(meta.Resource)):
         if not isinstance(value, basestring):
             try:
                 # Need to resolve all the values
-                return [field.relation.resolve(x) for x in value]
+                return [field.relation.resolve(x, self.request) for x in value]
 
             except TypeError:
                 # Not an iterable; carry on.
                 pass
 
         # Nope; should just be one that gets resolved
-        return field.relation.resolve(value)
+        return field.relation.resolve(value, self.request)
 
     @classmethod
-    def resolve(cls, path, method='get', components=None, full=False):
+    def resolve(cls, path, request, method='get', components=None, full=False):
         if path is None:
             # Come on.. return none
             return None
@@ -486,23 +496,28 @@ class Base(six.with_metaclass(meta.Resource)):
             # Attempt to resolve the path normally.
             resolution = resolve(path)
             resource = resolution.func.__self__(
+                    request=request,
                     method=method,
                     identifier=resolution.kwargs['id'],
                     components=components
                 )
 
             # Return our resolved object.
-            return resource.dispatch()
+            return resource.get()
 
         except:
             # Assume we're already resolved
             return path
 
     def prepare(self, obj):
-        if isinstance(obj, Sequence) and not isinstance(obj, Mapping):
-            # Attempt to iterate and prepare each individual item as this could
-            # easily be an iterable.
-            return [self.item_prepare(x) for x in obj]
+        if not isinstance(obj, Mapping):
+            try:
+                # Attempt to iterate and prepare each individual item as this
+                # could easily be an iterable.
+                return [self.item_prepare(x) for x in obj]
+
+            except TypeError:
+                pass
 
         # Just prepare the one item.
         response = self.item_prepare(obj)
@@ -531,6 +546,11 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # Iterate through the fields and build the object from the item.
         for name, field in self._fields.iteritems():
+            # Is this visible first ?
+            if not field.visible:
+                # Nope; move along.
+                continue
+
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
             try:
@@ -649,10 +669,10 @@ class Base(six.with_metaclass(meta.Resource)):
                 # didn't get one; throw a 404.
                 raise exceptions.NotFound()
 
-            if not isinstance(response, basestring) \
-                    and isinstance(response, Sequence):
-                # Return only the one object.
-                response = response[0]
+        if not isinstance(response, basestring) \
+                and not isinstance(response, Mapping):
+            # Return only the one object.
+            response = response[0]
 
         # Return our (maybe filtered) response.
         return response

@@ -53,6 +53,8 @@ class Resource(type):
         cls.ensure_iterable(attrs, 'fields')
         cls.ensure_iterable(attrs, 'include')
         cls.ensure_iterable(attrs, 'exclude')
+        cls.ensure_iterable(attrs, 'authentication')
+        # cls.ensure_iterable(attrs, 'authorization') ?
 
         # Delegate to python to instantiate us.
         return super(Resource, cls).__new__(cls, name, bases, attrs)
@@ -90,14 +92,11 @@ class Resource(type):
         declared = getattr(self.form, 'declared_fields', {})
         meta = getattr(self.form, '_meta', None)
         for name, item in declared.iteritems():
-            if not self.is_field_visible(name):
-                continue
-
-            # Field is good and visible; instantiate and set initial
-            # properties.
+            # Instantiate and set initial properties.
             field = fields.Field(name, relation=self.relations.get(name))
             field.clean = item.to_python
             field.filterable = name in self.filterable
+            field.visible = self.is_field_visible(name)
 
             # Field is editable if it is not hidden from the bound form.
             if not meta.fields or name in meta.fields:
@@ -118,6 +117,7 @@ class Resource(type):
                 self._fields[name] = fields.Field(name,
                         relation=self.relations.get(name),
                         filterable=name in self.filterable,
+                        visible=True
                     )
 
 
@@ -168,11 +168,10 @@ class Model(Resource):
         # Discover additional fields declared on the model.
         meta = self.model._meta
         for name in meta.get_all_field_names():
-            if not self.is_field_visible(name):
-                continue
-
             # Initial declaration of field properties
-            props = {}
+            props = {
+                    'visible': self.is_field_visible(name),
+                }
 
             try:
                 # Get the field object from the model.
@@ -207,6 +206,7 @@ class Model(Resource):
 
             # Discover any properties from the field
             props['clean'] = item.to_python
+            props['editable'] = item.editable
 
             # Store the field
             self._fields[name] = fields.Model(name, **props)

@@ -16,16 +16,16 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
     filterer = filtering.Model
 
     @classmethod
-    def resolve(cls, path, full=False, **kwargs):
+    def resolve(cls, path, request, full=False, **kwargs):
         # Delegate to the base resource to do the actual resolution
-        resolution = super(Model, cls).resolve(path, **kwargs)
+        resolution = super(Model, cls).resolve(path, request, **kwargs)
 
         if not full:
             try:
                 # Attempt to grab the slug from the resolution as an object;
                 # The normal path (ChoiceField) expects the entire resolved
                 # resource but (ModelChoiceField) expects only the pk
-                return resolution[cls.model._meta.pk.name]
+                return getattr(resolution, cls.model._meta.pk.name)
 
             except:
                 # Wasn't a model apparently; just return the resolution
@@ -81,6 +81,10 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
                 # This is a m2m field; move along for now
                 continue
 
+            if not field.editable:
+                # Field is not editable; move along.
+                continue
+
             # This is not a m2m field; we can set this now
             params[name] = data[name]
 
@@ -93,7 +97,8 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
                 # Isn't here; move along
                 continue
 
-            if field.relation is not None and field.collection:
+            if field.relation is not None and field.collection \
+                    and field.editable:
                 # This is a m2m field; we can set this now
                 setattr(model, field.name, data[name])
 
@@ -121,8 +126,10 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
         # `obj` comes from `read` which is in my control and I return a model
         # Iterate through the fields and set or destroy them
         for name, field in self._fields.iteritems():
-            value = data[name] if name in data else None
-            setattr(obj, name, value)
+            print(name, field, field.editable)
+            if field.editable:
+                value = data[name] if name in data else None
+                setattr(obj, name, value)
 
         # Save and we're off
         obj.save()
