@@ -171,6 +171,7 @@ class Model(Resource):
             # Initial declaration of field properties
             props = {
                     'visible': self.is_field_visible(name),
+                    'filterable': True
                 }
 
             try:

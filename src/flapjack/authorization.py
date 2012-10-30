@@ -29,9 +29,9 @@ class Model(Authorization):
     def is_accessible(self, request, method):
         """Immediate authorization (eg, only admins may access a resource)."""
         # if method == 'create':
-        if method == 'post':
-            # Creating a new object; no object is neccessary.
-            return request.user.has_perm('can_add')
+        # if method == 'post':
+        #     # Creating a new object; no object is neccessary.
+        #     return request.user.has_perm('can_add')
         # ?
         return True
 

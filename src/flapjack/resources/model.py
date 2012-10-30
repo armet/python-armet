@@ -55,10 +55,6 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
         # Return the constructed queryset
         return queryset
 
-    def exists(self):
-        """Implementation of `exists` using django models."""
-        return self.queryset.filter(**{self.slug: self.identifier}).exists()
-
     def read(self):
         """Implementation of `read` using django models."""
         if self.identifier is not None:

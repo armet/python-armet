@@ -652,8 +652,13 @@ class Base(six.with_metaclass(meta.Resource)):
         # Ensure we're allowed to read
         self.assert_method_allowed('read')
 
-        # Delegate to `read` to actually grab a list of items.
-        response = self.read()
+        try:
+            # Delegate to `read` to actually grab a list of items.
+            response = self.read()
+
+        except:
+            # Something went wrong; were gone
+            raise exceptions.NotFound()
 
         # Invoke a filter function if available.
         response = self.filter(response)
@@ -699,21 +704,21 @@ class Base(six.with_metaclass(meta.Resource)):
             # TODO: What are we supposed to do here..
             raise exceptions.NotImplemented()
 
-    def put(self, obj):
+    def put(self, data):
         if self.identifier is None:
             # Attempting to change everything; go away (for now)
             raise exceptions.NotImplemented()
 
         else:
             try:
-                # Coerce the slug type
-                obj[self.slug] = self._fields[self.slug].clean(self.identifier)
+                # Coerce the object
+                obj = self.get()
 
-            except ValidationError:
-                # Bad slug; we're not here
-                raise exceptions.NotFound()
+            except:
+                # Bad; we're not here
+                obj = None
 
-            if self.exists():
+            if obj is not None:
                 # Set our status initially so `create` can change it
                 self.status = constants.OK
 
@@ -721,7 +726,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 self.assert_method_allowed('update')
 
                 # Send us off to create
-                response = self.update(self.get(), obj)
+                response = self.update(obj, data)
 
             elif self.allow_create_on_put:
                 # Set our status initially so `create` can change it
@@ -731,7 +736,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 self.assert_method_allowed('create')
 
                 # Send us off to create
-                response = self.create(obj)
+                response = self.create(data)
 
             else:
                 # Not allowed to create on put; damn
@@ -757,10 +762,6 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # Delegate to `destroy` to actually delete the item.
             self.destroy(self.get())
-
-    def exists(self):
-        # No sane defaults for cRud exist on this base, abstract resource.
-        raise exceptions.NotImplemented()
 
     def read(self):
         # No sane defaults for cRud exist on this base, abstract resource.

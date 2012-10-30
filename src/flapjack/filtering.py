@@ -114,7 +114,7 @@ class Filter(object):
         """Pythonifys item according to action
         """
         try:
-            return action.field.parse(item)
+            return action.field.clean(item)
         except ValidationError as e:
             # The field was unable to parse this thing  Raise a filter error
             raise FilterError(action.original_name, e.messages)
