@@ -63,7 +63,11 @@ class Bin(transcoders.Bin, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        return super(Bin, cls).encode(obj.read())
+        response = super(Bin, cls).encode(obj.read())
+        response['Content-Disposition'] = \
+            'attachment; filename="{}"'.format(obj.name.split('/')[-1])
+
+        return response
 
 
 @Encoder.register()
