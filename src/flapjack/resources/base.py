@@ -475,8 +475,13 @@ class Base(six.with_metaclass(meta.Resource)):
                     data[name] = item
 
         if self.validation:
+            # Split data and files
+            fields = self._fields
+            files = {k: v for k, v in data.items() if fields[k].file}
+            items = {k: v for k, v in data.items() if not fields[k].file}
+
             # Create a form instance to proxy validation
-            form = self.form(data=data)
+            form = self.form(data=items, files=files)
 
             # Attempt to validate the form
             if not form.is_valid():
@@ -484,7 +489,8 @@ class Base(six.with_metaclass(meta.Resource)):
                 raise exceptions.BadRequest(form.errors)
 
             # We should have good, sanitized data now (thank you, forms)
-            return form.cleaned_data
+            data = form.cleaned_data
+            return data
 
         else:
             # No validation required; just return the data

@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.related import RelatedField
-from django.db.models import ManyToManyField
+from django.db.models import ManyToManyField, FileField
 from .. import fields
 
 
@@ -98,6 +98,10 @@ class Resource(type):
             field.clean = item.to_python
             field.filterable = name in self.filterable
             field.visible = self.is_field_visible(name)
+
+            # Are we dealing with a file field ?
+            if isinstance(item, forms.FileField):
+                field.file = True
 
             # Field is editable if it is not hidden from the bound form.
             if not meta.fields or name in meta.fields:
@@ -207,6 +211,7 @@ class Model(Resource):
                 continue
 
             # Discover any properties from the field
+            props['file'] = isinstance(item, FileField)
             props['clean'] = item.to_python
             props['editable'] = item.editable or item.auto_created
             props['default'] = item.default

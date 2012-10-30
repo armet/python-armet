@@ -33,13 +33,9 @@ class Json(transcoders.Json, Encoder):
 
     @staticmethod
     def default(obj):
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-
-        if isinstance(obj, datetime.date):
-            return obj.isoformat()
-
-        if isinstance(obj, datetime.time):
+        if isinstance(obj, datetime.datetime) \
+                or isinstance(obj, datetime.date) \
+                or isinstance(obj, datetime.time):
             return obj.isoformat()
 
         raise TypeError('{} is not JSON encodable.'.format(obj))

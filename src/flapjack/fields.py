@@ -50,6 +50,9 @@ class Field(object):
         default = kwargs.get('default')
         self.default = default if default is not NOT_PROVIDED else None
 
+        #! Whether this field expects to be a file.
+        self.file = kwargs.get('file', False)
+
 
 class Model(Field):
     def __init__(self, name, **kwargs):
