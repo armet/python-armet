@@ -309,7 +309,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # TODO: Stupid check needed here for those that forget
             # relation defines
-            resource.fields[self.name].relation = self.__class__
+            resource._fields[self.name].relation = self.__class__
         else:
             # Grab the object that we would have got
             item = self.get()
@@ -502,7 +502,7 @@ class Base(six.with_metaclass(meta.Resource)):
             # Run it through the `prepare_FOO` method (if defined).
             prepare = getattr(self, 'prepare_{}'.format(name), None)
             if prepare is not None:
-                value = prepare(value)
+                value = prepare(obj, value)
 
             # Attempt to resolve the prepared value (which at this point
             # can be a callable)
