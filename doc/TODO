@@ -3,9 +3,13 @@
  ✔ `POST`, `DELETE` (generic), `PUT` to sub-resources @done (12-10-26 11:09)
  ✔ `update` @done (12-10-26 11:09)
  ✔ `put` @done (12-10-26 11:09)
- ☐ authorization
+ ✔ authorization @done (12-10-30 10:13)
  ✔ authentication @done (12-10-26 12:48)
- ☐ xml (decoder + encoder)
  ✔ kryptonite @done (12-10-26 09:18)
- ☐ API registry
  ✔ filtering @done (12-10-25 19:23)
+ ☐ xml (decoder + encoder)
+ ☐ `PATCH`, `PUT` and `DELETE` make Form and URL decoder work
+ ☐ API registry
+ ☐ Sorting
+     Best idea so far: ?name__not:asc="dsdf"&date:desc
+ ☐ special case FileField handling
