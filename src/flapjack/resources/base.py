@@ -4,12 +4,14 @@ from django.conf.urls import patterns, url
 from django.forms import ValidationError
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
+import six
 from ..http import HttpResponse, constants
 from .. import encoders, exceptions, decoders
 from .. import utils
+from . import meta
 
 
-class Base(object):
+class Base(six.with_metaclass(meta.Resource)):
 
     #! List of allowed HTTP methods (in general).
     http_allowed_methods = (
