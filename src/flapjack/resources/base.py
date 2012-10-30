@@ -1,4 +1,4 @@
-from collections import OrderedDict, Sequence
+from collections import OrderedDict, Sequence, Mapping
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.forms import ValidationError
@@ -499,14 +499,10 @@ class Base(six.with_metaclass(meta.Resource)):
             return path
 
     def prepare(self, obj):
-        try:
+        if isinstance(obj, Sequence) and not isinstance(obj, Mapping):
             # Attempt to iterate and prepare each individual item as this could
             # easily be an iterable.
             return [self.item_prepare(x) for x in obj]
-
-        except TypeError:
-            # Not iterable; we have but one.
-            pass
 
         # Just prepare the one item.
         response = self.item_prepare(obj)
@@ -611,16 +607,13 @@ class Base(six.with_metaclass(meta.Resource)):
                     kwargs['id'] = item[cls.slug]
 
             except:
-                # Well; that was a flop...
-                pass
+                try:
+                    # Let's try direct access -- maybe we have an object
+                    kwargs['id'] = getattr(item, cls.slug)
 
-            try:
-                # Let's try direct access -- maybe we have an object
-                kwargs['id'] = getattr(item, cls.slug)
-
-            except:
-                # We'll damn; item must be just an id (hopefully)
-                kwargs['id'] = item
+                except:
+                    # We'll damn; item must be just an id (hopefully)
+                    kwargs['id'] = item
 
         else:
             # We have no item; return nothing.
@@ -628,6 +621,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # Pass this along to django's URL resolver; it should figure the
         # rest out for us.
+        print('reverse: ', item, kwargs, cls.slug)
         return reverse(cls.url_name, kwargs=kwargs)
 
     def get(self, obj=None):
@@ -651,8 +645,10 @@ class Base(six.with_metaclass(meta.Resource)):
                 # didn't get one; throw a 404.
                 raise exceptions.NotFound()
 
-            # Return only the one object.
-            response = response[0]
+            if not isinstance(response, basestring) \
+                    and isinstance(response, Sequence):
+                # Return only the one object.
+                response = response[0]
 
         # Return our (maybe filtered) response.
         return response

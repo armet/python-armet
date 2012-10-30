@@ -58,9 +58,9 @@ class Resource(type):
         return super(Resource, cls).__new__(cls, name, bases, attrs)
 
     def __init__(self, name, bases, attrs):
+        self._fields = OrderedDict()
         if getattr(self, 'form', None) is not None:
             # Make a new fields list and discover any fields we can
-            self._fields = OrderedDict()
             self.discover_fields()
 
             # Provide simple sanity checking..
