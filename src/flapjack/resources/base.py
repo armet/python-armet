@@ -603,6 +603,16 @@ class Base(six.with_metaclass(meta.Resource)):
                 # Wasn't a callable; eh. move along
                 pass
 
+            # Is this perhaps a file
+            if field.file:
+                # Are we accessing it directly; if not, reverse it
+                if self.components[0] != name:
+                    value = self.reverse(item, components=name)
+
+                else:
+                    # Accessing it directly; return `JUST` the file
+                    return {name: value}
+
             # Run it through the relation preparation method if we have
             # a relation.
             if field.relation is not None:
@@ -643,9 +653,12 @@ class Base(six.with_metaclass(meta.Resource)):
         return obj
 
     @classmethod
-    def reverse(cls, item):
+    def reverse(cls, item, components=None):
         # Build our argument list for django's url resolver
         kwargs = {'resource': cls.name}
+
+        if components is not None:
+            kwargs['components'] = components
 
         if item is not None:
             try:

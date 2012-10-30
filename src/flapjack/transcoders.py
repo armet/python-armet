@@ -69,6 +69,14 @@ class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
         return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
 
 
+class Bin(object):
+
+    #! Applicable mimetypes for this transcoder.
+    mimetypes = (
+        'application/octect-stream',
+    )
+
+
 class Form(object):
 
     #! Applicable mimetypes for this transcoder.
