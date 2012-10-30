@@ -669,10 +669,10 @@ class Base(six.with_metaclass(meta.Resource)):
                 # didn't get one; throw a 404.
                 raise exceptions.NotFound()
 
-        if not isinstance(response, basestring) \
-                and not isinstance(response, Mapping):
-            # Return only the one object.
-            response = response[0]
+            if not isinstance(response, basestring) \
+                    and not isinstance(response, Mapping):
+                # Return only the one object.
+                response = response[0]
 
         # Return our (maybe filtered) response.
         return response
