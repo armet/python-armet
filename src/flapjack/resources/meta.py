@@ -89,9 +89,8 @@ class Resource(type):
 
             # Field is good and visible; instantiate and set initial
             # properties.
-            field = fields.Field(name)
+            field = fields.Field(name, relation=self.relations.get(name))
             field.clean = field.to_python
-            field.relation = self.relations.get(name),
             field.filterable = name in self.filterable
 
             # Field is editable if it is not hidden from the bound form.
@@ -163,8 +162,8 @@ class Model(Resource):
         # Discover additional fields declared on the model.
         meta = self.model._meta
         for name in meta.get_all_field_names():
-            # Initial declration of the field.
-            field = fields.Model(name)
+            # Initial declaration of field properties
+            props = {}
 
             try:
                 # Get the field object from the model.
@@ -176,7 +175,7 @@ class Model(Resource):
                     if obj.var_name == name:
                         # Found a reverse relation; record and get out
                         item = obj.field
-                        field.name = obj.get_accessor_name()
+                        props['name'] = obj.get_accessor_name()
                         break
 
                 else:
@@ -184,26 +183,21 @@ class Model(Resource):
                         if obj.var_name == name:
                             # Found a m2m reverse relation; record and get out
                             item = obj.field
-                            field.name = obj.get_accessor_name()
-                            field.collection = True
+                            props['name'] = obj.get_accessor_name()
+                            props['collection'] = True
                             break
 
             # Attempt to get the relation for the field
             relation = self.relations.get(name)
             if relation:
-                field.relation = relation
+                props['relation'] = relation
 
             elif isinstance(item, RelatedField):
                 # No defined relation; the field doesn't exist
-                field = None
-
-            # Do we still have a field ?
-            if field is None:
-                # No; move along
                 continue
 
             # Discover any properties from the field
-            field.clean = item.to_python
+            props['clean'] = item.to_python
 
             # Store the field
-            self._fields[name] = field
+            self._fields[name] = fields.Model(name, **props)

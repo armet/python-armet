@@ -502,7 +502,7 @@ class Base(six.with_metaclass(meta.Resource)):
             # Run it through the `prepare_FOO` method (if defined).
             prepare = getattr(self, 'prepare_{}'.format(name), None)
             if prepare is not None:
-                value = prepare(obj, value)
+                value = prepare(item, value)
 
             # Attempt to resolve the prepared value (which at this point
             # can be a callable)
