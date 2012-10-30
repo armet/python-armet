@@ -13,3 +13,5 @@
  ☐ Sorting
      Best idea so far: ?name__not:asc="dsdf"&date:desc
  ☐ special case FileField handling
+ ☐ transcoders need to know what kind of thing they are transcoding
+     would allow for limiting only `Form` to accept data with `Files`, etc
