@@ -128,6 +128,10 @@ class Base(six.with_metaclass(meta.Resource)):
     #! Additional fields to prepare from the source object or dictionary.
     include = None
 
+    def filter(self, items):
+        """Point of extension to filter the results returned from `read`."""
+        return items
+
     @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
@@ -159,7 +163,10 @@ class Base(six.with_metaclass(meta.Resource)):
             content = resource.dispatch()
 
             # Encode the content (if any) and return the response
-            response = encoder.encode(content) if content else HttpResponse()
+            if content is not None:
+                response = encoder.encode(content)
+            else:
+                response = HttpResponse()
             response.status_code = resource.status
             # TODO: response['Location'] (self.reverse(kwargs)) ?
             # TODO: response['Content-Location'] (self.location) ?
@@ -591,9 +598,22 @@ class Base(six.with_metaclass(meta.Resource)):
         # Delegate to `read` to actually grab a list of items.
         response = self.read()
 
-        # Invoke our filterer (if we have one) to filter our response
+        # Invoke a filter function if available.
+        response = self.filter(response)
+
         if self.identifier is None and self._filterer is not None:
+            # Invoke our filterer (if we have one) to filter our response using
+            # the query string.
             response = self._filterer.filter(response, self.request.GET)
+
+        if self.identifier is not None:
+            if not response:
+                # If we were attempting to retrieve a single resource and we
+                # didn't get one; throw a 404.
+                raise exceptions.NotFound()
+
+            # Return only the one object.
+            response = response[0]
 
         # Return our (maybe filtered) response.
         return response

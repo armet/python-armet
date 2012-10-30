@@ -16,10 +16,9 @@ class Authorization(object):
         """Authorization pass after the object has been constructed."""
         return True
 
-    # def limit_queries(self, query):
-    #     """Apply query limits to the result list
-    #     """
-    #     return query
+    def filter(self, items, user):
+        """Apply any limits based on authorization."""
+        return items
 
 
 class Model(Authorization):
@@ -48,6 +47,10 @@ class Model(Authorization):
 
         # Nothing interesting to check; reads, etc are filtered
         return True
+
+    def filter(self, queryset, user):
+        """Apply any limits based on authorization."""
+        return queryset.authorized(user)
 
     # def is_authorized(self, request, obj=None):
     #     """Checks if the user is authorized to do the requested action."""

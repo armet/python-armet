@@ -37,13 +37,15 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
     @property
     def queryset(self):
         """Queryset that is used to read and filter data."""
+        # Start with them all
+        queryset = self.model.objects.all()
+
         if self.params is not None:
             # Parameter-based filtering (for foreign key navigation).
-            return self.model.objects.filter(**self.params)
+            queryset = queryset.filter(**self.params)
 
-        else:
-            # No parameters; just return them all
-            return self.model.objects.all()
+        # Return the constructed queryset
+        return queryset
 
     def exists(self):
         """Implementation of `exists` using django models."""
@@ -52,13 +54,8 @@ class Model(six.with_metaclass(meta.Model, base.Base)):
     def read(self):
         """Implementation of `read` using django models."""
         if self.identifier is not None:
-            try:
-                # This is an individual resource; attempt to get it
-                return self.queryset.get(**{self.slug: self.identifier})
-
-            except:
-                # Well damn; we don't have one -- die
-                raise exceptions.NotFound()
+            # This is an individual resource; attempt to get it
+            return self.queryset.filter(**{self.slug: self.identifier})
 
         else:
             # Just get them all; hehehe..
