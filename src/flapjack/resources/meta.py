@@ -4,6 +4,7 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.related import RelatedField
+from django.db.models import ManyToManyField
 from .. import fields
 
 
@@ -207,7 +208,10 @@ class Model(Resource):
 
             # Discover any properties from the field
             props['clean'] = item.to_python
-            props['editable'] = item.editable
+            props['editable'] = item.editable or item.auto_created
+            props['default'] = item.default
+            props['collection'] = props.get('collection', False) \
+                or isinstance(item, ManyToManyField)
 
             # Store the field
             self._fields[name] = fields.Model(name, **props)

@@ -448,6 +448,12 @@ class Base(six.with_metaclass(meta.Resource)):
             if value is not None and field.relation is not None:
                 data[name] = self.relation_clean(field, value)
 
+            if value is None:
+                data[name] = field.default
+
+            if value is None and field.collection:
+                data[name] = []
+
         # If this is a individual resource; we need to first get the
         # object being accessed; modify it according to the data, and pass
         # that into the form. This is done to allow both partial updates and

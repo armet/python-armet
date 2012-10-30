@@ -45,6 +45,9 @@ class Field(object):
         #! Visibility of the field.
         self.visible = kwargs.get('visible', False)
 
+        #! Default value for the field.
+        self.default = kwargs.get('default')
+
 
 class Model(Field):
     def __init__(self, name, **kwargs):
