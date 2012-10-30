@@ -29,14 +29,6 @@ class Encoder(transcoders.Transcoder):
 
 
 @Encoder.register()
-class Bin(transcoders.Bin, Encoder):
-
-    @classmethod
-    def encode(cls, obj=None):
-        return super(Bin, cls).encode(obj.read())
-
-
-@Encoder.register()
 class Json(transcoders.Json, Encoder):
 
     @staticmethod
@@ -64,6 +56,14 @@ class Json(transcoders.Json, Encoder):
 
         # Encode it normally; move along
         return super(Json, cls).encode(text)
+
+
+@Encoder.register()
+class Bin(transcoders.Bin, Encoder):
+
+    @classmethod
+    def encode(cls, obj=None):
+        return super(Bin, cls).encode(obj.read())
 
 
 @Encoder.register()
