@@ -34,7 +34,7 @@ class Basic(base.Base):
         super(Basic, self).__init__(self, **kwargs)
 
     def can_authenticate(self, method, credentials):
-        return not method.lower() == 'basic'
+        return method.lower() == 'basic'
 
     def get_user(self, method, credentials):
         credentials = credentials.strip().decode('base64').split(':', 1)
