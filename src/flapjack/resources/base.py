@@ -1,7 +1,6 @@
 from collections import OrderedDict, Sequence, Mapping
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
-from django.forms import ValidationError
 from django.forms.models import model_to_dict
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
@@ -128,6 +127,9 @@ class Base(six.with_metaclass(meta.Resource)):
 
     #! Additional fields to prepare from the source object or dictionary.
     include = None
+
+    #! Validation hook to disable form validation.
+    validation = True
 
     def filter(self, items):
         """Point of extension to filter the results returned from `read`."""
@@ -448,8 +450,12 @@ class Base(six.with_metaclass(meta.Resource)):
             if value is not None and field.relation is not None:
                 data[name] = self.relation_clean(field, value)
 
-            if value is None:
-                data[name] = field.default
+            if value is None and field.default is not None:
+                try:
+                    data[name] = field.default()
+
+                except:
+                    data[name] = field.default
 
             if value is None and field.collection:
                 data[name] = []
@@ -468,16 +474,21 @@ class Base(six.with_metaclass(meta.Resource)):
                 if name not in self._fields or not self._fields[name].visible:
                     data[name] = item
 
-        # Create a form instance to proxy validation
-        form = self.form(data=data)
+        if self.validation:
+            # Create a form instance to proxy validation
+            form = self.form(data=data)
 
-        # Attempt to validate the form
-        if not form.is_valid():
-            # We got invalid data; tsk.. tsk..; throw a bad request
-            raise exceptions.BadRequest(form.errors)
+            # Attempt to validate the form
+            if not form.is_valid():
+                # We got invalid data; tsk.. tsk..; throw a bad request
+                raise exceptions.BadRequest(form.errors)
 
-        # We should have good, sanitized data now (thank you, forms)
-        return form.cleaned_data
+            # We should have good, sanitized data now (thank you, forms)
+            return form.cleaned_data
+
+        else:
+            # No validation required; just return the data
+            return data
 
     def relation_clean(self, field, value):
         if not isinstance(value, basestring):

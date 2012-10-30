@@ -1,4 +1,5 @@
 from . import utils
+from django.db.models.fields import NOT_PROVIDED
 
 
 class Field(object):
@@ -46,7 +47,8 @@ class Field(object):
         self.visible = kwargs.get('visible', False)
 
         #! Default value for the field.
-        self.default = kwargs.get('default')
+        default = kwargs.get('default')
+        self.default = default if default is not NOT_PROVIDED else None
 
 
 class Model(Field):
