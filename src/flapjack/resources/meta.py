@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.related import RelatedField
-from . import fields
+from .. import fields
 
 
 class Resource(type):
