@@ -1,7 +1,14 @@
-import functools
+# -*- coding: utf-8 -*-
+"""Declares small functions or classes of general utility.
+"""
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 
 
 class classproperty(object):
+    """Declares a read-only `property` that acts on the class object.
+    """
+
     def __init__(self, getter):
         self.getter = getter
 
@@ -10,21 +17,19 @@ class classproperty(object):
 
 
 def memoize(obj):
+    """Memoizes a function based on the id of its first argument."""
+    from functools import wraps
+
     cache = obj.cache = {}
 
-    @functools.wraps(obj)
+    @wraps(obj)
     def memoizer(*args, **kwargs):
-        if args not in cache:
-            cache[args] = obj(*args, **kwargs)
-        return cache[args]
+        identifier = id(args[0])
+        if identifier not in cache:
+            value = obj(*args, **kwargs)
+            cache[identifier] = value
+            return value
+
+        return cache[identifier]
+
     return memoizer
-
-
-def flatten_parameters(params):
-    """Flattens a dict where each value is a list of 1 or more things into a
-    dict where each value is either an object or a list of 2 or more things
-    """
-    for k, v in params.items():
-        if len(v) == 1:
-            params[k] = v[0]
-    return params
