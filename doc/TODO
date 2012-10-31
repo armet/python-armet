@@ -12,6 +12,9 @@
  ☐ API registry
  ☐ Sorting
      Best idea so far: ?name__not:asc="dsdf"&date:desc
- ☐ special case FileField handling
+ ✔ special case FileField handling @done (12-10-30 23:02)
  ☐ transcoders need to know what kind of thing they are transcoding
      would allow for limiting only `Form` to accept data with `Files`, etc
+ ☐ meta needs to respect inheritance
+ ☐ barebones documentation with some examples
+ ☐ unit testing those examples

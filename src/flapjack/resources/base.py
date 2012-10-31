@@ -181,8 +181,6 @@ class Base(six.with_metaclass(meta.Resource)):
             else:
                 response = HttpResponse()
             response.status_code = resource.status
-            # TODO: response['Location'] (self.reverse(kwargs)) ?
-            # TODO: response['Content-Location'] (self.location) ?
             return response
 
         except exceptions.Error as ex:
@@ -491,8 +489,6 @@ class Base(six.with_metaclass(meta.Resource)):
 
             if not files:
                 files = None
-
-            print(items, files)
 
             # Create a form instance to proxy validation
             form = self.form(data=items, files=files)
