@@ -2,6 +2,7 @@ from collections import OrderedDict, Sequence, Mapping
 from django.views.decorators.csrf import csrf_exempt
 from django.conf.urls import patterns, url
 from django.forms.models import model_to_dict
+from django.core.files.base import File
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 import six
@@ -477,8 +478,21 @@ class Base(six.with_metaclass(meta.Resource)):
         if self.validation:
             # Split data and files
             fields = self._fields
-            files = {k: v for k, v in data.items() if fields[k].file}
-            items = {k: v for k, v in data.items() if not fields[k].file}
+            files, items = {}, {}
+            for key, value in data.iteritems():
+                field = fields.get(key)
+                if field is not None:
+                    if field.file:
+                        if isinstance(value, File):
+                            files[key] = value
+
+                    else:
+                        items[key] = value
+
+            if not files:
+                files = None
+
+            print(items, files)
 
             # Create a form instance to proxy validation
             form = self.form(data=items, files=files)
