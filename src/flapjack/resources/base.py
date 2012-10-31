@@ -798,14 +798,14 @@ class Base(six.with_metaclass(meta.Resource)):
                 return response
 
     def delete(self, obj=None):
+        # Set our status initially so `destory` can change it
+        self.status = constants.NO_CONTENT
+
         if self.identifier is None:
-            # Attempting to delete everything; go away (for now)
-            raise exceptions.NotImplemented()
+            # Attempting to delete everything; have fun
+            self.destroy()
 
         else:
-            # Set our status initially so `destory` can change it
-            self.status = constants.NO_CONTENT
-
             # Delegate to `destroy` to actually delete the item.
             self.destroy(self.get())
 
@@ -821,6 +821,6 @@ class Base(six.with_metaclass(meta.Resource)):
         # No sane defaults for crUd exist on this base, abstract resource.
         raise exceptions.NotImplemented()
 
-    def destroy(self):
+    def destroy(self, obj):
         # No sane defaults for cruD exist on this base, abstract resource.
         raise exceptions.NotImplemented()
