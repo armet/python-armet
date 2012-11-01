@@ -33,3 +33,22 @@ def memoize(obj):
         return cache[identifier]
 
     return memoizer
+
+
+def config(path, default):
+    """Retrieve a namespaced configuration option from django."""
+    from django.conf import settings
+    try:
+        segment = settings.FLAPJACK
+        for arg in path.split('.'):
+            segment = segment[arg.upper()]
+
+        return segment
+
+    except AttributeError, KeyError:
+        return None
+
+
+def config_fallback(test, *args):
+    """Test passed value and if `None` use config with the remaining params."""
+    return test if test is not None else config(*args)
