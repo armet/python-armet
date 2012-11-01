@@ -45,7 +45,10 @@ def config(path, default):
 
         return segment
 
-    except AttributeError, KeyError:
+    except AttributeError:
+        return None
+
+    except KeyError:
         return None
 
 
