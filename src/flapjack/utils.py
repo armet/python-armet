@@ -46,10 +46,10 @@ def config(path, default):
         return segment
 
     except AttributeError:
-        return None
+        return default
 
     except KeyError:
-        return None
+        return default
 
 
 def config_fallback(test, *args):
