@@ -87,6 +87,12 @@ class Filter(object):
             for idx, field_string in enumerate(filtermap, 1):
                 field = fields[field_string]
 
+                # Make sure the field is visible (not blacklisted)
+                if not field.visible:
+                    raise FilterError(
+                        FILTER_SEPARATOR.join(filtermap),
+                        '{} is not a valid field'.format(field_string))
+
                 # Make sure the field is filterable
                 if not field.filterable:
                     raise FilterError(
