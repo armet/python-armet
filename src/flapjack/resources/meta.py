@@ -90,8 +90,8 @@ class Resource(type):
 
     def discover_fields(self):
         # Iterate through the list of declared fields using the provided form
-        declared = getattr(self.form, 'declared_fields', {})
-        if not declared:
+        declared = getattr(self.form, 'declared_fields', None)
+        if declared is None:
             declared = getattr(self.form, 'base_fields', {})
 
         meta = getattr(self.form, '_meta', None)
