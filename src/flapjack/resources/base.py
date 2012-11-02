@@ -262,7 +262,8 @@ class Base(six.with_metaclass(meta.Resource)):
         data = None
         if self.request is not None and self.request.body:
             # Request a decoder and decode away
-            data = decoders.find(self.request).decode(self.request)
+            data = decoders.find(self.request).decode(self.request,
+                self._fields)
 
             # Run the data through a clean cycle
             data = self.clean(data)

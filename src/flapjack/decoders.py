@@ -11,7 +11,7 @@ class Decoder(transcoders.Transcoder):
 
     @classmethod
     @abc.abstractmethod
-    def decode(cls, request):
+    def decode(cls, request, fields):
         """
         Constructs an object dictionary from the request body according to the
         media-type specified in the `Content-Type` header.
@@ -30,7 +30,7 @@ class Decoder(transcoders.Transcoder):
 class Form(transcoders.Form, Decoder):
 
     @classmethod
-    def decode(cls, request):
+    def decode(cls, request, fields):
         # Build the initial object as a copy of the POST data
         obj = dict(request.POST)
 
@@ -44,8 +44,13 @@ class Form(transcoders.Form, Decoder):
 
         # Now flatten those in that can be flattened
         for name, item in obj.items():
-            if len(item) == 1:
-                obj[name] = item[0]
+            try:
+                if len(item) == 1 and not fields[name].collection:
+                    obj[name] = item[0]
+
+            except KeyError:
+                # Weird..
+                pass
 
         # Return the final object dictionary
         return obj
@@ -77,7 +82,7 @@ class Json(transcoders.Json, Decoder):
         return obj
 
     @classmethod
-    def decode(cls, request):
+    def decode(cls, request, fields):
         return json.loads(request.body, object_hook=cls.object_hook)
 
 
