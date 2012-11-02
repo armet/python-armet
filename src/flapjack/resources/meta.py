@@ -122,7 +122,7 @@ class Resource(type):
                 self._fields[name] = fields.Field(name,
                         relation=self.relations.get(name),
                         filterable=name in self.filterable,
-                        visible=True
+                        visible=self.is_field_visible(name)
                     )
 
 
