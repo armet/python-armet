@@ -10,7 +10,8 @@ def read(filename):
 setup(
         name='flapjack',
         version=read('VERSION'),
-        description=read('description'),
+        description='Clean and modern framework in django for creating '
+                    'RESTful APIs.',
         long_description=read('README.md'),
         author='Concordus Applications',
         author_email='support@concordusapps.com',
