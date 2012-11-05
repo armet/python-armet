@@ -8,11 +8,11 @@ from __future__ import absolute_import, division
 import abc
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import AnonymousUser
-from .http import HttpResponse, constants
-from . import utils
+import six
+from . import http, utils
 
 
-class Base(object):
+class Authentication(object):
     """Describes the base authentication protocol.
     """
 
@@ -25,7 +25,6 @@ class Base(object):
         #! `True`.
         self.require_active = require_active
 
-    @abc.abstractmethod
     def authenticate(self, request):
         """Gets the a user if they are authenticated; else None.
 
@@ -33,7 +32,7 @@ class Base(object):
         @retval AnonymousUser  Able to authenticate but failed.
         @retval User           User object representing the curretn user.
         """
-        pass
+        return AnonymousUser()
 
     def is_active(self, user):
         """Checks if the user is active; served as a point of extension."""
@@ -42,10 +41,10 @@ class Base(object):
     @property
     def unauthenticated(self):
         """The response to return upon failing authentication."""
-        return HttpResponse(status=constants.FORBIDDEN)
+        return http.Response(status=http.FORBIDDEN)
 
 
-class Header(Base):
+class Header(six.with_metaclass(abc.ABCMeta, Authentication)):
     """
     Describes an abstract authentication protocol that uses the `Authorization`
     HTTP/1.1 header.
@@ -133,7 +132,7 @@ class Http(Header):
             # Issue the proper challenge response that informs the client
             # that they need to authenticate (allowing a browser to respond
             # with a login prompt for example).
-            response = HttpResponse(status=constants.UNAUTHORIZED)
+            response = http.Response(status=http.UNAUTHORIZED)
             response['WWW-Authenticate'] = \
                 'Basic Realm="{}"'.format(self.realm)
 
