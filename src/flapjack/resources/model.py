@@ -4,21 +4,16 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
-from . import base
+from .base import Resource, Meta, Options
 
 
-class Options(base.Options):
+class Options(Options):
     pass
 
 
-class Meta(base.Meta):
+class Meta(Meta):
     pass
 
 
-class Model(six.with_metaclass(base.Resource, Meta)):
+class Resource(six.with_metaclass(Meta, Resource)):
     pass
-
-
-__all__ = [
-    Model
-]
