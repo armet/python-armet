@@ -90,7 +90,10 @@ class Resource(type):
 
     def discover_fields(self):
         # Iterate through the list of declared fields using the provided form
-        declared = getattr(self.form, 'declared_fields', {})
+        declared = getattr(self.form, 'declared_fields', None)
+        if declared is None:
+            declared = getattr(self.form, 'base_fields', {})
+
         meta = getattr(self.form, '_meta', None)
         for name, item in declared.iteritems():
             # Instantiate and set initial properties.
@@ -104,9 +107,10 @@ class Resource(type):
                 field.file = True
 
             # Field is editable if it is not hidden from the bound form.
-            if not meta.fields or name in meta.fields:
-                if not meta.exclude or name not in meta.exclude:
-                    field.editable = True
+            if meta is not None:
+                if not meta.fields or name in meta.fields:
+                    if not meta.exclude or name not in meta.exclude:
+                        field.editable = True
 
             # Field is a collection if it is some kind of
             # multiple choice field.

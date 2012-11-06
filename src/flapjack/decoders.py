@@ -72,6 +72,10 @@ class Json(transcoders.Json, Decoder):
                 # Not a string; move along.
                 continue
 
+            if not value:
+                # Empty string move along
+                continue
+
             try:
                 obj[name] = parse(value)
 
@@ -83,6 +87,7 @@ class Json(transcoders.Json, Decoder):
 
     @classmethod
     def decode(cls, request, fields):
+        cls.fields = fields  # HACK: Get rid of this hack
         return json.loads(request.body, object_hook=cls.object_hook)
 
 

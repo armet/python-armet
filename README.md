@@ -1,6 +1,6 @@
 Flapjack
 ========
-_to be written_
+_Clean and modern framework in django for creating RESTful APIs._
 
 Features
 --------
