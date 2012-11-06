@@ -9,7 +9,7 @@ import abc
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import AnonymousUser
 import six
-from . import http, utils
+from . import http, utils, exceptions
 
 
 class Authentication(object):
@@ -39,9 +39,9 @@ class Authentication(object):
         return user.is_active if self.require_active else False
 
     @property
-    def unauthenticated(self):
+    def Unauthenticated(self):
         """The response to return upon failing authentication."""
-        return http.Response(status=http.FORBIDDEN)
+        return exceptions.Forbidden()
 
 
 class Header(six.with_metaclass(abc.ABCMeta, Authentication)):
@@ -127,21 +127,17 @@ class Http(Header):
             'authentication.http.realm', 'django:flapjack')
 
     @property
-    def unauthenticated(self):
+    def Unauthenticated(self):
         if self.challenge:
             # Issue the proper challenge response that informs the client
             # that they need to authenticate (allowing a browser to respond
             # with a login prompt for example).
-            response = http.Response(status=http.UNAUTHORIZED)
-            response['WWW-Authenticate'] = \
-                'Basic Realm="{}"'.format(self.realm)
-
-            return response
+            return exceptions.Unauthorized(self.realm)
 
         else:
             # Requested to not issue the challenge; concede and let
             # our super report the status.
-            return super(Http, self).unauthenticated
+            return super(Http, self).Unauthenticated
 
 
 class Basic(Http):

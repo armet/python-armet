@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
 import six
-from .. import http, utils, authentication
+from .. import http, utils, authentication, exceptions
 
 
 class Options(object):
@@ -41,7 +41,7 @@ class Options(object):
         self._bases = bases if bases else []
 
         #! List of understood HTTP methods.
-        self.http_method_names = self._override('http_method_names', (
+        self.method_names = self._override('method_names', (
             'get',
             'post',
             'put',
@@ -54,7 +54,7 @@ class Options(object):
         ))
 
         #! List of allowed HTTP methods.
-        self.http_allowed_methods = self._override('http_allowed_methods', (
+        self.allowed_methods = self._override('allowed_methods', (
             'get',
             'post',
             'put',
@@ -62,14 +62,14 @@ class Options(object):
         ))
 
         #! List of allowed HTTP methods against a whole resource (eg /user).
-        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        self.http_list_allowed_methods = self._override(
-            'http_list_allowed_methods', self.http_allowed_methods)
+        #! If undeclared or None, will be defaulted to `allowed_methods`.
+        self.list_allowed_methods = self._override(
+            'list_allowed_methods', self.allowed_methods)
 
         #! List of allowed HTTP methods against a single resource (eg /user/1).
-        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        self.http_detail_allowed_methods = self._override(
-            'http_detail_allowed_methods', self.http_allowed_methods)
+        #! If undeclared or None, will be defaulted to `allowed_methods`.
+        self.detail_allowed_methods = self._override(
+            'detail_allowed_methods', self.allowed_methods)
 
         #! List of allowed operations.
         #! Resource operations are meant to generalize and blur the differences
@@ -153,7 +153,7 @@ class Resource(six.with_metaclass(Meta)):
     @utils.memoize
     def urls(cls):
         """Builds the complete URL configuration for this resource."""
-        return patterns(
+        return patterns('',
             cls.url(),
             cls.url(r'/(?P<id>[^/]?)'),
             cls.url(r'/(?P<id>[^/]?)/(?P<path>.*?)'),
@@ -168,15 +168,25 @@ class Resource(six.with_metaclass(Meta)):
         """
         try:
             # Traverse path segments; determine final resource
-            segments = kwargs.get('path').split('/')
+            segments = kwargs.get('path', '').split('/')
             segments = [x for x in segments if x]
-            cls.traverse(segments)
-            # TODO: Instantiate the resource
-            # TODO: Initiate the dispatch
+            resource = cls.traverse(segments)
+
+            # Instantiate the resource
+            obj = resource(request)
+
+            # Initiate the dispatch cycle
+            data = obj.dispatch()
+
             # TODO: Build the response object
             # TODO: Apply pagination (?)
             # TODO: Return the response object
-            return http.Response(status=http.OK)
+            return http.Response(str(data), status=http.OK)
+
+        except exceptions.Error as ex:
+            # Some known error was thrown; give an encoder to the exception
+            # and encode an exception response.
+            return ex.encode(None)
 
         except BaseException:
             if settings.DEBUG:
@@ -202,28 +212,85 @@ class Resource(six.with_metaclass(Meta)):
         #! Django WSGI request object.
         self.request = request
 
+        #! Identifier of the resource if we are being accessed directly.
+        self.identifier = kwargs.get('identifier')
+
     def dispatch(self):
         """
         """
         # Assert authentication and attempt to get a valid user object.
         for authentication in self._meta.authentication:
             user = authentication.authenticate(self.request)
-            if user is not None:
+            if user is None:
+                # A user object cannot be retrieved with this authn protocol.
+                continue
+
+            if user.is_authenticated():
                 # A user object has been successfully retrieved.
                 self.request.user = user
                 break
 
         else:
-            # A user was never retreived; return that we have failed
-            # to authenticate ourselves.
-            return authentication.unauthenticated
+            # A user was declared unauthenticated with some confidence.
+            raise authentication.Unauthenticated
 
         # TODO: Determine encoder
         # TODO: Determine decoder
-        # TODO: Determine the HTTP method
-        # TODO: Determine the resource operation
+
+        # Determine the HTTP method
+        function = self._determine_method()
+
         # TODO: Assert resource-level authorization
         # TODO: Decode the request body (if non-empty)
         # TODO: Run clean cycle over decoded body (if non-empty body)
         # TODO: Assert object-level authorization (if non-empty body)
+
+        # Delegate to the determined function.
+        data = function()
+
+        # Run prepare cycle over the returned data.
+        data = self.prepare(data)
+
+        #
         return None
+
+    @property
+    def _allowed_methods(self):
+        """Retrieves a list of allowed HTTP methods for the current request.
+        """
+        if self.identifier is not None:
+            return self._meta.detail_allowed_methods
+
+        else:
+            return self._meta.list_allowed_methods
+
+    def _determine_method(self):
+        """Determine the actual HTTP method being used and if it is acceptable.
+        """
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in self.request.META:
+            # Someone is using a client that isn't smart enough to send proper
+            # verbs; but can still send headers.
+            method = self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'].lower()
+            self.request.method = method.upper()
+
+        else:
+            # Halfway intelligent client; proceed as normal.
+            method = self.request.method.lower()
+
+        if method not in self._meta.method_names:
+            # Method not understood by our library; die.
+            raise exceptions.NotImplemented()
+
+        if method not in self._allowed_methods:
+            # Method is not in the list of allowed HTTP methods for this
+            # access of the resource.
+            allowed = (m.upper() for m in self._allowed_methods)
+            raise exceptions.MethodNotAllowed(', '.join(allowed).strip())
+
+        function = getattr(self, self.request.method, None)
+        if function is None:
+            # Method understood and allowed but not implemented; stupid us.
+            raise exceptions.NotImplemented()
+
+        # Method is just fine; toss 'er back
+        return function

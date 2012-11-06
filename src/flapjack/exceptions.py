@@ -1,57 +1,65 @@
 """..
 """
-from .http import constants, HttpResponse
+from . import http
 
 
 class Error(Exception):
     status = None
 
-    def __init__(self, content=None):
+    def __init__(self, content=None, headers=None):
         #! Body of the exception message.
         self.content = content
+
+        #! Additional headers to place with the response.
+        self.headers = headers or {}
 
     def encode(self, encoder):
         if self.content:
             response = encoder.encode(self.content)
         else:
-            response = HttpResponse()
+            response = http.Response()
+
+        for header in self.headers:
+            response[header] = self.headers[header]
 
         response.status_code = self.status
         return response
 
 
 class BadRequest(Error):
-    status = constants.BAD_REQUEST
+    status = http.BAD_REQUEST
+
+
+class Unauthorized(Error):
+    status = http.UNAUTHORIZED
+
+    def __init__(self, realm):
+        super(Unauthorized, self).__init__(headers={
+            'WWW-Authenticate': 'Basic Realm="{}"'.format(realm)})
 
 
 class Forbidden(Error):
-    status = constants.FORBIDDEN
+    status = http.FORBIDDEN
 
 
 class NotFound(Error):
-    status = constants.NOT_FOUND
+    status = http.NOT_FOUND
 
 
 class NotAcceptable(Error):
-    status = constants.NOT_ACCEPTABLE
+    status = http.NOT_ACCEPTABLE
 
 
 class MethodNotAllowed(Error):
-    status = constants.METHOD_NOT_ALLOWED
+    status = http.METHOD_NOT_ALLOWED
 
     def __init__(self, allowed):
-        self.allowed = allowed
-        super(MethodNotAllowed, self).__init__()
-
-    def encode(self, encoder):
-        response = super(MethodNotAllowed, self).encode(encoder)
-        response['Allow'] = self.allowed
-        return response
+        super(MethodNotAllowed, self).__init__(headers={'Allow': allowed})
 
 
 class UnsupportedMediaType(Error):
-    status = constants.UNSUPPORTED_MEDIA_TYPE
+    status = http.UNSUPPORTED_MEDIA_TYPE
 
 
 class NotImplemented(Error):
-    status = constants.NOT_IMPLEMENTED
+    status = http.NOT_IMPLEMENTED
