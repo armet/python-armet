@@ -111,6 +111,17 @@ class Json(object):
         'text/x-json',
     )
 
+class Xml(object):
+
+    #! Applicable mimetypes for this transcoder.
+    mimetypes = (
+        #  RFC 3023: text/xml to be used when the XML is human-readable.
+        'text/xml',
+
+        #  RFC 3023: application/xml to be used when the XML is NOT human-readable.
+        'application/xml',
+    )
+
 
 class Text(object):
 
