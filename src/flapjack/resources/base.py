@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+from collections.abc import Sequence
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -14,90 +15,83 @@ class Options(object):
     """
     """
 
-    def _override(self, name, default=None):
+    def __init__(self, cls, obj, bases):
         """
         """
-        if hasattr(self._meta, name):
-            # configuration property was found on the `Meta` of the
-            # current resource.
-            return getattr(self._meta, name)
-
-        for base in self._bases:
-            if hasattr(base, name):
-                # configuration property was found somewhere on a base
-                # class.
-                return getattr(base, name)
-
-        # configuration property was never found; return the default.
-        return default
-
-    def __init__(self, cls, meta, bases):
-        """
-        """
-        #! Meta configuration class.
-        self._meta = meta
-
-        #! Meta configuration class objects for bases classes.
-        self._bases = bases if bases else []
+        #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
+        self.name = getattr(obj, 'name', cls.__name__.lower())
 
         #! List of understood HTTP methods.
-        self.method_names = self._override('method_names', (
-            'get',
-            'post',
-            'put',
-            'delete',
-            'patch',
-            'options',
-            'head',
-            'connect',
-            'trace',
-        ))
+        self.http_method_names = utils.config_fallback(getattr(obj,
+            'http_method_names', None), 'http.methods', (
+                'get',
+                'post',
+                'put',
+                'delete',
+                'patch',
+                'options',
+                'head',
+                'connect',
+                'trace',
+            ))
 
         #! List of allowed HTTP methods.
-        self.allowed_methods = self._override('allowed_methods', (
-            'get',
-            'post',
-            'put',
-            'delete',
-        ))
+        self.http_allowed_methods = getattr(obj, 'http_allowed_methods', (
+                'get',
+                'post',
+                'put',
+                'delete',
+            ))
 
         #! List of allowed HTTP methods against a whole resource (eg /user).
-        #! If undeclared or None, will be defaulted to `allowed_methods`.
-        self.list_allowed_methods = self._override(
-            'list_allowed_methods', self.allowed_methods)
+        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
+        self.http_list_allowed_methods = getattr(obj,
+            'http_list_allowed_methods', self.http_allowed_methods)
 
         #! List of allowed HTTP methods against a single resource (eg /user/1).
-        #! If undeclared or None, will be defaulted to `allowed_methods`.
-        self.detail_allowed_methods = self._override(
-            'detail_allowed_methods', self.allowed_methods)
+        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
+        self.http_detail_allowed_methods = getattr(obj,
+            'http_detail_allowed_methods', self.http_allowed_methods)
 
         #! List of allowed operations.
         #! Resource operations are meant to generalize and blur the differences
         #! between "PATCH and PUT", "PUT = create / update", etc.
-        self.allowed_operations = self._override('allowed_operations', (
-            'read',
-            'create',
-            'update',
-            'destroy',
-        ))
+        self.allowed_operations = getattr(obj, 'allowed_operations', (
+                'read',
+                'create',
+                'update',
+                'destroy',
+            ))
 
         #! List of allowed operations against a whole resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.list_allowed_operations = self._override(
+        self.list_allowed_operations = getattr(obj,
             'list_allowed_operations', self.allowed_operations)
 
         #! List of allowed operations against a single resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.detail_allowed_operations = self._override(
+        self.detail_allowed_operations = getattr(obj,
             'detail_allowed_operations', self.allowed_operations)
-
-        #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
-        self.name = self._override('name', cls.__name__.lower())
 
         #! Authentication protocol to use to authenticate access to the
         #! resource.
-        self.authentication = self._override('authentication',
-            (authentication.Authentication(),))
+        self.authentication = getattr(obj,
+            'authentication', authentication.Authentication())
+
+        # Ensure certain properties as iterables to ease algorithms
+        for name in (
+                    'http_allowed_methods',
+                    'http_list_allowed_methods',
+                    'http_detail_allowed_methods',
+                    'allowed_operations',
+                    'list_allowed_operations',
+                    'detail_allowed_operations',
+                    'authentication',
+                ):
+            value = getattr(self, name)
+            if (not isinstance(value, six.string_types)
+                    and isinstance(value, Sequence)):
+                setattr(self, name, (value,))
 
 
 class Meta(type):
@@ -124,7 +118,7 @@ class Meta(type):
         # instantiate the options; we aggregate all base classes constructed
         # option classes to allow the Options constructor to make use of
         # the base classes options to fill in for non-provided options.
-        obj._meta = Options(obj, attrs.get('Meta'),
+        obj._meta = Options(obj, attrs,
             [x._meta for x in parents if hasattr(x, '_meta')])
 
         # return the constructed object; wipe off the magic -- not really.
@@ -134,10 +128,6 @@ class Meta(type):
 class Resource(six.with_metaclass(Meta)):
     """
     """
-
-    class Meta:
-        """
-        """
 
     @classmethod
     def url(cls, path=''):
@@ -219,20 +209,20 @@ class Resource(six.with_metaclass(Meta)):
         """
         """
         # Assert authentication and attempt to get a valid user object.
-        for authentication in self._meta.authentication:
-            user = authentication.authenticate(self.request)
+        for auth in self._meta.authentication:
+            user = auth.authenticate(self.request)
             if user is None:
                 # A user object cannot be retrieved with this authn protocol.
                 continue
 
-            if user.is_authenticated():
+            if user.is_authenticated() or auth.allow_anonymous:
                 # A user object has been successfully retrieved.
                 self.request.user = user
                 break
 
         else:
             # A user was declared unauthenticated with some confidence.
-            raise authentication.Unauthenticated
+            raise auth.Unauthenticated
 
         # TODO: Determine encoder
         # TODO: Determine decoder
@@ -249,10 +239,10 @@ class Resource(six.with_metaclass(Meta)):
         data = function()
 
         # Run prepare cycle over the returned data.
-        data = self.prepare(data)
+        # data = self.prepare(data)
 
         #
-        return None
+        return data
 
     @property
     def _allowed_methods(self):
@@ -277,7 +267,7 @@ class Resource(six.with_metaclass(Meta)):
             # Halfway intelligent client; proceed as normal.
             method = self.request.method.lower()
 
-        if method not in self._meta.method_names:
+        if method not in self._meta.http_method_names:
             # Method not understood by our library; die.
             raise exceptions.NotImplemented()
 
@@ -287,7 +277,7 @@ class Resource(six.with_metaclass(Meta)):
             allowed = (m.upper() for m in self._allowed_methods)
             raise exceptions.MethodNotAllowed(', '.join(allowed).strip())
 
-        function = getattr(self, self.request.method, None)
+        function = getattr(self, self.request.method.lower(), None)
         if function is None:
             # Method understood and allowed but not implemented; stupid us.
             raise exceptions.NotImplemented()
