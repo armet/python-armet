@@ -16,14 +16,17 @@ class Authentication(object):
     """Describes the base authentication protocol.
     """
 
-    def __init__(self, require_active=True, **kwargs):
+    def __init__(self, **kwargs):
         """
         Initializes any configuration properties specific for this
         authentication protocol.
         """
         #! Whether to require users to have `is_active` flags in django set to
         #! `True`.
-        self.require_active = require_active
+        self.require_active = kwargs.get('require_active', True)
+
+        #! Whether to allow anonymous users being returned from `authenticate`.
+        self.allow_anonymous = kwargs.get('allow_anonymous', True)
 
     def authenticate(self, request):
         """Gets the a user if they are authenticated; else None.
@@ -49,6 +52,13 @@ class Header(six.with_metaclass(abc.ABCMeta, Authentication)):
     Describes an abstract authentication protocol that uses the `Authorization`
     HTTP/1.1 header.
     """
+
+    def __init__(self, **kwargs):
+        if 'allow_anonymous' not in kwargs:
+            # Unless explictly allowed; anon accesses are disallowed.
+            kwargs['allow_anonymous'] = False
+
+        super(Header, self).__init__(**kwargs)
 
     def authenticate(self, request):
         """Gets the a user if they are authenticated; else None.
