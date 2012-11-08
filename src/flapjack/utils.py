@@ -3,6 +3,8 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import collections
+import six
 
 
 class classproperty(object):
@@ -55,3 +57,33 @@ def config(path, default):
 def config_fallback(test, *args):
     """Test passed value and if `None` use config with the remaining params."""
     return test if test is not None else config(*args)
+
+
+def load(name):
+    """Loads the python attribute represented by the fully qualified name."""
+    parts = name.split('.')
+    module = ".".join(parts[:-1])
+    m = __import__(module)
+    for comp in parts[1:]:
+        m = getattr(m, comp)
+    return m
+
+
+def apply(value, method, test=None):
+    if isinstance(value, six.string_types) and (test is None or test(value)):
+        value = method(value)
+
+    elif isinstance(value, collections.Mapping):
+        for key in value:
+            if test is None or test(value[key]):
+                value[key] = method(value[key])
+
+    elif isinstance(value, collections.Sequence):
+        for index, item in enumerate(value):
+            if test is None or test(item):
+                value[index] = method(item)
+
+    elif test is None or test(value):
+        value = method(value)
+
+    return value
