@@ -63,80 +63,63 @@ class Json(transcoders.Json, Encoder):
 @Encoder.register()
 class Xml(transcoders.Xml, Encoder):
 
+       #for each item in obj
+           #if item is key-value pair
+               #if value is iterable
+                   #recursion!  See step 1.
+               #else
+                   #render key and value pair under root
+           #else
+               #if value is iterable
+                   #recursion!  See step 1.
+               #else
+                   #insert the item into xml under root
 
 
 
     @classmethod
     def _encode_this_xml(cls,root,obj):
 
-       if not isinstance(obj, Iterable):
-           # We need this to be at least a list
-           obj = obj,
-
        #for each item in obj
        for key in obj:
            #if item is key-value pair
            try:
                #if value is iterable
-               if isinstance(obj[key], Iterable) and not isinstance(obj[key],unicode):
+               if isinstance(obj[key], Iterable) and not isinstance(obj[key],unicode) and not isinstance(obj[key],str):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
-                   root.append(sub)
                    cls._encode_this_xml(sub, obj[key])
+                   root.append(sub)
                #else
                else:
-                   #render key and value pair under root
+                   #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
            #else
            except TypeError:
-               #insert the item into xml under root
-               root.text = str(key)
+               #if value is iterable
+               if isinstance(key, Iterable) and not isinstance(key,unicode) and not isinstance(key,str):
+                   #recursion!  See step 1.
+                   sub = E.attribute( {'name':str(key)} )
+                   cls._encode_this_xml(sub, key)
+                   root.append(sub)
+               #else
+               else:
+               #render the item into xml under root
+                   root.append( E.attribute( str(key) ))
 
     # Convert the obj param into an XML string
     @classmethod
     def encode(cls, obj=None):
         root = E.object()
+        if not isinstance(obj, Iterable):
+           # We need this to be at least a list
+           obj = obj,
+
         cls._encode_this_xml(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
 
-    # Convert the obj param into an XML string
-#    @classmethod
-#    def encode(cls, obj=None):
-#        root = E.object()
-#        if not isinstance(obj, Iterable):
-            # We need this to be at least a list
-#            obj = obj,
-        #If item is dict
-#        for key in obj:
-#            try:
-#                root.append(E.attribute(obj[key],{'name':key}))        
-#            except TypeError:
-#                try:
-#                    root.append(E.attribute(key,{'name':key}))
-#                except:
-                    # Skip to the next line, if the current line cannot be processed
-#                    pass
-#        text = etree.tostring(root,pretty_print=True)
-#        return super(Xml, cls).encode(text)
-    
-#    @staticmethod
-#    def _append_value(root,key,iterthingy)
-        #root is the XML parent being appended to.
-        #key is the name, or description, associated with iterthingy
-        #iterthingy is iterable.  Is probably a list.
-        #If item is dict
-#        for each in iterthingy:
-#            try:
-#                root.append(E.attribute(obj[key],{'name':key}))        
-#            except TypeError:
-#                try:
-#                    root.append(E.attribute(key,{'name':key}))
-#                except:
-                    # Skip to the next line, if the current line cannot be processed
-#                    pass
-        
 
 @Encoder.register()
 class Bin(transcoders.Bin, Encoder):
