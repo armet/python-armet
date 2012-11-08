@@ -1,0 +1,14 @@
+relations = {
+    '..': resource.relation('path.to.Resource', full=True, path='')
+}
+
+include = {
+    'username': resource.field('user__name', collection=False),
+}
+
+# or
+
+include = ['username']
+
+def prepare_username(self, obj, value):
+    return obj.user.name

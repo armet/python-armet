@@ -1,27 +1,10 @@
 """ ..
 """
-import six
 import mimeparse
-from django.core.exceptions import ImproperlyConfigured
-from collections import OrderedDict
+from . import utils
 
 
-class DeclarativeTranscoder(type):
-
-    def __init__(cls, name, bases, attributes):
-        # Instantiate a fresh registry for this class object
-        cls.registry = OrderedDict()
-
-        # Delegate to python magic to initialize the class object
-        super(DeclarativeTranscoder, cls).__init__(name, bases, attributes)
-
-    @property
-    def mimetype(cls):
-        # Return the 'default' mimetype.
-        return cls.mimetypes[0]
-
-
-class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
+class Transcoder(object):
 
     #! Registry of available transcoders.
     registry = None
@@ -29,38 +12,24 @@ class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
     #! Applicable mimetypes for this transcoder.
     mimetypes = ()
 
-    @classmethod
-    def get(cls, mimetype):
-        try:
-            for transcoder in cls.registry.values():
-                if transcoder.can_transcode(mimetype):
-                    # Transcoder matched against the mimetype; return it
-                    return transcoder
+    # @classmethod
+    # def get(cls, mimetype):
+    #     try:
+    #         for transcoder in cls.registry.values():
+    #             if transcoder.can_transcode(mimetype):
+    #                 # Transcoder matched against the mimetype; return it
+    #                 return transcoder
 
-        except:
-            # Mimetype is so badly formatted mimeparse died; return nothing
-            pass
+    #     except:
+    #         # Mimetype is so badly formatted mimeparse died; return nothing
+    #         pass
 
-        # Nothing can be matched; return nothing
+    #     # Nothing can be matched; return nothing
 
-    @classmethod
-    def register(cls, **kwargs):
-        def constructor(ctor):
-            # Default name to the lowercase'd class name.
-            name = kwargs.get('name', ctor.__name__.lower())
-
-            if name not in cls.registry:
-                # Record the class object in the registry.
-                cls.registry[name] = ctor
-
-            else:
-                # We already have one of these registered; die.
-                raise ImproperlyConfigured(
-                    'An encoder or decoder has already been registered as '
-                    '`{}`.'.format(name))
-
-            return ctor
-        return constructor
+    @utils.property
+    def mimetype(cls):
+        # Return the 'default' mimetype.
+        return cls.mimetypes[0]
 
     @classmethod
     def can_transcode(cls, media_ranges):
@@ -69,7 +38,7 @@ class Transcoder(six.with_metaclass(DeclarativeTranscoder)):
         return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
 
 
-class Bin(object):
+class Bin:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = (
@@ -77,7 +46,7 @@ class Bin(object):
     )
 
 
-class Form(object):
+class Form:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = (
@@ -85,7 +54,7 @@ class Form(object):
     )
 
 
-class Url(object):
+class Url:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = (
@@ -93,7 +62,7 @@ class Url(object):
     )
 
 
-class Json(object):
+class Json:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = (
@@ -112,22 +81,21 @@ class Json(object):
     )
 
 
-class Text(object):
+class Text:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = 'text/plain',
 
 
-# # TODO: JsonP
-# class JsonP(object):
-#
-#     # ! Applicable mimetypes for this transcoder.
-#     mimetypes = (
-#         # Official; this is 'just' javascript.
-#         'text/javascript',
+class JsonP:
 
-#         # Miscellaneous mimetypes that are used frequently (incorrectly).
-#         'application/javascript',
-#         'application/x-javascript',
-#         'text/x-javascript',
-#     )
+    #! Applicable mimetypes for this transcoder.
+    mimetypes = (
+        # Official; this is 'just' javascript.
+        'text/javascript',
+
+        # Miscellaneous mimetypes that are used frequently (incorrectly).
+        'application/javascript',
+        'application/x-javascript',
+        'text/x-javascript',
+    )

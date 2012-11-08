@@ -3,7 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from collections import Sequence
+from collections.abc import Sequence, Mapping
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -73,6 +73,17 @@ class Options(object):
         self.detail_allowed_operations = getattr(cls,
             'detail_allowed_operations', self.allowed_operations)
 
+        #! Mapping of encoders known by this resource.
+        self.encoders = utils.config_fallback(getattr(cls, 'encoders'),
+            'encoders', {
+                    'json': 'flapjack.encoders.Json'
+                })
+
+        #! List of allowed encoders of the understood encoders.
+        self.allowed_encoders = getattr(cls, 'allowed_encoders', (
+                'json',
+            ))
+
         #! Authentication protocol to use to authenticate access to the
         #! resource.
         self.authentication = utils.config_fallback(
@@ -87,12 +98,37 @@ class Options(object):
                     'allowed_operations',
                     'list_allowed_operations',
                     'detail_allowed_operations',
+                    'allowed_encoders',
                     'authentication',
                 ):
             value = getattr(self, name)
             if (not isinstance(value, six.string_types)
                     and not isinstance(value, Sequence)):
                 setattr(self, name, (value,))
+
+        # Ensure certain properties that may be name qualified instead of
+        # class objects are resolved to be class objects.
+        for name in (
+                    'encoders',
+                    'authentication',
+                ):
+
+            value = getattr(self, name)
+
+            if isinstance(value, six.string_types):
+                value = utils.load(value)
+
+            elif isinstance(value, Mapping):
+                for key in value:
+                    if isinstance(value[key], six.string_types):
+                        value[key] = utils.load(value[key])
+
+            else:
+                for index, item in enumerate(value):
+                    if isinstance(item, six.string_types):
+                        value[index] = utils.load(item)
+
+            setattr(self, name, value)
 
 
 class Meta(type):
@@ -206,6 +242,11 @@ class Resource(six.with_metaclass(Meta)):
         #! Identifier of the resource if we are being accessed directly.
         self.identifier = kwargs.get('identifier')
 
+        # Detect an appropriate encoder.
+        # Specified expliclty first in case it fails.
+        self._encoder = None
+        self._determine_encoder(kwargs.get('format'))
+
     def dispatch(self):
         """
         """
@@ -225,7 +266,6 @@ class Resource(six.with_metaclass(Meta)):
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
 
-        # TODO: Determine encoder
         # TODO: Determine decoder
 
         # Determine the HTTP method
@@ -285,3 +325,27 @@ class Resource(six.with_metaclass(Meta)):
 
         # Method is just fine; toss 'er back
         return function
+
+    # encoder detection
+    # -----------------
+
+    def _determine_encoder(self, format):
+        """Determine the encoder to use according to the request object.
+        """
+        if format is not None:
+            # An explicit form was supplied; attempt to get it directly
+            self._encoder = self.encoders.get(format)
+            if self._encoder is None:
+                # TODO: Fall through to the Accept header if the `.fmt` check
+                #   fails?
+
+                # Format not acceptable
+                # TODO: Report error
+                pass
+
+            else:
+                # Found an appropriate encoder; we're done
+                return
+
+        # ..
+        pass
