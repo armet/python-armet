@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import operator
 from collections import Sequence, Mapping
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -11,124 +12,122 @@ import six
 from .. import http, utils, authentication, exceptions, encoders
 
 
-# class Options(object):
-#     """
-#     """
+class Options(object):
+    """
+    """
 
-#     def __init__(self, cls, bases):
-#         """
-#         """
-#         #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
-#         self.name = getattr(cls, 'name', cls.__name__.lower())
+    def __init__(self, cls, bases):
+        """
+        """
+        #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
+        self.name = getattr(cls, 'name', cls.__name__.lower())
 
-#         #! List of understood HTTP methods.
-#         self.http_method_names = utils.config_fallback(getattr(cls,
-#             'http_method_names', None), 'http.methods', (
-#                 'get',
-#                 'post',
-#                 'put',
-#                 'delete',
-#                 'patch',
-#                 'options',
-#                 'head',
-#                 'connect',
-#                 'trace',
-#             ))
+        #! List of understood HTTP methods.
+        self.http_method_names = utils.config_fallback(getattr(cls,
+            'http_method_names', None), 'http.methods', (
+                'get',
+                'post',
+                'put',
+                'delete',
+                'patch',
+                'options',
+                'head',
+                'connect',
+                'trace',
+            ))
 
-#         #! List of allowed HTTP methods.
-#         self.http_allowed_methods = getattr(cls, 'http_allowed_methods', (
-#                 'get',
-#                 'post',
-#                 'put',
-#                 'delete',
-#             ))
+        #! List of allowed HTTP methods.
+        self.http_allowed_methods = getattr(cls, 'http_allowed_methods', (
+                'get',
+                'post',
+                'put',
+                'delete',
+            ))
 
-#         #! List of allowed HTTP methods against a whole resource (eg /user).
-#         #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-#         self.http_list_allowed_methods = getattr(cls,
-#             'http_list_allowed_methods', self.http_allowed_methods)
+        #! List of allowed HTTP methods against a whole resource (eg /user).
+        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
+        self.http_list_allowed_methods = getattr(cls,
+            'http_list_allowed_methods', self.http_allowed_methods)
 
-#         #! List of allowed HTTP methods against a single resource (eg /user/1).
-#         #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-#         self.http_detail_allowed_methods = getattr(cls,
-#             'http_detail_allowed_methods', self.http_allowed_methods)
+        #! List of allowed HTTP methods against a single resource (eg /user/1).
+        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
+        self.http_detail_allowed_methods = getattr(cls,
+            'http_detail_allowed_methods', self.http_allowed_methods)
 
-#         #! List of allowed operations.
-#         #! Resource operations are meant to generalize and blur the differences
-#         #! between "PATCH and PUT", "PUT = create / update", etc.
-#         self.allowed_operations = getattr(cls, 'allowed_operations', (
-#                 'read',
-#                 'create',
-#                 'update',
-#                 'destroy',
-#             ))
+        #! List of allowed operations.
+        #! Resource operations are meant to generalize and blur the differences
+        #! between "PATCH and PUT", "PUT = create / update", etc.
+        self.allowed_operations = getattr(cls, 'allowed_operations', (
+                'read',
+                'create',
+                'update',
+                'destroy',
+            ))
 
-#         #! List of allowed operations against a whole resource.
-#         #! If undeclared or None, will be defaulted to `allowed_operations`.
-#         self.list_allowed_operations = getattr(cls,
-#             'list_allowed_operations', self.allowed_operations)
+        #! List of allowed operations against a whole resource.
+        #! If undeclared or None, will be defaulted to `allowed_operations`.
+        self.list_allowed_operations = getattr(cls,
+            'list_allowed_operations', self.allowed_operations)
 
-#         #! List of allowed operations against a single resource.
-#         #! If undeclared or None, will be defaulted to `allowed_operations`.
-#         self.detail_allowed_operations = getattr(cls,
-#             'detail_allowed_operations', self.allowed_operations)
+        #! List of allowed operations against a single resource.
+        #! If undeclared or None, will be defaulted to `allowed_operations`.
+        self.detail_allowed_operations = getattr(cls,
+            'detail_allowed_operations', self.allowed_operations)
 
-#         #! Mapping of encoders known by this resource.
-#         self.encoders = utils.config_fallback(getattr(cls, 'encoders'),
-#             'encoders', {
-#                     'json': 'flapjack.encoders.Json'
-#                 })
+        #! Mapping of encoders known by this resource.
+        self.encoders = utils.config_fallback(getattr(cls, 'encoders', None),
+            'encoders', {
+                    'json': 'flapjack.encoders.Json'
+                })
 
-#         #! List of allowed encoders of the understood encoders.
-#         self.allowed_encoders = getattr(cls, 'allowed_encoders', (
-#                 'json',
-#             ))
+        #! List of allowed encoders of the understood encoders.
+        self.allowed_encoders = getattr(cls, 'allowed_encoders', (
+                'json',
+            ))
 
-#         #! Authentication protocol to use to authenticate access to the
-#         #! resource.
-#         self.authentication = utils.config_fallback(
-#             getattr(cls, 'authentication', None), 'resource.authentication',
-#             authentication.Authentication())
+        #! List of allowed encoders of the understood encoders.
+        self.default_encoder = utils.config_fallback(getattr(cls,
+            'default_encoder', None), 'default.encoder',
+            self.encoders[self.encoders.keys()[0]])
 
-#         # Ensure certain properties as iterables to ease algorithms
-#         for name in (
-#                     'http_allowed_methods',
-#                     'http_list_allowed_methods',
-#                     'http_detail_allowed_methods',
-#                     'allowed_operations',
-#                     'list_allowed_operations',
-#                     'detail_allowed_operations',
-#                     'allowed_encoders',
-#                     'authentication',
-#                 ):
-#             value = getattr(self, name)
-#             if (not isinstance(value, six.string_types)
-#                     and not isinstance(value, Sequence)):
-#                 setattr(self, name, (value,))
+        #! Authentication protocol to use to authenticate access to the
+        #! resource.
+        self.authentication = utils.config_fallback(
+            getattr(cls, 'authentication', None), 'resource.authentication',
+            'flapjack.authentication.Authentication')
 
-#         # Ensure certain properties that may be name qualified instead of
-#         # class objects are resolved to be class objects.
-#         for name in (
-#                     'encoders',
-#                     'authentication',
-#                 ):
+        # Ensure certain properties as iterables to ease algorithms
+        for name in (
+                    'http_allowed_methods',
+                    'http_list_allowed_methods',
+                    'http_detail_allowed_methods',
+                    'allowed_operations',
+                    'list_allowed_operations',
+                    'detail_allowed_operations',
+                    'allowed_encoders',
+                    'authentication',
+                ):
+            value = getattr(self, name)
+            if (not isinstance(value, six.string_types)
+                    and not isinstance(value, Sequence)):
+                setattr(self, name, (value,))
 
-#             value = getattr(self, name)
+        # Ensure certain properties that may be name qualified instead of
+        # class objects are resolved to be class objects.
+        for name in (
+                    'encoders',
+                    'authentication',
+                ):
+            setattr(self, name, utils.apply(getattr(self, name), utils.load,
+                lambda x: isinstance(x, six.string_types)))
 
-#             if isinstance(value, six.string_types):
-#                 value = utils.load(value)
-
-#             elif isinstance(value, Mapping):
-#                 for key in value:
-#                     if isinstance(value[key], six.string_types):
-#                         value[key] = utils.load(value[key])
-
-#             else:
-#                 for index, item in enumerate(value):
-#                     if isinstance(item, six.string_types):
-#                         value[index] = utils.load(item)
-
-#             setattr(self, name, value)
+        # Ensure things that need to be instantied are instantiated
+        for name in (
+                    'encoders',
+                    'authentication',
+                ):
+            setattr(self, name, utils.apply(getattr(self, name),
+                lambda x: x(), callable))
 
 
 class Meta(type):
@@ -152,88 +151,27 @@ class Meta(type):
         # construct the class object.
         obj = super(Meta, cls).__new__(cls, name, bases, attrs)
 
-        # If set explicitly go away
+        # construct options and apply them
+        options = Options(obj, parents)
+        for name in options.__dict__:
+            setattr(obj, name, options.__dict__[name])
 
         # return the constructed object; wipe off the magic -- not really.
         return obj
 
 
-class Resource(six.with_metaclass(Meta)):
+class BaseResource(object):
     """
     """
-
-    #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
-    name = None
-
-    #! List of understood HTTP methods.
-    http_method_names = (
-            'get',
-            'post',
-            'put',
-            'delete',
-            'patch',
-            'options',
-            'head',
-            'connect',
-            'trace',
-        )
-
-    #! List of allowed HTTP methods.
-    http_allowed_methods = (
-            'get',
-            'post',
-            'put',
-            'delete',
-        )
-
-    #! List of allowed HTTP methods against a whole resource (eg /user).
-    #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-    http_list_allowed_methods = None
-
-    #! List of allowed HTTP methods against a single resource (eg /user/1).
-    #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-    http_detail_allowed_methods = None
-
-    #! List of allowed operations.
-    #! Resource operations are meant to generalize and blur the differences
-    #! between "PATCH and PUT", "PUT = create / update", etc.
-    allowed_operations = (
-            'read',
-            'create',
-            'update',
-            'destroy',
-        )
-
-    #! List of allowed operations against a whole resource.
-    #! If undeclared or None, will be defaulted to `allowed_operations`.
-    list_allowed_operations = None
-
-    #! List of allowed operations against a single resource.
-    #! If undeclared or None, will be defaulted to `allowed_operations`.
-    detail_allowed_operations = None
-
-    #! Mapping of encoders known by this resource.
-    encoders = {
-            'json': encoders.Json,
-        }
-
-    #! List of allowed encoders out of the pool of understood encoders.
-    allowed_encoders = (
-            'json',
-        )
-
-    #! Authentication protocol to use to authenticate access to the
-    #! resource.
-    authentication = None
 
     @classmethod
     def url(cls, path=''):
         """Builds a url pattern using the passed `path` for this resource."""
         return url(
-            r'^{}{}/??(?:\.(?P<fmt>[^/]*?))?/?$'.format(cls._meta.name, path),
+            r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name, path),
             cls.view,
             name='api_view',
-            kwargs={'resource': cls._meta.name},
+            kwargs={'resource': cls.name},
         )
 
     @utils.classproperty
@@ -242,8 +180,8 @@ class Resource(six.with_metaclass(Meta)):
         """Builds the complete URL configuration for this resource."""
         return patterns('',
             cls.url(),
-            cls.url(r'/(?P<id>[^/]+?)'),
-            cls.url(r'/(?P<id>[^/]+?)/(?P<path>.*?)'),
+            cls.url(r'/(?P<identifier>[^/]+?)'),
+            cls.url(r'/(?P<identifier>[^/]+?)/(?P<path>.*?)'),
         )
 
     @classmethod
@@ -260,7 +198,9 @@ class Resource(six.with_metaclass(Meta)):
             resource = cls.traverse(segments)
 
             # Instantiate the resource
-            obj = resource(request)
+            obj = resource(request,
+                identifier=kwargs.get('identifier'),
+                format=kwargs.get('format'))
 
             # Initiate the dispatch cycle and return its result
             return obj.dispatch()
@@ -308,7 +248,7 @@ class Resource(six.with_metaclass(Meta)):
         """
         try:
             # Assert authentication and attempt to get a valid user object.
-            for auth in self._meta.authentication:
+            for auth in self.authentication:
                 user = auth.authenticate(self.request)
                 if user is None:
                     # A user object cannot be retrieved with this
@@ -350,17 +290,18 @@ class Resource(six.with_metaclass(Meta)):
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
-            return ex.encode(self._encoder or self._meta.default_encoder)
+            # print(repr(ex), ex.encode, self._encoder)
+            return ex.encode(self._encoder or self.default_encoder)
 
     @property
     def _allowed_methods(self):
         """Retrieves a list of allowed HTTP methods for the current request.
         """
         if self.identifier is not None:
-            return self._meta.http_detail_allowed_methods
+            return self.http_detail_allowed_methods
 
         else:
-            return self._meta.http_list_allowed_methods
+            return self.http_list_allowed_methods
 
     def _determine_method(self):
         """Determine the actual HTTP method being used and if it is acceptable.
@@ -375,7 +316,7 @@ class Resource(six.with_metaclass(Meta)):
             # Halfway intelligent client; proceed as normal.
             method = self.request.method.lower()
 
-        if method not in self._meta.http_method_names:
+        if method not in self.http_method_names:
             # Method not understood by our library; die.
             raise exceptions.NotImplemented()
 
@@ -393,26 +334,41 @@ class Resource(six.with_metaclass(Meta)):
         # Method is just fine; toss 'er back
         return function
 
-    # encoder detection
-    # -----------------
-
-    def _determine_encoder(self, format):
+    def _determine_encoder(self):
         """Determine the encoder to use according to the request object.
         """
-        if format is not None:
+        accept = self.request.META['HTTP_ACCEPT']
+        if self.format is not None:
             # An explicit form was supplied; attempt to get it directly
-            self._encoder = self.encoders.get(format)
-            if self._encoder is None:
-                # TODO: Fall through to the Accept header if the `.fmt` check
-                #   fails?
+            name = self.format.lower()
+            if name in self.allowed_encoders:
+                self._encoder = self.encoders.get(name)
+                if self._encoder is not None:
+                    # Found an appropriate encoder; we're done
+                    return
 
-                # Format not acceptable
-                # TODO: Report error
-                pass
+        elif accept is not None and accept.strip() != '*/*':
+            for name in self.allowed_encoders:
+                encoder = self.encoders[name]
+                if encoder.can_transcode(self.request.META['HTTP_ACCEPT']):
+                    # Found an appropriate encoder; we're done
+                    self._encoder = encoder
+                    return
 
-            else:
-                # Found an appropriate encoder; we're done
-                return
+        else:
+            # Neither `.fmt` nor an accept header was specified
+            self._encoder = self.encoders.get(self.default_encoder)
+            return
 
-        # ..
-        pass
+        # Failed to find an appropriate encoder
+        # Get dictionary of available formats
+        allowed = self.allowed_encoders
+        available = {n: self.encoders[n].mimetype for n in allowed}
+
+        # Encode the response using the appropriate exception
+        self._encoder = encoders.Json()  # TODO: Switch to Text when available.
+        raise exceptions.NotAcceptable(available)
+
+
+class Resource(six.with_metaclass(Meta, BaseResource)):
+    pass

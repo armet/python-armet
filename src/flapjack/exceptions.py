@@ -14,10 +14,10 @@ class Error(Exception):
         self.headers = headers or {}
 
     def encode(self, encoder):
+        response = http.Response()
         if self.content:
-            response = encoder.encode(self.content)
-        else:
-            response = http.Response()
+            response.content = encoder.encode(self.content)
+            response['Content-Type'] = encoder.mimetype
 
         for header in self.headers:
             response[header] = self.headers[header]
