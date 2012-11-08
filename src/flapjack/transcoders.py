@@ -26,7 +26,7 @@ class Transcoder(object):
 
     #     # Nothing can be matched; return nothing
 
-    @utils.property
+    @utils.classproperty
     def mimetype(cls):
         # Return the 'default' mimetype.
         return cls.mimetypes[0]
