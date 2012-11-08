@@ -34,8 +34,13 @@ class Transcoder(object):
     @classmethod
     def can_transcode(cls, media_ranges):
         """Determine if this transcoder can encode or decode appropriately."""
-        # Attempt to use mimeparse to determine if the mimetype matches
-        return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
+        try:
+            # Attempt to use mimeparse to determine if the mimetype matches
+            return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
+
+        except:
+            # Mimeparse died something fierce
+            return False
 
 
 class Bin:
