@@ -92,6 +92,10 @@ class Xml(transcoders.Xml, Encoder):
                    root.append(sub)
                #else
                else:
+                   if isinstance(obj[key], datetime.datetime) \
+                    or isinstance(obj[key], datetime.date) \
+                    or isinstance(obj[key], datetime.time):
+                       obj[key] = obj[key].isoformat()
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
            #else
@@ -104,6 +108,10 @@ class Xml(transcoders.Xml, Encoder):
                    root.append(sub)
                #else
                else:
+                   if isinstance(key, datetime.datetime) \
+                    or isinstance(key, datetime.date) \
+                    or isinstance(key, datetime.time):
+                       key = key.isoformat()
                #render the item into xml under root
                    root.append( E.attribute( str(key) ))
 
