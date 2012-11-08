@@ -3,7 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from collections.abc import Sequence
+from collections import Sequence
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -15,14 +15,14 @@ class Options(object):
     """
     """
 
-    def __init__(self, cls, obj, bases):
+    def __init__(self, cls, bases):
         """
         """
         #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
-        self.name = getattr(obj, 'name', cls.__name__.lower())
+        self.name = getattr(cls, 'name', cls.__name__.lower())
 
         #! List of understood HTTP methods.
-        self.http_method_names = utils.config_fallback(getattr(obj,
+        self.http_method_names = utils.config_fallback(getattr(cls,
             'http_method_names', None), 'http.methods', (
                 'get',
                 'post',
@@ -36,7 +36,7 @@ class Options(object):
             ))
 
         #! List of allowed HTTP methods.
-        self.http_allowed_methods = getattr(obj, 'http_allowed_methods', (
+        self.http_allowed_methods = getattr(cls, 'http_allowed_methods', (
                 'get',
                 'post',
                 'put',
@@ -45,18 +45,18 @@ class Options(object):
 
         #! List of allowed HTTP methods against a whole resource (eg /user).
         #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        self.http_list_allowed_methods = getattr(obj,
+        self.http_list_allowed_methods = getattr(cls,
             'http_list_allowed_methods', self.http_allowed_methods)
 
         #! List of allowed HTTP methods against a single resource (eg /user/1).
         #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        self.http_detail_allowed_methods = getattr(obj,
+        self.http_detail_allowed_methods = getattr(cls,
             'http_detail_allowed_methods', self.http_allowed_methods)
 
         #! List of allowed operations.
         #! Resource operations are meant to generalize and blur the differences
         #! between "PATCH and PUT", "PUT = create / update", etc.
-        self.allowed_operations = getattr(obj, 'allowed_operations', (
+        self.allowed_operations = getattr(cls, 'allowed_operations', (
                 'read',
                 'create',
                 'update',
@@ -65,18 +65,19 @@ class Options(object):
 
         #! List of allowed operations against a whole resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.list_allowed_operations = getattr(obj,
+        self.list_allowed_operations = getattr(cls,
             'list_allowed_operations', self.allowed_operations)
 
         #! List of allowed operations against a single resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.detail_allowed_operations = getattr(obj,
+        self.detail_allowed_operations = getattr(cls,
             'detail_allowed_operations', self.allowed_operations)
 
         #! Authentication protocol to use to authenticate access to the
         #! resource.
-        self.authentication = getattr(obj,
-            'authentication', authentication.Authentication())
+        self.authentication = utils.config_fallback(
+            getattr(cls, 'authentication', None), 'resource.authentication',
+            authentication.Authentication())
 
         # Ensure certain properties as iterables to ease algorithms
         for name in (
@@ -90,7 +91,7 @@ class Options(object):
                 ):
             value = getattr(self, name)
             if (not isinstance(value, six.string_types)
-                    and isinstance(value, Sequence)):
+                    and not isinstance(value, Sequence)):
                 setattr(self, name, (value,))
 
 
@@ -118,7 +119,7 @@ class Meta(type):
         # instantiate the options; we aggregate all base classes constructed
         # option classes to allow the Options constructor to make use of
         # the base classes options to fill in for non-provided options.
-        obj._meta = Options(obj, attrs,
+        obj._meta = Options(obj,
             [x._meta for x in parents if hasattr(x, '_meta')])
 
         # return the constructed object; wipe off the magic -- not really.
@@ -145,8 +146,8 @@ class Resource(six.with_metaclass(Meta)):
         """Builds the complete URL configuration for this resource."""
         return patterns('',
             cls.url(),
-            cls.url(r'/(?P<id>[^/]?)'),
-            cls.url(r'/(?P<id>[^/]?)/(?P<path>.*?)'),
+            cls.url(r'/(?P<id>[^/]+?)'),
+            cls.url(r'/(?P<id>[^/]+?)/(?P<path>.*?)'),
         )
 
     @classmethod
@@ -249,10 +250,10 @@ class Resource(six.with_metaclass(Meta)):
         """Retrieves a list of allowed HTTP methods for the current request.
         """
         if self.identifier is not None:
-            return self._meta.detail_allowed_methods
+            return self._meta.http_detail_allowed_methods
 
         else:
-            return self._meta.list_allowed_methods
+            return self._meta.http_list_allowed_methods
 
     def _determine_method(self):
         """Determine the actual HTTP method being used and if it is acceptable.
