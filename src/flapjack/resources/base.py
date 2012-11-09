@@ -94,23 +94,7 @@ class Options(object):
         #! resource.
         self.authentication = utils.config_fallback(
             getattr(cls, 'authentication', None), 'resource.authentication',
-            'flapjack.authentication.Authentication')
-
-        # Ensure certain properties as iterables to ease algorithms
-        for name in (
-                    'http_allowed_methods',
-                    'http_list_allowed_methods',
-                    'http_detail_allowed_methods',
-                    'allowed_operations',
-                    'list_allowed_operations',
-                    'detail_allowed_operations',
-                    'allowed_encoders',
-                    'authentication',
-                ):
-            value = getattr(self, name)
-            if (not isinstance(value, six.string_types)
-                    and not isinstance(value, Sequence)):
-                setattr(self, name, (value,))
+            ('flapjack.authentication.Authentication',))
 
         # Ensure certain properties that may be name qualified instead of
         # class objects are resolved to be class objects.

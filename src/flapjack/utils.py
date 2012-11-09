@@ -70,6 +70,11 @@ def load(name):
 
 
 def apply(value, method, test=None):
+    """
+    Replace the item with `method(value)` if test passes (or no test). The item
+    refers to either values of a dict, values of a list, a string, or a single
+    value.
+    """
     if isinstance(value, six.string_types) and (test is None or test(value)):
         value = method(value)
 

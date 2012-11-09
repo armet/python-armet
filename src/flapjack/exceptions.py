@@ -22,6 +22,7 @@ class Error(Exception):
         for header in self.headers:
             response[header] = self.headers[header]
 
+
         response.status_code = self.status
         return response
 
