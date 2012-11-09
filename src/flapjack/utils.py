@@ -69,7 +69,7 @@ def load(name):
     return m
 
 
-def apply(value, method, test=None):
+def for_all(value, method, test=None):
     """
     Replace the item with `method(value)` if test passes (or no test). The item
     refers to either values of a dict, values of a list, a string, or a single
@@ -84,9 +84,11 @@ def apply(value, method, test=None):
                 value[key] = method(value[key])
 
     elif isinstance(value, collections.Sequence):
+        values = ()
         for index, item in enumerate(value):
-            if test is None or test(item):
-                value[index] = method(item)
+            values += (method(item) if test is None or test(item) else item),
+
+        value = values
 
     elif test is None or test(value):
         value = method(value)
