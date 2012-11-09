@@ -2,6 +2,7 @@
 """
 import json
 import datetime
+import six
 from .http import HttpResponse
 from . import exceptions, transcoders
 from lxml.builder import E
@@ -85,15 +86,14 @@ class Xml(transcoders.Xml, Encoder):
            #if item is key-value pair
            try:
                #if value is iterable
-               if isinstance(obj[key], Iterable) and not isinstance(obj[key],unicode) and not isinstance(obj[key],str):
+               if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
                    cls._encode_this_xml(sub, obj[key])
                    root.append(sub)
                #else
                else:
-                   if isinstance(obj[key], datetime.datetime) \
-                    or isinstance(obj[key], datetime.date) \
+                   if isinstance(obj[key], datetime.date) \
                     or isinstance(obj[key], datetime.time):
                        obj[key] = obj[key].isoformat()
                    #insert key and value pair under root
@@ -101,15 +101,14 @@ class Xml(transcoders.Xml, Encoder):
            #else
            except TypeError:
                #if value is iterable
-               if isinstance(key, Iterable) and not isinstance(key,unicode) and not isinstance(key,str):
+               if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
                    cls._encode_this_xml(sub, key)
                    root.append(sub)
                #else
                else:
-                   if isinstance(key, datetime.datetime) \
-                    or isinstance(key, datetime.date) \
+                   if isinstance(key, datetime.date) \
                     or isinstance(key, datetime.time):
                        key = key.isoformat()
                #render the item into xml under root
@@ -119,10 +118,9 @@ class Xml(transcoders.Xml, Encoder):
     @classmethod
     def encode(cls, obj=None):
         root = E.object()
-        if not isinstance(obj, Iterable):
+        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-
         cls._encode_this_xml(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
