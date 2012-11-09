@@ -471,7 +471,7 @@ class Base(six.with_metaclass(meta.Resource)):
             # Update data dictionary with what was not (allowed to be)
             # provided
             for name, item in model_to_dict(obj).iteritems():
-                if name not in self._fields or not self._fields[name].visible:
+                if name not in data:
                     data[name] = item
 
         if self.validation:
