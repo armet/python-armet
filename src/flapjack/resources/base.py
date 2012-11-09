@@ -221,7 +221,6 @@ class BaseResource(object):
         """
         try:
             # Assert authentication and attempt to get a valid user object.
-            print(self.authentication)
             for auth in self.authentication:
                 user = auth.authenticate(self.request)
                 if user is None:
