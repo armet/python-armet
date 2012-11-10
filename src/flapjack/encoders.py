@@ -110,14 +110,30 @@ class Xml(transcoders.Xml, Encoder):
                #render the item into xml under root
                    root.append( E.value( str(key) ))
 
-    # Convert the obj param into an XML string
     @classmethod
-    def return_single_xml_object(cls, obj=None):
-        root = E.object()
+    def _encode_object_into_xml(cls,obj,root=None):
+        e = E.object()
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        cls._iterate_thru_object(root,obj)
+        cls._iterate_thru_object(e,obj)
+        if root is None:
+            return e
+        else:
+            root.append( e )
+            return root
+        
+
+
+    # Convert the obj param into an XML string
+    @classmethod
+    def return_single_xml_object(cls, obj=None):
+        root = cls._encode_object_into_xml(obj)
+#        root = E.object()
+#        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
+           # We need this to be at least a list
+#           obj = obj,
+#        cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
@@ -129,7 +145,7 @@ class Xml(transcoders.Xml, Encoder):
             if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
                # We need this to be at least a list
                obj = obj,
-            cls._iterate_thru_object(root,obj)
+            cls._encode_object_into_xml(obj,root)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
