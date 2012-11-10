@@ -79,7 +79,8 @@ class Xml(transcoders.Xml, Encoder):
 
 
     @classmethod
-    def _encode_object_into_xml(cls,root,obj):
+#    def _encode_object_into_xml(cls,root,obj):
+    def _iterate_thru_object(cls,root,obj):
        #for each item in obj
        for key in obj:
            #if item is key-value pair
@@ -88,7 +89,7 @@ class Xml(transcoders.Xml, Encoder):
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
-                   cls._encode_object_into_xml(sub, obj[key])
+                   cls._iterate_thru_object(sub, obj[key])
                    root.append(sub)
                #else
                else:
@@ -101,7 +102,7 @@ class Xml(transcoders.Xml, Encoder):
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
-                   cls._encode_object_into_xml(sub, key)
+                   cls._iterate_thru_object(sub, key)
                    root.append(sub)
                #else
                else:
@@ -116,7 +117,7 @@ class Xml(transcoders.Xml, Encoder):
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        cls._encode_object_into_xml(root,obj)
+        cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
@@ -128,7 +129,7 @@ class Xml(transcoders.Xml, Encoder):
             if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
                # We need this to be at least a list
                obj = obj,
-            cls._encode_object_into_xml(root,obj)
+            cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
@@ -139,7 +140,7 @@ class Xml(transcoders.Xml, Encoder):
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        cls._encode_object_into_xml(root,obj)
+        cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
@@ -231,34 +232,6 @@ class Text(transcoders.Text, Encoder):
         textval = cls._encode_this_text(obj)
         #text = etree.tostring(root,pretty_print=True)
         return super(Text, cls).encode(textval)
-
-
-#    @staticmethod
-#    def _encode_value(value):
-#        return str(value) if value is not None else ''
-
-#    @staticmethod
-#    def _encode_item(item):
-#        try:
-#            # Pretend we got a dictionary
-#           return '\n'.join(
-#                ' '.join((x, Text._encode_value(y))) for x, y in item.items())
-#
-#        except AttributeError:
-            # We didn't; just return it
-#            return str(item)
-
-#    @classmethod
-#    def encode(cls, obj=None):
-#        if isinstance(obj, list):
-            # Encode all the items
-#            text = '\n\n'.join(Text._encode_item(x) for x in obj)
-
-#        else:
-            # Encode just the one item
-#            text = Text._encode_item(obj)
-
-#        return super(Text, cls).encode(text)
 
 
 def find(request, format=None):
