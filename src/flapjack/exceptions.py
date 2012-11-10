@@ -1,6 +1,6 @@
 """..
 """
-from . import http
+from . import http, encoders
 
 
 class Error(Exception):
@@ -13,15 +13,18 @@ class Error(Exception):
         #! Additional headers to place with the response.
         self.headers = headers or {}
 
-    def encode(self, encoder):
+    def dispatch(self, encoder=None):
         response = http.Response()
         if self.content:
+            if encoder is None:
+                # TODO: Change this to text when possible
+                encoder = encoders.Json()
+
             response.content = encoder.encode(self.content)
             response['Content-Type'] = encoder.mimetype
 
         for header in self.headers:
             response[header] = self.headers[header]
-
 
         response.status_code = self.status
         return response
