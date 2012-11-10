@@ -7,7 +7,7 @@ from .http import HttpResponse
 from . import exceptions, transcoders, utils
 from lxml.builder import E
 from lxml import etree
-from collections import Iterable
+from collections import Iterable, OrderedDict
 
 class Encoder(transcoders.Transcoder):
 
@@ -79,7 +79,7 @@ class Xml(transcoders.Xml, Encoder):
 
 
     @classmethod
-    def _encode_this_xml(cls,root,obj):
+    def _encode_object_into_xml(cls,root,obj):
        #for each item in obj
        for key in obj:
            #if item is key-value pair
@@ -88,13 +88,10 @@ class Xml(transcoders.Xml, Encoder):
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
-                   cls._encode_this_xml(sub, obj[key])
+                   cls._encode_object_into_xml(sub, obj[key])
                    root.append(sub)
                #else
                else:
-#                   if isinstance(obj[key], datetime.date) \
-#                    or isinstance(obj[key], datetime.time):
-#                       obj[key] = obj[key].isoformat()
                    obj[key] = utils.fix_date(obj[key])
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
@@ -104,29 +101,63 @@ class Xml(transcoders.Xml, Encoder):
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
                    sub = E.attribute( {'name':str(key)} )
-                   cls._encode_this_xml(sub, key)
+                   cls._encode_object_into_xml(sub, key)
                    root.append(sub)
                #else
                else:
-#                   if isinstance(key, datetime.date) \
-#                    or isinstance(key, datetime.time):
-#                       key = key.isoformat()
                    key = utils.fix_date(key)
                #render the item into xml under root
                    root.append( E.value( str(key) ))
 
     # Convert the obj param into an XML string
     @classmethod
-    def encode(cls, obj=None):
+    def return_single_xml_object(cls, obj=None):
         root = E.object()
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        cls._encode_this_xml(root,obj)
+        cls._encode_object_into_xml(root,obj)
+        text = etree.tostring(root,pretty_print=True)
+        return super(Xml, cls).encode(text)
+
+    # Convert the obj param into an XML string
+    @classmethod
+    def return_xml_object_set(cls, obj=None):
+        root = E.objects()
+        for item in obj:
+            if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
+               # We need this to be at least a list
+               obj = obj,
+            cls._encode_object_into_xml(root,obj)
+        text = etree.tostring(root,pretty_print=True)
+        return super(Xml, cls).encode(text)
+
+    # Convert the obj param into an XML string
+    @classmethod
+    def return_single_xml_object(cls, obj=None):
+        root = E.object()
+        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
+           # We need this to be at least a list
+           obj = obj,
+        cls._encode_object_into_xml(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
 
+    # Convert the obj param into an XML string
+    @classmethod
+    def encode(cls, obj=None):
+        #is there a better way to test for list view?
+        for x in obj:
+            if isinstance(x, OrderedDict):
+#                print "cls.return_xml_object_set()"
+           # We need this to be at least a list
+                return cls.return_xml_object_set(obj)
+#            print "cls.return_single_xml_object()"
+            return cls.return_single_xml_object(obj)
+
+# I know this is the hackiest possible way to do it.
+# TODO: clean up this code
 
 @Encoder.register()
 class Bin(transcoders.Bin, Encoder):
