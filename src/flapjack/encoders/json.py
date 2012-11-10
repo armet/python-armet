@@ -33,7 +33,7 @@ class Encoder(transcoders.Json, Encoder):
     def encode(self, obj=None):
         # Ensure we have at least an iterable as valid JSON must at least
         # be an array and this library would return invalid JSON in that case
-        if isinstance(obj, six.string_types) and not isinstance(obj, Sequence):
+        if isinstance(obj, six.string_types) or not isinstance(obj, Sequence):
             obj = obj,
 
         # Encode and return the resultant text
