@@ -117,8 +117,8 @@ class Xml(transcoders.Xml, Encoder):
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        cls._iterate_thru_object(root,obj)
-        text = etree.tostring(root,pretty_print=True)
+        retval = cls._iterate_thru_object(root,obj)
+        text = etree.tostring(retval,pretty_print=True)
         return super(Xml, cls).encode(text)
 
     # Convert the obj param into an XML string
