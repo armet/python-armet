@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import datetime
 
 
 class classproperty(object):
@@ -55,3 +56,9 @@ def config(path, default):
 def config_fallback(test, *args):
     """Test passed value and if `None` use config with the remaining params."""
     return test if test is not None else config(*args)
+
+def fix_date(val):
+    if isinstance(val, datetime.date) \
+        or isinstance(val, datetime.time):
+        val = val.isoformat()
+    return val

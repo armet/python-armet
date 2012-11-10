@@ -4,7 +4,7 @@ import json
 import datetime
 import six
 from .http import HttpResponse
-from . import exceptions, transcoders
+from . import exceptions, transcoders, utils
 from lxml.builder import E
 from lxml import etree
 from collections import Iterable
@@ -92,9 +92,10 @@ class Xml(transcoders.Xml, Encoder):
                    root.append(sub)
                #else
                else:
-                   if isinstance(obj[key], datetime.date) \
-                    or isinstance(obj[key], datetime.time):
-                       obj[key] = obj[key].isoformat()
+#                   if isinstance(obj[key], datetime.date) \
+#                    or isinstance(obj[key], datetime.time):
+#                       obj[key] = obj[key].isoformat()
+                   obj[key] = utils.fix_date(obj[key])
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
            #else
@@ -107,9 +108,10 @@ class Xml(transcoders.Xml, Encoder):
                    root.append(sub)
                #else
                else:
-                   if isinstance(key, datetime.date) \
-                    or isinstance(key, datetime.time):
-                       key = key.isoformat()
+#                   if isinstance(key, datetime.date) \
+#                    or isinstance(key, datetime.time):
+#                       key = key.isoformat()
+                   key = utils.fix_date(key)
                #render the item into xml under root
                    root.append( E.attribute( str(key) ))
 
@@ -176,6 +178,7 @@ class Text(transcoders.Text, Encoder):
                #else
                else:
                    #write out the value, then newline,
+                   obj[key] = utils.fix_date(obj[key])
                    retval += str(obj[key]) + '\n'
            #else
            except TypeError:
@@ -185,6 +188,7 @@ class Text(transcoders.Text, Encoder):
                    retval = cls._encode_this_text(key,indent + '   ',retval + '\n') + '\n'
                #else
                else:
+                   key = utils.fix_date(key)
                    retval += indent + str(key) + '\n'
        return retval
 
