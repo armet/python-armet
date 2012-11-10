@@ -80,7 +80,6 @@ class Xml(transcoders.Xml, Encoder):
 
     @classmethod
     def _encode_this_xml(cls,root,obj):
-
        #for each item in obj
        for key in obj:
            #if item is key-value pair
@@ -142,32 +141,93 @@ class Bin(transcoders.Bin, Encoder):
 @Encoder.register()
 class Text(transcoders.Text, Encoder):
 
-    @staticmethod
-    def _encode_value(value):
-        return str(value) if value is not None else ''
 
-    @staticmethod
-    def _encode_item(item):
-        try:
-            # Pretend we got a dictionary
-            return '\n'.join(
-                ' '.join((x, Text._encode_value(y))) for x, y in item.items())
+       #for each item in obj
+           #if item is key-value pair
 
-        except AttributeError:
-            # We didn't; just return it
-            return str(item)
+               #write out key after the corrent number of indents.
+               #indent by length of key plus a few spaces
+               
+               #if item value is iterable
+                   #recursion!  see step 1.
+               #else
+                   #output value.  Newline
+                   
+           #else
+               #if value is iterable
+                   #increment indent
+                   #recursion!  See step 1.
+               #else
+                   #write out value after correct number of indents, then comma, then newline
+                   
+                   
+
+    @classmethod
+    def _encode_this_text(cls,obj,indent='',retval=''):
+       #for each item in obj
+       for key in obj:
+           #if item is key-value pair
+           try:
+               obj[key]
+               #write out key after the corrent number of indents
+               retval += indent + str(key) + ':  ' 
+               #if value is iterable
+               if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
+                   #recursion!  See step 1.
+                   retval = cls._encode_this_text(obj[key],indent + (' ' * len(str(key)) ) + '   ',retval) + '\n'
+               #else
+               else:
+                   #write out the value, then newline,
+                   retval += str(obj[key]) + '\n'
+           #else
+           except TypeError:
+               #if value is iterable
+               if isinstance(key, Iterable) and not isinstance(key,six.string_types):
+                   #recursion!  See step 1.
+                   retval = cls._encode_this_text(key,indent + '   ',retval) + '\n'
+               #else
+               else:
+                   retval += '\n' + indent + str(key)
+       return retval
 
     @classmethod
     def encode(cls, obj=None):
-        if isinstance(obj, list):
+        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
+           # We need this to be at least a list
+           obj = obj,
+        textval = cls._encode_this_text(obj)
+        #text = etree.tostring(root,pretty_print=True)
+        return super(Text, cls).encode(textval)
+        
+    
+
+
+#    @staticmethod
+#    def _encode_value(value):
+#        return str(value) if value is not None else ''
+
+#    @staticmethod
+#    def _encode_item(item):
+#        try:
+#            # Pretend we got a dictionary
+#           return '\n'.join(
+#                ' '.join((x, Text._encode_value(y))) for x, y in item.items())
+#
+#        except AttributeError:
+            # We didn't; just return it
+#            return str(item)
+
+#    @classmethod
+#    def encode(cls, obj=None):
+#        if isinstance(obj, list):
             # Encode all the items
-            text = '\n\n'.join(Text._encode_item(x) for x in obj)
+#            text = '\n\n'.join(Text._encode_item(x) for x in obj)
 
-        else:
+#        else:
             # Encode just the one item
-            text = Text._encode_item(obj)
+#            text = Text._encode_item(obj)
 
-        return super(Text, cls).encode(text)
+#        return super(Text, cls).encode(text)
 
 
 def find(request, format=None):
