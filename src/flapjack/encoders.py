@@ -117,8 +117,8 @@ class Xml(transcoders.Xml, Encoder):
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
-        retval = cls._iterate_thru_object(root,obj)
-        text = etree.tostring(retval,pretty_print=True)
+        cls._iterate_thru_object(root,obj)
+        text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
     # Convert the obj param into an XML string
@@ -132,18 +132,6 @@ class Xml(transcoders.Xml, Encoder):
             cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
-
-    # Convert the obj param into an XML string
-    @classmethod
-    def return_single_xml_object(cls, obj=None):
-        root = E.object()
-        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-           # We need this to be at least a list
-           obj = obj,
-        cls._iterate_thru_object(root,obj)
-        text = etree.tostring(root,pretty_print=True)
-        return super(Xml, cls).encode(text)
-
 
     # Convert the obj param into an XML string
     @classmethod
