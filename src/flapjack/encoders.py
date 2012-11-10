@@ -97,7 +97,7 @@ class Xml(transcoders.Xml, Encoder):
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
            #else
-           except TypeError:
+           except (TypeError, IndexError):
                #if value is iterable
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
@@ -149,13 +149,17 @@ class Xml(transcoders.Xml, Encoder):
     @classmethod
     def encode(cls, obj=None):
         #is there a better way to test for list view?
-        for x in obj:
-            if isinstance(x, OrderedDict):
-#                print "cls.return_xml_object_set()"
+        try:
+            for x in obj:
+                if isinstance(x, OrderedDict):
+#                    print "cls.return_xml_object_set()"
            # We need this to be at least a list
-                return cls.return_xml_object_set(obj)
+                    return cls.return_xml_object_set(obj)
 #            print "cls.return_single_xml_object()"
-            return cls.return_single_xml_object(obj)
+                return cls.return_single_xml_object(obj)
+        except:
+                return cls.return_single_xml_object(obj)
+            
 
 # I know this is the hackiest possible way to do it.
 # TODO: clean up this code
@@ -213,7 +217,7 @@ class Text(transcoders.Text, Encoder):
                    obj[key] = utils.fix_date(obj[key])
                    retval += str(obj[key]) + '\n'
            #else
-           except TypeError:
+           except (TypeError, IndexError):
                #if value is iterable
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
