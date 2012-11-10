@@ -3,13 +3,12 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-import operator
-from collections import Sequence, Mapping
+import collections
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
 import six
-from .. import http, utils, authentication, exceptions, encoders
+from .. import http, utils, exceptions
 
 
 class Meta(type):
@@ -19,17 +18,6 @@ class Meta(type):
     def __new__(cls, name, bases, attrs):
         """
         """
-        # six.with_metaclass(..) adds an extra class called `NewBase` in the
-        # inheritance tree: Resource > NewBase > object; ignore `NewBase`.
-        parents = []
-        for base in bases:
-            if isinstance(base, Meta) and base.__name__ != 'NewBase':
-                parents.append(base)
-
-        if not parents or name == 'NewBase':
-            # ignored type or not a subclass of `Resource`.
-            return super(Meta, cls).__new__(cls, name, bases, attrs)
-
         # construct the class object.
         obj = super(Meta, cls).__new__(cls, name, bases, attrs)
 
@@ -102,7 +90,7 @@ class Meta(type):
         #! List of allowed encoders of the understood encoders.
         obj.default_encoder = utils.config_fallback(getattr(obj,
             'default_encoder', None), 'default.encoder',
-            obj.encoders[obj.encoders.keys()[0]])
+            obj.encoders.keys()[0])
 
         #! Authentication protocol to use to authenticate access to the
         #! resource.
@@ -133,7 +121,7 @@ class Meta(type):
         return obj
 
 
-class BaseResource(object):
+class Resource(six.with_metaclass(Meta)):
     """
     """
 
@@ -179,9 +167,8 @@ class BaseResource(object):
             return obj.dispatch()
 
         except exceptions.Error as ex:
-            # Some known error was thrown; give an encoder to the exception
-            # and encode an exception response.
-            return ex.encode(None)
+            # Some known error was thrown before the dispatch cycle; dispatch.
+            return ex.dispatch()
 
         except BaseException:
             if settings.DEBUG:
@@ -237,34 +224,78 @@ class BaseResource(object):
                 # A user was declared unauthenticated with some confidence.
                 raise auth.Unauthenticated
 
-            # Detect an appropriate encoder.
-            self._determine_encoder()
-
-            # TODO: Determine decoder
-
             # Determine the HTTP method
             function = self._determine_method()
 
+            # Detect an appropriate encoder.
+            self._determine_encoder()
+
             # TODO: Assert resource-level authorization
-            # TODO: Decode the request body (if non-empty)
-            # TODO: Run clean cycle over decoded body (if non-empty body)
-            # TODO: Assert object-level authorization (if non-empty body)
+
+            if self.request.body is not None:
+                # TODO: Determine decoder
+                # TODO: Decode the request body (if non-empty)
+                # TODO: Run clean cycle over decoded body (if non-empty body)
+                # TODO: Assert object-level authorization (if non-empty body)
+                pass
 
             # Delegate to the determined function.
-            data = function()
+            data, status = function()
 
             # Run prepare cycle over the returned data.
-            # data = self.prepare(data)
+            data = self.prepare(data)
 
-            # TODO: Build the response object
-            # TODO: Apply pagination (?)
-            # TODO: Return the response object
-            return http.Response(str(data), status=http.OK)
+            # Build and return the response object
+            return self.process(data, status)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
-            # print(repr(ex), ex.encode, self._encoder)
-            return ex.encode(self._encoder or self.default_encoder)
+            return ex.dispatch(self._encoder)
+
+    def process(self, data, status):
+        """Builds a response object from the data and status code."""
+        response = http.Response(status=status)
+        if data is not None:
+            response.content = self._encoder.encode(data)
+            response['Content-Type'] = self._encoder.mimetype
+
+        return response
+
+    def prepare(self, data):
+        """Prepares the data for transmission."""
+        # TODO: Do something here
+        return data
+
+    def get(self):
+        """Processes a `GET` request.
+
+        @returns
+            A tuple containing the data and response status sequentially.
+        """
+        # Ensure we're allowed to perform this operation.
+        self._assert_operation('read')
+
+        # Delegate to `read` to retrieve the items.
+        items = self.read()
+
+        if self.identifier is not None:
+            if not items:
+                # Requested a specific resource but no resource was returned.
+                raise exceptions.NotFound()
+
+            if (not isinstance(items, six.string_types)
+                    and not isinstance(items, collections.Mapping)):
+                # Ensure we return only a single object if we were requested
+                # to return such.
+                items = items[0]
+
+        else:
+            if items is None:
+                # Ensure we at least have an empty list
+                items = []
+
+        # Return the response
+        return items, http.OK
 
     @property
     def _allowed_methods(self):
@@ -273,8 +304,7 @@ class BaseResource(object):
         if self.identifier is not None:
             return self.http_detail_allowed_methods
 
-        else:
-            return self.http_list_allowed_methods
+        return self.http_list_allowed_methods
 
     def _determine_method(self):
         """Determine the actual HTTP method being used and if it is acceptable.
@@ -331,17 +361,35 @@ class BaseResource(object):
         else:
             # Neither `.fmt` nor an accept header was specified
             self._encoder = self.encoders.get(self.default_encoder)
+            print(self.default_encoder)
             return
 
         # Failed to find an appropriate encoder
         # Get dictionary of available formats
-        allowed = self.allowed_encoders
-        available = {n: self.encoders[n].mimetype for n in allowed}
+        available = {}
+        for name in self.allowed_encoders:
+            available[name] = self.encoders[name].mimetype
 
         # Encode the response using the appropriate exception
-        self._encoder = encoders.Json()  # TODO: Switch to Text when available.
         raise exceptions.NotAcceptable(available)
 
+    @property
+    def _allowed_operations(self):
+        """Retrieves a list of allowed operations for the current request.
+        """
+        if self.identifier is not None:
+            return self.detail_allowed_operations
 
-class Resource(six.with_metaclass(Meta, BaseResource)):
-    pass
+        return self.list_allowed_operations
+
+    def _assert_operation(self, operation):
+        """Determine of the requested operation is allowed in this context.
+        """
+        if operation not in self._allowed_operations:
+            # Operation not allowed in this context; bail
+            data = {}
+            data['allowed'] = self._allowed_operations
+            data['message'] = ('Operation not allowed on `{}`; '
+                'see `allowed` for allowed operations.').format(operation)
+
+            raise exceptions.Forbidden(data)
