@@ -159,8 +159,6 @@ class Text(transcoders.Text, Encoder):
                    #recursion!  See step 1.
                #else
                    #write out value after correct number of indents, then comma, then newline
-                   
-                   
 
     @classmethod
     def _encode_this_text(cls,obj,indent='',retval=''):
@@ -174,7 +172,7 @@ class Text(transcoders.Text, Encoder):
                #if value is iterable
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.
-                   retval = cls._encode_this_text(obj[key],indent + (' ' * len(str(key)) ) + '   ',retval) + '\n'
+                   retval = cls._encode_this_text(obj[key],indent + (' ' * len(str(key)) ) + '   ',retval + '\n') + '\n'
                #else
                else:
                    #write out the value, then newline,
@@ -184,10 +182,10 @@ class Text(transcoders.Text, Encoder):
                #if value is iterable
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion!  See step 1.
-                   retval = cls._encode_this_text(key,indent + '   ',retval) + '\n'
+                   retval = cls._encode_this_text(key,indent + '   ',retval + '\n') + '\n'
                #else
                else:
-                   retval += '\n' + indent + str(key)
+                   retval += indent + str(key) + '\n'
        return retval
 
     @classmethod
@@ -198,8 +196,6 @@ class Text(transcoders.Text, Encoder):
         textval = cls._encode_this_text(obj)
         #text = etree.tostring(root,pretty_print=True)
         return super(Text, cls).encode(textval)
-        
-    
 
 
 #    @staticmethod
