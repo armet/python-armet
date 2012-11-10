@@ -113,7 +113,7 @@ class Xml(transcoders.Xml, Encoder):
 #                       key = key.isoformat()
                    key = utils.fix_date(key)
                #render the item into xml under root
-                   root.append( E.attribute( str(key) ))
+                   root.append( E.value( str(key) ))
 
     # Convert the obj param into an XML string
     @classmethod
