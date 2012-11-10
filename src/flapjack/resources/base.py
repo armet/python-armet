@@ -111,22 +111,18 @@ class Meta(type):
                     'flapjack.authentication.Authentication',
                 ))
 
-        # Ensure certain properties that may be name qualified instead of
-        # class objects are resolved to be class objects.
-        test = lambda x: isinstance(x, six.string_types)
         for_all = utils.for_all
-        for name in (
-                    'encoders',
-                    'authentication',
-                ):
-            setattr(obj, name, for_all(getattr(obj, name), utils.load, test))
-
-        # Ensure things that need to be instantied are instantiated
+        test = lambda x: isinstance(x, six.string_types)
         method = lambda x: x()
         for name in (
                     'encoders',
                     'authentication',
                 ):
+            # Ensure certain properties that may be name qualified instead of
+            # class objects are resolved to be class objects.
+            setattr(obj, name, for_all(getattr(obj, name), utils.load, test))
+
+            # Ensure things that need to be instantied are instantiated
             setattr(obj, name, for_all(getattr(obj, name), method, callable))
 
         # return the constructed object; wipe off the magic -- not really.
