@@ -122,8 +122,6 @@ class Xml(transcoders.Xml, Encoder):
         else:
             root.append( e )
             return root
-        
-
 
     # Convert the obj param into an XML string
     @classmethod
@@ -145,7 +143,7 @@ class Xml(transcoders.Xml, Encoder):
             if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
                # We need this to be at least a list
                obj = obj,
-            cls._encode_object_into_xml(obj,root)
+            cls._encode_object_into_xml(item,root)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
