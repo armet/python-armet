@@ -6,3 +6,4 @@ from . import models
 
 
 site.register(models.Poll)
+site.register(models.Booth)

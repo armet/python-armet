@@ -3,7 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from collections import Sequence
+from collections import Iterable, Sequence
 import datetime
 import json
 import six
@@ -14,17 +14,28 @@ from . import Encoder
 class _JSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
-        if (isinstance(obj, datetime.datetime)
-                or isinstance(obj, datetime.time)
-                or isinstance(obj, datetime.date)):
-            # This is some kind of date/time -- encode using ISO format
+        if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
+            # This is some kind of date/time -- encode using ISO format.
             return obj.isoformat()
 
         # TODO: base-64 encode a file stream
-        # TODO: use `vars(obj)` to send an object instance back through
-        #       if we can't figure anything else out about it
 
-        # Raise up our hands; we can not encode this
+        if isinstance(obj, Iterable):
+            # Since we can iterate but apparently can't encode -- make this
+            # a list and send it back through the json encoder.
+            return list(obj)
+
+        try:
+            # Last attempt; use `vars(obj)` to grab everything that doesn't
+            # start with an underscore from the object.
+            iterator = six.iteritems(vars(obj))
+            return dict((n, v) for n, v in iterator if not n.startswith('_'))
+
+        except AttributeError:
+            # Apparently this is not an object.
+            pass
+
+        # Raise up our hands; we can not encode this.
         return super(_JSONEncoder, self).default(obj)
 
 

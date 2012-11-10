@@ -3,3 +3,6 @@
 
 # Sphinx
 .build
+
+# Database files
+*.db
