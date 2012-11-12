@@ -37,7 +37,7 @@ def memoize(obj):
     return memoizer
 
 
-def config(path, default):
+def config(path, default=None):
     """Retrieve a namespaced configuration option from django."""
     from django.conf import settings
     try:
