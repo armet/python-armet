@@ -4,22 +4,14 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
-from .base import Resource, Meta
+from .base import BaseResource, Meta
 
 
 class Meta(Meta):
-
-    def __new__(cls, name, bases, attrs):
-        """
-        """
-        # construct the class object.
-        obj = super(Meta, cls).__new__(cls, name, bases, attrs)
-
-        # return the constructed object; wipe off the magic -- not really.
-        return obj
+    pass
 
 
-class Resource(six.with_metaclass(Meta, Resource)):
+class Resource(six.with_metaclass(Meta, BaseResource)):
     """
     Implements a resource using bindings from django's ORM layer to
     simplify and pre-define every operation with sane defaults.
