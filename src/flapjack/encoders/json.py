@@ -3,7 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from collections import Iterable, Sequence
+from collections import Iterable, Sequence, Mapping
 import datetime
 import json
 import six
@@ -45,7 +45,8 @@ class Encoder(transcoders.Json, Encoder):
         # Ensure we have at least an iterable as valid JSON must at least
         # be an array and this library would return invalid JSON in that case
         if isinstance(obj, six.string_types) or not isinstance(obj, Iterable):
-            obj = obj,
+            if not isinstance(obj, Mapping) and not hasattr(obj, '__dict__'):
+                obj = obj,
 
         # Encode and return the resultant text
         return json.dumps(obj,
