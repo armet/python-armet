@@ -16,10 +16,12 @@ from . import models
 
 class Poll(resources.Model):
     model = models.Poll
+    http_method_names = 'get',
 
 
-class Booth(resources.Model):
+class Booth(Poll):
     model = models.Booth
+    pass
 
 # form = forms.Poll
 
