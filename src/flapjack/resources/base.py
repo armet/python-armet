@@ -15,90 +15,51 @@ class Meta(type):
     """
     """
 
-    def __new__(cls, name, bases, attrs):
+    @staticmethod
+    def _has(name, attrs, bases):
         """
+        Determines if a property has been expliclty specified by this or a
+        base class.
         """
-        # construct the class object.
-        obj = super(Meta, cls).__new__(cls, name, bases, attrs)
+        if name in attrs:
+            return attrs[name] is not None
 
-        #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
-        obj.name = getattr(obj, 'name', obj.__name__.lower())
+        for base in bases:
+            if name in base.__dict__:
+                return base.__dict__[name] is not None
 
-        #! List of understood HTTP methods.
-        obj.http_method_names = utils.config_fallback(getattr(obj,
-            'http_method_names', None), 'http.methods', (
-                'get',
-                'post',
-                'put',
-                'delete',
-                'patch',
-                'options',
-                'head',
-                'connect',
-                'trace',
-            ))
+        return False
 
-        #! List of allowed HTTP methods.
-        obj.http_allowed_methods = getattr(obj, 'http_allowed_methods', (
-                'get',
-                'post',
-                'put',
-                'delete',
-            ))
+    def _config(cls, name, config, attrs, bases):
+        """Overrides a property by a config option if it isn't specified."""
+        if not cls._has(name, attrs, bases):
+            options = utils.config(config)
+            if options is not None:
+                setattr(cls, name, options)
 
-        #! List of allowed HTTP methods against a whole resource (eg /user).
-        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        obj.http_list_allowed_methods = getattr(obj,
-            'http_list_allowed_methods', obj.http_allowed_methods)
+    def __init__(cls, name, bases, attrs):
+        # Ensure the resource has a name.
+        if 'name' not in attrs:
+            cls.name = name.lower()
 
-        #! List of allowed HTTP methods against a single resource (eg /user/1).
-        #! If undeclared or None, will be defaulted to `http_allowed_methods`.
-        obj.http_detail_allowed_methods = getattr(obj,
-            'http_detail_allowed_methods', obj.http_allowed_methods)
+        # Ensure list and detail allowed methods and operations are populated.
+        for fmt, default in (
+                    ('http_{}_allowed_methods', cls.http_allowed_methods),
+                    ('{}_allowed_operations', cls.allowed_operations),
+                ):
+            for key in ('list', 'detail'):
+                attr = fmt.format(key)
+                if not cls._has(attr, attrs, bases):
+                    setattr(cls, attr, default)
 
-        #! List of allowed operations.
-        #! Resource operations are meant to generalize and blur the differences
-        #! between "PATCH and PUT", "PUT = create / update", etc.
-        obj.allowed_operations = getattr(obj, 'allowed_operations', (
-                'read',
-                'create',
-                'update',
-                'destroy',
-            ))
+        # Override properties that can be provided by configuration options
+        # if we should.
+        cls._config('http_method_names', 'http.methods', attrs, bases)
+        cls._config('encoders', 'encoders', attrs, bases)
+        cls._config('default_encoder', 'default.encoder', attrs, bases)
+        cls._config('authentication', 'resource.authentication', attrs, bases)
 
-        #! List of allowed operations against a whole resource.
-        #! If undeclared or None, will be defaulted to `allowed_operations`.
-        obj.list_allowed_operations = getattr(obj,
-            'list_allowed_operations', obj.allowed_operations)
-
-        #! List of allowed operations against a single resource.
-        #! If undeclared or None, will be defaulted to `allowed_operations`.
-        obj.detail_allowed_operations = getattr(obj,
-            'detail_allowed_operations', obj.allowed_operations)
-
-        #! Mapping of encoders known by this resource.
-        obj.encoders = utils.config_fallback(getattr(obj, 'encoders', None),
-            'encoders', {
-                    'json': 'flapjack.encoders.Json'
-                })
-
-        #! List of allowed encoders of the understood encoders.
-        obj.allowed_encoders = getattr(obj, 'allowed_encoders', (
-                'json',
-            ))
-
-        #! List of allowed encoders of the understood encoders.
-        obj.default_encoder = utils.config_fallback(getattr(obj,
-            'default_encoder', None), 'default.encoder',
-            obj.encoders.keys()[0])
-
-        #! Authentication protocol to use to authenticate access to the
-        #! resource.
-        obj.authentication = utils.config_fallback(
-            getattr(obj, 'authentication', None), 'resource.authentication', (
-                    'flapjack.authentication.Authentication',
-                ))
-
+        # Ensure properties are inflated the way they need to be.
         for_all = utils.for_all
         test = lambda x: isinstance(x, six.string_types)
         method = lambda x: x()
@@ -107,19 +68,87 @@ class Meta(type):
                     'authentication',
                 ):
             # Ensure certain properties that may be name qualified instead of
-            # class objects are resolved to be class objects.
-            setattr(obj, name, for_all(getattr(obj, name), utils.load, test))
+            # class clsects are resolved to be class clsects.
+            setattr(cls, name, for_all(getattr(cls, name), utils.load, test))
 
-            # Ensure things that need to be instantied are instantiated
-            setattr(obj, name, for_all(getattr(obj, name), method, callable))
-
-        # return the constructed object; wipe off the magic -- not really.
-        return obj
+            # Ensure things that need to be instantied are instantiated.
+            setattr(cls, name, for_all(getattr(cls, name), method, callable))
 
 
-class Resource(six.with_metaclass(Meta)):
+class BaseResource(object):
     """
     """
+
+    #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
+    name = None
+
+    #! List of understood HTTP methods.
+    http_method_names = (
+            'get',
+            'post',
+            'put',
+            'delete',
+            'patch',
+            'options',
+            'head',
+            'connect',
+            'trace',
+        )
+
+    #! List of allowed HTTP methods.
+    http_allowed_methods = (
+            'get',
+            'post',
+            'put',
+            'delete',
+        )
+
+    #! List of allowed HTTP methods against a whole
+    #! resource (eg /user); if undeclared or None, will be defaulted
+    #! to `http_allowed_methods`.
+    http_list_allowed_methods = None
+
+    #! List of allowed HTTP methods against a single
+    #! resource (eg /user/1); if undeclared or None, will be defaulted
+    #! to `http_allowed_methods`.
+    http_detail_allowed_methods = None
+
+    #! List of allowed operations.
+    #! Resource operations are meant to generalize and blur the
+    #! differences between "PATCH and PUT", "PUT = create / update",
+    #! etc.
+    allowed_operations = (
+            'read',
+            'create',
+            'update',
+            'destroy',
+        )
+
+    #! List of allowed operations against a whole resource.
+    #! If undeclared or None, will be defaulted to
+    #! `allowed_operations`.
+    list_allowed_operations = None
+
+    #! List of allowed operations against a single resource.
+    #! If undeclared or None, will be defaulted to `allowed_operations`.
+    detail_allowed_operations = None
+
+    #! Mapping of encoders known by this resource.
+    encoders = {
+            'json': 'flapjack.encoders.Json',
+        }
+
+    #! List of allowed encoders of the understood encoders.
+    allowed_encoders = 'json',
+
+    #! Name of the default encoder of the list of understood encoders.
+    default_encoder = 'json'
+
+    #! Authentication protocol(s) to use to authenticate access to
+    #! the resource.
+    authentication = (
+            'flapjack.authentication.Authentication',
+        )
 
     @classmethod
     def url(cls, path=''):
@@ -389,3 +418,7 @@ class Resource(six.with_metaclass(Meta)):
                 'see `allowed` for allowed operations.').format(operation)
 
             raise exceptions.Forbidden(data)
+
+
+class Resource(six.with_metaclass(Meta, BaseResource)):
+    pass
