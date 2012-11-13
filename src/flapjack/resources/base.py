@@ -54,6 +54,7 @@ class Meta(type):
 
         # Override properties that can be provided by configuration options
         # if we should.
+        cls._config('url_name', 'url', attrs, bases)
         cls._config('http_method_names', 'http.methods', attrs, bases)
         cls._config('encoders', 'encoders', attrs, bases)
         cls._config('decoders', 'decoders', attrs, bases)
@@ -144,7 +145,9 @@ class BaseResource(object):
         }
 
     #! List of allowed encoders of the understood encoders.
-    allowed_encoders = ('json',)
+    allowed_encoders = (
+        'json',
+    )
 
     #! Name of the default encoder of the list of understood encoders.
     default_encoder = 'json'
@@ -158,13 +161,16 @@ class BaseResource(object):
     #! the resource.
     authentication = ('flapjack.authentication.Authentication',)
 
+    #! URL namespace to define the url configuration inside.
+    url_name = 'api_view'
+
     @classmethod
     def url(cls, path=''):
         """Builds a url pattern using the passed `path` for this resource."""
         return url(
             r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name, path),
             cls.view,
-            name='api_view',
+            name=cls.url_name,
             kwargs={'resource': cls.name},
         )
 
@@ -307,7 +313,6 @@ class BaseResource(object):
         # TODO: Resolve relation URIs (eg. /resource/:slug/).
         # TODO: Run micro-clean cycle using field-level cleaning in order to
         #       support things like fuzzy dates.
-        # TODO: [Over]write non-editable data with data from `read()`.
 
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
