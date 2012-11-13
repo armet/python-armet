@@ -6,25 +6,8 @@ from . import utils
 
 class Transcoder(object):
 
-    #! Registry of available transcoders.
-    registry = None
-
     #! Applicable mimetypes for this transcoder.
     mimetypes = ()
-
-    # @classmethod
-    # def get(cls, mimetype):
-    #     try:
-    #         for transcoder in cls.registry.values():
-    #             if transcoder.can_transcode(mimetype):
-    #                 # Transcoder matched against the mimetype; return it
-    #                 return transcoder
-
-    #     except:
-    #         # Mimetype is so badly formatted mimeparse died; return nothing
-    #         pass
-
-    #     # Nothing can be matched; return nothing
 
     @utils.classproperty
     def mimetype(cls):
