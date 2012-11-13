@@ -56,6 +56,7 @@ class Meta(type):
         # if we should.
         cls._config('http_method_names', 'http.methods', attrs, bases)
         cls._config('encoders', 'encoders', attrs, bases)
+        cls._config('decoders', 'decoders', attrs, bases)
         cls._config('default_encoder', 'default.encoder', attrs, bases)
         cls._config('authentication', 'resource.authentication', attrs, bases)
 
@@ -65,6 +66,7 @@ class Meta(type):
         method = lambda x: x()
         for name in (
                     'encoders',
+                    'decoders',
                     'authentication',
                 ):
             # Ensure certain properties that may be name qualified instead of
@@ -81,6 +83,9 @@ class BaseResource(object):
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
     name = None
+
+    #! Form class to serve as the recipient of data from the client.
+    form = None
 
     #! List of understood HTTP methods.
     http_method_names = (
@@ -139,16 +144,19 @@ class BaseResource(object):
         }
 
     #! List of allowed encoders of the understood encoders.
-    allowed_encoders = 'json',
+    allowed_encoders = ('json',)
 
     #! Name of the default encoder of the list of understood encoders.
     default_encoder = 'json'
 
+    #! List of decoders known by this resource.
+    decoders = (
+        'flapjack.decoders.Form',
+    )
+
     #! Authentication protocol(s) to use to authenticate access to
     #! the resource.
-    authentication = (
-            'flapjack.authentication.Authentication',
-        )
+    authentication = ('flapjack.authentication.Authentication',)
 
     @classmethod
     def url(cls, path=''):
@@ -225,12 +233,11 @@ class BaseResource(object):
         #! Explicitly declared format of the request.
         self.format = kwargs.get('format')
 
-        #! Encoder that is used for the cycle of the request.
-        self._encoder = None
-
     def dispatch(self):
         """
         """
+        # Set some defaults so we can reference this later
+        encoder = None
         try:
             # Assert authentication and attempt to get a valid user object.
             for auth in self.authentication:
@@ -253,16 +260,21 @@ class BaseResource(object):
             function = self._determine_method()
 
             # Detect an appropriate encoder.
-            self._determine_encoder()
+            encoder = self._determine_encoder()
 
             # TODO: Assert resource-level authorization
 
             if self.request.body is not None:
-                # TODO: Determine decoder
-                # TODO: Decode the request body (if non-empty)
-                # TODO: Run clean cycle over decoded body (if non-empty body)
-                # TODO: Assert object-level authorization (if non-empty body)
-                pass
+                # Determine an approparite decoder.
+                decoder = self._determine_decoder()
+
+                # Decode the request body
+                content = decoder.decode(self.request.body)
+
+                # Run clean cycle over decoded body
+                content = self.clean(content)
+
+                # TODO: Assert object-level authorization
 
             # Delegate to the determined function.
             data, status = function()
@@ -271,24 +283,37 @@ class BaseResource(object):
             data = self.prepare(data)
 
             # Build and return the response object
-            return self.process(data, status)
+            return self.process(encoder, data, status)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
-            return ex.dispatch(self._encoder)
+            return ex.dispatch(encoder)
 
-    def process(self, data, status):
+    def process(self, encoder, data, status):
         """Builds a response object from the data and status code."""
         response = http.Response(status=status)
         if data is not None:
-            response.content = self._encoder.encode(data)
-            response['Content-Type'] = self._encoder.mimetype
+            response.content = encoder.encode(data)
+            response['Content-Type'] = encoder.mimetype
 
         return response
 
     def prepare(self, data):
         """Prepares the data for transmission."""
-        # TODO: Do something here
+        return data
+
+    def clean(self, data):
+        """Cleans data from the request for processing."""
+        # TODO: Resolve relation URIs (eg. /resource/:slug/).
+        # TODO: Run micro-clean cycle using field-level cleaning in order to
+        #       support things like fuzzy dates.
+        # TODO: [Over]write non-editable data with data from `read()`.
+
+        if self.form is not None:
+            # Instantiate form using provided data (if form exists).
+            # form = self.form()
+            pass
+
         return data
 
     def get(self):
@@ -321,6 +346,10 @@ class BaseResource(object):
 
         # Return the response
         return items, http.OK
+
+    def post(self):
+        # Return the response
+        return None, http.NO_CONTENT
 
     @property
     def _allowed_methods(self):
@@ -370,24 +399,21 @@ class BaseResource(object):
             # An explicit form was supplied; attempt to get it directly
             name = self.format.lower()
             if name in self.allowed_encoders:
-                self._encoder = self.encoders.get(name)
-                if self._encoder is not None:
+                encoder = self.encoders.get(name)
+                if encoder is not None:
                     # Found an appropriate encoder; we're done
-                    return
+                    return encoder
 
         elif accept is not None and accept.strip() != '*/*':
             for name in self.allowed_encoders:
                 encoder = self.encoders[name]
                 if encoder.can_transcode(self.request.META['HTTP_ACCEPT']):
                     # Found an appropriate encoder; we're done
-                    self._encoder = encoder
-                    return
+                    return encoder
 
         else:
             # Neither `.fmt` nor an accept header was specified
-            self._encoder = self.encoders.get(self.default_encoder)
-            print(self.default_encoder)
-            return
+            return self.encoders.get(self.default_encoder)
 
         # Failed to find an appropriate encoder
         # Get dictionary of available formats
@@ -397,6 +423,23 @@ class BaseResource(object):
 
         # Encode the response using the appropriate exception
         raise exceptions.NotAcceptable(available)
+
+    def _determine_decoder(self):
+        """Determine the decoder to use according to the request object.
+        """
+        # Attempt to get the content-type; default to an appropriate value.
+        content = self.request.META.get('CONTENT_TYPE',
+            'application/octet-stream')
+
+        # Attempt to find a decoder and on failure, die.
+        for decoder in self.decoders:
+            if decoder.can_transcode(content):
+                # Good; return the decoder
+                return decoder
+
+        # Failed to find an appropriate decoder; we have no idea how to
+        # handle the data.
+        raise exceptions.UnsupportedMediaType()
 
     @property
     def _allowed_operations(self):

@@ -22,7 +22,7 @@ class Resource(six.with_metaclass(Meta, BaseResource)):
 
     @property
     def queryset(self):
-        return self.model.objects.all()
+        return self.model.objects
 
     def read(self):
         if self.identifier is not None:
