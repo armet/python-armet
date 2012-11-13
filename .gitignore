@@ -1,5 +1,6 @@
 # Python
 *.pyc
+*.egg-info
 
 # Sphinx
 .build
