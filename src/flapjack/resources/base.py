@@ -7,8 +7,9 @@ import collections
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
+from django import forms
 import six
-from .. import http, utils, exceptions
+from .. import http, utils, exceptions, fields
 
 
 class Meta(type):
@@ -30,36 +31,95 @@ class Meta(type):
 
         return False
 
-    def _config(cls, name, config, attrs, bases):
+    def _config(self, name, config, attrs, bases):
         """Overrides a property by a config option if it isn't specified."""
-        if not cls._has(name, attrs, bases):
+        if not self._has(name, attrs, bases):
             options = utils.config(config)
             if options is not None:
-                setattr(cls, name, options)
+                setattr(self, name, options)
 
-    def __init__(cls, name, bases, attrs):
+    def _is_field_visible(self, name):
+        visible = not (self.fields and name not in self.fields)
+        visible = visible and (not (self.exclude and name in self.exclude))
+        return visible
+
+    def _is_field_filterable(self, name):
+        return not (self.filterable and name not in self.filterable)
+
+    def _get_field_class(self, field):
+        if isinstance(field, forms.DateField):
+            return fields.DateField
+
+        if isinstance(field, forms.TimeField):
+            return fields.TimeField
+
+        if isinstance(field, forms.DateTimeField):
+            return fields.DateTimeField
+
+        if isinstance(field, forms.FileField):
+            return fields.FileField
+
+        return fields.Field
+
+    def _discover_fields(self):
+        if self.form is not None:
+            properties = {}
+            for name in self.form.base_fields:
+                field = self.form.base_fields[name]
+
+                # Determine what properties we can from the name
+                properties['visible'] = self._is_field_visible(name)
+                properties['filterable'] = self._is_field_filterable(name)
+
+                # Attempt to discover if the null value is some sort of
+                # iterable (and isn't a string) which would make it a
+                # collection field.
+                try:
+                    null = field.to_python(None)
+                    properties['collection'] = (
+                        isinstance(null, collections.Iterable) and not
+                        isinstance(null, six.string_types))
+
+                except forms.ValidationError:
+                    properties['collection'] = False
+
+                # An explicitly declared field on a form is always editable
+                properties['editable'] = True
+
+                # Instantiate the field and append it to the collection
+                self._fields[name] = self._get_field_class(field)(**properties)
+
+    def __init__(self, name, bases, attrs):
+        # Initialize our ordered fields dictionary.
+        self._fields = collections.OrderedDict()
+
+        # If the resource has a form we need to discover its fields.
+        self._discover_fields()
+
+        # TODO: Append any 'extra' fields listed in the `include` directive.
+
         # Ensure the resource has a name.
         if 'name' not in attrs:
-            cls.name = name.lower()
+            self.name = name.lower()
 
         # Ensure list and detail allowed methods and operations are populated.
         for fmt, default in (
-                    ('http_{}_allowed_methods', cls.http_allowed_methods),
-                    ('{}_allowed_operations', cls.allowed_operations),
+                    ('http_{}_allowed_methods', self.http_allowed_methods),
+                    ('{}_allowed_operations', self.allowed_operations),
                 ):
             for key in ('list', 'detail'):
                 attr = fmt.format(key)
-                if not cls._has(attr, attrs, bases):
-                    setattr(cls, attr, default)
+                if not self._has(attr, attrs, bases):
+                    setattr(self, attr, default)
 
         # Override properties that can be provided by configuration options
         # if we should.
-        cls._config('url_name', 'url', attrs, bases)
-        cls._config('http_method_names', 'http.methods', attrs, bases)
-        cls._config('encoders', 'encoders', attrs, bases)
-        cls._config('decoders', 'decoders', attrs, bases)
-        cls._config('default_encoder', 'default.encoder', attrs, bases)
-        cls._config('authentication', 'resource.authentication', attrs, bases)
+        self._config('url_name', 'url', attrs, bases)
+        self._config('http_method_names', 'http.methods', attrs, bases)
+        self._config('encoders', 'encoders', attrs, bases)
+        self._config('decoders', 'decoders', attrs, bases)
+        self._config('default_encoder', 'default.encoder', attrs, bases)
+        self._config('authentication', 'resource.authentication', attrs, bases)
 
         # Ensure properties are inflated the way they need to be.
         for_all = utils.for_all
@@ -71,11 +131,11 @@ class Meta(type):
                     'authentication',
                 ):
             # Ensure certain properties that may be name qualified instead of
-            # class clsects are resolved to be class clsects.
-            setattr(cls, name, for_all(getattr(cls, name), utils.load, test))
+            # class objects are resolved to be class objects.
+            setattr(self, name, for_all(getattr(self, name), utils.load, test))
 
             # Ensure things that need to be instantied are instantiated.
-            setattr(cls, name, for_all(getattr(cls, name), method, callable))
+            setattr(self, name, for_all(getattr(self, name), method, callable))
 
 
 class BaseResource(object):
@@ -246,21 +306,7 @@ class BaseResource(object):
         encoder = None
         try:
             # Assert authentication and attempt to get a valid user object.
-            for auth in self.authentication:
-                user = auth.authenticate(self.request)
-                if user is None:
-                    # A user object cannot be retrieved with this
-                    # authn protocol.
-                    continue
-
-                if user.is_authenticated() or auth.allow_anonymous:
-                    # A user object has been successfully retrieved.
-                    self.request.user = user
-                    break
-
-            else:
-                # A user was declared unauthenticated with some confidence.
-                raise auth.Unauthenticated
+            self.authentication()
 
             # Determine the HTTP method
             function = self._determine_method()
@@ -269,13 +315,12 @@ class BaseResource(object):
             encoder = self._determine_encoder()
 
             # TODO: Assert resource-level authorization
-
-            if self.request.body is not None:
+            if self.request.body:
                 # Determine an approparite decoder.
                 decoder = self._determine_decoder()
 
                 # Decode the request body
-                content = decoder.decode(self.request.body)
+                content = decoder.decode(self.request, self._fields)
 
                 # Run clean cycle over decoded body
                 content = self.clean(content)
@@ -294,6 +339,24 @@ class BaseResource(object):
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
             return ex.dispatch(encoder)
+
+    def authenticate(self):
+        """Attempts to assert authentication."""
+        for auth in self.authentication:
+            user = auth.authenticate(self.request)
+            if user is None:
+                # A user object cannot be retrieved with this
+                # authn protocol.
+                continue
+
+            if user.is_authenticated() or auth.allow_anonymous:
+                # A user object has been successfully retrieved.
+                self.request.user = user
+                break
+
+        else:
+            # A user was declared unauthenticated with some confidence.
+            raise auth.Unauthenticated
 
     def process(self, encoder, data, status):
         """Builds a response object from the data and status code."""
