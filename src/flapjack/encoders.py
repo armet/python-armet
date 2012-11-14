@@ -3,6 +3,7 @@
 import json
 import datetime
 import six
+import pickle
 from .http import HttpResponse
 from . import exceptions, transcoders, utils
 from lxml.builder import E
@@ -171,10 +172,14 @@ class Bin(transcoders.Bin, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        response = super(Bin, cls).encode(obj.read())
-        response['Content-Disposition'] = \
+        try:
+            response = super(Bin, cls).encode(obj.read())
+            response['Content-Disposition'] = \
             'attachment; filename="{}"'.format(obj.name.split('/')[-1])
-
+        except AttributeError:
+            response = super(Bin, cls).encode(pickle.dumps(obj,protocol=2))
+            response['Content-Disposition'] = \
+            'attachment'
         return response
 
 

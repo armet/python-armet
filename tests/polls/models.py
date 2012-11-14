@@ -8,6 +8,7 @@ class Poll(models.Model):
 #    choices = models.ManyToManyField(Choice)
     question = models.CharField('Poll Question', max_length=1024)
     pub_date = models.DateTimeField('date published')
+    file = models.FileField(upload_to='uploads')
 
     def __str__(self):
         return self.question
