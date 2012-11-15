@@ -148,7 +148,6 @@ class Base(six.with_metaclass(meta.Resource)):
         """simple classmethod to delegate pagination to the paginator
         """
         return cls.paginator.paginate(iterable, request.META)
-        pass
 
     @classmethod
     @csrf_exempt
@@ -190,15 +189,18 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # Encode the content (if any) and return the response
             if content is not None:
-                # Paginate the content
-                content, page_headers = cls.paginate(content, request)
+
+                if not isinstance(content, Mapping):
+                    # Paginate the content
+                    condtent, page_headers = cls.paginate(content, request)
 
                 # Create an HttpResponse object with the content
                 response = encoder.encode(content)
 
-                # Merge response headers with pagination headers
-                for k, v in page_headers.items():
-                    response[k] = v
+                if not isinstance(content, Mapping):
+                    # Merge response headers with pagination headers
+                    for k, v in page_headers.items():
+                        response[k] = v
             else:
                 response = HttpResponse()
             response.status_code = resource.status
