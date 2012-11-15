@@ -190,16 +190,12 @@ class Base(six.with_metaclass(meta.Resource)):
             # Encode the content (if any) and return the response
             if content is not None:
 
-                if not isinstance(content, Mapping):
-                    # Paginate the content
-                    condtent, page_headers = cls.paginate(content, request)
-
                 # Create an HttpResponse object with the content
                 response = encoder.encode(content)
 
                 if not isinstance(content, Mapping):
                     # Merge response headers with pagination headers
-                    for k, v in page_headers.items():
+                    for k, v in resource.page_headers.items():
                         response[k] = v
             else:
                 response = HttpResponse()
@@ -309,6 +305,10 @@ class Base(six.with_metaclass(meta.Resource)):
         response = function(obj)
 
         # If we got anything back ..
+
+        if len(response) > 0:
+            # Paginate the content
+            response, self.page_headers = self.paginate(response, self.request)
         if response is not None:
             # Run it through a preparation cycle
             return self.prepare(response)
