@@ -5,6 +5,8 @@ import datetime
 import six
 import pickle
 import base64
+import mimetypes
+import re
 from .http import HttpResponse
 from . import exceptions, transcoders, utils
 from lxml.builder import E
@@ -192,10 +194,13 @@ class Bin(transcoders.Bin, Encoder):
     @classmethod
     def encode(cls, obj=None):
         try:
+            # transmit a binary file from the server
             response = super(Bin, cls).encode(obj.read())
             response['Content-Disposition'] = \
             'attachment; filename="{}"'.format(obj.name.split('/')[-1])
+            response['Content-Type'] = str(mimetypes.types_map[ re.search('\.[^.]*$',obj.name).group(0)])
         except AttributeError:
+            # pickle a python object
             response = super(Bin, cls).encode(pickle.dumps(obj,protocol=2))
             response['Content-Disposition'] = \
             'attachment'
