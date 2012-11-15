@@ -4,6 +4,7 @@ import json
 import datetime
 import six
 import pickle
+import base64
 from .http import HttpResponse
 from . import exceptions, transcoders, utils
 from lxml.builder import E
@@ -62,6 +63,13 @@ class Json(transcoders.Json, Encoder):
         return super(Json, cls).encode(text)
 
 
+#This is simply a procedural call. Not a member function
+def _encode_file_into_xml(e,obj):
+        data = obj.read()
+        base64_string = base64.b64encode(data)
+        e.text = base64_string
+
+
 @Encoder.register()
 class Xml(transcoders.Xml, Encoder):
 
@@ -76,8 +84,6 @@ class Xml(transcoders.Xml, Encoder):
                    #recursion!  See step 1.
                #else
                    #insert the item into xml under root
-
-
 
     @classmethod
 #    def _encode_object_into_xml(cls,root,obj):
@@ -110,7 +116,7 @@ class Xml(transcoders.Xml, Encoder):
                    key = utils.fix_date(key)
                #render the item into xml under root
                    root.append( E.value( str(key) ))
-
+                   
     @classmethod
     def _encode_object_into_xml(cls,obj,root=None):
         e = E.object()
@@ -127,12 +133,14 @@ class Xml(transcoders.Xml, Encoder):
     # Convert the obj param into an XML string
     @classmethod
     def return_single_xml_object(cls, obj=None):
+#        try:
+#            e = E.data()
+#            _encode_file_into_xml(e,obj)
+#            text = etree.tostring(e,pretty_print=False)
+#            return super(Xml, cls).encode(text)
+#        except:
+#            pass
         root = cls._encode_object_into_xml(obj)
-#        root = E.object()
-#        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-           # We need this to be at least a list
-#           obj = obj,
-#        cls._iterate_thru_object(root,obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
 
@@ -142,7 +150,6 @@ class Xml(transcoders.Xml, Encoder):
         root = E.objects()
         for item in obj:
             if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-               # We need this to be at least a list
                obj = obj,
             cls._encode_object_into_xml(item,root)
         text = etree.tostring(root,pretty_print=True)
@@ -153,12 +160,16 @@ class Xml(transcoders.Xml, Encoder):
     def encode(cls, obj=None):
         #is there a better way to test for list view?
         try:
+            e = E.data()
+            _encode_file_into_xml(e,obj)
+            text = etree.tostring(e,pretty_print=False)
+            return super(Xml, cls).encode(text)
+        except:
+            pass
+        try:
             for x in obj:
                 if isinstance(x, OrderedDict):
-#                    print "cls.return_xml_object_set()"
-           # We need this to be at least a list
                     return cls.return_xml_object_set(obj)
-#            print "cls.return_single_xml_object()"
                 return cls.return_single_xml_object(obj)
         except:
                 return cls.return_single_xml_object(obj)
