@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 import six
 from ..http import HttpResponse, constants
-from .. import encoders, exceptions, decoders
+from .. import encoders, exceptions, decoders, pagination
 from .. import utils
 from . import meta
 
@@ -85,6 +85,12 @@ class Base(six.with_metaclass(meta.Resource)):
     #! filterables.
     filterer = None
 
+    #! Pagination class object
+    paginator = pagination.Paginator(
+        pagination.DEFAULT_RANGEWORD,
+        pagination.DEFAULT_PAGELENGTH
+    )
+
     #! Form class to use to provide the validation and sanitization cycle.
     form = None
 
@@ -138,6 +144,13 @@ class Base(six.with_metaclass(meta.Resource)):
         return items
 
     @classmethod
+    def paginate(cls, iterable, request):
+        """simple classmethod to delegate pagination to the paginator
+        """
+        return cls.paginator.paginate(iterable, request.META)
+        pass
+
+    @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
         try:
@@ -177,7 +190,15 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # Encode the content (if any) and return the response
             if content is not None:
+                # Paginate the content
+                content, page_headers = cls.paginate(content, request)
+
+                # Create an HttpResponse object with the content
                 response = encoder.encode(content)
+
+                # Merge response headers with pagination headers
+                for k, v in page_headers.items():
+                    response[k] = v
             else:
                 response = HttpResponse()
             response.status_code = resource.status
