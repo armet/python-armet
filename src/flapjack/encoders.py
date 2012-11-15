@@ -47,6 +47,14 @@ class Json(transcoders.Json, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
+        
+        # test if file
+        try:
+#            data = obj.read()
+            obj = base64.b64encode(obj.read())
+        except:
+            pass
+
         # Is this not a dictionary or an array?
         if not isinstance(obj, dict) and not isinstance(obj, list):
             # We need this to be at least a list for valid JSON
