@@ -306,7 +306,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # If we got anything back ..
 
-        if isinstance(response, Mapping):
+        if not isinstance(response, Mapping):
             # Paginate the content
             response, self.page_headers = self.paginate(response, self.request)
         if response is not None:
