@@ -3,7 +3,9 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import datetime
 import collections
+from StringIO import StringIO
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -47,25 +49,75 @@ class Meta(type):
         return not (self.filterable and name not in self.filterable)
 
     def _get_field_class(self, field):
-        if isinstance(field, forms.DateField):
-            return fields.DateField
+        try:
+            # Attempt to handle date/times
+            test = datetime.datetime.now()
+            if field.to_python(test) == test:
+                # Looks like we're a datetime field
+                return fields.DateTimeField
 
-        if isinstance(field, forms.TimeField):
-            return fields.TimeField
+        except forms.ValidationError:
+            # Times cannot be handled.
+            pass
 
-        if isinstance(field, forms.DateTimeField):
-            return fields.DateTimeField
+        try:
+            # Attempt to handle times
+            test = datetime.datetime.now().time()
+            if field.to_python(test) == test:
+                # Looks like we're a time field
+                return fields.TimeField
 
-        if isinstance(field, forms.FileField):
+        except forms.ValidationError:
+            # Times cannot be handled.
+            pass
+
+        try:
+            # Attempt to handle dates
+            test = datetime.datetime.now().date()
+            if field.to_python(test) == test:
+                # Looks like we're a date field
+                return fields.DateField
+
+        except forms.ValidationError:
+            # Dates cannot be handled.
+            pass
+
+        try:
+            # Attempt to handle file streams
+            test = StringIO()
+            field.to_python(test)
+
+            # Looks like we're capable of dealing with file streams
             return fields.FileField
 
+        except forms.ValidationError:
+            # File streams cannot be handled
+            pass
+
+        try:
+            # Attempt to handle booleans
+            test = True
+            if field.to_python(test) is True:
+                # Looks we can explicitly handle booleans
+                return fields.BooleanField
+
+        except forms.ValidationError:
+            # Booleans cannot be handled
+            pass
+
+        # We have no idea what we are; assume were just text
         return fields.Field
+
+    @property
+    def _form_fields(self):
+        return self.form.base_fields
 
     def _discover_fields(self):
         if self.form is not None:
             properties = {}
-            for name in self.form.base_fields:
-                field = self.form.base_fields[name]
+            form_fields = self._form_fields
+            for name in form_fields:
+                field = form_fields[name]
 
                 # Determine what properties we can from the name
                 properties['visible'] = self._is_field_visible(name)
@@ -87,7 +139,8 @@ class Meta(type):
                 properties['editable'] = True
 
                 # Instantiate the field and append it to the collection
-                self._fields[name] = self._get_field_class(field)(**properties)
+                self._fields[name] = self._get_field_class(field)(
+                    name, **properties)
 
     def __init__(self, name, bases, attrs):
         # Initialize our ordered fields dictionary.
@@ -101,6 +154,11 @@ class Meta(type):
         # Ensure the resource has a name.
         if 'name' not in attrs:
             self.name = name.lower()
+
+        # Unless `filterable` was explicitly provided in a class object,
+        # default `filterable` to an empty tuple.
+        if not self._has('filterable', attrs, bases):
+            self.filterable = ()
 
         # Ensure list and detail allowed methods and operations are populated.
         for fmt, default in (
@@ -224,6 +282,21 @@ class BaseResource(object):
     #! URL namespace to define the url configuration inside.
     url_name = 'api_view'
 
+    #! Blacklist of fields to exclude from display.
+    exclude = None
+
+    #! Whitelist of fields to include in the display.
+    fields = None
+
+    #! Additional fields to include in the display.
+    include = None
+
+    #! Whitelist of fields that are filterable.
+    #! Default is to be an empty () which excludes all fields from filtering.
+    #! To have all fields be eligible for filtering, explicitly specify
+    #! `filterable = None` on a resource or any of its parents.
+    filterable = None
+
     @classmethod
     def url(cls, path=''):
         """Builds a url pattern using the passed `path` for this resource."""
@@ -306,7 +379,7 @@ class BaseResource(object):
         encoder = None
         try:
             # Assert authentication and attempt to get a valid user object.
-            self.authentication()
+            self.authenticate()
 
             # Determine the HTTP method
             function = self._determine_method()

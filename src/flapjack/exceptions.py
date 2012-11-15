@@ -67,3 +67,7 @@ class UnsupportedMediaType(Error):
 
 class NotImplemented(Error):
     status = http.NOT_IMPLEMENTED
+
+
+class AuthenticationRequired(Error):
+    status = http.AUTHENTICATION_REQUIRED

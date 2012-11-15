@@ -14,7 +14,7 @@ from . import forms
 #         model = models.Poll
 
 
-class Poll(resources.Resource):
+class Poll(resources.Model):
     form = forms.Poll
 
 # form = forms.Poll

@@ -54,3 +54,23 @@ class Field(object):
 
         #! Whether this fields is bound to a model or not.
         self.model = kwargs.get('model')
+
+
+class BooleanField(Field):
+    pass
+
+
+class DateField(Field):
+    pass
+
+
+class TimeField(Field):
+    pass
+
+
+class DateTimeField(Field):
+    pass
+
+
+class FileField(Field):
+    pass
