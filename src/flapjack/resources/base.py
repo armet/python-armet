@@ -7,9 +7,10 @@ from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 import six
 from ..http import HttpResponse, constants
-from .. import encoders, exceptions, decoders
+from .. import encoders, exceptions, decoders, pagination
 from .. import utils
 from . import meta
+from django.db.models.query import QuerySet
 
 
 class Base(six.with_metaclass(meta.Resource)):
@@ -85,6 +86,12 @@ class Base(six.with_metaclass(meta.Resource)):
     #! filterables.
     filterer = None
 
+    #! Pagination class object
+    paginator = pagination.Paginator(
+        pagination.DEFAULT_RANGEWORD,
+        pagination.DEFAULT_PAGELENGTH
+    )
+
     #! Form class to use to provide the validation and sanitization cycle.
     form = None
 
@@ -138,6 +145,12 @@ class Base(six.with_metaclass(meta.Resource)):
         return items
 
     @classmethod
+    def paginate(cls, iterable, request):
+        """simple classmethod to delegate pagination to the paginator
+        """
+        return cls.paginator.paginate(iterable, request.META)
+
+    @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
         try:
@@ -177,7 +190,14 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # Encode the content (if any) and return the response
             if content is not None:
+
+                # Create an HttpResponse object with the content
                 response = encoder.encode(content)
+
+                if not isinstance(content, Mapping):
+                    # Merge response headers with pagination headers
+                    for k, v in resource.page_headers.items():
+                        response[k] = v
             else:
                 response = HttpResponse()
             response.status_code = resource.status
@@ -286,6 +306,10 @@ class Base(six.with_metaclass(meta.Resource)):
         response = function(obj)
 
         # If we got anything back ..
+
+        if isinstance(response, QuerySet):
+            # Paginate the content
+            response, self.page_headers = self.paginate(response, self.request)
         if response is not None:
             # Run it through a preparation cycle
             return self.prepare(response)
@@ -570,9 +594,15 @@ class Base(six.with_metaclass(meta.Resource)):
         # Pass us along.
         return response
 
-    def item_prepare(self, item):
+    def item_prepare(self, original):
         # Initialize the item object; we like to remember the order of the
         # fields.
+        if not isinstance(original, Mapping):
+            item = vars(original)
+
+        else:
+            item = original
+
         obj = OrderedDict()
 
         # Append the URI at the beginning.
@@ -587,23 +617,24 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
-            try:
-                # Attempt to grab this field from the item.
-                value = getattr(item, name)
+            # try:
+            #     # Attempt to grab this field from the item.
+            #     value = getattr(item, name)
 
-            except:
-                try:
-                    # Maybe we have a dictionary
-                    value = item.get(name)
+            # except:
+            #     try:
+            # Maybe we have a dictionary
+            value = item.get(name)
 
-                except:
-                    # Something fun happened here.. ?
-                    value = None
+            # except:
+            #     # Something fun happened here.. ?
+            #     value = None
 
             # Run it through the `prepare_FOO` method (if defined).
-            prepare = getattr(self, 'prepare_{}'.format(name), None)
-            if prepare is not None:
-                value = prepare(item, value)
+            # prepare = getattr(self, 'prepare_{}'.format(name), None)
+            # if prepare is not None:
+            if field.prepare is not None:
+                value = field.prepare(self, original, value)
 
             # Attempt to resolve the prepared value (which at this point
             # can be a callable)

@@ -34,7 +34,7 @@ class Paginator(object):
         # Compile our regex after replacing the name
         self.re = re.compile(RANGE_MATCH.format(name=word), re.X)
 
-    def paginate(self, iterable, headers, encoder):
+    def paginate(self, iterable, headers):
         """Paginate an iterable during a request
         """
         # parse the pagination request header and get back the range requested
@@ -44,16 +44,15 @@ class Paginator(object):
             # No range header, just set some defaults
             start = 0
             length = self.length
-
-        # Fix up the response headers
-        response = encoder.encode(iterable[start:length])
-        response['Content-Range'] = '{}-{}/{}'.format(
-            start,
-            start + length,
-            len(iterable))
-        response['Accept-Ranges'] = self.word
-
-        return response
+        response_headers = {
+            'Content-Range': '{}-{}/{}'.format(
+                start,
+                start + length,
+                len(iterable)),
+            'Accept-Ranges': self.word
+        }
+        iterable = iterable[start:start + length + 1]
+        return iterable, response_headers
 
     def parse(self, header):
         """Parse the range header to figure out what page range the user
@@ -91,7 +90,7 @@ class Paginator(object):
                 # More than one result is not yet implemented
                 raise exceptions.NotImplemented({
                     'Range':
-                    'multipart range requests not implemented'
+                    'multipart range requests are not implemented'
                     })
 
             # Just one result, lets check out what we got
@@ -110,6 +109,11 @@ class Paginator(object):
             elif match.find('-') != -1:
                 # This is a range of objects, slice 'er up.
                 start, end = match.split('-')
+
+                # Cast to integers
+                start = int(start)
+                # End is inclusive, so add 1
+                end = int(end)
             else:
                 # Well this is just a number.  We only want to get 1 object
                 start = int(match)

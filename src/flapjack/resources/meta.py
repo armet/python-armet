@@ -102,6 +102,13 @@ class Resource(type):
             field.filterable = name in self.filterable
             field.visible = self.is_field_visible(name)
 
+            prepare_foo = 'prepare_{}'.format(name)
+            if hasattr(self, prepare_foo):
+                field.prepare = getattr(self, prepare_foo)
+
+            else:
+                field.prepare = None
+
             # Are we dealing with a file field ?
             if isinstance(item, forms.FileField):
                 field.file = True
@@ -128,6 +135,14 @@ class Resource(type):
                         filterable=name in self.filterable,
                         visible=self.is_field_visible(name)
                     )
+
+                # Update
+                prepare_foo = 'prepare_{}'.format(name)
+                if hasattr(self, prepare_foo):
+                    self._fields[name].prepare = getattr(self, prepare_foo)
+
+                else:
+                    self._fields[name].prepare = None
 
 
 class Model(Resource):
@@ -224,3 +239,11 @@ class Model(Resource):
 
             # Store the field
             self._fields[name] = fields.Model(name, **props)
+
+            # Update
+            prepare_foo = 'prepare_{}'.format(name)
+            if hasattr(self, prepare_foo):
+                self._fields[name].prepare = getattr(self, prepare_foo)
+
+            else:
+                self._fields[name].prepare = None
