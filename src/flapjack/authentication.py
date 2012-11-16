@@ -74,7 +74,7 @@ class Header(Base):
 
             return user
 
-        except AttributeError:
+        except (AttributeError, ValueError):
             # Something went wrong and we were unable to authenticate;
             # possible reasons include:
             #   - No `authorization` header present
