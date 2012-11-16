@@ -10,6 +10,7 @@ from ..http import HttpResponse, constants
 from .. import encoders, exceptions, decoders, pagination
 from .. import utils
 from . import meta
+from django.db.models.query import QuerySet
 
 
 class Base(six.with_metaclass(meta.Resource)):
@@ -306,7 +307,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         # If we got anything back ..
 
-        if not isinstance(response, Mapping):
+        if isinstance(response, QuerySet):
             # Paginate the content
             response, self.page_headers = self.paginate(response, self.request)
         if response is not None:
