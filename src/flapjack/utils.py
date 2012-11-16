@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import datetime
 import collections
 import six
 
@@ -37,7 +38,7 @@ def memoize(obj):
     return memoizer
 
 
-def config(path, default=None):
+def config(path, default):
     """Retrieve a namespaced configuration option from django."""
     from django.conf import settings
     try:
