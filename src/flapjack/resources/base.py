@@ -593,9 +593,10 @@ class Base(six.with_metaclass(meta.Resource)):
         # Pass us along.
         return response
 
-    def item_prepare(self, item):
+    def item_prepare(self, original):
         # Initialize the item object; we like to remember the order of the
         # fields.
+        item = vars(original)
         obj = OrderedDict()
 
         # Append the URI at the beginning.
@@ -610,23 +611,24 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
-            try:
-                # Attempt to grab this field from the item.
-                value = getattr(item, name)
+            # try:
+            #     # Attempt to grab this field from the item.
+            #     value = getattr(item, name)
 
-            except:
-                try:
-                    # Maybe we have a dictionary
-                    value = item.get(name)
+            # except:
+            #     try:
+            # Maybe we have a dictionary
+            value = item.get(name)
 
-                except:
-                    # Something fun happened here.. ?
-                    value = None
+            # except:
+            #     # Something fun happened here.. ?
+            #     value = None
 
             # Run it through the `prepare_FOO` method (if defined).
-            prepare = getattr(self, 'prepare_{}'.format(name), None)
-            if prepare is not None:
-                value = prepare(item, value)
+            # prepare = getattr(self, 'prepare_{}'.format(name), None)
+            # if prepare is not None:
+            if field.prepare is not None:
+                value = field.prepare(self, original, value)
 
             # Attempt to resolve the prepared value (which at this point
             # can be a callable)
