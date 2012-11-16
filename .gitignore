@@ -6,4 +6,4 @@
 .build
 
 # Database files
-*.db
+*.sqlite
