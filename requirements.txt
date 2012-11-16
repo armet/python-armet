@@ -1,2 +1,4 @@
 django
 python-mimeparse
+six
+lxml
