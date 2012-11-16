@@ -597,7 +597,12 @@ class Base(six.with_metaclass(meta.Resource)):
     def item_prepare(self, original):
         # Initialize the item object; we like to remember the order of the
         # fields.
-        item = vars(original)
+        if not isinstance(original, Mapping):
+            item = vars(original)
+
+        else:
+            item = original
+
         obj = OrderedDict()
 
         # Append the URI at the beginning.
