@@ -5,8 +5,9 @@ import datetime
 import six
 import pickle
 import base64
-import mimetypes
-import re
+#import mimetypes
+#import re
+import magic
 from .http import HttpResponse
 from . import exceptions, transcoders, utils
 from lxml.builder import E
@@ -60,6 +61,7 @@ class Json(transcoders.Json, Encoder):
         # Is this not a dictionary or an array?
         if not isinstance(obj, dict) and not isinstance(obj, list):
             # We need this to be at least a list for valid JSON
+
             obj = obj,
 
         # Encode nicely
@@ -143,13 +145,6 @@ class Xml(transcoders.Xml, Encoder):
     # Convert the obj param into an XML string
     @classmethod
     def return_single_xml_object(cls, obj=None):
-#        try:
-#            e = E.data()
-#            _encode_file_into_xml(e,obj)
-#            text = etree.tostring(e,pretty_print=False)
-#            return super(Xml, cls).encode(text)
-#        except:
-#            pass
         root = cls._encode_object_into_xml(obj)
         text = etree.tostring(root,pretty_print=True)
         return super(Xml, cls).encode(text)
@@ -192,14 +187,16 @@ class Xml(transcoders.Xml, Encoder):
 class Bin(transcoders.Bin, Encoder):
 
     @classmethod
-    def encode(cls, obj=None,in_browser=True):
+    def encode(cls, obj=None,in_browser=False):
         try:
             # transmit a binary file from the server
-            response = super(Bin, cls).encode(obj.read())
+            bindata = obj.read()
+            response = super(Bin, cls).encode(bindata)
             if in_browser == False:
                 response['Content-Disposition'] = \
                     'attachment; filename="{}"'.format(obj.name.split('/')[-1])
-            response['Content-Type'] = str(mimetypes.types_map[ re.search('\.[^.]*$',obj.name).group(0)])
+#            response['Content-Type'] = str(mimetypes.types_map[ re.search('\.[^.]*$',obj.name).group(0)])
+            response['Content-Type'] = magic.from_buffer(bindata, mime=True)
         except AttributeError:
             # pickle a python object
             response = super(Bin, cls).encode(pickle.dumps(obj,protocol=2))
