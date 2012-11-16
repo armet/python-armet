@@ -574,7 +574,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 # could easily be an iterable.
                 return [self.item_prepare(x) for x in obj]
 
-            except TypeError as ex:
+            except TypeError:
                 pass
 
         # Just prepare the one item.
@@ -618,13 +618,13 @@ class Base(six.with_metaclass(meta.Resource)):
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
             try:
-                 # Attempt to grab this field from the item.
-                 value = getattr(item, name)
+                # Attempt to grab this field from the item.
+                value = getattr(item, name)
 
             except AttributeError:
-                 # try:
-	         # Maybe we have a dictionary
-	         value = item.get(name)
+                # try:
+                # Maybe we have a dictionary
+                value = item.get(name)
             # print(value)
 
             # except:
