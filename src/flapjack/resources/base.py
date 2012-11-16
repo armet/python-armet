@@ -574,7 +574,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 # could easily be an iterable.
                 return [self.item_prepare(x) for x in obj]
 
-            except TypeError:
+            except TypeError as ex:
                 pass
 
         # Just prepare the one item.
@@ -597,11 +597,11 @@ class Base(six.with_metaclass(meta.Resource)):
     def item_prepare(self, original):
         # Initialize the item object; we like to remember the order of the
         # fields.
-        if not isinstance(original, Mapping):
-            item = vars(original)
+        #if not isinstance(original, Sequence) and not isinstance(original, Mapping):
+        #    item = vars(original)
 
-        else:
-            item = original
+        #else:
+        item = original
 
         obj = OrderedDict()
 
@@ -617,14 +617,15 @@ class Base(six.with_metaclass(meta.Resource)):
 
             # TODO: If we can refactor to avoid this ONE getattr call; speed
             #   of execution goes up by a factor of 10
-            # try:
-            #     # Attempt to grab this field from the item.
-            #     value = getattr(item, name)
+            try:
+                 # Attempt to grab this field from the item.
+                 value = getattr(item, name)
 
-            # except:
-            #     try:
-            # Maybe we have a dictionary
-            value = item.get(name)
+            except AttributeError:
+                 # try:
+	         # Maybe we have a dictionary
+	         value = item.get(name)
+            # print(value)
 
             # except:
             #     # Something fun happened here.. ?
