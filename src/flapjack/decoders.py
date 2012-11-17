@@ -5,7 +5,8 @@ import json
 import datetime
 from dateutil.parser import parse
 from . import exceptions, transcoders
-
+from lxml import etree
+from lxml import objectify
 
 class Decoder(transcoders.Transcoder):
 
@@ -88,7 +89,32 @@ class Json(transcoders.Json, Decoder):
     @classmethod
     def decode(cls, request, fields):
         cls.fields = fields  # HACK: Get rid of this hack
-        return json.loads(request.body, object_hook=cls.object_hook)
+        retval = json.loads(request.body, object_hook=cls.object_hook)
+        #print retval
+        return retval
+
+@Decoder.register()
+class Xml(transcoders.Xml, Decoder):
+    
+    @classmethod
+    def _iter_stuff(cls, fields, stuff):
+       retval = {}
+       #for each item in obj
+       for i in stuff.iterchildren():
+               #if value is has children
+               if i.countchildren() > 0:
+                   #recursion!  See step 1.
+                   cls.iter_stuff(fields, stuff)
+               else:
+                   #add a key-value pair to the retval
+                   retval[i.attrib['name']] = i.text
+       return retval
+
+    @classmethod
+    def decode(cls, request, fields):
+        nxml = objectify.fromstring(request.body)
+        retval = cls._iter_stuff(fields, nxml)
+        return retval
 
 
 def find(request):
