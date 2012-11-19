@@ -56,9 +56,37 @@ class TigerTest(unittest.TestCase):
         """Gets the list view in text format"""
         response = self.c.get('/api/v1/poll', HTTP_ACCEPT='text/plain')
         self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
 
+    def test_get_poll_file_json(self):
+        """Gets poll file in JSON"""
+        response = self.c.get('/api/v1/poll/1/file.json')
+        self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
 
+    def test_get_choice_list_json(self):
+        """Gets poll file in JSON"""
+        response = self.c.get('/api/v1/choice.json')
+        self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
 
+    def test_get_choice_json(self):
+        """Gets poll file in JSON"""
+        response = self.c.get('/api/v1/choice/1.json')
+        self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
 
 # Stuff we should implement in the flapjack REST tester:
 
