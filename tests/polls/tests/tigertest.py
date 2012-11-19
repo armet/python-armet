@@ -19,6 +19,15 @@ class TigerTest(unittest.TestCase):
         except XMLSyntaxError:
             self.assertEqual(False, 'This is not XML!')
             
+    def test_list_view_xml_2(self):
+        """Gets the list view in xml format"""
+        response = self.c.get('/api/v1/poll', HTTP_ACCEPT='application/xml')
+        self.assertEqual(response.status_code, 200)
+        try:
+            etree.fromstring(response.content)
+        except XMLSyntaxError:
+            self.assertEqual(False, 'This is not XML!')
+            
 
     def test_list_view_json(self):
         """Gets the list view in json format"""
@@ -29,9 +38,23 @@ class TigerTest(unittest.TestCase):
         except ValueError:
             self.assertEqual(False, 'This is not really JSON!')
 
+    def test_list_view_json_2(self):
+        """Gets the list view in json format"""
+        response = self.c.get('/api/v1/poll', HTTP_ACCEPT='application/json')
+        self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
+
     def test_list_view_text(self):
         """Gets the list view in text format"""
         response = self.c.get('/api/v1/poll.text/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_view_text_2(self):
+        """Gets the list view in text format"""
+        response = self.c.get('/api/v1/poll', HTTP_ACCEPT='text/plain')
         self.assertEqual(response.status_code, 200)
 
 
