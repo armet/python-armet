@@ -259,6 +259,11 @@ class Text(transcoders.Text, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
+        try:
+            obj = base64.b64encode(obj.read())
+            return super(Text,cls).encode(obj)
+        except AttributeError:
+            pass
         if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
            # We need this to be at least a list
            obj = obj,
