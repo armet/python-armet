@@ -1,1 +1,1 @@
-from .test_poll import *
+from tigertest import TigerTest
