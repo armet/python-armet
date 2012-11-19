@@ -1,5 +1,7 @@
 from django.utils import unittest
 from django.test.client import Client
+from lxml import etree
+import json
 
 class TigerTest(unittest.TestCase):
     """Unit Tests for the Are You A Tiger poll object"""
@@ -10,18 +12,27 @@ class TigerTest(unittest.TestCase):
         
     def test_list_view_xml(self):
         """Gets the list view in xml format"""
-        self.response = self.c.get('/api/v1/poll.xml/')
-        self.assertEqual(self.response.status_code, 200)
+        response = self.c.get('/api/v1/poll.xml/')
+        self.assertEqual(response.status_code, 200)
+        try:
+            etree.fromstring(response.content)
+        except XMLSyntaxError:
+            self.assertEqual(False, 'This is not XML!')
+            
 
     def test_list_view_json(self):
         """Gets the list view in json format"""
-        self.response = self.c.get('/api/v1/poll.json/')
-        self.assertEqual(self.response.status_code, 200)
+        response = self.c.get('/api/v1/poll.json/')
+        self.assertEqual(response.status_code, 200)
+        try:
+            json.loads(response.content)
+        except ValueError:
+            self.assertEqual(False, 'This is not really JSON!')
 
     def test_list_view_text(self):
         """Gets the list view in text format"""
-        self.response = self.c.get('/api/v1/poll.text/')
-        self.assertEqual(self.response.status_code, 200)
+        response = self.c.get('/api/v1/poll.text/')
+        self.assertEqual(response.status_code, 200)
 
 
 
