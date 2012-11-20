@@ -8,6 +8,7 @@ import datetime
 from StringIO import StringIO
 import six
 from django import forms
+from django.core import urlresolvers
 from django.db.models.related import RelatedObject
 from .. import utils, fields
 
@@ -230,6 +231,11 @@ class DeclarativeResource(type):
             if hasattr(self, prepare):
                 self._fields[name].prepare = getattr(self, prepare)
 
+        # Let's get it cracking!
+        # Store anything accessed frequently through `getattr` on the cls
+        # object.
+        self._resolver = urlresolvers.get_resolver(urlresolvers.get_urlconf())
+        self._prefix = urlresolvers.get_script_prefix()
 
 class DeclarativeModel(DeclarativeResource):
 
