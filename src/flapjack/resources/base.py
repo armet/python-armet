@@ -4,15 +4,29 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
-from django.views.decorators.csrf import csrf_exempt
+from collections import Iterable, Sequence, OrderedDict, Mapping
+import datetime
+import logging
+import six
+from six import string_types
+from django.core import urlresolvers
 from django.conf import settings
 from django.conf.urls import patterns, url
-import six
-from .. import utils, http, exceptions
+from django.views.decorators.csrf import csrf_exempt
+from .. import utils, http, exceptions, fields
 
 
-class Resource(object):
-    """
+# Get an instance of the logger.
+logger = logging.getLogger('flapjack.resources')
+
+
+class BaseResource(object):
+    """Defines a RESTful resource access protocol for generic resources.
+
+    @note
+        This is not the class to derive from when implementing your own
+        resources. Derive from `flapjack.resources.Resource` (defined in
+        the `__init__.py`).
     """
 
     #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
@@ -23,24 +37,24 @@ class Resource(object):
 
     #! List of understood HTTP methods.
     http_method_names = (
-            'get',
-            'post',
-            'put',
-            'delete',
-            'patch',
-            'options',
-            'head',
-            'connect',
-            'trace',
-        )
+        'get',
+        'post',
+        'put',
+        'delete',
+        'patch',
+        'options',
+        'head',
+        'connect',
+        'trace',
+    )
 
     #! List of allowed HTTP methods.
     http_allowed_methods = (
-            'get',
-            'post',
-            'put',
-            'delete',
-        )
+        'get',
+        'post',
+        'put',
+        'delete',
+    )
 
     #! List of allowed HTTP methods against a whole
     #! resource (eg /user); if undeclared or None, will be defaulted
@@ -57,11 +71,11 @@ class Resource(object):
     #! differences between "PATCH and PUT", "PUT = create / update",
     #! etc.
     allowed_operations = (
-            'read',
-            'create',
-            'update',
-            'destroy',
-        )
+        'read',
+        'create',
+        'update',
+        'destroy',
+    )
 
     #! List of allowed operations against a whole resource.
     #! If undeclared or None, will be defaulted to
@@ -74,8 +88,8 @@ class Resource(object):
 
     #! Mapping of encoders known by this resource.
     encoders = {
-            'json': 'flapjack.encoders.Json',
-        }
+        'json': 'flapjack.encoders.Json',
+    }
 
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
@@ -113,6 +127,26 @@ class Resource(object):
     filterable = None
 
     @classmethod
+    def resource_uri(cls, obj):
+        """
+        Build the resource URI which is used to access and identify this
+        resource.
+
+        @note
+            This method is only valid and used if this resource is exposed
+            on an exposed url configuration.
+
+        @example
+            The following would generate a resource URI (assuming a resource
+            name of `MyResource` and a mount of `api`): `/api/MyResource/<pk>`
+            @code
+                # Use the attribute named 'pk' as the resource URI (default for
+                # model resources).
+                return obj.pk
+        """
+        pass
+
+    @classmethod
     def url(cls, path=''):
         """Builds a url pattern using the passed `path` for this resource."""
         return url(
@@ -146,7 +180,8 @@ class Resource(object):
             resource = cls.traverse(segments)
 
             # Instantiate the resource
-            obj = resource(request,
+            obj = resource(
+                request,
                 identifier=kwargs.get('identifier'),
                 format=kwargs.get('format'))
 
@@ -158,12 +193,12 @@ class Resource(object):
             return ex.dispatch()
 
         except BaseException:
-            if settings.DEBUG:
-                # TODO: Something went wrong; return the encoded error message.
-                # For now; re-raise the erorr.
-                raise
-
             # TODO: Notify system administrator of error
+
+            # Log that an unknown exception occured to help those poor
+            # system administrators.
+            logger.exception('Internal server error.')
+
             # Return an empty body indicative of a server failure.
             return http.Response(status=http.INTERNAL_SERVER_ERROR)
 
@@ -203,6 +238,7 @@ class Resource(object):
             encoder = self._determine_encoder()
 
             # TODO: Assert resource-level authorization
+
             if self.request.body:
                 # Determine an approparite decoder.
                 decoder = self._determine_decoder()
@@ -257,7 +293,39 @@ class Resource(object):
 
     def prepare(self, data):
         """Prepares the data for transmission."""
-        return data
+        prepare = self.item_prepare
+        if not (isinstance(data, string_types) or isinstance(data, Mapping)):
+            try:
+                # Attempt to prepare each item of the iterable (as long as
+                # we're not a string or some sort of mapping).
+                return (prepare(x) for x in data)
+
+            except TypeError as ex:
+                # Definitely not an iterable.
+                logger.debug(ex, exc_info=True)
+
+        # Prepare just the singular value and return it.
+        return prepare(data)
+
+    def item_prepare(self, item):
+        """Prepares an item for transmission."""
+        # Initialize the object that will hold the item.
+        obj = {}
+
+        # Set the resource uri on the object.
+        obj['.'] = self.reverse(item)
+
+        # Iterate through the fields and build the object from the item.
+        for name, field in six.iteritems(self._fields):
+            if not field.visible:
+                # Only continue if the field is visible.
+                continue
+
+            # Prepare field and set on the object.
+            obj[name] = field.prepare(self, item, field.accessor(item))
+
+        # Return what we've constructed.
+        return obj
 
     def clean(self, data):
         """Cleans data from the request for processing."""
@@ -271,6 +339,17 @@ class Resource(object):
             pass
 
         return data
+
+    @classmethod
+    def reverse(cls, value=None, reverse=urlresolvers.reverse):
+        """Reverses a URL for the resource or for the passed object."""
+        # Build the named argument list.
+        return reverse(cls.view, kwargs={
+            'resource': cls.name,
+            'identifier': cls.resource_uri(value)
+        })
+
+    # TODO: def resolve(self):
 
     def get(self):
         """Processes a `GET` request.
@@ -384,8 +463,8 @@ class Resource(object):
         """Determine the decoder to use according to the request object.
         """
         # Attempt to get the content-type; default to an appropriate value.
-        content = self.request.META.get('CONTENT_TYPE',
-            'application/octet-stream')
+        content = self.request.META.get(
+            'CONTENT_TYPE', 'application/octet-stream')
 
         # Attempt to find a decoder and on failure, die.
         for decoder in self.decoders:
@@ -413,7 +492,8 @@ class Resource(object):
             # Operation not allowed in this context; bail
             data = {}
             data['allowed'] = self._allowed_operations
-            data['message'] = ('Operation not allowed on `{}`; '
+            data['message'] = (
+                'Operation not allowed on `{}`; '
                 'see `allowed` for allowed operations.').format(operation)
 
             raise exceptions.Forbidden(data)
