@@ -1,14 +1,16 @@
-from django.utils import unittest
-from django.test.client import Client
+from flapjack import testing
+#from django.utils import unittest
+#from django.test.client import Client
 from lxml import etree
 import json
 
-class TigerTest(unittest.TestCase):
+#class TigerTest(unittest.TestCase):
+class TigerTest(testing.FlapjackUnitTest):
     """Unit Tests for the Are You A Tiger poll object"""
     
-    def setUp(self):
-        """Set up the django HTTP client"""
-        self.c = Client()
+#    def setUp(self):
+#        """Set up the django HTTP client"""
+#        self.c = Client()
         
     def test_list_view_xml(self):
         """Gets the list view in xml format"""
