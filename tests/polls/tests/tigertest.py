@@ -16,7 +16,7 @@ class TigerTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         try:
             etree.fromstring(response.content)
-        except XMLSyntaxError:
+        except etree.XMLSyntaxError:
             self.assertEqual(False, 'This is not XML!')
             
     def test_list_view_xml_2(self):
@@ -25,7 +25,7 @@ class TigerTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         try:
             etree.fromstring(response.content)
-        except XMLSyntaxError:
+        except etree.XMLSyntaxError:
             self.assertEqual(False, 'This is not XML!')
             
 
