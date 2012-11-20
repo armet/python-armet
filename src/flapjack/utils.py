@@ -3,7 +3,6 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-import datetime
 import collections
 import six
 
@@ -85,9 +84,9 @@ def for_all(value, method, test=None):
                 value[key] = method(value[key])
 
     elif isinstance(value, collections.Sequence):
-        values = ()
+        values = []
         for index, item in enumerate(value):
-            values += (method(item) if test is None or test(item) else item),
+            values.append(method(item) if test is None or test(item) else item)
 
         value = values
 
