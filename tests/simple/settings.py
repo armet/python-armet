@@ -14,7 +14,7 @@ PROJECT_ROOT = path.abspath(path.join(__file__))
 SITE_ROOT = path.abspath(path.join(PROJECT_ROOT, '..'))
 
 # Debugging settings
-DEBUG = True
+DEBUG = False
 
 # Debug templates with all the nice stack traces
 TEMPLATE_DEBUG = DEBUG
@@ -124,7 +124,23 @@ INSTALLED_APPS = (
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'filters': {},
-    'handlers': {},
-    'loggers': {}
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'flapjack': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'filters': []
+        }
+    }
 }

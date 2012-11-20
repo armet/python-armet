@@ -5,7 +5,7 @@ from flapjack import resources
 # from flapjack.resources import relation, field
 # from . import forms
 # from django import forms
-from . import forms
+from . import forms, models
 
 # from .forms
 # class Form(forms.ModelForm):
@@ -14,8 +14,18 @@ from . import forms
 #         model = models.Poll
 
 
-class Poll(resources.Resource):
+class Choice(resources.Model):
+    form = forms.Choice
+
+    def read(self):
+        return models.Choice.objects.all().iterator()
+
+
+class Poll(resources.Model):
     form = forms.Poll
+
+    def read(self):
+        return models.Poll.objects.all().iterator()
 
 # form = forms.Poll
 
