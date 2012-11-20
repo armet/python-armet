@@ -340,14 +340,37 @@ class BaseResource(object):
 
         return data
 
+    #! Identifier to access the resource URL as a whole.
+    _URL = 2
+
+    #! Identifier to access the resource individualy.
+    _URL_IDENTIFIER = 1
+
     @classmethod
-    def reverse(cls, value=None, reverse=urlresolvers.reverse):
+    @utils.memoize
+    def _url_format(cls, identifier):
+        """Gets the string format for a URL for this resource."""
+        # HACK: This is a hackish way to get a string format representing
+        #       the URL that would have been reversed with `reverse`. Speed
+        #       increases of ~192%. Proper way would be a django internal
+        #       function to just do the url reversing `halfway` but we'll
+        #       see if that can make it in.
+        # TODO: Perhaps move this and the url reverse speed up bits out ?
+        urlmap = cls._resolver.reverse_dict.getlist(cls.view)[identifier][0][0]
+        url = urlmap[0]
+        for param in urlmap[1]:
+            url = url.replace('({})'.format(param), '')
+        return '{}{}'.format(cls._prefix, url)
+
+    @classmethod
+    def reverse(cls, value=None):
         """Reverses a URL for the resource or for the passed object."""
-        # Build the named argument list.
-        return reverse(cls.view, kwargs={
-            'resource': cls.name,
-            'identifier': cls.resource_uri(value)
-        })
+        # Not using `iri_to_uri` here; therefore only ASCII is permitted.
+        if value is not None:
+            return cls._url_format(
+                cls._URL_IDENTIFIER) % cls.resource_uri(value)
+
+        return cls._url_format(cls._URL)
 
     # TODO: def resolve(self):
 
