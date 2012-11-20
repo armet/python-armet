@@ -7,7 +7,7 @@ from . import models
 class Choice(resources.Model):
     #class Meta:
     model = models.Choice
-#    relations = {'poll': 'polls.api.Poll'}
+    relations = {'poll': 'polls.api.Poll'}
 #    name = 'answer'
 
 class Poll(resources.Model):
