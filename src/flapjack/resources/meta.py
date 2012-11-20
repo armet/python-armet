@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
+"""Defines the metaclasses used to instantiate the resource classes.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import datetime
 import collections
 from StringIO import StringIO
+from django.db.models import RelatedObject
 from django import forms
 import six
 from .. import utils, fields
@@ -37,16 +38,37 @@ def _config(self, name, config, attrs, bases):
             setattr(self, name, options)
 
 
-def _is_field_visible(self, name):
+def _is_field_visible(obj, name):
     """Checks for the visibility in displaying of the field."""
-    visible = not (self.fields and name not in self.fields)
-    visible = visible and (not (self.exclude and name in self.exclude))
+    visible = not (obj.fields and name not in obj.fields)
+    visible = visible and (not (obj.exclude and name in obj.exclude))
     return visible
 
 
-def _is_field_filterable(self, name):
+def _is_field_editable(obj, name):
+    """Checks if the field is declared to be editable."""
+    visible = not (obj.fields and name not in obj.fields)
+    visible = visible and (not (obj.exclude and name in obj.exclude))
+    return visible
+
+
+def _is_field_filterable(obj, name):
     """Checks if the specified field is declared to be filterable."""
-    return not (self.filterable and name not in self.filterable)
+    return not (obj.filterable and name not in obj.filterable)
+
+
+def _is_field_iterable(obj, field):
+    """Tests if the specified field is some type of iterable."""
+    try:
+        # Attempt to discover if the null value is some sort of
+        # iterable (and isn't a string) which would make it an iterable.
+        null = field.to_python(None)
+        return (isinstance(null, collections.Iterable)
+            and not isinstance(null, six.string_types))
+
+    except forms.ValidationError:
+        # None cannot be a valid value; definitely not an iterable.
+        return False
 
 
 def _get_field_class(self, field):
@@ -115,50 +137,67 @@ class Resource(type):
     """
     """
 
-    @property
-    def _form_fields(self):
-        return self.form.base_fields
-
-    def _discover_fields(self):
-        if self.form is not None:
-            properties = {}
-            form_fields = self._form_fields
-            for name in form_fields:
-                field = form_fields[name]
-
-                # Determine what properties we can from the name
-                properties['visible'] = self._is_field_visible(name)
-                properties['filterable'] = self._is_field_filterable(name)
-
-                # Attempt to discover if the null value is some sort of
-                # iterable (and isn't a string) which would make it a
-                # collection field.
-                try:
-                    null = field.to_python(None)
-                    properties['collection'] = (
-                        isinstance(null, collections.Iterable) and not
-                        isinstance(null, six.string_types))
-
-                except forms.ValidationError:
-                    properties['collection'] = False
-
-                # An explicitly declared field on a form is always editable
-                properties['editable'] = True
-
-                # Instantiate the field and append it to the collection
-                self._fields[name] = self._get_field_class(field)(
-                    name, **properties)
-
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
-            return
+            return super(Resource, self).__init__(name, bases, attrs)
 
         # Initialize our ordered fields dictionary.
         self._fields = collections.OrderedDict()
 
         # If the resource has a form we need to discover its fields.
-        self._discover_fields()
+        if self.form is not None:
+            # Ensure this is a valid form; attempt to instantiate one.
+            self.form()
+
+            # If the form is a `ModelForm` and has a model; discover and
+            # collect its fields.
+            if isinstance(self.form, forms.ModelForm):
+                for name in self.form._meta.get_all_field_names():
+                    field = self.form._meta.get_field_by_name(name)
+
+                    if isinstance(field, RelatedObject):
+                        # If a field is a related object then this was
+                        # generated because of a reverse relation and some
+                        # special modifications to the properties need
+                        # to happen
+                        iterable = field.field.rel.multiple
+                        accessor = field.get_accessor_name()
+                        field = field.field
+
+                    else:
+                        # Seemingly normal field; proceed.
+                        iterable = _is_field_iterable(field)
+                        accessor = name
+
+                    # Instantiate and store field with its properties
+                    self._fields[name] = _get_field_class(field)(accessor,
+                        visible=_is_field_visible(name),
+                        filterable=_is_field_filterable(name),
+                        iterable=iterable,
+                        editable=_is_field_editable(self.form._meta, name))
+
+            # If the form has a `declared_fields` attribute then that is what
+            # would normally be at `base_fields`; else `base_fields` is the
+            # list of explicitly defined fields.
+            declared_fields = self.form.base_fields
+            if hasattr(self.form, 'declared_fields'):
+                declared_fields = self.form.declared_fields
+
+            # Iterate through explicitly defined fields to gather their
+            # properites and store them.
+            for name in declared_fields:
+                field = declared_fields[name]
+                self._fields[name] = _get_field_class(field)(name,
+                    visible=_is_field_visible(name),
+                    filterable=_is_field_filterable(name),
+                    iterable=_is_field_iterable(field),
+
+                    # If a field has been explicitly defined; according to
+                    # the django forms protocol it is -always- editable --
+                    # regardless of whatever the black/white lists on the
+                    # form state.
+                    editable=True)
 
         # TODO: Append any 'extra' fields listed in the `include` directive.
 
@@ -186,8 +225,8 @@ class Resource(type):
         self._config('url_name', 'url', attrs, bases)
         self._config('http_method_names', 'http.methods', attrs, bases)
         self._config('encoders', 'encoders', attrs, bases)
-        self._config('decoders', 'decoders', attrs, bases)
         self._config('default_encoder', 'default.encoder', attrs, bases)
+        self._config('decoders', 'decoders', attrs, bases)
         self._config('authentication', 'resource.authentication', attrs, bases)
 
         # Ensure properties are inflated the way they need to be.
