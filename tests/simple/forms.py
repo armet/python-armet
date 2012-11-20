@@ -5,9 +5,12 @@ from django import forms
 from . import models
 
 
-class Poll(forms.Form):
-    question = forms.CharField()
-    booths = forms.MultipleChoiceField((1, 2, 3, 4, 5))
+class Poll(forms.ModelForm):
+    class Meta:
+        # fields = ('question',)
+        model = models.Poll
+
+    # text = forms.MultipleChoiceField(('red', 'blue'), required=True)
 
 
 # class Poll(forms.ModelForm):
