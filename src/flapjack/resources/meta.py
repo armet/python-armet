@@ -168,7 +168,6 @@ class DeclarativeResource(type):
 
         # TODO: Append any 'extra' fields listed in the `include` directive.
 
-
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
