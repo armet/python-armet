@@ -24,10 +24,17 @@ class Field(object):
         self.default = kwargs.get('default')
 
         #! Whether this fields is bound to a model or not.
-        self.model = kwargs.get('model')
+        self.model = kwargs.get('model', False)
+
+        #! Accessor function that will get the value of the field from the obj.
+        self.accessor = kwargs.get('accessor', lambda o: o[self.name])
+
+        #! Preparation function that is linked to the class object of the
+        #! instantiating resource.
+        self.prepare = kwargs.get('prepare', lambda s, o, v: v)
 
     def clean(self, value):
-        """Prepares the value for consumption by the form clean cycle."""
+        """Cleans the value for consumption by the form clean cycle."""
         # Base field class just passes the value through.
         return value
 
@@ -41,6 +48,8 @@ class BooleanField(Field):
     # def clean(self, value):
     #     if value.strip().lower() in ('true', 't'):
     #         return
+
+    pass
 
 
 class DateField(Field):
