@@ -19,20 +19,19 @@ class classproperty(object):
 
 
 def memoize(obj):
-    """Memoizes a function based on the id of its first argument."""
+    """Memoizes a function based on its arguments."""
     from functools import wraps
 
     cache = obj.cache = {}
 
     @wraps(obj)
     def memoizer(*args, **kwargs):
-        identifier = id(args[0])
-        if identifier not in cache:
+        if args not in cache:
             value = obj(*args, **kwargs)
-            cache[identifier] = value
+            cache[args] = value
             return value
 
-        return cache[identifier]
+        return cache[args]
 
     return memoizer
 
