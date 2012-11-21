@@ -128,6 +128,12 @@ class BaseTest(unittest.TestCase):
         """
         return self.assertEqual(response.status_code, UNSUPPORTED_MEDIA_TYPE)
 
+    def assertHttpTeapot(self, response):
+        """
+        Ensures the response is returning a HTTP 418.
+        """
+        return self.assertEqual(response.status_code, TEAPOT)
+
     def assertHttpApplicationError(self, response):
         """
         Ensures the response is returning a HTTP 500.
