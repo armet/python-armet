@@ -1,9 +1,7 @@
-from django.utils import unittest
 from django.test.client import Client
-from lxml import etree
 from . import base
 import json
-# from django.core.management import call_command
+from flapjack import encoders
 
 
 class TigerTest(base.BaseTest):
@@ -75,7 +73,45 @@ class TigerTest(base.BaseTest):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
 
-    def test_post_json(self):
+    def test_post_xml_return_json(self):
+        """Test POST on a poll"""
+        data = {
+            "pub_date": "2012-11-17T20:39:10+00:00",
+            "question": "Are you a jiger?"
+        }
+        response = self.c.post('/api/v1/poll.json/',
+            data=encoders.Xml.encode(data).content,
+            content_type="application/xml"
+        )
+        self.assertHttpCreated(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response)
+        self.assertEqual(data['question'], content['question'])
+        response = self.c.get('/api/v1/poll/{}.json/'.format(content['id']))
+        self.assertHttpOK(response)
+        content = self.deserialize(response)
+        self.assertEqual(data['question'], content['question'])
+
+    def test_put_xml_return_json(self):
+        """Test PUT on a poll"""
+        data = {
+            "pub_date": "2012-11-17T20:39:10+00:00",
+            "question": "Are you a liger?"
+        }
+        response = self.c.put('/api/v1/poll/1.json',
+            data=encoders.Xml.encode(data).content,
+            content_type="application/xml"
+        )
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response)
+        self.assertEqual(data['question'], content['question'])
+        response = self.c.get('/api/v1/poll/{}.json/'.format(content['id']))
+        self.assertHttpOK(response)
+        content = self.deserialize(response)
+        self.assertEqual(data['question'], content['question'])
+
+    def test_post_json_return_json(self):
         """Test POST on a poll"""
         data = {
             "pub_date": "2012-11-17T20:39:10+00:00",
@@ -94,7 +130,7 @@ class TigerTest(base.BaseTest):
         content = self.deserialize(response)
         self.assertEqual(data['question'], content['question'])
 
-    def test_put_json(self):
+    def test_put_json_return_json(self):
         """Test PUT on a poll"""
         data = {
             "pub_date": "2012-11-17T20:39:10+00:00",

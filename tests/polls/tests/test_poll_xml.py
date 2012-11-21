@@ -1,6 +1,4 @@
-from django.utils import unittest
 from django.test.client import Client
-from lxml import etree
 from . import base
 import json
 from flapjack import encoders
@@ -87,7 +85,6 @@ class TigerTestXML(base.BaseTest):
             data=encoders.Xml.encode(data).content,
             content_type="application/xml"
         )
-        print(response)
         self.assertHttpCreated(response)
         self.assertValidXML(response)
         content = self.deserialize(response, type='xml')
@@ -104,9 +101,9 @@ class TigerTestXML(base.BaseTest):
             "pub_date": datetime.now(),
             "question": "Are you a liger?"
         }
-        response = self.c.put('/api/v1/poll/1.xml',
-            data=json.dumps(data),
-            content_type="application/json"
+        response = self.c.post('/api/v1/poll.xml/',
+            data=encoders.Xml.encode(data).content,
+            content_type="application/xml"
         )
         self.assertHttpOK(response)
         self.assertValidXML(response)

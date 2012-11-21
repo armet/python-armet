@@ -1,8 +1,7 @@
-from django.utils import unittest
 from django.test.client import Client
-from lxml import etree
 import json
 from . import base
+from flapjack import encoders
 
 
 class ChoiceTestXML(base.BaseTest):
@@ -37,11 +36,6 @@ class ChoiceTestXML(base.BaseTest):
         self.assertHttpOK(response)
         self.assertValidXML(response)
 
-    def test_get_choice_xml(self):
-        """Gets choice file in xml"""
-        response = self.c.get('/api/v1/choice/1.xml')
-        self.assertHttpOK(response)
-        self.assertValidXML(response)
     def test_get_choice_votes_xml(self):
         """Gets choice file in xml"""
         response = self.c.get('/api/v1/choice/1/votes.xml')
@@ -66,7 +60,47 @@ class ChoiceTestXML(base.BaseTest):
         self.assertHttpOK(response)
         self.assertValidXML(response)
 
-    def test_post_xml(self):
+    def test_post_xml_return_xml(self):
+        """Test POST on a choice"""
+        data = {
+            "choice_text": "yes",
+            "poll": "/api/v1/poll/2",
+            "votes": 0
+        }
+        response = self.c.post('/api/v1/choice.xml/',
+            data=encoders.Xml.encode(data).content,
+            content_type="application/xml"
+        )
+        self.assertHttpCreated(response)
+        self.assertValidXML(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
+        response = self.c.get('/api/v1/choice/{}.xml/'.format(content['id']))
+        self.assertHttpOK(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
+
+    def test_put_xml_return_xml(self):
+        """Test PUT on a choice"""
+        data = {
+            "choice_text": "yes",
+            "poll": "/api/v1/poll/1",
+            "votes": 3
+        }
+        response = self.c.put('/api/v1/choice/1.xml',
+            data=encoders.Xml.encode(data).content,
+            content_type="application/xml"
+        )
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
+        response = self.c.get('/api/v1/choice/{}.xml/'.format(content['id']))
+        self.assertHttpOK(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
+
+    def test_post_json_return_xml(self):
         """Test POST on a choice"""
         data = {
             "choice_text": "yes",
@@ -80,10 +114,13 @@ class ChoiceTestXML(base.BaseTest):
         self.assertHttpCreated(response)
         self.assertValidXML(response)
         content = self.deserialize(response, type='xml')
-        response = self.c.get('/api/v1/poll/{}.xml/'.format(content['id']))
+        self.assertEqual(data['choice_text'], content['choice_text'])
+        response = self.c.get('/api/v1/choice/{}.xml/'.format(content['id']))
         self.assertHttpOK(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
 
-    def test_put_xml(self):
+    def test_put_json_return_xml(self):
         """Test PUT on a choice"""
         data = {
             "choice_text": "yes",
@@ -97,8 +134,11 @@ class ChoiceTestXML(base.BaseTest):
         self.assertHttpOK(response)
         self.assertValidXML(response)
         content = self.deserialize(response, type='xml')
-        response = self.c.get('/api/v1/poll/{}.xml/'.format(content['id']))
+        self.assertEqual(data['choice_text'], content['choice_text'])
+        response = self.c.get('/api/v1/choice/{}.xml/'.format(content['id']))
         self.assertHttpOK(response)
+        content = self.deserialize(response, type='xml')
+        self.assertEqual(data['choice_text'], content['choice_text'])
 
     def test_delete_xml(self):
         """Tests delete on choices."""
