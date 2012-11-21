@@ -39,25 +39,25 @@ class FlapjackUnitTest(unittest.TestCase):
          self.c = FlapjackRESTClient()
 
     #commonly-used functions for tests
-    def assertValidXMLResponse(self, response, content-type='application/xml'):
+    def assertValidXMLResponse(self, response, contenttype='application/xml'):
         failtext = ""
         try:
             etree.fromstring(response.content)
         except etree.XMLSyntaxError:
             failtext = "Invalid XML in response \n"
-        if response['Content-Type'] != content-type:
-            failtext += "Content-Type header not " + content-type " as expected; is " + response['Content-Type']
+        if response['Content-Type'] != contenttype:
+            failtext += "Content-Type header not " + contenttype + " as expected; is " + str(response['Content-Type'])
         if failtext != "":
             self.fail(failtext)
     
-    def assertValidJSONResponse(self, response, content-type='application/json'):
+    def assertValidJSONResponse(self, response, contenttype='application/json'):
         failtext = ""
         try:
             json.loads(response.content)
         except ValueError:
             failtext = "Invalid JSON in response \n"
-        if response['Content-Type'] != 'application/json':
-            failtext += "Content-Type header not " + content-type " as expected; is " + response['Content-Type']
+        if response['Content-Type'] != contenttype:
+            failtext += "Content-Type header not " + contenttype + " as expected; is " + str(response['Content-Type'])
         if failtext != "":
             self.fail(failtext)
             
