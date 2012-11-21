@@ -143,18 +143,14 @@ class BaseTest(unittest.TestCase):
     def deserialize(self, response, type='json'):
         if type == 'json':
             try:
-                content = json.loads(response.content)
+                return json.loads(response.content)
             except ValueError:
                 return self.assertEqual(False, 'Invalid JSON format.')
-            return content
         elif type == 'xml':
             try:
                 content = etree.fromstring(response.content)
+                return dict((x.get('name'), x.text)
+                    for x in content.findall('attribute'))
             except etree.XMLSyntaxError:
                 return self.assertEqual(False, 'Invalid XML format.')
-            content = etree.fromstring(response.content)
-            return dict((x.get('name'), x.text)
-                for x in content.findall('attribute'))
 
-
-# class Serializer():
