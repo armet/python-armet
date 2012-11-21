@@ -71,8 +71,13 @@ class FlapjackUnitTest(unittest.TestCase):
         self.assertOKResponse(response)
         
     def assertResponse(self, response, expected):
-        self.assertEqual(response.status_code, getattr(status, expected))
+        try:
+            for response.status_code in expected:
+                return
+            fail('Status code ' + response.status_code + ' not among permitted values')
+        except TypeError:
+            self.assertEqual(response.status_code, expected)
    
     def assertOKResponse(self, response):
-        self.assertResponse(response, 'OK')
+        self.assertResponse(response, status.OK)
         
