@@ -1,2 +1,4 @@
-from tigertest import TigerTest
-from tigertest_xml import TigerTestXML
+from test_poll import *
+from test_poll_xml import *
+from test_choice import *
+from test_choice_xml import *
