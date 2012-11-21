@@ -1,6 +1,7 @@
 from django.utils import unittest
 import json
 from lxml import etree
+from flapjack.http.constants import *
 
 
 class BaseTest(unittest.TestCase):
@@ -35,97 +36,109 @@ class BaseTest(unittest.TestCase):
         """
         Ensures the response is returning a HTTP 200.
         """
-        return self.assertEqual(response.status_code, 200)
+        return self.assertEqual(response.status_code, OK)
 
     def assertHttpCreated(self, response):
         """
         Ensures the response is returning a HTTP 201.
         """
-        return self.assertEqual(response.status_code, 201)
+        return self.assertEqual(response.status_code, CREATED)
 
     def assertHttpAccepted(self, response):
         """
         Ensures the response is returning either a HTTP 202 or a HTTP 204.
         """
-        return self.assertTrue(response.status_code in [202, 204])
+        return self.assertTrue(response.status_code in [ACCEPTED, NO_CONTENT])
 
     def assertHttpMultipleChoices(self, response):
         """
         Ensures the response is returning a HTTP 300.
         """
-        return self.assertEqual(response.status_code, 300)
+        return self.assertEqual(response.status_code, MULTIPLE_CHOICES)
 
     def assertHttpSeeOther(self, response):
         """
         Ensures the response is returning a HTTP 303.
         """
-        return self.assertEqual(response.status_code, 303)
+        return self.assertEqual(response.status_code, SEE_OTHER)
 
     def assertHttpNotModified(self, response):
         """
         Ensures the response is returning a HTTP 304.
         """
-        return self.assertEqual(response.status_code, 304)
+        return self.assertEqual(response.status_code, NOT_MODIFIED)
 
     def assertHttpBadRequest(self, response):
         """
         Ensures the response is returning a HTTP 400.
         """
-        return self.assertEqual(response.status_code, 400)
+        return self.assertEqual(response.status_code, BAD_REQUEST)
 
     def assertHttpUnauthorized(self, response):
         """
         Ensures the response is returning a HTTP 401.
         """
-        return self.assertEqual(response.status_code, 401)
+        return self.assertEqual(response.status_code, UNAUTHORIZED)
 
     def assertHttpForbidden(self, response):
         """
         Ensures the response is returning a HTTP 403.
         """
-        return self.assertEqual(response.status_code, 403)
+        return self.assertEqual(response.status_code, FORBIDDEN)
 
     def assertHttpNotFound(self, response):
         """
         Ensures the response is returning a HTTP 404.
         """
-        return self.assertEqual(response.status_code, 404)
+        return self.assertEqual(response.status_code, NOT_FOUND)
 
     def assertHttpMethodNotAllowed(self, response):
         """
         Ensures the response is returning a HTTP 405.
         """
-        return self.assertEqual(response.status_code, 405)
+        return self.assertEqual(response.status_code, METHOD_NOT_ALLOWED)
+
+    def assertHttpNotAcceptable(self, response):
+        """
+        Ensures the response is returning a HTTP 406.
+        """
+        return self.assertEqual(response.status_code, NOT_ACCEPTABLE)
 
     def assertHttpConflict(self, response):
         """
         Ensures the response is returning a HTTP 409.
         """
-        return self.assertEqual(response.status_code, 409)
+        return self.assertEqual(response.status_code, CONFLICT)
 
     def assertHttpGone(self, response):
         """
         Ensures the response is returning a HTTP 410.
         """
-        return self.assertEqual(response.status_code, 410)
+        return self.assertEqual(response.status_code, GONE)
 
     def assertHttpTooManyRequests(self, response):
         """
         Ensures the response is returning a HTTP 429.
         """
-        return self.assertEqual(response.status_code, 429)
+        return self.assertEqual(response.status_code, TOO_MANY_REQUESTS)
+
+    def assertHttpUnsupportedMediaType(self, response):
+        """
+        Ensures the response is returning a HTTP 415.
+        """
+        return self.assertEqual(response.status_code, UNSUPPORTED_MEDIA_TYPE)
 
     def assertHttpApplicationError(self, response):
         """
         Ensures the response is returning a HTTP 500.
         """
-        return self.assertEqual(response.status_code, 500)
+        return self.assertEqual(response.status_code, APPLICATION_ERROR)
 
     def assertHttpNotImplemented(self, response):
         """
         Ensures the response is returning a HTTP 501.
         """
-        return self.assertEqual(response.status_code, 501)
+        return self.assertEqual(response.status_code, NOT_IMPLEMENTED)
 
     def deserialize(self, response, type='json'):
         if type == 'json':
