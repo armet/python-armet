@@ -1,5 +1,6 @@
 from django.utils import unittest
 from django.test.client import Client
+from http import status
 from lxml import etree
 import json
 
@@ -69,6 +70,9 @@ class FlapjackUnitTest(unittest.TestCase):
         self.assertValidJSONResponse(response)
         self.assertOKResponse(response)
         
+    def assertResponse(self, response, expected):
+        self.assertEqual(response.status_code, getattr(status, expected))
+   
     def assertOKResponse(self, response):
-        self.assertEqual(response.status_code, 200) #Magic number used here; fix later
-    
+        self.assertResponse(response, 'OK')
+        
