@@ -39,7 +39,7 @@ class FlapjackUnitTest(unittest.TestCase):
          self.c = FlapjackRESTClient()
 
     #commonly-used functions for tests
-    def assertValidXMLResponse(self, response, content-type='application/json'):
+    def assertValidXMLResponse(self, response, content-type='application/xml'):
         failtext = ""
         try:
             etree.fromstring(response.content)
