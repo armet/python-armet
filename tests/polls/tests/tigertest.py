@@ -1,4 +1,5 @@
 from flapjack import testing
+from flapjack.http import constants
 #from django.utils import unittest
 #from django.test.client import Client
 from lxml import etree
