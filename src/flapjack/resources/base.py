@@ -325,19 +325,23 @@ class BaseResource(object):
                 # Prepare field and set on the object.
                 obj[name] = field.prepare(self, item, field.accessor(item))
 
-        # if not self.path:
-        #     # Return what we've constructed.
-        #     return obj
+        if not self.path:
+            # No need to navigate the object; return what we've constructed.
+            return obj
 
-        # # Navigate through some hoops to return from what we construct.
-        # for name in (self.path or '').split('__'):
-        #     try:
-        #         # Attempt to garner access into the object
-        #         obj = getattr(obj, name)
+        # Navigate through some hoops to return from what we construct.
+        for segment in self.path.split('__'):
+            try:
+                # Attempt to garner access into the object
+                obj = getattr(obj, segment)
 
-        #     except AttributeError as ex:
-        #         # Denied; ouch
-        #         logger.debug(ex, exc_info=True)
+            except AttributeError as ex:
+                # Denied; ouch
+                logger.debug(ex, exc_info=True)
+
+                # We are not part of the URL here so we return `None` to
+                # represent that we could not find an object.
+                return None
 
         # Just return the object.
         return obj

@@ -58,17 +58,17 @@ def _is_field_filterable(obj, name):
     return not (obj.filterable and name not in obj.filterable)
 
 
-def _is_field_iterable(field):
-    """Tests if the specified field is some type of iterable."""
+def _is_field_collection(field):
+    """Tests if the specified field is some type of collection."""
     try:
         # Attempt to discover if the null value is some sort of
-        # iterable (and isn't a string) which would make it an iterable.
+        # collection (and isn't a string) which would make it an collection.
         null = field.to_python(None)
-        return (isinstance(null, collections.Iterable)
+        return (isinstance(null, collections.collection)
                 and not isinstance(null, six.string_types))
 
     except forms.ValidationError:
-        # None cannot be a valid value; definitely not an iterable.
+        # None cannot be a valid value; definitely not an collection.
         return False
 
 
@@ -167,7 +167,7 @@ class Resource(type):
                 self._fields[name] = _get_field_class(field)(name,
                     visible=_is_field_visible(self, name),
                     filterable=_is_field_filterable(self, name),
-                    iterable=_is_field_iterable(field),
+                    collection=_is_field_collection(field),
 
                     # If a field has been explicitly defined; according to
                     # the django forms protocol it is -always- editable --
@@ -252,15 +252,15 @@ class Model(Resource):
                     # generated because of a reverse relation and some
                     # special modifications to the properties need
                     # to happen
-                    iterable = field.field.rel.multiple
+                    collection = field.field.rel.multiple
                     name = field.get_accessor_name()
                     field = field.field
                     accessor = lambda o, x=getattr(model, name): x(o).all()
 
                 else:
                     # Seemingly normal field; proceed.
-                    iterable = _is_field_iterable(field)
-                    if getattr(field, 'rel', None) and iterable:
+                    collection = _is_field_collection(field)
+                    if getattr(field, 'rel', None) and collection:
                         # ForeignKey or M2M Field.
                         accessor = lambda o, x=getattr(model, name): x(o).all()
 
@@ -272,7 +272,7 @@ class Model(Resource):
                 self._fields[name] = _get_field_class(field)(name,
                     visible=_is_field_visible(self, name),
                     filterable=_is_field_filterable(self, name),
-                    iterable=iterable,
+                    collection=collection,
                     editable=_is_field_editable(self.form._meta, name),
                     model=True,
                     accessor=accessor)

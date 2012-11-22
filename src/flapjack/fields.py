@@ -12,7 +12,7 @@ class Field(object):
         self.editable = kwargs.get('editable', False)
 
         #! Whether this field is a collection or not.
-        self.iterable = kwargs.get('iterable', False)
+        self.collection = kwargs.get('collection', False)
 
         #! Whether this field may be filtered or not.
         self.filterable = kwargs.get('filterable', False)
@@ -41,15 +41,38 @@ class Field(object):
 
 class BooleanField(Field):
 
-    # #! Values for
-    # TRUE = (
-    # )
+    #! Values accepted for `True`.
+    TRUE = (
+        'true',
+        't',
+        'yes',
+        'y',
+        'on'
+        'o',
+        '1'
+    )
 
-    # def clean(self, value):
-    #     if value.strip().lower() in ('true', 't'):
-    #         return
+    #! Values accepted for `False`.
+    FALSE = (
+        'false',
+        'f',
+        'no',
+        'n',
+        'off',
+        '0'
+    )
 
-    pass
+    def clean(self, value):
+        if value.strip().lower() in self.TRUE:
+            # Some sort of truthy value.
+            return True
+
+        if value.strip().lower() in self.FALSE:
+            # Some sort of falsy value.
+            return False
+
+        # Neither true or false matches; return what we were given.
+        return value
 
 
 class DateField(Field):
