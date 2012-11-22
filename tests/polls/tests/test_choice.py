@@ -71,6 +71,7 @@ class ChoiceTest(base.BaseTest):
             data=encoders.Xml.encode(data).content,
             content_type="application/xml"
         )
+        print(response)
         self.assertHttpCreated(response)
         self.assertValidJSON(response)
         content = self.deserialize(response)

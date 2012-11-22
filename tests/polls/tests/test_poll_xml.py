@@ -76,13 +76,14 @@ class TigerTestXML(base.BaseTest):
     def test_post_xml_return_xml(self):
         """Test POST on a poll"""
         data = {
-            "pub_date": datetime.now(),
+            "pub_date": "2012-11-17T20:39:10+00:00",
             "question": "Are you a liger?"
         }
         response = self.c.post('/api/v1/poll.xml/',
             data=encoders.Xml.encode(data).content,
             content_type="application/xml"
         )
+        print(response)
         self.assertHttpCreated(response)
         self.assertValidXML(response)
         content = self.deserialize(response, type='xml')
@@ -96,10 +97,11 @@ class TigerTestXML(base.BaseTest):
     def test_put_xml_return_xml(self):
         """Test PUT on a poll"""
         data = {
-            "pub_date": datetime.now(),
+            "pub_date": "2012-11-17T20:39:10+00:00",
             "question": "Are you a liger?"
         }
-        response = self.c.post('/api/v1/poll.xml/',
+        print(datetime.now())
+        response = self.c.put('/api/v1/poll/1.xml',
             data=encoders.Xml.encode(data).content,
             content_type="application/xml"
         )

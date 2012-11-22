@@ -95,9 +95,17 @@ class Json(transcoders.Json, Decoder):
 
 @Decoder.register()
 class Xml(transcoders.Xml, Decoder):
-    
+
     @classmethod
     def _iter_stuff(cls, fields, stuff):
+    #I know I wrote this code, but I see it has a problem.
+    #It only works when the root node has sub nodes.  Must fix.
+
+    #The only reason I haven't fixed it yet is that the PUT
+    #method for resource fields isn't working.  So it would
+    #impossible to test that the XML decoder is working
+    #correctly.
+
        retval = {}
        #for each item in obj
        for i in stuff.iterchildren():
@@ -107,7 +115,15 @@ class Xml(transcoders.Xml, Decoder):
                    cls.iter_stuff(fields, stuff)
                else:
                    #add a key-value pair to the retval
-                   retval[i.attrib['name']] = i.text
+                   try:
+                       #time manipulation
+                       try:
+                        int(i.text)
+                        retval[i.attrib['name']] = i.text
+                       except ValueError:
+                        retval[i.attrib['name']] = parse(i.text)
+                   except ValueError:
+                       retval[i.attrib['name']] = i.text
        return retval
 
     @classmethod
