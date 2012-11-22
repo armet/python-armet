@@ -1,7 +1,7 @@
 from django.utils import unittest
 import json
 from lxml import etree
-from flapjack.http.constants import *
+from flapjack.http.status import *
 
 
 class BaseTest(unittest.TestCase):

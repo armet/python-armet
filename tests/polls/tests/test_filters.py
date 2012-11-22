@@ -108,3 +108,20 @@ class FiltersTest(base.BaseTest):
         self.assertValidJSON(response)
         content = self.deserialize(response, type='json')
         self.assertNotEqual('yes', content[0]['choice_text'])
+
+    def test_choice_icontains_filter(self):
+        """Gets the list view in json format"""
+        response = self.c.get('/api/v1/choice.json?choice_text__icontains=yE')
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, type='json')
+        self.assertEqual('yes', content[0]['choice_text'])
+
+    def test_choice_icontains_not_filter(self):
+        """Gets the list view in json format"""
+        response = self.c.get('/api/v1/choice.json?choice_text__icontains__not=S')
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, type='json')
+        self.assertNotEqual('yes', content[0]['choice_text'])
+
