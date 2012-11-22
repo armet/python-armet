@@ -1,6 +1,6 @@
 """..
 """
-from .http import constants, HttpResponse
+from .http import status, HttpResponse
 
 
 class Error(Exception):
@@ -21,23 +21,23 @@ class Error(Exception):
 
 
 class BadRequest(Error):
-    status = constants.BAD_REQUEST
+    status = status.BAD_REQUEST
 
 
 class Forbidden(Error):
-    status = constants.FORBIDDEN
+    status = status.FORBIDDEN
 
 
 class NotFound(Error):
-    status = constants.NOT_FOUND
+    status = status.NOT_FOUND
 
 
 class NotAcceptable(Error):
-    status = constants.NOT_ACCEPTABLE
+    status = status.NOT_ACCEPTABLE
 
 
 class MethodNotAllowed(Error):
-    status = constants.METHOD_NOT_ALLOWED
+    status = status.METHOD_NOT_ALLOWED
 
     def __init__(self, allowed):
         self.allowed = allowed
@@ -50,8 +50,8 @@ class MethodNotAllowed(Error):
 
 
 class UnsupportedMediaType(Error):
-    status = constants.UNSUPPORTED_MEDIA_TYPE
+    status = status.UNSUPPORTED_MEDIA_TYPE
 
 
 class NotImplemented(Error):
-    status = constants.NOT_IMPLEMENTED
+    status = status.NOT_IMPLEMENTED

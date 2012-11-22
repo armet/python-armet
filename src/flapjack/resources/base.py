@@ -6,7 +6,7 @@ from django.core.files.base import File
 from django.conf import settings
 from django.core.urlresolvers import reverse, resolve
 import six
-from ..http import HttpResponse, constants
+from ..http import HttpResponse, status
 from .. import encoders, exceptions, decoders
 from .. import utils
 from . import meta
@@ -144,7 +144,7 @@ class Base(six.with_metaclass(meta.Resource)):
             # Are we authenticated; probably should check that now
             if cls.authentication is not None:
                 user = None
-                unauthenticated = HttpResponse(status=constants.FORBIDDEN)
+                unauthenticated = HttpResponse(status=status.FORBIDDEN)
                 for auth in cls.authentication:
                     user = auth.authenticate(request)
                     if user is not None:
@@ -224,7 +224,7 @@ class Base(six.with_metaclass(meta.Resource)):
             ):
         """Initialize ourself and prepare for the dispatch process."""
         #! Status of the request cycle.
-        self.status = constants.OK
+        self.status = status.OK
 
         #! Method to override anything said in the request object (
         #! used to allow resources to call themselves and shortcircuit in
@@ -735,7 +735,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
         if self.identifier is None:
             # Set our status initially so `create` can change it
-            self.status = constants.CREATED
+            self.status = status.CREATED
 
             # Delegate to `create` to actually create a new item.
             response = self.create(obj)
@@ -767,7 +767,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
             if obj is not None:
                 # Set our status initially so `create` can change it
-                self.status = constants.OK
+                self.status = status.OK
 
                 # Ensure we're allowed to update (but not read, hehe)
                 self.assert_method_allowed('update')
@@ -777,7 +777,7 @@ class Base(six.with_metaclass(meta.Resource)):
 
             elif self.allow_create_on_put:
                 # Set our status initially so `create` can change it
-                self.status = constants.CREATED
+                self.status = status.CREATED
 
                 # Ensure we're allowed to create
                 self.assert_method_allowed('create')
@@ -792,15 +792,15 @@ class Base(six.with_metaclass(meta.Resource)):
             # Do we return data ?
             if not self.http_put_return_data:
                 # We're not supposed to return our data; so, well, return it
-                if self.status != constants.CREATED:
-                    self.status = constants.NO_CONTENT
+                if self.status != status.CREATED:
+                    self.status = status.NO_CONTENT
 
             else:
                 return response
 
     def delete(self, obj=None):
         # Set our status initially so `destory` can change it
-        self.status = constants.NO_CONTENT
+        self.status = status.NO_CONTENT
 
         if self.identifier is None:
             # Attempting to delete everything; have fun
