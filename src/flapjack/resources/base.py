@@ -126,15 +126,19 @@ class BaseResource(object):
     #! `filterable = None` on a resource or any of its parents.
     filterable = None
 
+    #! The name of the resource URI field on the resource.
+    #! Specify `None` to not have the URI be included.
+    resource_uri = 'resource_uri'
+
     @classmethod
-    def resource_uri(cls, obj):
+    def slug(cls, obj):
         """
-        Build the resource URI which is used to access and identify this
+        The resource URI segment which is used to access and identify this
         resource.
 
         @note
             This method is only valid and used if this resource is exposed
-            on an exposed url configuration.
+            via an urls.py.
 
         @example
             The following would generate a resource URI (assuming a resource
@@ -221,6 +225,9 @@ class BaseResource(object):
 
         #! Explicitly declared format of the request.
         self.format = kwargs.get('format')
+
+        #! Path of the resource.
+        self.path = kwargs.get('path', 'question')
 
     def dispatch(self):
         """
@@ -313,18 +320,30 @@ class BaseResource(object):
         obj = {}
 
         # Set the resource uri on the object.
-        obj['.'] = self.reverse(item)
+        if self.resource_uri is not None:
+            obj[self.resource_uri] = self.reverse(item)
 
         # Iterate through the fields and build the object from the item.
         for name, field in six.iteritems(self._fields):
-            if not field.visible:
-                # Only continue if the field is visible.
-                continue
+            if field.visible:
+                # Prepare field and set on the object.
+                obj[name] = field.prepare(self, item, field.accessor(item))
 
-            # Prepare field and set on the object.
-            obj[name] = field.prepare(self, item, field.accessor(item))
+        # if not self.path:
+        #     # Return what we've constructed.
+        #     return obj
 
-        # Return what we've constructed.
+        # # Navigate through some hoops to return from what we construct.
+        # for name in (self.path or '').split('__'):
+        #     try:
+        #         # Attempt to garner access into the object
+        #         obj = getattr(obj, name)
+
+        #     except AttributeError as ex:
+        #         # Denied; ouch
+        #         logger.debug(ex, exc_info=True)
+
+        # Just return the object.
         return obj
 
     def clean(self, data):
@@ -368,7 +387,7 @@ class BaseResource(object):
         # Not using `iri_to_uri` here; therefore only ASCII is permitted.
         if value is not None:
             return cls._url_format(
-                cls._URL_IDENTIFIER) % cls.resource_uri(value)
+                cls._URL_IDENTIFIER) % cls.slug(value)
 
         return cls._url_format(cls._URL)
 

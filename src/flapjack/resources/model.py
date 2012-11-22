@@ -9,5 +9,8 @@ from . import base
 class BaseModel(base.BaseResource):
 
     @classmethod
-    def resource_uri(cls, obj):
+    def slug(cls, obj):
         return obj.pk
+
+    def read(self):
+        return self.model.objects.all().iterator()

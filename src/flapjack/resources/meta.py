@@ -138,7 +138,16 @@ class DeclarativeResource(type):
     """Defines the metaclass for the Resource class.
     """
 
-    def _discover_fields(self):
+    def __init__(self, name, bases, attrs):
+        if name == 'NewBase':
+            # Six contrivance; we don't care
+            return super(DeclarativeResource, self).__init__(
+                name, bases, attrs)
+
+        # Initialize our ordered fields dictionary.
+        self._fields = collections.OrderedDict()
+
+        # Discover any fields we can.
         # If the resource has a form we need to discover its fields.
         if self.form is not None:
             # Ensure this is a valid form; attempt to instantiate one.
@@ -167,18 +176,6 @@ class DeclarativeResource(type):
                     editable=True)
 
         # TODO: Append any 'extra' fields listed in the `include` directive.
-
-    def __init__(self, name, bases, attrs):
-        if name == 'NewBase':
-            # Six contrivance; we don't care
-            return super(DeclarativeResource, self).__init__(
-                name, bases, attrs)
-
-        # Initialize our ordered fields dictionary.
-        self._fields = collections.OrderedDict()
-
-        # Discover any fields we can.
-        self._discover_fields()
 
         # Ensure the resource has a name.
         if 'name' not in attrs:
@@ -236,12 +233,17 @@ class DeclarativeResource(type):
         self._resolver = urlresolvers.get_resolver(urlresolvers.get_urlconf())
         self._prefix = urlresolvers.get_script_prefix()
 
+
 class DeclarativeModel(DeclarativeResource):
 
-    def _discover_fields(self):
+    def __init__(self, name, bases, attrs):
+        # Discover anything else we can from the form
+        super(DeclarativeModel, self).__init__(name, bases, attrs)
+
         # Discover what we can from the model form.
         if self.form is not None and issubclass(self.form, forms.ModelForm):
-            model = self.form._meta.model
+            self.model = self.form._meta.model
+            model = self.model
             for name in model._meta.get_all_field_names():
                 field = model._meta.get_field_by_name(name)[0]
 
@@ -260,7 +262,14 @@ class DeclarativeModel(DeclarativeResource):
                     # Seemingly normal field; proceed.
                     iterable = _is_field_iterable(field)
                     field_name = name
-                    accessor = lambda o, n=name: o.__dict__[n]
+                    if getattr(field, 'rel', None) and iterable:
+                        # ForeignKey or M2M Field.
+                        accessor = \
+                            lambda o, x=getattr(model, field_name): x(o).all()
+
+                    else:
+                        # Normal field; straight up access.
+                        accessor = lambda o, n=name: o.__dict__[n]
 
                 # Instantiate and store field with its properties
                 self._fields[name] = _get_field_class(field)(field_name,
@@ -270,6 +279,3 @@ class DeclarativeModel(DeclarativeResource):
                     editable=_is_field_editable(self.form._meta, name),
                     model=True,
                     accessor=accessor)
-
-        # Discover anything else we can from the form
-        super(DeclarativeModel, self)._discover_fields()
