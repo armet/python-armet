@@ -17,15 +17,9 @@ from . import forms, models
 class Choice(resources.Model):
     form = forms.Choice
 
-    def read(self):
-        return models.Choice.objects.all().iterator()
-
 
 class Poll(resources.Model):
     form = forms.Poll
-
-    def read(self):
-        return models.Poll.objects.all().iterator()
 
 # form = forms.Poll
 
