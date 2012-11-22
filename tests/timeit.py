@@ -10,7 +10,7 @@ REQUESTS = 100
 times = []
 for x in range(1, REQUESTS):
     start = time.time()
-    x = requests.get('http://localhost:8000/api/choice')
+    x = requests.get('http://localhost:8000/api/poll')
     times.append(time.time() - start)
 
 print 'requests: {}'.format(REQUESTS)
