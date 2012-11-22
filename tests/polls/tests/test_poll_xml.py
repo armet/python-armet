@@ -79,8 +79,6 @@ class TigerTestXML(base.BaseTest):
             "pub_date": datetime.now(),
             "question": "Are you a liger?"
         }
-
-        #print(encoders.Xml.encode(data))
         response = self.c.post('/api/v1/poll.xml/',
             data=encoders.Xml.encode(data).content,
             content_type="application/xml"

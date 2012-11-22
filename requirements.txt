@@ -1,6 +1,11 @@
 django
 python-mimeparse
 python-magic
+<<<<<<< HEAD
 lxml
 six
+=======
+six
+lxml
+>>>>>>> origin/topics/testing_polls_with_files
 python-dateutil
