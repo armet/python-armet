@@ -9,7 +9,7 @@ def read(filename):
 
 
 setup(
-        name='flapjack',
+        name='django-flapjack',
         version=read('VERSION'),
         description=read('description'),
         long_description=read('README.md'),
