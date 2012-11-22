@@ -84,17 +84,3 @@ class Text:
 
     #! Applicable mimetypes for this transcoder.
     mimetypes = 'text/plain',
-
-
-class JsonP:
-
-    #! Applicable mimetypes for this transcoder.
-    mimetypes = (
-        # Official; this is 'just' javascript.
-        'text/javascript',
-
-        # Miscellaneous mimetypes that are used frequently (incorrectly).
-        'application/javascript',
-        'application/x-javascript',
-        'text/x-javascript',
-    )
