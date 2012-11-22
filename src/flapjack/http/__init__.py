@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Describes the authentication protocols and generalizations used to
+authenticate access to a resource endpoint.
+"""
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 from django import http
 from .constants import *
 
@@ -7,7 +14,9 @@ class Response(http.HttpResponse):
     """
 
     def __init__(self, *args, **kwargs):
+        # Delegate to django to set us up right.
         super(Response, self).__init__(*args, **kwargs)
+
         if not self.content:
             # No need to specify the default content-type if we don't
             # have a body.

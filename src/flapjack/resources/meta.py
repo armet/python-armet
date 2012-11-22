@@ -253,26 +253,23 @@ class DeclarativeModel(DeclarativeResource):
                     # special modifications to the properties need
                     # to happen
                     iterable = field.field.rel.multiple
-                    field_name = field.get_accessor_name()
+                    name = field.get_accessor_name()
                     field = field.field
-                    accessor = \
-                        lambda o, x=getattr(model, field_name): x(o).all()
+                    accessor = lambda o, x=getattr(model, name): x(o).all()
 
                 else:
                     # Seemingly normal field; proceed.
                     iterable = _is_field_iterable(field)
-                    field_name = name
                     if getattr(field, 'rel', None) and iterable:
                         # ForeignKey or M2M Field.
-                        accessor = \
-                            lambda o, x=getattr(model, field_name): x(o).all()
+                        accessor = lambda o, x=getattr(model, name): x(o).all()
 
                     else:
                         # Normal field; straight up access.
                         accessor = lambda o, n=name: o.__dict__[n]
 
                 # Instantiate and store field with its properties
-                self._fields[name] = _get_field_class(field)(field_name,
+                self._fields[name] = _get_field_class(field)(name,
                     visible=_is_field_visible(self, name),
                     filterable=_is_field_filterable(self, name),
                     iterable=iterable,

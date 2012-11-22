@@ -25,7 +25,7 @@ class Decoder(transcoders.Form, Decoder):
             if name not in obj:
                 obj[name] = []
 
-            # This is absurd. Why can't we just do `files[name]` here.
+            # This is absurd. Why can't we just do `files[name]` here?
             obj[name].extend(files.getlist([name]))
 
         # Normalize and flatten this as much as we can.

@@ -3,7 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from collections import Iterable, Sequence, Mapping
+from collections import Iterable, Mapping
 import datetime
 import json
 import six
@@ -11,7 +11,7 @@ from .. import transcoders
 from . import Encoder
 
 
-class _JSONEncoder(json.JSONEncoder):
+class _TypeAwareJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
@@ -36,7 +36,7 @@ class _JSONEncoder(json.JSONEncoder):
             pass
 
         # Raise up our hands; we can not encode this.
-        return super(_JSONEncoder, self).default(obj)
+        return super(_TypeAwareJSONEncoder, self).default(obj)
 
 
 class Encoder(transcoders.Json, Encoder):
@@ -52,4 +52,4 @@ class Encoder(transcoders.Json, Encoder):
         return json.dumps(obj,
             ensure_ascii=True,
             separators=(',', ':'),
-            cls=_JSONEncoder)
+            cls=_TypeAwareJSONEncoder)

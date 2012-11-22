@@ -18,7 +18,7 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
         Transforms objects into an acceptable format for tansmission.
 
         @returns
-            An string containing all neccessary information
+            A string containing all neccessary information
             that can be provided.
         """
         pass

@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
+"""Defines a RESTful resource access protocol.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
-from collections import Iterable, Sequence, OrderedDict, Mapping
-import datetime
 import logging
 import six
 from six import string_types
-from django.core import urlresolvers
-from django.conf import settings
 from django.conf.urls import patterns, url
 from django.views.decorators.csrf import csrf_exempt
-from .. import utils, http, exceptions, fields
+from .. import utils, http, exceptions
 
 
 # Get an instance of the logger.
@@ -104,10 +100,6 @@ class BaseResource(object):
         'flapjack.decoders.Form',
     )
 
-    #! Authentication protocol(s) to use to authenticate access to
-    #! the resource.
-    authentication = ('flapjack.authentication.Authentication',)
-
     #! URL namespace to define the url configuration inside.
     url_name = 'api_view'
 
@@ -129,6 +121,10 @@ class BaseResource(object):
     #! The name of the resource URI field on the resource.
     #! Specify `None` to not have the URI be included.
     resource_uri = 'resource_uri'
+
+    #! Authentication protocol(s) to use to authenticate access to
+    #! the resource.
+    authentication = ('flapjack.authentication.Authentication',)
 
     @classmethod
     def slug(cls, obj):
