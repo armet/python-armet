@@ -10,7 +10,8 @@ import six
 from django import forms
 from django.core import urlresolvers
 from django.db.models.related import RelatedObject
-from .. import utils, fields, resources
+from .. import utils, fields
+from . import helpers
 
 
 def _has(name, attrs, bases):
@@ -64,7 +65,7 @@ def _is_field_collection(field):
         # Attempt to discover if the null value is some sort of
         # collection (and isn't a string) which would make it an collection.
         null = field.to_python(None)
-        return (isinstance(null, collections.collection)
+        return (isinstance(null, collections.Iterable)
                 and not isinstance(null, six.string_types))
 
     except forms.ValidationError:
@@ -180,17 +181,17 @@ class Resource(type):
                     editable=True)
 
         # Append any 'extra' fields listed in the `include` directive.
-        if self.include is not None:
-            if not isinstance(self.include, collections.Mapping):
-                # Simple form was used; make a simple dictionary to
-                # ease processing.
-                self.include = {n: resources.field() for n in self.include}
+        # if self.include is not None:
+        #     if not isinstance(self.include, collections.Mapping):
+        #         # Simple form was used; make a simple dictionary to
+        #         # ease processing.
+        #         self.include = {n: helpers.field() for n in self.include}
 
-            for name in self.include:
-                path, collection = self.include[name]
-                self._fields[name] = fields.Field(name,
-                    collection=collection
-                )
+        #     for name in self.include:
+        #         path, collection = self.include[name]
+        #         self._fields[name] = fields.Field(name,
+        #             collection=collection
+        #         )
 
         # Ensure the resource has a name.
         if 'name' not in attrs:
@@ -248,7 +249,6 @@ class Resource(type):
         self._resolver = urlresolvers.get_resolver(urlresolvers.get_urlconf())
         self._prefix = urlresolvers.get_script_prefix()
 
-
 class Model(Resource):
 
     def __init__(self, name, bases, attrs):
@@ -270,14 +270,23 @@ class Model(Resource):
                     collection = field.field.rel.multiple
                     name = field.get_accessor_name()
                     field = field.field
-                    accessor = lambda o, x=getattr(model, name): x(o).all()
+                    accessor = lambda o, x=getattr(model, name): \
+                        x.related_manager_cls(o).all()
 
                 else:
                     # Seemingly normal field; proceed.
                     collection = _is_field_collection(field)
-                    if getattr(field, 'rel', None) and collection:
-                        # ForeignKey or M2M Field.
-                        accessor = lambda o, x=getattr(model, name): x(o).all()
+                    if getattr(field, 'rel', None):
+                        if collection:
+                            # M2M Field.
+                            accessor = lambda o, x=getattr(model, name): \
+                                x(o).all()
+
+                        else:
+                            # ForeignKey.
+                            #
+                            accessor = lambda o, x=getattr(model, name): \
+                                x.related_manager_cls(o)
 
                     else:
                         # Normal field; straight up access.

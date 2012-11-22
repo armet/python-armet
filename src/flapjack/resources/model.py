@@ -13,4 +13,5 @@ class BaseModel(base.BaseResource):
         return obj.pk
 
     def read(self):
-        return self.model.objects.all().iterator()
+        # return self.model.objects.all().prefetch_related('choice_set')
+        return self.model.objects.all()

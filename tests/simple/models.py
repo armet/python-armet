@@ -21,6 +21,8 @@ class Poll(models.Model):
 
 
 class Choice(models.Model):
+    # poll = models.ForeignKey(Poll, related_name='+')
+    poll = models.ForeignKey(Poll)
     text = models.CharField(max_length=1024)
 
     def __str__(self):

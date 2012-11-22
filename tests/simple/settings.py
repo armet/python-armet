@@ -14,7 +14,7 @@ PROJECT_ROOT = path.abspath(path.join(__file__))
 SITE_ROOT = path.abspath(path.join(PROJECT_ROOT, '..'))
 
 # Debugging settings
-DEBUG = False
+DEBUG = True
 
 # Debug templates with all the nice stack traces
 TEMPLATE_DEBUG = DEBUG
@@ -30,10 +30,10 @@ MANAGERS = ADMINS
 
 # Database configuration.
 DATABASES = {'default': {
-    'ENGINE': 'django.db.backends.sqlite3',
-    'NAME': path.join(SITE_ROOT, 'db.sqlite'),
-    'USER': '',
-    'PASSWORD': '',
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'simple',
+    'USER': 'root',
+    'PASSWORD': 'root',
     'HOST': '',
     'PORT': '',
 }}
@@ -137,10 +137,15 @@ LOGGING = {
         },
     },
     'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'filters': []
+        },
         'flapjack': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'filters': []
-        }
+        },
     }
 }

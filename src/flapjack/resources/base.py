@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
+from collections import Mapping
 import logging
 import six
 from six import string_types
@@ -223,7 +224,7 @@ class BaseResource(object):
         self.format = kwargs.get('format')
 
         #! Path of the resource.
-        self.path = kwargs.get('path', 'question')
+        self.path = kwargs.get('path')
 
     def dispatch(self):
         """
@@ -333,7 +334,14 @@ class BaseResource(object):
         for segment in self.path.split('__'):
             try:
                 # Attempt to garner access into the object
-                obj = getattr(obj, segment)
+                # TODO: Optimize object access here
+                try:
+                    # This is likely still a dictionary
+                    obj = obj[segment]
+
+                except KeyError:
+                    # Well; here goes nothing
+                    obj = getattr(obj, segment)
 
             except AttributeError as ex:
                 # Denied; ouch
