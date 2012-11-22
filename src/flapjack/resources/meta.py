@@ -134,14 +134,14 @@ def _get_field_class(field):
     return fields.Field
 
 
-class DeclarativeResource(type):
+class Resource(type):
     """Defines the metaclass for the Resource class.
     """
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
-            return super(DeclarativeResource, self).__init__(
+            return super(Resource, self).__init__(
                 name, bases, attrs)
 
         # Initialize our ordered fields dictionary.
@@ -234,11 +234,11 @@ class DeclarativeResource(type):
         self._prefix = urlresolvers.get_script_prefix()
 
 
-class DeclarativeModel(DeclarativeResource):
+class Model(Resource):
 
     def __init__(self, name, bases, attrs):
         # Discover anything else we can from the form
-        super(DeclarativeModel, self).__init__(name, bases, attrs)
+        super(Model, self).__init__(name, bases, attrs)
 
         # Discover what we can from the model form.
         if self.form is not None and issubclass(self.form, forms.ModelForm):

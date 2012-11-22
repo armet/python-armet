@@ -4,7 +4,7 @@ from .base import BaseResource
 from .model import BaseModel
 
 
-class Resource(six.with_metaclass(meta.DeclarativeResource, BaseResource)):
+class Resource(six.with_metaclass(meta.Resource, BaseResource)):
     """Implements the RESTful resource protoocl for generic resources.
 
     Derive from this class to extend and create your own generic resources.
@@ -21,7 +21,7 @@ class Resource(six.with_metaclass(meta.DeclarativeResource, BaseResource)):
     pass
 
 
-class Model(six.with_metaclass(meta.DeclarativeModel, BaseModel)):
+class Model(six.with_metaclass(meta.Model, BaseModel)):
     pass
 
 
