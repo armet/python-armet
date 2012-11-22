@@ -2,6 +2,7 @@ import six
 from . import meta
 from .base import BaseResource
 from .model import BaseModel
+from .helpers import field
 
 
 class Resource(six.with_metaclass(meta.Resource, BaseResource)):
@@ -29,5 +30,6 @@ __all__ = [
     BaseResource,
     Resource,
     BaseModel,
-    Model
+    Model,
+    field
 ]

@@ -10,7 +10,7 @@ import six
 from django import forms
 from django.core import urlresolvers
 from django.db.models.related import RelatedObject
-from .. import utils, fields
+from .. import utils, fields, resources
 
 
 def _has(name, attrs, bases):
@@ -138,6 +138,10 @@ class Resource(type):
     """Defines the metaclass for the Resource class.
     """
 
+    @staticmethod
+    def _discover_fields(fields):
+        return fields
+
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
@@ -175,7 +179,18 @@ class Resource(type):
                     # form state.
                     editable=True)
 
-        # TODO: Append any 'extra' fields listed in the `include` directive.
+        # Append any 'extra' fields listed in the `include` directive.
+        if self.include is not None:
+            if not isinstance(self.include, collections.Mapping):
+                # Simple form was used; make a simple dictionary to
+                # ease processing.
+                self.include = {n: resources.field() for n in self.include}
+
+            for name in self.include:
+                path, collection = self.include[name]
+                self._fields[name] = fields.Field(name,
+                    collection=collection
+                )
 
         # Ensure the resource has a name.
         if 'name' not in attrs:
