@@ -108,4 +108,3 @@ class FiltersTest(base.BaseTest):
         self.assertValidJSON(response)
         content = self.deserialize(response, type='json')
         self.assertNotEqual('yes', content[0]['choice_text'])
-
