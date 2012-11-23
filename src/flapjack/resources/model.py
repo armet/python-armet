@@ -14,4 +14,4 @@ class BaseModel(base.BaseResource):
 
     def read(self):
         # return self.model.objects.all().prefetch_related('choice_set')
-        return self.model.objects.all()
+        return self.model.objects.all().prefetch_related('poll')

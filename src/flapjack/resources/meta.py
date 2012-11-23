@@ -264,29 +264,29 @@ class Model(Resource):
 
                 if isinstance(field, RelatedObject):
                     # If a field is a related object then this was
-                    # generated because of a reverse relation and some
-                    # special modifications to the properties need
-                    # to happen
-                    collection = field.field.rel.multiple
-                    name = field.get_accessor_name()
-                    field = field.field
-                    accessor = lambda o, x=getattr(model, name): \
-                        x.related_manager_cls(o).all()
+                    # generated because of a reverse relation.
+                    # collection = field.field.rel.multiple
+
+                    # name = field.get_accessor_name()
+                    # field = field.field
+                    # accessor = lambda o, x=getattr(model, name): \
+                    # x.related_manager_cls(o).all()
+
+                    # We don't want to automagically add reverse relations.
+                    continue
 
                 else:
                     # Seemingly normal field; proceed.
                     collection = _is_field_collection(field)
                     if getattr(field, 'rel', None):
                         if collection:
-                            # M2M Field.
-                            accessor = lambda o, x=getattr(model, name): \
-                                x(o).all()
+                            # TODO: Many-to-many field
+                            continue
 
                         else:
-                            # ForeignKey.
-                            #
-                            accessor = lambda o, x=getattr(model, name): \
-                                x.related_manager_cls(o)
+                            # Foreign key or one-to-one field
+                            attr = getattr(model, name).cache_name
+                            accessor = lambda o, n=attr: o.__dict__[n]
 
                     else:
                         # Normal field; straight up access.
