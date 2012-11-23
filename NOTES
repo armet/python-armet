@@ -1,14 +1,66 @@
-relations = {
-    '..': resource.relation('path.to.Resource', full=True, path='')
+# Gameplan for Black friday
+# Fully cached-to-hell and called for each field added
+cls.add_field(name, *args)
+
+# Allow both of the following:
+include = {
+    'choices': field('choice_set')
 }
+
+include = [
+    'choices'
+]
+
+# is equiv. to
 
 include = {
-    'username': resource.field('user__name', collection=False),
+    'choices': (None, None)
 }
 
-# or
 
-include = ['username']
+# Allow the following:
+# Text can be one of ::>
+    # 'app.Resource'
+    # 'full.path.to.ResourceClass'
+    # ResourceClass
 
-def prepare_username(self, obj, value):
-    return obj.user.name
+# embed does a drop-in instead of a reversal with URL
+
+# path navigates the relation when preparing it
+
+relations = {
+    'choices': relation('polls.Choice', path=None, embed=False)
+}
+
+# equiv. to
+
+relations = {
+    'choices': ('polls.Choice', None, False)
+}
+
+# 3. relations are automagically created and pointed to the canonical resource
+#    for the model; if none exists, a resource is created
+
+# 4. API browser + registar
+
+# 5. api.autodiscover()
+
+# 6. `HEAD` and `OPTIONS`
+
+# 7. `PUT`, `POST`, `DELETE`, and `PATCH`
+
+# 8. Reducing the size of the base resource
+
+# 9. merging + cleaning up the test suite
+
+# 10. pagination
+
+# 11. filtering
+
+# 12. sorting
+
+# 13. authorization
+
+# 14. documentation
+
+# 15. release!
