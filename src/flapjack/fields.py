@@ -4,10 +4,7 @@ from django.db.models.fields import NOT_PROVIDED
 
 class Field(object):
 
-    def __init__(self, name, **kwargs):
-        #! Name of the field on the object or dictionary.
-        self.name = name
-
+    def __init__(self, **kwargs):
         #! Whether this field can be modified or not.
         self.editable = kwargs.get('editable', False)
 
@@ -27,11 +24,13 @@ class Field(object):
         self.model = kwargs.get('model', False)
 
         #! Accessor function that will get the value of the field from the obj.
-        self.accessor = kwargs.get('accessor', lambda o: o[self.name])
+        self.accessor = kwargs.get('accessor')
 
         #! Preparation function that is linked to the class object of the
         #! instantiating resource.
-        self.prepare = kwargs.get('prepare', lambda s, o, v: v)
+        self.prepare = kwargs.get('prepare')
+        if self.prepare is None:
+            self.prepare = lambda s, o, v: v
 
     def clean(self, value):
         """Cleans the value for consumption by the form clean cycle."""
@@ -48,7 +47,6 @@ class BooleanField(Field):
         'yes',
         'y',
         'on'
-        'o',
         '1'
     )
 

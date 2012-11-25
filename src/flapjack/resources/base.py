@@ -324,7 +324,12 @@ class BaseResource(object):
         for name, field in six.iteritems(self._fields):
             if field.visible:
                 # Prepare field and set on the object.
-                obj[name] = field.prepare(self, item, field.accessor(item))
+                try:
+                    obj[name] = field.prepare(self, item, field.accessor(item))
+
+                except TypeError:
+                    # No accessor provided; carry on.
+                    obj[name] = field.prepare(self, item, None)
 
         if not self.path:
             # No need to navigate the object; return what we've constructed.

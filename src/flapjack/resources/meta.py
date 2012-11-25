@@ -139,21 +139,125 @@ class Resource(type):
     """Defines the metaclass for the Resource class.
     """
 
-    @staticmethod
-    def _discover_fields(fields):
-        return fields
+    def set_field(self, name, path=None, collection=None, editable=None):
+        """
+        Sets the field with the specified name on the
+        resource class object.
+        """
+        # Determine what properties we can discover by name.
+        visible = _is_field_visible(self, name)
+        filterable = _is_field_filterable(self, name)
+
+        # Rip apart the path
+        segments = path.split('__') if path is not None else None
+
+        if editable is None:
+            if hasattr(self.form, '_meta') and segments:
+                # If a value for editable was not provided; discover it
+                editable = _is_field_editable(self.form._meta, segments[0])
+
+            elif segments:
+                # No black/white list on form; its editable if we have a form.
+                editable = segments[0] in self.form_fields
+
+            else:
+                # No path; we're done.
+                editable = False
+
+        if self.form:
+            # Attempt to get the field from the form (if we even have one).
+            field = self.form.base_fields.get(name)
+
+        else:
+            # No form; no field found.
+            field = None
+
+        if collection is None:
+            if field:
+                # We have a field; figure it out
+                collection = _is_field_collection(field)
+
+            else:
+                # No value was provided for collection; it isn't one
+                collection = False
+
+        try:
+            # Attempt to get the prepare_FOO function
+            prepare = getattr(self, 'prepare_{}'.format(name))
+
+        except AttributeError:
+            # No prepare_FOO function; oh well
+            prepare = None
+
+
+        if segments:
+            # Construct a function to access the field value
+            # during preparation.
+            def accessor(obj):
+                # TODO: ..
+                pass
+
+        else:
+            # No prepare_FOO function; default to simple dictionary access.
+            accessor = lambda o, n=name: o[n]
+
+        # Get the field class object
+        if field:
+            # Discover what to grab
+            cls = _get_field_class(field)
+
+        else:
+            # Just grab the base
+            cls = fields.Field
+
+        # Add this field to the class object
+        self._fields[name] = cls(
+            visible=visible,
+            filterable=filterable,
+            collection=collection,
+            accessor=accessor,
+            editable=editable,
+            prepare=prepare,
+        )
+
+    def _discover_fields(self):
+        """
+        Finds all fields declared on the class object and collects them
+        into a dictionary.
+        """
+        # Discover any fields we can.
+        # If the resource has a form we need to discover its fields.
+        if self.form is not None:
+            # Iterate through explicitly defined fields to gather their
+            # properites and store them.
+            for name in self.form_fields:
+                # If a field has been explicitly defined; according to
+                # the django forms protocol it is -always- editable --
+                # regardless of whatever the black/white lists on the
+                # form state.
+                self.set_field(name, editable=True)
+
+        # Append any 'extra' fields listed in the `include` directive.
+        if self.include is not None:
+            if not isinstance(self.include, collections.Mapping):
+                # Simple form was used; make a simple dictionary to
+                # ease processing.
+                self.include = {n: helpers.field() for n in self.include}
+
+            # Iterate through additional field names and set them.
+            for name in self.include:
+                path, collection = self.include[name]
+                self.set_field(name, path=path, collection=collection)
+
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
-            return super(Resource, self).__init__(
-                name, bases, attrs)
+            return super(Resource, self).__init__(name, bases, attrs)
 
         # Initialize our ordered fields dictionary.
         self._fields = collections.OrderedDict()
 
-        # Discover any fields we can.
-        # If the resource has a form we need to discover its fields.
         if self.form is not None:
             # Ensure this is a valid form; attempt to instantiate one.
             self.form()
@@ -165,33 +269,15 @@ class Resource(type):
             if hasattr(self.form, 'declared_fields'):
                 declared_fields = self.form.declared_fields
 
-            # Iterate through explicitly defined fields to gather their
-            # properites and store them.
-            for name in declared_fields:
-                field = declared_fields[name]
-                self._fields[name] = _get_field_class(field)(name,
-                    visible=_is_field_visible(self, name),
-                    filterable=_is_field_filterable(self, name),
-                    collection=_is_field_collection(field),
+            # Store the names of the fields.
+            self.form_fields = declared_fields.keys()
 
-                    # If a field has been explicitly defined; according to
-                    # the django forms protocol it is -always- editable --
-                    # regardless of whatever the black/white lists on the
-                    # form state.
-                    editable=True)
+        else:
+            # No form; no form fields; make us an empty tuple.
+            self.form_fields = ()
 
-        # Append any 'extra' fields listed in the `include` directive.
-        # if self.include is not None:
-        #     if not isinstance(self.include, collections.Mapping):
-        #         # Simple form was used; make a simple dictionary to
-        #         # ease processing.
-        #         self.include = {n: helpers.field() for n in self.include}
-
-        #     for name in self.include:
-        #         path, collection = self.include[name]
-        #         self._fields[name] = fields.Field(name,
-        #             collection=collection
-        #         )
+        # Discover any fields we can.
+        self._discover_fields()
 
         # Ensure the resource has a name.
         if 'name' not in attrs:
