@@ -8,10 +8,15 @@ from . import base
 
 class BaseModel(base.BaseResource):
 
+    #! The model this resource is bound to; shortcut for declaring a form
+    #! for read-only resources.
+    model = None
+
     @classmethod
     def slug(cls, obj):
         return obj.pk
 
     def read(self):
         # return self.model.objects.all().prefetch_related('choice_set')
-        return self.model.objects.all().prefetch_related('poll')
+        # return self.model.objects.all().prefetch_related('poll')
+        return self.model.objects.all()

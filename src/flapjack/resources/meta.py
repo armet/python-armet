@@ -9,6 +9,8 @@ from StringIO import StringIO
 import six
 from django import forms
 from django.core import urlresolvers
+from django.core.exceptions import ImproperlyConfigured
+from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from .. import utils, fields
 from . import helpers
@@ -193,9 +195,37 @@ class Resource(type):
         if segments:
             # Construct a function to access the field value
             # during preparation.
-            def accessor(obj):
-                # TODO: ..
-                pass
+            def accessor(obj, segments=segments):
+                for segment in segments:
+                    try:
+                        # Attempt to resolve a dictionary reference.
+                        obj = obj[segment]
+                        continue
+
+                    except KeyError:
+                        pass
+
+                    try:
+                        # Attempt to resolve a direct instance reference.
+                        obj = obj.__dict__[segment]
+                        continue
+
+                    except KeyError:
+                        pass
+
+                    try:
+                        # Attempt to lookup the property.
+                        obj = getattr(obj, segment)
+                        continue
+
+                    except AttributeError:
+                        pass
+
+                    # Fail.
+                    return None
+
+                # Successfully got something; return it.
+                return obj
 
         else:
             # No prepare_FOO function; default to simple dictionary access.
@@ -337,52 +367,191 @@ class Resource(type):
 
 class Model(Resource):
 
+    def set_field(self, name, path=None, collection=None, editable=None):
+        # Determine what properties we can discover by name.
+        visible = _is_field_visible(self, name)
+        filterable = _is_field_filterable(self, name)
+
+        # Rip apart the path
+        segments = path.split('__') if path is not None else None
+
+        if editable is None:
+            if hasattr(self.form, '_meta') and segments:
+                # If a value for editable was not provided; discover it
+                editable = _is_field_editable(self.form._meta, segments[0])
+
+            elif segments:
+                # No black/white list on form; its editable if we have a form.
+                editable = segments[0] in self.form_fields
+
+            else:
+                # No path; we're done.
+                editable = False
+
+        if self.model:
+            try:
+                # Attempt to get the field from the model (if we even have one).
+                field = self.model._meta.get_field_by_name(name)[0]
+
+            except FieldDoesNotExist:
+                # No field found.
+                field = None
+
+        else:
+            # No model; no field found.
+            field = None
+
+        if collection is None:
+            if field:
+                # We have a field; figure it out
+                collection = _is_field_collection(field)
+
+            else:
+                # No value was provided for collection; it isn't one
+                collection = False
+
+        try:
+            # Attempt to get the prepare_FOO function
+            prepare = getattr(self, 'prepare_{}'.format(name))
+
+        except AttributeError:
+            # No prepare_FOO function; oh well
+            prepare = None
+
+        if segments:
+            # Construct a function to access the field value
+            # during preparation.
+            def accessor(obj, segments=segments):
+                for segment in segments:
+                    try:
+                        # Attempt to resolve a direct instance reference.
+                        obj = obj.__dict__[segment]
+                        continue
+
+                    except KeyError:
+                        pass
+
+                    try:
+                        # Attempt to resolve a dictionary reference.
+                        obj = obj[segment]
+                        continue
+
+                    except (TypeError, KeyError):
+                        pass
+
+                    # try:
+                    #     # Attempt to lookup the property.
+                    #     obj = getattr(obj, segment)
+                    #     continue
+
+                    # except AttributeError:
+                    #     pass
+
+                    # Fail.
+                    return None
+
+                # Successfully got something; return it.
+                return obj
+
+        else:
+            # No prepare_FOO function; default to simple dictionary access.
+            accessor = lambda o, n=name: o[n]
+
+        # Get the field class object
+        if field:
+            # Discover what to grab
+            cls = _get_field_class(field)
+
+        else:
+            # Just grab the base
+            cls = fields.Field
+
+        # Add this field to the class object
+        self._fields[name] = cls(
+            visible=visible,
+            filterable=filterable,
+            collection=collection,
+            accessor=accessor,
+            editable=editable,
+            prepare=prepare,
+        )
+
+    def _discover_fields(self):
+        # Iterate through and set these model fields on the resource.
+        for name in self.model_fields:
+            # Grab the field object
+            field = self.model._meta.get_field_by_name(name)[0]
+
+            if isinstance(field, RelatedObject):
+                # Don't automagically generate reverse relationships.
+                continue
+
+            # Set the field on the resource.
+            self.set_field(name, path=name)
+
+        # Discover any additional fields.
+        super(Model, self)._discover_fields()
+
     def __init__(self, name, bases, attrs):
-        # Discover anything else we can from the form
-        super(Model, self).__init__(name, bases, attrs)
+        if name == 'NewBase':
+            # Six contrivance; we don't care
+            return super(Model, self).__init__(name, bases, attrs)
 
         # Discover what we can from the model form.
         if self.form is not None and issubclass(self.form, forms.ModelForm):
+            # Store the model from the form.
             self.model = self.form._meta.model
-            model = self.model
-            for name in model._meta.get_all_field_names():
-                field = model._meta.get_field_by_name(name)[0]
 
-                if isinstance(field, RelatedObject):
-                    # If a field is a related object then this was
-                    # generated because of a reverse relation.
-                    # collection = field.field.rel.multiple
+        if self.model:
+            # Store the model fields.
+            self.model_fields = self.model._meta.get_all_field_names()
 
-                    # name = field.get_accessor_name()
-                    # field = field.field
-                    # accessor = lambda o, x=getattr(model, name): \
-                    # x.related_manager_cls(o).all()
+        else:
+            # No model; no model fields.
+            self.model_fields = ()
 
-                    # We don't want to automagically add reverse relations.
-                    continue
+        # Discover anything else we can from the form
+        super(Model, self).__init__(name, bases, attrs)
 
-                else:
-                    # Seemingly normal field; proceed.
-                    collection = _is_field_collection(field)
-                    if getattr(field, 'rel', None):
-                        if collection:
-                            # TODO: Many-to-many field
-                            continue
 
-                        else:
-                            # Foreign key or one-to-one field
-                            attr = getattr(model, name).cache_name
-                            accessor = lambda o, n=attr: o.__dict__[n]
+            # for name in model._meta.get_all_field_names():
+            #     field = model._meta.get_field_by_name(name)[0]
 
-                    else:
-                        # Normal field; straight up access.
-                        accessor = lambda o, n=name: o.__dict__[n]
+            #     if isinstance(field, RelatedObject):
+            #         # If a field is a related object then this was
+            #         # generated because of a reverse relation.
+            #         # collection = field.field.rel.multiple
 
-                # Instantiate and store field with its properties
-                self._fields[name] = _get_field_class(field)(name,
-                    visible=_is_field_visible(self, name),
-                    filterable=_is_field_filterable(self, name),
-                    collection=collection,
-                    editable=_is_field_editable(self.form._meta, name),
-                    model=True,
-                    accessor=accessor)
+            #         # name = field.get_accessor_name()
+            #         # field = field.field
+            #         # accessor = lambda o, x=getattr(model, name): \
+            #         # x.related_manager_cls(o).all()
+
+            #         # We don't want to automagically add reverse relations.
+            #         continue
+
+            #     else:
+            #         # Seemingly normal field; proceed.
+            #         collection = _is_field_collection(field)
+            #         if getattr(field, 'rel', None):
+            #             if collection:
+            #                 # TODO: Many-to-many field
+            #                 continue
+
+            #             else:
+            #                 # Foreign key or one-to-one field
+            #                 attr = getattr(model, name).cache_name
+            #                 accessor = lambda o, n=attr: o.__dict__[n]
+
+            #         else:
+            #             # Normal field; straight up access.
+            #             accessor = lambda o, n=name: o.__dict__[n]
+
+            #     # Instantiate and store field with its properties
+            #     self._fields[name] = _get_field_class(field)(name,
+            #         visible=_is_field_visible(self, name),
+            #         filterable=_is_field_filterable(self, name),
+            #         collection=collection,
+            #         editable=_is_field_editable(self.form._meta, name),
+            #         model=True,
+            #         accessor=accessor)

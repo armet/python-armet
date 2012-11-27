@@ -327,7 +327,7 @@ class BaseResource(object):
                 try:
                     obj[name] = field.prepare(self, item, field.accessor(item))
 
-                except TypeError:
+                except TypeError as ex:
                     # No accessor provided; carry on.
                     obj[name] = field.prepare(self, item, None)
 
