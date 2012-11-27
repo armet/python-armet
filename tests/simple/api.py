@@ -14,12 +14,44 @@ from . import forms, models
 #         model = models.Poll
 
 
+# class Choice(resources.Model):
+#     form = forms.Choice
+
+
 class Choice(resources.Model):
-    form = forms.Choice
+    model = models.Choice
 
+    include = {
+        'name_twice': resources.field('text'),
+        'name_upper': resources.field('text'),
+    }
 
-class Poll(resources.Model):
-    form = forms.Poll
+    def prepare_name_upper(self, obj, value):
+        return value.upper()
+
+# class Booth(resources.Resource):
+
+#     include = {
+#         'id': resources.field(),
+#         'name': resources.field(),
+#         'other': resources.field('name'),
+#     }
+
+#     @classmethod
+#     def slug(cls, obj):
+#         return obj['id']
+
+#     def prepare_name(self, obj, value):
+#         return value.upper()
+
+#     def read(self):
+#         results = []
+#         for x in range(1, 50):
+#             results.append({
+#                 'id': x,
+#                 'name': "This is not a random name"
+#             })
+#         return results
 
 # form = forms.Poll
 

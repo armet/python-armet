@@ -17,6 +17,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     # Resources
-    url(r'^api/', include(api.Poll.urls)),
+    # url(r'^api/', include(api.Poll.urls)),
     url(r'^api/', include(api.Choice.urls))
+    # url(r'^api/', include(api.Booth.urls))
 )
