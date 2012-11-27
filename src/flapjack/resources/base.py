@@ -140,6 +140,7 @@ class Base(six.with_metaclass(meta.Resource)):
     @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
+        component =  kwargs.get('components',None)
         try:
             # Are we authenticated; probably should check that now
             if cls.authentication is not None:
@@ -173,7 +174,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 encoder = cls.default_encoder
 
             # Initiate the dispatch and return the response
-            content = resource.dispatch()
+            content = resource.dispatch(component)
 
             # Encode the content (if any) and return the response
             if content is not None:
@@ -247,7 +248,7 @@ class Base(six.with_metaclass(meta.Resource)):
         #! A filterer needs to be made.
         self._filterer = self.filterer(self._fields) if self.filterer else None
 
-    def dispatch(self):
+    def dispatch(self,component):
         # Determine the method; returns our delegation function
         function = self.determine_method()
 
@@ -266,7 +267,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 self._fields)
 
             # Run the data through a clean cycle
-            data = self.clean(data)
+            data = self.clean(data,component)
 
             # Check for authorization on the object if we have a real one
             if self.identifier is not None:
@@ -442,27 +443,33 @@ class Base(six.with_metaclass(meta.Resource)):
         # Method is understood, allowed and implemented; continue.
         return function
 
-    def clean(self, data):
+    def clean(self, data, component):
         # Before the object goes anywhere its relations need to be resolved and
         # other things need to happen to make everything more python'y
-        for name, field in self._fields.iteritems():
+        if component:
+            x = {}
+            x[component] = data.pop()
+            data = x
 
-            try:
-                value = data.get(name) #Possible AttributeError, riiiight there
-                if value is not None and field.relation is not None:
-                    data[name] = self.relation_clean(field, value)
+        else:    
+            for name, field in self._fields.iteritems():
 
-                if value is None and field.default is not None:
-                    try:
-                        data[name] = field.default()
+                try:
+                    value = data.get(name) #Possible AttributeError, riiiight there
+                    if value is not None and field.relation is not None:
+                        data[name] = self.relation_clean(field, value)
 
-                    except:
-                        data[name] = field.default
+                    if value is None and field.default is not None:
+                        try:
+                            data[name] = field.default()
 
-                if value is None and field.collection:
-                    data[name] = []
-            except AttributeError:
-                value = data
+                        except:
+                            data[name] = field.default
+ 
+                    if value is None and field.collection:
+                        data[name] = []
+                except AttributeError:
+                    pass
 
         # If this is a individual resource; we need to first get the
         # object being accessed; modify it according to the data, and pass
@@ -492,13 +499,13 @@ class Base(six.with_metaclass(meta.Resource)):
                         if field.file:
                             if isinstance(value, File):
                                 files[key] = value
-
+ 
                         else:
                             items[key] = value
 
                 if not files:
                     files = None
-
+                    
             except AttributeError:
                 pass
 
