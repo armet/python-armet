@@ -1,4 +1,3 @@
-# Gameplan for Black friday
 # Fully cached-to-hell and called for each field added
 cls.add_field(name, *args)
 
