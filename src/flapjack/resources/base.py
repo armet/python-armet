@@ -446,19 +446,23 @@ class Base(six.with_metaclass(meta.Resource)):
         # Before the object goes anywhere its relations need to be resolved and
         # other things need to happen to make everything more python'y
         for name, field in self._fields.iteritems():
-            value = data.get(name)
-            if value is not None and field.relation is not None:
-                data[name] = self.relation_clean(field, value)
 
-            if value is None and field.default is not None:
-                try:
-                    data[name] = field.default()
+            try:
+                value = data.get(name) #Possible AttributeError, riiiight there
+                if value is not None and field.relation is not None:
+                    data[name] = self.relation_clean(field, value)
 
-                except:
-                    data[name] = field.default
+                if value is None and field.default is not None:
+                    try:
+                        data[name] = field.default()
 
-            if value is None and field.collection:
-                data[name] = []
+                    except:
+                        data[name] = field.default
+
+                if value is None and field.collection:
+                    data[name] = []
+            except AttributeError:
+                value = data
 
         # If this is a individual resource; we need to first get the
         # object being accessed; modify it according to the data, and pass
@@ -472,24 +476,31 @@ class Base(six.with_metaclass(meta.Resource)):
             # provided
             for name, item in model_to_dict(obj).iteritems():
                 if name not in data:
-                    data[name] = item
+                    try:
+                        data[name] = item
+                    except TypeError:
+                        pass
 
         if self.validation:
             # Split data and files
             fields = self._fields
             files, items = {}, {}
-            for key, value in data.iteritems():
-                field = fields.get(key)
-                if field is not None:
-                    if field.file:
-                        if isinstance(value, File):
-                            files[key] = value
+            try:
+                for key, value in data.iteritems(): #Possible AttributeError
+                    field = fields.get(key)
+                    if field is not None:
+                        if field.file:
+                            if isinstance(value, File):
+                                files[key] = value
 
-                    else:
-                        items[key] = value
+                        else:
+                            items[key] = value
 
-            if not files:
-                files = None
+                if not files:
+                    files = None
+
+            except AttributeError:
+                pass
 
             # Create a form instance to proxy validation
             form = self.form(data=items, files=files)
@@ -756,26 +767,26 @@ class Base(six.with_metaclass(meta.Resource)):
             # Attempting to change everything; go away (for now)
             raise exceptions.NotImplemented()
 
-        else:
-            try:
-                # Coerce the object
-                obj = self.get()
+        try:
+            # Coerce the object
+            obj = self.get()
 
-            except:
-                # Bad; we're not here
-                obj = None
+            # Ensure we're allowed to update (but not read, hehe)
+            self.assert_method_allowed('update')
 
-            if obj is not None:
-                # Set our status initially so `create` can change it
+            # Send us off to create
+            response = self.update(obj, data)
+
+            if self.http_put_return_data:
                 self.status = status.OK
+            else:
+                self.status = status.NO_CONTENT
 
-                # Ensure we're allowed to update (but not read, hehe)
-                self.assert_method_allowed('update')
+        except:
+            # Bad; we're not here
+            obj = None
 
-                # Send us off to create
-                response = self.update(obj, data)
-
-            elif self.allow_create_on_put:
+            if self.allow_create_on_put:
                 # Set our status initially so `create` can change it
                 self.status = status.CREATED
 
@@ -789,14 +800,10 @@ class Base(six.with_metaclass(meta.Resource)):
                 # Not allowed to create on put; damn
                 raise exceptions.NotImplemented()
 
-            # Do we return data ?
-            if not self.http_put_return_data:
-                # We're not supposed to return our data; so, well, return it
-                if self.status != status.CREATED:
-                    self.status = status.NO_CONTENT
+        # Do we return data ?
+        if self.http_put_return_data:
+            return response
 
-            else:
-                return response
 
     def delete(self, obj=None):
         # Set our status initially so `destory` can change it
@@ -810,18 +817,18 @@ class Base(six.with_metaclass(meta.Resource)):
             # Delegate to `destroy` to actually delete the item.
             self.destroy(self.get())
 
-    def read(self):
+#    def read(self):
         # No sane defaults for cRud exist on this base, abstract resource.
-        raise exceptions.NotImplemented()
+#        raise exceptions.NotImplemented()
 
-    def create(self, obj):
+#    def create(self, obj):
         # No sane defaults for Crud exist on this base, abstract resource.
-        raise exceptions.NotImplemented()
+#        raise exceptions.NotImplemented()
 
-    def update(self):
+#    def update(self):
         # No sane defaults for crUd exist on this base, abstract resource.
-        raise exceptions.NotImplemented()
+#        raise exceptions.NotImplemented()
 
-    def destroy(self, obj):
+#    def destroy(self, obj):
         # No sane defaults for cruD exist on this base, abstract resource.
-        raise exceptions.NotImplemented()
+#        raise exceptions.NotImplemented()
