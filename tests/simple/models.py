@@ -4,26 +4,18 @@
 from django.db import models
 
 
-class Booth(models.Model):
-    name = models.CharField(max_length=1024)
-    color = models.CharField(max_length=1024)
-
-    def __str__(self):
-        return self.name
-
-
 class Poll(models.Model):
     question = models.CharField(max_length=1024)
-    # booths = models.ManyToManyField(Booth, blank=True)
+    pub_date = models.DateTimeField('date published')
 
     def __str__(self):
         return self.question
 
 
 class Choice(models.Model):
-    # poll = models.ForeignKey(Poll, related_name='+')
     poll = models.ForeignKey(Poll)
-    text = models.CharField(max_length=1024)
+    choice_text = models.CharField(max_length=1024)
+    votes = models.IntegerField()
 
     def __str__(self):
         return self.text
