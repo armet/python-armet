@@ -160,3 +160,7 @@ class BaseTest(unittest.TestCase):
             except etree.XMLSyntaxError:
                 return self.assertEqual(False, 'Invalid XML format.')
 
+    def assertValidJSONResponse(self, response):
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        return self.deserialize(response, type='json')
