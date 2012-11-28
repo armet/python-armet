@@ -8,6 +8,7 @@ from collections import Mapping
 import logging
 import six
 from six import string_types
+from six.moves import http_client
 from django.conf.urls import patterns, url
 from django.views.decorators.csrf import csrf_exempt
 from .. import utils, http, exceptions
@@ -201,7 +202,7 @@ class BaseResource(object):
             logger.exception('Internal server error.')
 
             # Return an empty body indicative of a server failure.
-            return http.Response(status=http.INTERNAL_SERVER_ERROR)
+            return http.Response(status=http_client.INTERNAL_SERVER_ERROR)
 
     @classmethod
     def traverse(cls, segments):
@@ -435,11 +436,11 @@ class BaseResource(object):
                 items = []
 
         # Return the response
-        return items, http.OK
+        return items, http_client.OK
 
     def post(self):
         # Return the response
-        return None, http.NO_CONTENT
+        return None, http_client.NO_CONTENT
 
     @property
     def _allowed_methods(self):
