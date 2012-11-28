@@ -8,7 +8,6 @@ from collections import Mapping
 import logging
 import six
 from six import string_types
-from six.moves import http_client
 from django.conf.urls import patterns, url
 from django.views.decorators.csrf import csrf_exempt
 from .. import utils, http, exceptions
@@ -202,7 +201,7 @@ class BaseResource(object):
             logger.exception('Internal server error.')
 
             # Return an empty body indicative of a server failure.
-            return http.Response(status=http_client.INTERNAL_SERVER_ERROR)
+            return http.Response(status=http.client.INTERNAL_SERVER_ERROR)
 
     @classmethod
     def traverse(cls, segments):
@@ -323,39 +322,40 @@ class BaseResource(object):
 
         # Iterate through the fields and build the object from the item.
         for name, field in six.iteritems(self._fields):
-            if field.visible:
-                # Prepare field and set on the object.
-                try:
-                    obj[name] = field.prepare(self, item, field.accessor(item))
+            if not field.visible:
+                # Field is not visible on the response object.
+                continue
 
-                except TypeError as ex:
-                    # No accessor provided; carry on.
-                    obj[name] = field.prepare(self, item, None)
+            # Apply the field accessor and request the value of the item.
+            value = field.accessor(item)
 
-        if not self.path:
-            # No need to navigate the object; return what we've constructed.
-            return obj
+            # Set value on object after preparing it
+            obj[name] = field.prepare(self, item, value)
+
+        # if not self.path:
+        #     # No need to navigate the object; return what we've constructed.
+        #     return obj
 
         # Navigate through some hoops to return from what we construct.
-        for segment in self.path.split('__'):
-            try:
-                # Attempt to garner access into the object
-                # TODO: Optimize object access here
-                try:
-                    # This is likely still a dictionary
-                    obj = obj[segment]
+        # for segment in self.path.split('__'):
+        #     try:
+        #         # Attempt to garner access into the object
+        #         # TODO: Optimize object access here
+        #         try:
+        #             # This is likely still a dictionary
+        #             obj = obj[segment]
 
-                except KeyError:
-                    # Well; here goes nothing
-                    obj = getattr(obj, segment)
+        #         except KeyError:
+        #             # Well; here goes nothing
+        #             obj = getattr(obj, segment)
 
-            except AttributeError as ex:
-                # Denied; ouch
-                logger.debug(ex, exc_info=True)
+        #     except AttributeError as ex:
+        #         # Denied; ouch
+        #         logger.debug(ex, exc_info=True)
 
-                # We are not part of the URL here so we return `None` to
-                # represent that we could not find an object.
-                return None
+        #         # We are not part of the URL here so we return `None` to
+        #         # represent that we could not find an object.
+        #         return None
 
         # Just return the object.
         return obj
@@ -400,8 +400,7 @@ class BaseResource(object):
         """Reverses a URL for the resource or for the passed object."""
         # Not using `iri_to_uri` here; therefore only ASCII is permitted.
         if value is not None:
-            return cls._url_format(
-                cls._URL_IDENTIFIER) % cls.slug(value)
+            return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
 
         return cls._url_format(cls._URL)
 
@@ -436,11 +435,11 @@ class BaseResource(object):
                 items = []
 
         # Return the response
-        return items, http_client.OK
+        return items, http.client.OK
 
     def post(self):
         # Return the response
-        return None, http_client.NO_CONTENT
+        return None, http.client.NO_CONTENT
 
     @property
     def _allowed_methods(self):
