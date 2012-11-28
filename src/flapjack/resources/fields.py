@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+from .. import utils
 
 
 class Field(object):
@@ -36,6 +37,22 @@ class Field(object):
 
         #! Stored segments that correspond to lazily evaluated accessors.
         self._segments = self.path.split('__')
+
+        #! Stored relation reference.
+        self._relation = kwargs.get('relation')
+
+    @property
+    def relation(self):
+        if self._relation is not None:
+            if not isinstance(self._relation[0], type):
+                # Resolve resource class object
+                self._relation[0] = utils.load(self._relation[0])
+
+            # Resource class object is already resolved; return it.
+            return self._relation
+
+        # No relation; nothing to do.
+        return None
 
     def accessor(self, value):
         for accessor in self.accessors:

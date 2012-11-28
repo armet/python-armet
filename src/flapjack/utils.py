@@ -75,21 +75,35 @@ def for_all(value, method, test=None):
     value.
     """
     if isinstance(value, six.string_types) and (test is None or test(value)):
-        value = method(value)
+        return method(value)
 
-    elif isinstance(value, collections.Mapping):
+    if isinstance(value, collections.Mapping):
         for key in value:
             if test is None or test(value[key]):
                 value[key] = method(value[key])
 
-    elif isinstance(value, collections.Sequence):
+        return value
+
+    # if isinstance(value, collections.Sequence):
+    #     values = []
+    #     for index, item in enumerate(value):
+    #         values.append(method(item) if test is None or
+                # test(item) else item)
+
+    #     return values
+
+    try:
         values = []
         for index, item in enumerate(value):
             values.append(method(item) if test is None or test(item) else item)
 
-        value = values
+        return values
 
-    elif test is None or test(value):
-        value = method(value)
+    except TypeError as ex:
+        print(ex)
+        pass
+
+    if test is None or test(value):
+        return method(value)
 
     return value

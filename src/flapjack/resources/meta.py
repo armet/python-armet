@@ -210,7 +210,7 @@ class DeclarativeResource(type):
 
         except AttributeError:
             # No prepare_FOO function; make a no-op one.
-            prepare = lambda self, obj, value: value
+            prepare = lambda s, o, v, n=name: s.generic_prepare(o, n, v)
             setattr(self, 'prepare_{}'.format(name), prepare)
 
         # Instantiate the field object and set it on the resource class.
@@ -220,7 +220,8 @@ class DeclarativeResource(type):
             collection=collection,
             editable=editable,
             prepare=prepare,
-            path=path if path else name
+            path=path if path else name,
+            relation=self.relations.get(name)
         )
 
     def _discover_fields(self):
@@ -407,3 +408,6 @@ class DeclarativeModel(DeclarativeResource):
 
         # Discover anything else we can from the form
         super(DeclarativeModel, self).__init__(name, bases, attrs)
+
+        # Declare class object caches; every resource needs one of these
+        self._prefetch_related_paths = []

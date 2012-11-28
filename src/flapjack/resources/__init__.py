@@ -2,7 +2,7 @@ import six
 from .meta import DeclarativeResource, DeclarativeModel
 from .base import BaseResource
 from .model import BaseModel
-from .helpers import field
+from .helpers import field, relation
 
 
 class Resource(six.with_metaclass(DeclarativeResource, BaseResource)):
@@ -44,5 +44,6 @@ __all__ = [
     Resource,
     BaseModel,
     Model,
-    field
+    field,
+    relation
 ]

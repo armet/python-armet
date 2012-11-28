@@ -3,10 +3,9 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from .. import fields
 
 
-def field(path=None, collection=False):
+def field(path=None, collection=None):
     """Used in the `include` option to supply additional fields.
 
     @param[in] path
@@ -19,3 +18,9 @@ def field(path=None, collection=False):
         returned on `None` (null or []), etc.
     """
     return (path, collection)
+
+
+def relation(relation, path=None, embed=False, local=False):
+    """Used in the `relations` option to relate fields with other resources.
+    """
+    return (relation, path, embed, local)

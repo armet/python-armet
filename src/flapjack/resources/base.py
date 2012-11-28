@@ -9,6 +9,7 @@ import logging
 import six
 from six import string_types
 from django.conf.urls import patterns, url
+from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import fields
 from .. import utils, http, exceptions
@@ -140,7 +141,7 @@ class BaseResource(object):
     relations = None
 
     #! Cache of the path to field accessor translations.
-    _cache_path_field = {}
+    _cache_path = {}
 
     @classmethod
     def slug(cls, obj):
@@ -326,19 +327,81 @@ class BaseResource(object):
         # Prepare just the singular value and return it.
         return prepare(data)
 
+    def generic_prepare(self, obj, name, value):
+        relation = self._fields[name].relation
+        if relation is not None:
+            # We have a relation; expand it
+            cls, path, embed, local = relation
+
+            if not embed:
+                if not local:
+                    try:
+                        # We're non-local so attempt to resolve it
+                        path = '/'.join(path.split('__')) if path else None
+                        reverser = lambda x, p=path: cls.reverse(x, p)
+
+                    except urlresolvers.NoReverseMatch:
+                        # No URL found; switch to local
+                        local = True
+                        relation[3] = True
+
+                if local:
+                    # We're local or forced to be local -- resolve us
+                    path = ([name] + path.split('__')) if path else [name]
+
+                    if not isinstance(value, collections.Mapping):
+                        # This is a sequence of items; we need to get at the
+                        # individual item.
+                        # path.append(cls.slug(value))
+                        reverser = lambda x, p=path: \
+                            self.reverse(x, '/'.join(p + [str(cls.slug(x))]))
+
+                    else:
+                        # Noramlly now
+                        reverser = lambda x, p='/'.join(path): \
+                            self.reverse(x, p)
+
+                # Execute reversers across.
+                value = utils.for_all(value, reverser)
+
+            else:
+                # We're embedded; inflate
+                # Prepare what we have using the related resource
+                resource_obj = cls(self.request, path=path)
+                value = resource_obj.prepare(value)
+
+        # Return whatever we have
+        return value
+
     def item_prepare(self, item):
         """Prepares an item for transmission."""
         # Initialize the object that will hold the item.
         obj = {}
 
         # Set the resource uri on the object.
+        # TODO: This must be able to support to some kind of local-based
+        #        URI just as a relation with `local=True`.
         if self.resource_uri is not None:
             obj[self.resource_uri] = self.reverse(item)
+
+        if self.path and self.path not in self._cache_path:
+            # No path field has been created yet; create one
+            self._cache_path[self.path] = (
+                    fields.Field(path=self.path),
+                    self.path.split('__')[0]
+                )
+
+        # Retrieve the cached path: (field, segment#0)
+        path_field, seg0 = self._cache_path.get(self.path, (None, None))
 
         # Iterate through the fields and build the object from the item.
         for name, field in six.iteritems(self._fields):
             if not field.visible:
                 # Field is not visible on the response object.
+                continue
+
+            if seg0 and seg0 != name:
+                # Not what we are looking for; go away.
                 continue
 
             # Apply the field accessor and request the value of the item.
@@ -347,20 +410,13 @@ class BaseResource(object):
             # Set value on object after preparing it
             obj[name] = field.prepare(self, item, value)
 
-        if not self.path:
-            # No need to navigate the object; return what we've constructed.
-            return obj
+        if path_field:
+            # Navigate through some hoops to return from what we construct.
+            # Utilize the field accessor to resolve the resource path.
+            obj = path_field.accessor(obj)
 
-        # Navigate through some hoops to return from what we construct.
-        if self.path not in self._cache_path_field:
-            # No path field has been created yet; create one
-            self._cache_path_field[self.path] = fields.Field(path=self.path)
-
-        # Utilize the field accessor to resolve the resource path.
-        value = self._cache_path_field[self.path].accessor(obj)
-
-        # Return the resolve path instead.
-        return value
+        # Return the resultant object.
+        return obj
 
     def clean(self, data):
         """Cleans data from the request for processing."""
@@ -381,6 +437,9 @@ class BaseResource(object):
     #! Identifier to access the resource individualy.
     _URL_IDENTIFIER = 1
 
+    #! Identifier to access the resource individualy with a path.
+    _URL_PATH = 0
+
     @classmethod
     @utils.memoize
     def _url_format(cls, identifier):
@@ -398,12 +457,13 @@ class BaseResource(object):
         return '{}{}'.format(cls._prefix, url)
 
     @classmethod
-    def reverse(cls, value=None):
+    def reverse(cls, value=None, path=None):
         """Reverses a URL for the resource or for the passed object."""
         # Not using `iri_to_uri` here; therefore only ASCII is permitted.
         if value is not None:
+            if path is not None:
+                return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
             return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
-
         return cls._url_format(cls._URL)
 
     # TODO: def resolve(self):
