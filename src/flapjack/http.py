@@ -6,7 +6,6 @@ authenticate access to a resource endpoint.
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from django import http
-from .constants import *
 
 
 class Response(http.HttpResponse):
