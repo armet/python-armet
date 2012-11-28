@@ -10,6 +10,7 @@ import six
 from six import string_types
 from django.conf.urls import patterns, url
 from django.views.decorators.csrf import csrf_exempt
+from . import fields
 from .. import utils, http, exceptions
 
 
@@ -126,6 +127,9 @@ class BaseResource(object):
     #! Authentication protocol(s) to use to authenticate access to
     #! the resource.
     authentication = ('flapjack.authentication.Authentication',)
+
+    #! Cache of the path to field accessor translations.
+    _cache_path_field = {}
 
     @classmethod
     def slug(cls, obj):
@@ -332,33 +336,20 @@ class BaseResource(object):
             # Set value on object after preparing it
             obj[name] = field.prepare(self, item, value)
 
-        # if not self.path:
-        #     # No need to navigate the object; return what we've constructed.
-        #     return obj
+        if not self.path:
+            # No need to navigate the object; return what we've constructed.
+            return obj
 
         # Navigate through some hoops to return from what we construct.
-        # for segment in self.path.split('__'):
-        #     try:
-        #         # Attempt to garner access into the object
-        #         # TODO: Optimize object access here
-        #         try:
-        #             # This is likely still a dictionary
-        #             obj = obj[segment]
+        if self.path not in self._cache_path_field:
+            # No path field has been created yet; create one
+            self._cache_path_field[self.path] = fields.Field(path=self.path)
 
-        #         except KeyError:
-        #             # Well; here goes nothing
-        #             obj = getattr(obj, segment)
+        # Utilize the field accessor to resolve the resource path.
+        value = self._cache_path_field[self.path].accessor(obj)
 
-        #     except AttributeError as ex:
-        #         # Denied; ouch
-        #         logger.debug(ex, exc_info=True)
-
-        #         # We are not part of the URL here so we return `None` to
-        #         # represent that we could not find an object.
-        #         return None
-
-        # Just return the object.
-        return obj
+        # Return the resolve path instead.
+        return value
 
     def clean(self, data):
         """Cleans data from the request for processing."""

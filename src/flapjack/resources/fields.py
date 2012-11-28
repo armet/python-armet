@@ -27,9 +27,6 @@ class Field(object):
         #! from a obj.
         self.accessors = kwargs.get('accessors', [])
 
-        #! Stored segments that correspond to lazily evaluated accessors.
-        self.segments = kwargs.get('segments')
-
         #! Preparation function that is linked to the class object of the
         #! instantiating resource.
         self.prepare = kwargs.get('prepare')
@@ -37,14 +34,17 @@ class Field(object):
         #! Path of the field; storing for interesting purposes.
         self.path = kwargs.get('path')
 
+        #! Stored segments that correspond to lazily evaluated accessors.
+        self._segments = self.path.split('__')
+
     def accessor(self, value):
         for accessor in self.accessors:
             # Iterate and access the entire field path
             value = accessor(value)
 
-        if value is not None and self.segments:
+        if value is not None and self._segments:
             depth = 0
-            for segment in self.segments:
+            for segment in self._segments:
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -58,7 +58,7 @@ class Field(object):
                 depth += 1
 
             # Remove segments used
-            self.segments = self.segments[depth:]
+            self._segments = self._segments[depth:]
 
         # Return what we've accessed
         return value

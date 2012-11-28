@@ -206,7 +206,6 @@ class DeclarativeResource(type):
             filterable=_is_field_filterable(self, name),
             collection=collection,
             editable=editable,
-            segments=segments,
             prepare=prepare,
             path=path if path else name
         )
