@@ -2,22 +2,32 @@
 """ Defines the RESTful interface for this sample project.
 """
 from flapjack import resources
-from flapjack.resources import field
+from flapjack.resources import field, relation
 from . import forms
+
+
+class Choice(resources.Model):
+    form = forms.Choice
 
 
 class Poll(resources.Model):
     form = forms.Poll
 
     include = {
-        'published_recently': field('published_recently'),
-        'forty_two': field('forty_two'),
         'choices': field('choice_set')
     }
 
-    def prepare_question(self, obj, value):
-        return value.encode('base64')
+    relations = {
+        'choices': relation(Choice, embed=False, local=True)
+    }
 
 
-class Choice(resources.Model):
-    form = forms.Choice
+class Poll2(Poll):
+    include = {
+        'forty_two': field('forty_two'),
+    }
+
+    exclude = ('booths',)
+
+    relations = {
+    }

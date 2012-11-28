@@ -242,6 +242,13 @@ class BaseResource(object):
         #! Path of the resource.
         self.path = kwargs.get('path')
 
+        #! Instance of the parent resource (if navigation was resultant of a
+        #! relation.
+        self.parent = kwargs.get('parent')
+
+        #! Whether internal URIs are local to the parent or not.
+        self.local = kwargs.get('local')
+
     def dispatch(self):
         """
         """
@@ -341,7 +348,8 @@ class BaseResource(object):
                         reverser = lambda x, p=path: cls.reverse(x, p)
 
                     except urlresolvers.NoReverseMatch:
-                        # No URL found; switch to local
+                        # No URL found; force switch to local
+                        # TODO: Log some warning message perhaps ?
                         local = True
                         relation[3] = True
 

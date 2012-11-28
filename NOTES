@@ -1,20 +1,5 @@
-# Fully cached-to-hell and called for each field added
-cls.add_field(name, *args)
-
-# Allow both of the following:
-include = {
-    'choices': field('choice_set')
-}
-
-include = [
-    'choices'
-]
-
-# is equiv. to
-
-include = {
-    'choices': (None, None)
-}
+# General logic with relations --
+  # paths are dealt with by creating
 
 
 # Allow the following:

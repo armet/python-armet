@@ -84,14 +84,6 @@ def for_all(value, method, test=None):
 
         return value
 
-    # if isinstance(value, collections.Sequence):
-    #     values = []
-    #     for index, item in enumerate(value):
-    #         values.append(method(item) if test is None or
-                # test(item) else item)
-
-    #     return values
-
     try:
         values = []
         for index, item in enumerate(value):

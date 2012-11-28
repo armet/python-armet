@@ -18,5 +18,6 @@ urlpatterns = patterns('',
 
     # Resources
     url(r'^api/', include(api.Poll.urls)),
+    url(r'^api/', include(api.Poll2.urls)),
     url(r'^api/', include(api.Choice.urls))
 )
