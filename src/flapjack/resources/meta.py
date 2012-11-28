@@ -36,6 +36,19 @@ def _has(name, attrs, bases):
     return False
 
 
+def _collect(name, attrs, bases):
+    """Merges the hashes for all bases plus the current class."""
+    value = {}
+    if name in attrs and attrs[name] is not None:
+        value.update(**attrs[name])
+
+    for base in bases:
+        if name in base.__dict__ and base.__dict__[name] is not None:
+            value.update(**base.__dict__[name])
+
+    return value
+
+
 def _config(self, name, config, attrs, bases):
     """Overrides a property by a config option if it isn't specified."""
     if not _has(name, attrs, bases):
@@ -244,6 +257,10 @@ class DeclarativeResource(type):
             # Six contrivance; we don't care
             return super(DeclarativeResource, self).__init__(
                 name, bases, attrs)
+
+        # Collect and merge all hashes for `include` and `relations`
+        self.include = _collect('include', attrs, bases)
+        self.relations = _collect('relations', attrs, bases)
 
         # Initialize our ordered fields dictionary.
         self._fields = collections.OrderedDict()

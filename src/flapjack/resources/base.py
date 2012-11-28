@@ -128,6 +128,17 @@ class BaseResource(object):
     #! the resource.
     authentication = ('flapjack.authentication.Authentication',)
 
+    #! Dictionary of the relations for this resource; maps the names of the
+    #! fields to the resources they relate to. The key is the name of the
+    #! field on the resource; the value is a call to the `resources.relation`
+    #! method found in resources.helpers (and imported into resources).
+    #!
+    #! @example
+    #!     relations = {
+    #!         'melon': relation('path.to.resource'),
+    #!     }
+    relations = None
+
     #! Cache of the path to field accessor translations.
     _cache_path_field = {}
 
