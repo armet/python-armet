@@ -1,26 +1,11 @@
-# General logic with relations --
-  # paths are dealt with by creating
+# 2. Only thing left with relations is to allow for
+     `resource_cls(local=True, parent=self)` -- at least this is what I think
+     would allow resource_obj.reverse to reverse properly with a local flag.
+     Of course this would need to be recursive in order to retrieve deeply
+     nested resources ala `/poll/1/choices/23/user/username`
 
-
-# Allow the following:
-# Text can be one of ::>
-    # 'app.Resource'
-    # 'full.path.to.ResourceClass'
-    # ResourceClass
-
-# embed does a drop-in instead of a reversal with URL
-
-# path navigates the relation when preparing it
-
-relations = {
-    'choices': relation('polls.Choice', path=None, embed=False)
-}
-
-# equiv. to
-
-relations = {
-    'choices': ('polls.Choice', None, False)
-}
+# 2.5. Nearly forgot -- the ability to resolve something like the example
+       above (`/poll/1/choices/23/user/username`) aka transversal.
 
 # 3. relations are automagically created and pointed to the canonical resource
 #    for the model; if none exists, a resource is created
@@ -36,6 +21,8 @@ relations = {
 # 8. Reducing the size of the base resource
 
 # 9. merging + cleaning up the test suite
+
+--- GOAL! for wednesday night
 
 # 10. pagination
 
