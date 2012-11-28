@@ -4,3 +4,4 @@ from test_choice import *
 from test_choice_xml import *
 from test_filters import *
 from test_filters_or import *
+from test_filter_and import *
