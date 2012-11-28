@@ -170,7 +170,10 @@ class DeclarativeResource(type):
         """Sets the field with the passed name on the resource."""
         if field is None:
             # Attempt to get the field object from the form.
-            field = self.form.base_fields.get(name)
+            try:
+                field = self.form.base_fields.get(name) #Possible AttributeError, yeah, riiight there
+            except AttributeError:
+                pass
 
         if cls is None:
             # Determine the field class from the field object (if there isn't a
