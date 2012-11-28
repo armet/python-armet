@@ -1,6 +1,5 @@
 """..
 """
-from six.moves import http_client
 from . import http, encoders
 
 
@@ -32,11 +31,11 @@ class Error(Exception):
 
 
 class BadRequest(Error):
-    status = http_client.BAD_REQUEST
+    status = http.client.BAD_REQUEST
 
 
 class Unauthorized(Error):
-    status = http_client.UNAUTHORIZED
+    status = http.client.UNAUTHORIZED
 
     def __init__(self, realm):
         super(Unauthorized, self).__init__(headers={
@@ -44,31 +43,31 @@ class Unauthorized(Error):
 
 
 class Forbidden(Error):
-    status = http_client.FORBIDDEN
+    status = http.client.FORBIDDEN
 
 
 class NotFound(Error):
-    status = http_client.NOT_FOUND
+    status = http.client.NOT_FOUND
 
 
 class NotAcceptable(Error):
-    status = http_client.NOT_ACCEPTABLE
+    status = http.client.NOT_ACCEPTABLE
 
 
 class MethodNotAllowed(Error):
-    status = http_client.METHOD_NOT_ALLOWED
+    status = http.client.METHOD_NOT_ALLOWED
 
     def __init__(self, allowed):
         super(MethodNotAllowed, self).__init__(headers={'Allow': allowed})
 
 
 class UnsupportedMediaType(Error):
-    status = http_client.UNSUPPORTED_MEDIA_TYPE
+    status = http.client.UNSUPPORTED_MEDIA_TYPE
 
 
 class NotImplemented(Error):
-    status = http_client.NOT_IMPLEMENTED
+    status = http.client.NOT_IMPLEMENTED
 
 
 class AuthenticationRequired(Error):
-    status = http_client.AUTHENTICATION_REQUIRED
+    status = http.client.NETWORK_AUTHENTICATION_REQUIRED
