@@ -161,7 +161,6 @@ class BaseResource(object):
                 # model resources).
                 return obj.pk
         """
-        pass
 
     @classmethod
     def url(cls, path=''):
@@ -197,8 +196,7 @@ class BaseResource(object):
             resource = cls.traverse(segments)
 
             # Instantiate the resource
-            obj = resource(
-                request,
+            obj = resource(request,
                 identifier=kwargs.get('identifier'),
                 format=kwargs.get('format'))
 
@@ -340,20 +338,16 @@ class BaseResource(object):
             # We have a relation; expand it
             cls, path, embed, local = relation
 
+            # Instantiat a reference to the relation
+            obj = cls(self.request, path=path)
+
             if not embed:
                 if not local:
-                    try:
-                        # We're non-local so attempt to resolve it
-                        path = '/'.join(path.split('__')) if path else None
-                        reverser = lambda x, p=path: cls.reverse(x, p)
+                    # We're non-local so attempt to resolve it
+                    path = '/'.join(path.split('__')) if path else None
+                    reverser = lambda x, p=path: obj.reverse(x, p)
 
-                    except urlresolvers.NoReverseMatch:
-                        # No URL found; force switch to local
-                        # TODO: Log some warning message perhaps ?
-                        local = True
-                        relation[3] = True
-
-                if local:
+                else:
                     # We're local or forced to be local -- resolve us
                     path = ([name] + path.split('__')) if path else [name]
 
@@ -369,14 +363,18 @@ class BaseResource(object):
                         reverser = lambda x, p='/'.join(path): \
                             self.reverse(x, p)
 
-                # Execute reversers across.
-                value = utils.for_all(value, reverser)
+                try:
+                    # Execute reversers across.
+                    value = utils.for_all(value, reverser)
+
+                except urlresolvers.NoReverseMatch:
+                    # No URL found; force switch to local perhaps ?
+                    pass
 
             else:
                 # We're embedded; inflate
                 # Prepare what we have using the related resource
-                resource_obj = cls(self.request, path=path)
-                value = resource_obj.prepare(value)
+                value = obj.prepare(value)
 
         # Return whatever we have
         return value
@@ -472,17 +470,23 @@ class BaseResource(object):
 
         return '{}{}'.format(cls._prefix, url)
 
-    @classmethod
-    def reverse(cls, value=None, path=None):
+    # @classmethod
+    def reverse(self):  #   , value=None, path=None):
         """Reverses a URL for the resource or for the passed object."""
-        # Not using `iri_to_uri` here; therefore only ASCII is permitted.
-        if value is not None:
-            if path is not None:
-                return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
+        # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
+        if self.identifier is None:
+            # Accessing the resource as a whole; simply return us
+            return self._url_format(self._URL)
 
-            return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
+        # else:
 
-        return cls._url_format(cls._URL)
+        # if value is not None:
+        #     if path is not None:
+        #     return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
+
+        #     return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
+
+        # return cls._url_format(cls._URL)
 
     # TODO: def resolve(self):
 
