@@ -336,12 +336,10 @@ class FiltersAndTest(base.BaseTest):
 
     def test_id_startswith_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__startswith=1,2')
+        query_string = urllib.urlencode([('id__startswith', 1), ('id__exact', 1)])
+        response = self.c.get(self.endpoint + query_string)
         content = self.assertValidJSONResponse(response)
         self.assertEqual(1, content[0]['id'])
-        self.assertEqual(10, content[1]['id'])
-        self.assertEqual(11, content[2]['id'])
-        self.assertEqual(12, content[3]['id'])
 
     def test_id_startswith_not_filter(self):
         """Gets the list view in json format"""
