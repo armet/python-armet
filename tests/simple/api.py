@@ -17,17 +17,8 @@ class Poll(resources.Model):
         'choices': field('choice_set')
     }
 
-    relations = {
-        'choices': relation(Choice, embed=False, local=True)
-    }
-
-
-class Poll2(Poll):
-    include = {
-        'forty_two': field('forty_two'),
-    }
-
     exclude = ('booths',)
 
     relations = {
+        'choices': relation(Choice, local=True)
     }
