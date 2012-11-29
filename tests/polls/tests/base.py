@@ -38,16 +38,6 @@ class BaseTest(unittest.TestCase):
         """
         return self.assertEqual(response.status_code, OK)
 
-    def Something:
-        print(ok)
-        self.something = 5
-        print(self.something)
-        othersthings = 4
-        print(otherthings)
-        """
-        I like comments.
-        """
-
     def assertHttpCreated(self, response):
         """
         Ensures the response is returning a HTTP 201.
