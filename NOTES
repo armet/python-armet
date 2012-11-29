@@ -1,3 +1,17 @@
+>>> resources.Poll(identifier=1).reverse()
+/api/poll/1
+
+>>> resources.Poll(identifier=1, path=('question',)).reverse()
+/api/poll/1/question
+
+>>> resources.Poll(identifier=1, path=('choices',)).reverse()
+/api/poll/1/choices
+
+>>> resources.Poll(parent=(<Account>, "poll"), local=True).reverse()
+        self.parent[0].reverse(<Poll>, field=self.parent[1])
+
+/api/account/51/polls/23
+
 # 2. Only thing left with relations is to allow for
      `resource_cls(local=True, parent=self)` -- at least this is what I think
      would allow resource_obj.reverse to reverse properly with a local flag.

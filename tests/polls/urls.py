@@ -5,19 +5,25 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from . import server, api
+from flapjack.api import Api
+from . import api
 
 
-# Execute the server startup sequence
-server.startup()
+# Discover administration modules
+admin.autodiscover()
+
+# Collect API endpoints
+# TODO: Replace with interface.autodiscover('polls')
+interface = Api('v0')
+interface.register(api.Choice)
+interface.register(api.Poll)
+
 
 # URL configuration
 urlpatterns = patterns('',
     # Administration
     url(r'^admin/', include(admin.site.urls)),
 
-    # Resources
-#    url(r'^api/', include(api.Poll.urls)),
-    url(r'^api/', include(api.apiv6.urls)),
-    # url(r'^api/', include(api.Booth.urls))
+    # Application interface
+    url(r'^api/', include(interface.urls))
 )

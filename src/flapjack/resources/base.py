@@ -458,10 +458,18 @@ class BaseResource(object):
         #       function to just do the url reversing `halfway` but we'll
         #       see if that can make it in.
         # TODO: Perhaps move this and the url reverse speed up bits out ?
-        urlmap = cls._resolver.reverse_dict.getlist(cls.view)[identifier][0][0]
+        try:
+            urlmap = cls._resolver.reverse_dict.getlist(
+                cls.view)[identifier][0][0]
+
+        except IndexError:
+            # No found reversal; die
+            raise urlresolvers.NoReverseMatch()
+
         url = urlmap[0]
         for param in urlmap[1]:
             url = url.replace('({})'.format(param), '')
+
         return '{}{}'.format(cls._prefix, url)
 
     @classmethod
@@ -471,7 +479,9 @@ class BaseResource(object):
         if value is not None:
             if path is not None:
                 return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
+
             return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
+
         return cls._url_format(cls._URL)
 
     # TODO: def resolve(self):
