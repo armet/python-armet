@@ -137,23 +137,7 @@ NOSE_ARGS = [
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'simple': {
-            'format': '%(levelname)s %(message)s'
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple'
-        },
-    },
-    'loggers': {
-        'flapjack': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'filters': []
-        },
-    }
+    'filters': {},
+    'handlers': {},
+    'loggers': {}
 }
