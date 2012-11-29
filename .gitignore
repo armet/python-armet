@@ -7,3 +7,7 @@
 
 # Database files
 *.sqlite
+
+# Coverage reports
+/cover
+.coverage
