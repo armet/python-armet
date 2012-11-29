@@ -343,20 +343,22 @@ class FiltersAndTest(base.BaseTest):
 
     def test_id_startswith_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__startswith__not=1,2')
+        query_string = urllib.urlencode([('id__startswith__not', 1), ('id__exact__not', 1)])
+        response = self.c.get(self.endpoint + query_string)
         content = self.assertValidJSONResponse(response)
         self.assertNotEqual(1, content[0]['id'])
-        self.assertNotEqual(2, content[0]['id'])
 
     def test_choice_startswith_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__startswith=y,yes')
+        query_string = urllib.urlencode([('choice_text__startswith', 'y'), ('choice_text__startswith', 'ye')])
+        response = self.c.get(self.endpoint + query_string)
         content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
 
     def test_choice_startswith_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__startswith__not=y,yes')
+        query_string = urllib.urlencode([('choice_text__startswith__not', 'y'), ('choice_text__startswith__not', 'ye')])
+        response = self.c.get(self.endpoint + query_string)
         content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
 
@@ -662,20 +664,17 @@ class FiltersAndTest(base.BaseTest):
 #     #     self.assertNotEqual(0, content[0]['votes'])
 
 #     ##iregex
-     # def test_choice_iregex_filter(self):
-    #     """Gets the list view in json format"""
-    #     response = self.c.get('/api/v1/choice.json?\
-    #         choice_text__iregex=[y][e][s]')
-    #     self.assertHttpOK(response)
-    #     self.assertValidJSON(response)
-    #     content = self.deserialize(response, type='json')
-    #     self.assertEqual('yes', content[0]['choice_text'])
 
-    # def test_choice_iregex_not_filter(self):
-    #     """Gets the list view in json format"""
-    #     response = self.c.get('/api/v1/choice.json?\
-    #         choice_text__iregex__not=[y][e][s]')
-    #     self.assertHttpOK(response)
-    #     self.assertValidJSON(response)
-    #     content = self.deserialize(response, type='json')
-    #     self.assertNotEqual('yes', content[0]['choice_text'])
+    def test_choice_iregex_filter(self):
+        """Gets the list view in json format"""
+        query_string = urllib.urlencode([('choice_text__iregex', '[y][e][s]'), ('choice_text__iregex', '[sdfky][jklbe][cslz]')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
+        self.assertEqual('yes', content[0]['choice_text'])
+
+    def test_choice_iregex_not_filter(self):
+        """Gets the list view in json format"""
+        query_string = urllib.urlencode([('choice_text__iregex__not', '[y][e][s]'), ('choice_text__iregex__not', '[sdfky][jklbe][cslz]')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
+        self.assertNotEqual('yes', content[0]['choice_text'])
