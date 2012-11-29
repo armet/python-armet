@@ -20,8 +20,12 @@ class BaseModel(base.BaseResource):
     def prefetch_related(cls, queryset, prefix=None):
         """Performs a `prefetch_related` on all possible fields."""
         if not cls._prefetch_related_paths and len(queryset) >= 1:
-            # Get sorted list of path elements
-            field_paths = [x.path for x in six.itervalues(cls._fields)]
+            # Get sorted list of visibile path elements
+            field_paths = []
+            for field in six.itervalues(cls._fields):
+                if field.visible:
+                    field_paths.append(field.path)
+
             field_paths.sort(reverse=True)
 
             # Cache of what to prefetch has not been built; build it.
