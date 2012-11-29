@@ -14,7 +14,7 @@ admin.autodiscover()
 
 # Collect API endpoints
 # TODO: Replace with interface.autodiscover('polls')
-interface = Api('v0')
+interface = Api('v1')
 interface.register(api.Choice)
 interface.register(api.Poll)
 

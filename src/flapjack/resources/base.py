@@ -564,7 +564,7 @@ class BaseResource(object):
     def _determine_encoder(self):
         """Determine the encoder to use according to the request object.
         """
-        accept = self.request.META['HTTP_ACCEPT']
+        accept = self.request.META.get('HTTP_ACCEPT', '*/*')
         if self.format is not None:
             # An explicit form was supplied; attempt to get it directly
             name = self.format.lower()
