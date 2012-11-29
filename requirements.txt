@@ -2,3 +2,4 @@ django
 python-mimeparse
 six
 lxml
+python-magic
