@@ -3,3 +3,4 @@ python-mimeparse
 six
 lxml
 python-magic
+python-dateutil
