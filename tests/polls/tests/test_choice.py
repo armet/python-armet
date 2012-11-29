@@ -5,13 +5,9 @@ import json
 
 
 class ChoiceTest(base.BaseTest):
-    """Unit Tests for the Are You A Tiger choice object"""
 
-    fixtures = ['initial_data']
-
-    def setUp(self):
-        """Set up the django HTTP client"""
-        self.c = Client()
+    # def setUp(self):
+    #     pass
 
     def test_list_view_json(self):
         """Gets the list view in json format"""

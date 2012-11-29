@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """ Defines base project settings.
 """
-from __future__ import print_function, unicode_literals
-from __future__ import absolute_import, division
+# from __future__ import print_function, unicode_literals
+# from __future__ import absolute_import, division
 from os import path
 
 
@@ -117,7 +117,12 @@ INSTALLED_APPS = (
 
     # Project
     PROJECT_NAME,
+
+    # Test runner
+    'django_nose'
 )
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.

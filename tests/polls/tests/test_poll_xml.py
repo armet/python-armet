@@ -6,13 +6,9 @@ from datetime import datetime
 
 
 class TigerTestXML(base.BaseTest):
-    """Unit Tests for the Are You A Tiger poll object"""
 
-    fixtures = ['initial_data']
-
-    def setUp(self):
-        """Set up the django HTTP client"""
-        self.c = Client()
+    # def setUp(self):
+    #     pass
 
     def test_list_view_xml(self):
         """Gets the list view in xml format"""
