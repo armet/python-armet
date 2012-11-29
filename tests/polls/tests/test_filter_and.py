@@ -1,5 +1,6 @@
 from django.test.client import Client
 from . import base
+import urllib
 # import json
 # from flapjack import encoders
 
@@ -12,144 +13,129 @@ class FiltersAndTest(base.BaseTest):
     def setUp(self):
         """Set up the django HTTP client"""
         self.c = Client()
+        self.endpoint = '/api/v1/choice.json?'
 
     def test_id_exact_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id=1&choice_text=yes')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id', '1'), ('choice_text', 'yes')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(1, content[0]['id'])
         self.assertEqual('yes', content[0]['choice_text'])
 
     def test_id_exact_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__not=1&choice_text__not=yes')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__not', '1'), ('choice_text__not', 'yes')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual(1, content[0]['id'])
         self.assertNotEqual('yes', content[0]['choice_text'])
 
     def test_choice_exact_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text=yes&votes=3&id=1')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id', '1'), ('choice_text', 'yes'), ('votes', 3)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
         self.assertEqual(3, content[0]['votes'])
         self.assertEqual(1, content[0]['id'])
 
     def test_choice_exact_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__not=yes&id__not=1')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__not', '1'), ('choice_text__not', 'yes')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
         self.assertNotEqual(1, content[0]['id'])
 
     def test_poll_exact_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?poll=2&id=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id', 5), ('poll', 2)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('/api/v1/poll/2', content[0]['poll'])
         self.assertEqual(5, content[0]['id'])
 
     def test_poll_exact_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?poll__not=2&id__not=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__not', 5), ('poll__not', 2)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('/api/v1/poll/2', content[0]['poll'])
         self.assertNotEqual(5, content[0]['id'])
 
     def test_votes_exact_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes=0&id=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes', 0), ('id', 5)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(0, content[0]['votes'])
         self.assertEqual(5, content[0]['id'])
 
     def test_votes_exact_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes__not=0&id__not=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes__not', 0), ('id__not', 5)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual(0, content[0]['votes'])
         self.assertNotEqual(5, content[0]['id'])
 
     def test_choice_iexact_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__iexact=Yes&id=1')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__iexact', 'yes'), ('id__iexact', 1)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
         self.assertEqual(1, content[0]['id'])
 
     def test_choice_iexact_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__iexact__not=YeS&id__not=1')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__iexact__not', 'yes'), ('id__iexact__not', 1)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
         self.assertNotEqual(1, content[0]['id'])
 
     def test_choice_contains_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__contains=ye&choice_text__contains=s')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__contains', 'ye'), ('choice_text__contains', 's')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
 
     def test_choice_contains_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__contains__not=ye&choice_text__contains__not=s')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__contains__not', 'ye'), ('choice_text__contains__not', 's')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
 
     def test_choice_icontains_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__icontains=yE&choice_text__icontains=S&choice_text__icontains=E')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__icontains', 'yE'), ('choice_text__icontains', 'S'), ('choice_text__icontains', 'E')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
 
     def test_choice_icontains_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?choice_text__icontains__not=yE&choice_text__icontains__not=S&choice_text__icontains__not=E')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('choice_text__icontains__not', 'yE'), ('choice_text__icontains__not', 'S'), ('choice_text__icontains__not', 'E')])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
 
     def test_id_gt_and_lt_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__gt=2&id__lt=4')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__gt', 2), ('id__lt', 4)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(3, content[0]['id'])
 
     def test_id_gt_and_lt_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__gt__not=3&id__lt__not=2')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__gt__not', 3), ('id__lt__not', 2)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(3, content[0]['id'])
 
 # #TODO: Adam do this please!
@@ -187,34 +173,30 @@ class FiltersAndTest(base.BaseTest):
 
     def test_votes_gt_and_lt_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes__gt=4&votes__lt=6')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes__gt', 4), ('votes__lt', 6)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(5, content[0]['votes'])
 
     def test_votes_gt_and_lt_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes__gt__not=5&votes__lt__not=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes__gt__not', 5), ('votes__lt__not', 5)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(5, content[0]['votes'])
 
     def test_id_gte_and_lte_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__gte=5&id__lte=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__gte', 5), ('id__lte', 5)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(5, content[0]['id'])
 
     def test_id_gte_and_lte_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__gte__not=6&id__lte__not=4')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__gte__not', 6), ('id__lte__not', 4)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(5, content[0]['id'])
 
 # #TODO: Adam do this please!
@@ -252,40 +234,36 @@ class FiltersAndTest(base.BaseTest):
 
     def test_votes_gte_and_lte_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes__gte=5&votes__lte=5')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes__gte', 5), ('votes__lte', 5)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertTrue(content[0]['votes'] >= 5)
         self.assertTrue(content[0]['votes'] <= 5)
         self.assertEqual(5, content[0]['votes'])
 
     def test_votes_gte_and_lte_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?votes__gte__not=6&votes__lte__not=4')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('votes__gte__not', 6), ('votes__lte__not', 4)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertTrue(content[0]['votes'] < 6)
         self.assertTrue(content[0]['votes'] > 4)
         self.assertEqual(5, content[0]['votes'])
 
     def test_id_lt_and_gt_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__lt=4&id__gt=2')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__lt', 4), ('id__gt', 2)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertTrue(content[0]['id'] < 4)
         self.assertTrue(content[0]['id'] > 2)
         self.assertEqual(3, content[0]['id'])
 
     def test_id_lt_and_gt_not_filter(self):
         """Gets the list view in json format"""
-        response = self.c.get('/api/v1/choice.json?id__lt__not=3&id__gt__not=3')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        query_string = urllib.urlencode([('id__lt__not', 3), ('id__gt__not', 3)])
+        response = self.c.get(self.endpoint + query_string)
+        content = self.assertValidJSONResponse(response)
         self.assertTrue(content[0]['id'] >= 3)
         self.assertTrue(content[0]['id'] >= 3)
         self.assertEqual(3, content[0]['id'])
@@ -359,9 +337,7 @@ class FiltersAndTest(base.BaseTest):
     def test_id_startswith_filter(self):
         """Gets the list view in json format"""
         response = self.c.get('/api/v1/choice.json?id__startswith=1,2')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        content = self.assertValidJSONResponse(response)
         self.assertEqual(1, content[0]['id'])
         self.assertEqual(10, content[1]['id'])
         self.assertEqual(11, content[2]['id'])
@@ -370,26 +346,20 @@ class FiltersAndTest(base.BaseTest):
     def test_id_startswith_not_filter(self):
         """Gets the list view in json format"""
         response = self.c.get('/api/v1/choice.json?id__startswith__not=1,2')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual(1, content[0]['id'])
         self.assertNotEqual(2, content[0]['id'])
 
     def test_choice_startswith_filter(self):
         """Gets the list view in json format"""
         response = self.c.get('/api/v1/choice.json?choice_text__startswith=y,yes')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        content = self.assertValidJSONResponse(response)
         self.assertEqual('yes', content[0]['choice_text'])
 
     def test_choice_startswith_not_filter(self):
         """Gets the list view in json format"""
         response = self.c.get('/api/v1/choice.json?choice_text__startswith__not=y,yes')
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, type='json')
+        content = self.assertValidJSONResponse(response)
         self.assertNotEqual('yes', content[0]['choice_text'])
 
 # #TODO: Adam Voliva
@@ -694,7 +664,7 @@ class FiltersAndTest(base.BaseTest):
 #     #     self.assertNotEqual(0, content[0]['votes'])
 
 #     ##iregex
-    # def test_choice_iregex_filter(self):
+     # def test_choice_iregex_filter(self):
     #     """Gets the list view in json format"""
     #     response = self.c.get('/api/v1/choice.json?\
     #         choice_text__iregex=[y][e][s]')
