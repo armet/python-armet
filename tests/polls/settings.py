@@ -122,7 +122,15 @@ INSTALLED_APPS = (
     'django_nose'
 )
 
+# Use nose to run all tests
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+# Tell nose to measure coverage on the 'foo' and 'bar' apps
+NOSE_ARGS = [
+    '--with-coverage',
+    '--cover-html',
+    '--cover-package=flapjack.*,flapjack',
+]
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
