@@ -162,24 +162,38 @@ class BaseResource(object):
                 return obj.pk
         """
 
-    @classmethod
-    def url(cls, path=''):
-        """Builds a url pattern using the passed `path` for this resource."""
-        return url(
-            r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name, path),
-            cls.view,
-            name=cls.url_name,
-            kwargs={'resource': cls.name},
-        )
-
     @utils.classproperty
     @utils.memoize
     def urls(cls):
         """Builds the complete URL configuration for this resource."""
+        # Base regex for the url format; includes the `.encoder`
+        # functionality.
+        regex = r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name)
+
+        # Simple kwargs so that the URL reverser has some more to go off of
+        kwargs = {'resource': cls.name}
+
+        # Instantiate a new derived resource of ourself to use in the binding
+        # This localizes each mount point of this resource to its own
+        # class object.
+        obj = type(cls.name, (cls,), {})
+
+        # Collect and return URL patterns
         return patterns('',
-            cls.url(),
-            cls.url(r'/(?P<identifier>[^/]+?)'),
-            cls.url(r'/(?P<identifier>[^/]+?)/(?P<path>.*?)'),
+            # List access; eg `/poll`
+            url(regex.format(''), obj.view,
+                name=cls.url_name,
+                kwargs=kwargs),
+
+            # Singular access; eg `/poll/51`
+            url(regex.format(r'/(?P<slug>[^/]+?)'), obj.view,
+                name=cls.url_name,
+                kwargs=kwargs),
+
+            # Sub access; eg `/poll/1/choices/61/choice_text`
+            url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'), obj.view,
+                name=cls.url_name,
+                kwargs=kwargs),
         )
 
     @classmethod
