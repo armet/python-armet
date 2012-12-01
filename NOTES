@@ -12,6 +12,17 @@
 
 /api/account/51/polls/23
 
+
+
+## Reversal notes
+# Is it worth it for Resource.reverse() to work on a class object?
+resources.Poll.reverse()
+
+
+>>> resources.Poll().resource_uri
+/api/poll/1
+
+
 # 2. Only thing left with relations is to allow for
      `resource_cls(local=True, parent=self)` -- at least this is what I think
      would allow resource_obj.reverse to reverse properly with a local flag.
