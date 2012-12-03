@@ -11,7 +11,7 @@ from six import string_types
 from django.conf.urls import patterns, url
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
-from . import fields
+#from . import fields  --WARNING HERE THERE BE DRAGONS
 from .. import utils, http, exceptions
 
 
@@ -88,11 +88,13 @@ class BaseResource(object):
     #! Mapping of encoders known by this resource.
     encoders = {
         'json': 'flapjack.encoders.Json',
+        'xml' : 'flapjack.encoders.Xml',
     }
 
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
+        'xml',
     )
 
     #! Name of the default encoder of the list of understood encoders.

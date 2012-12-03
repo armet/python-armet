@@ -99,3 +99,9 @@ def for_all(value, method, test=None):
         return method(value)
 
     return value
+
+def fix_date(val):
+   try:
+       return val.isoformat()
+   except AttributeError:
+       return val
