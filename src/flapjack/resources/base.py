@@ -144,7 +144,7 @@ class BaseResource(object):
     _cache_path = {}
 
     @classmethod
-    def slug(cls, obj):
+    def make_slug(cls, obj):
         """
         The resource URI segment which is used to access and identify this
         resource.
@@ -211,7 +211,7 @@ class BaseResource(object):
 
             # Instantiate the resource
             obj = resource(request,
-                identifier=kwargs.get('identifier'),
+                slug=kwargs.get('slug'),
                 format=kwargs.get('format'))
 
             # Initiate the dispatch cycle and return its result
@@ -246,7 +246,7 @@ class BaseResource(object):
         self.request = request
 
         #! Identifier of the resource if we are being accessed directly.
-        self.identifier = kwargs.get('identifier')
+        self.slug = kwargs.get('slug')
 
         #! Explicitly declared format of the request.
         self.format = kwargs.get('format')
@@ -297,7 +297,7 @@ class BaseResource(object):
             data = self.prepare(data)
 
             # Build and return the response object
-            return self.process(encoder, data, status)
+            return self.make_response(encoder, data, status)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
@@ -321,10 +321,13 @@ class BaseResource(object):
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
 
-    def process(self, encoder, data, status):
+    def make_response(self, encoder, data, status):
         """Builds a response object from the data and status code."""
         response = http.Response(status=status)
+
         if data is not None:
+            # Some kind of data was provided; encode and provide the
+            # correct mimetype.
             response.content = encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
 
@@ -341,7 +344,7 @@ class BaseResource(object):
 
             except TypeError as ex:
                 # Definitely not an iterable.
-                logger.debug(ex, exc_info=True)
+                pass
 
         # Prepare just the singular value and return it.
         return prepare(data)
@@ -452,17 +455,17 @@ class BaseResource(object):
         return data
 
     #! Identifier to access the resource URL as a whole.
-    _URL = 2
+    _URI = 2
 
     #! Identifier to access the resource individualy.
-    _URL_IDENTIFIER = 1
+    _URI_IDENTIFIER = 1
 
     #! Identifier to access the resource individualy with a path.
-    _URL_PATH = 0
+    _URI_PATH = 0
 
     @classmethod
     @utils.memoize
-    def _url_format(cls, identifier):
+    def _uri_format(cls, identifier):
         """Gets the string format for a URL for this resource."""
         # HACK: This is a hackish way to get a string format representing
         #       the URL that would have been reversed with `reverse`. Speed
@@ -484,23 +487,33 @@ class BaseResource(object):
 
         return '{}{}'.format(cls._prefix, url)
 
-    # @classmethod
-    def reverse(self):  #   , value=None, path=None):
-        """Reverses a URL for the resource or for the passed object."""
+    @property
+    def uri(self):
+        """Retrieves the reversed URI for this resource instance."""
+        return self.reverse(self.slug)
+
+    @classmethod
+    def reverse(cls, slug=None):
+        """Reverses a URI for the resource or for the passed object."""
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
-        if self.identifier is None:
-            # Accessing the resource as a whole; simply return us
-            return self._url_format(self._URL)
+        #       Need to look into this later so we can have unicode here.
+        if slug is None:
+            # Accessing the resource as a whole; no path is possible.
+            return cls._uri_format(cls._URI)
+
+        # if self.identifier is None:
+        #     # Accessing the resource as a whole; simply return us
+        #     return self._uri_format(self._URL)
 
         # else:
 
         # if value is not None:
         #     if path is not None:
-        #     return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
+        #     return cls._uri_format(cls._URL_PATH) % (cls.slug(value), path)
 
-        #     return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
+        #     return cls._uri_format(cls._URL_IDENTIFIER) % cls.slug(value)
 
-        # return cls._url_format(cls._URL)
+        # return cls._uri_format(cls._URL)
 
     # TODO: def resolve(self):
 

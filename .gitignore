@@ -9,5 +9,5 @@
 *.sqlite
 
 # Coverage reports
-/cover
+cover
 .coverage
