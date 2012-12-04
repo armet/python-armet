@@ -44,7 +44,6 @@ class Paginator(object):
             # No range header, just set some defaults
             start = 0
             length = self.length
-        print('hello {}, {}'.format(start, length))
         response_headers = {
             'Content-Range': '{}-{}/{}'.format(
                 start,
