@@ -261,8 +261,6 @@ class BaseResource(object):
             # Determine the HTTP method
             if function is None:
                 function = self._determine_method()
-            else:
-                function = getattr(self,function)
 
             # Detect an appropriate encoder.
             encoder = self._determine_encoder()
@@ -283,13 +281,13 @@ class BaseResource(object):
 
             # Delegate to the determined function.
             try:
-                data, status = function()
+                message = function()
+                data, status = message
 
-            except http.Response as ready_response:
-                return ready_response
-                # This means that the HTTP Response has already been generated;
-                # no further processing necessary
-
+	    except ValueError:
+	    	# Tuple not unpacked; assume we have just an HTTP Response
+	    	return message
+	    	
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
 
@@ -324,7 +322,6 @@ class BaseResource(object):
         if data is not None:
             response.content = encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
-        print(response)
         return response
 
     def prepare(self, data):
@@ -521,9 +518,9 @@ class BaseResource(object):
         return None, http.client.NO_CONTENT
         
     def head(self):
-        response = self.dispatch(function='get')
+        response = self.dispatch(function=self.get)
         response.body = None
-        raise response
+        return response
 
     @property
     def _allowed_methods(self):
