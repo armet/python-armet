@@ -26,7 +26,7 @@ except AttributeError:
     client.NETWORK_AUTHENTICATION_REQUIRED = 511
 
 
-class Response(http.HttpResponse):
+class Response(http.HttpResponse, BaseException):
     """Extends django's `HttpResponse` to more closely follow `HTTP/1.1`.
     """
 

@@ -18,7 +18,6 @@ from .. import utils, http, exceptions
 # Get an instance of the logger.
 logger = logging.getLogger('flapjack.resources')
 
-
 class BaseResource(object):
     """Defines a RESTful resource access protocol for generic resources.
 
@@ -53,6 +52,7 @@ class BaseResource(object):
         'post',
         'put',
         'delete',
+        'head',
     )
 
     #! List of allowed HTTP methods against a whole
@@ -251,17 +251,18 @@ class BaseResource(object):
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local')
 
-    def dispatch(self):
+    def dispatch(self, function=None):
         """
         """
-        # Set some defaults so we can reference this later
-        encoder = None
         try:
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
 
             # Determine the HTTP method
-            function = self._determine_method()
+            if function is None:
+                function = self._determine_method()
+            else:
+                function = getattr(self,function)
 
             # Detect an appropriate encoder.
             encoder = self._determine_encoder()
@@ -281,7 +282,13 @@ class BaseResource(object):
                 # TODO: Assert object-level authorization
 
             # Delegate to the determined function.
-            data, status = function()
+            try:
+                data, status = function()
+
+            except http.Response as ready_response:
+                return ready_response
+                # This means that the HTTP Response has already been generated;
+                # no further processing necessary
 
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
@@ -317,7 +324,7 @@ class BaseResource(object):
         if data is not None:
             response.content = encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
-
+        print(response)
         return response
 
     def prepare(self, data):
@@ -512,6 +519,11 @@ class BaseResource(object):
     def post(self):
         # Return the response
         return None, http.client.NO_CONTENT
+        
+    def head(self):
+        response = self.dispatch(function='get')
+        response.body = None
+        raise response
 
     @property
     def _allowed_methods(self):
