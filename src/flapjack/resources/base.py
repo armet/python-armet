@@ -339,7 +339,7 @@ class BaseResource(object):
                 # we're not a string or some sort of mapping).
                 return (prepare(x) for x in data)
 
-            except TypeError as ex:
+            except TypeError:
                 # Definitely not an iterable.
                 pass
 
