@@ -2,13 +2,12 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import itertools
+import json
 from django.utils import unittest
 from flapjack import encoders
-import json
-import copy
 
 
-class JsonEncoderTestCase(unittest.TestCase):
+class JsonTestCase(unittest.TestCase):
 
     def setUp(self):
         self.json = encoders.Json()
@@ -17,10 +16,10 @@ class JsonEncoderTestCase(unittest.TestCase):
             'that': 42,
             'bool': False,
             'list': [
-                { 'item': 'something', 'value': 'else' },
-                { 'item': 'something', 'value': 'else' },
-                { 'item': 'something', 'value': 'else' },
-                { 'item': 'something', 'value': 'else' },
+                {'item': 'something', 'value': 'else'},
+                {'item': 'something', 'value': 'else'},
+                {'item': 'something', 'value': 'else'},
+                {'item': 'something', 'value': 'else'},
             ]
         }
 
