@@ -526,13 +526,14 @@ class BaseResource(object):
             # if parent_obj._fields[parent_name].relation:
             #     parent = (parent_obj._fields[parent_name].relation, )
 
-            print(parent)
-            print(vars(parent_obj._fields[parent_name]))
+            print(composite)
 
             # Send it off to the parent object for reversal.
-            return parent_obj.reverse(parent_obj.slug, composite)
+            return parent_obj.reverse(parent_obj.slug, composite,
+                parent=parent_obj.parent, local=parent_obj.local)
 
         if path is not None:
+            print(path)
             # Accessing the resource individually with a path.
             return cls._url_format(cls._URL_PATH) % (slug, os.path.join(*path))
 
