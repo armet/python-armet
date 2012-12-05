@@ -89,11 +89,13 @@ class BaseResource(object):
     #! Mapping of encoders known by this resource.
     encoders = {
         'json': 'flapjack.encoders.Json',
+        'xml': 'flapjack.encoders.Xml',
     }
 
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
+        'xml',
     )
 
     #! Name of the default encoder of the list of understood encoders.
