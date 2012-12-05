@@ -7,7 +7,7 @@ from collections import Iterable, Mapping
 import datetime
 import json
 import six
-from .. import transcoders
+from .. import transcoders, utils
 from . import Encoder
 
 
