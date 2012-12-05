@@ -15,6 +15,7 @@ class ReverseTestCase(TestCase):
         resource = api.Poll(request)
 
         self.assertEqual(resource.url, '/poll')
+        self.assertEqual(resource.slug, None)
 
     def test_slug(self):
         """Tests for `/poll/:id`."""
@@ -87,11 +88,27 @@ class ReverseTestCase(TestCase):
         url = '/choice/{}/poll'.format(slug)
         request = RequestFactory().get(url)
         parent = api.Choice(request, slug=slug)
-        resource = api.Poll(request, slug='32', parent=parent, local=True)
+        resource = api.Poll(
+            request, slug='32', parent=(parent, 'poll'), local=True)
 
         self.assertEqual(parent.slug, slug)
         self.assertEqual(resource.slug, '32')
         self.assertEqual(resource.url, url)
+
+    def test_path_local_many(self):
+        """Tests for `/poll/:id/choices/:id`."""
+        poll = '262627'
+        choice = '231'
+        url = '/poll/{}/choices/{}'.format(poll, choice)
+        request = RequestFactory().get(url)
+        parent = api.Poll(request, slug=poll)
+        resource = api.Choice(request, slug=choice,
+            parent=(parent, "choices"), local=True)
+
+        self.assertEqual(resource.slug, choice)
+        self.assertEqual(parent.slug, poll)
+        self.assertEqual(resource.url, url)
+
 
     # TODO: test_local
     # TODO: test_local_many
