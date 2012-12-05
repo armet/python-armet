@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import collections
 
 
 def field(path=None, collection=None):
@@ -20,7 +21,21 @@ def field(path=None, collection=None):
     return (path, collection)
 
 
-def relation(relation, path=None, embed=False, local=False):
-    """Used in the `relations` option to relate fields with other resources.
-    """
-    return (relation, path, embed, local)
+#! Named tuple micro class for accessing relation information.
+Relation = collections.namedtuple('Relation', (
+    'resource', 'path', 'embed', 'local', 'related_name'
+))
+
+def relation(resource, path=None, embed=False, local=False, related_name=None):
+    """Used in the `relations` option to relate fields with other resources."""
+    return Relation(resource, path, embed, local, related_name)
+
+
+#! Named tuple micro class for accessing parent information.
+Parent = collections.namedtuple('Parent', (
+    'resource', 'slug', 'name', 'related_name'
+))
+
+def parent(resource, slug, name, related_name):
+    """Used in the resource class to ease parent assignment."""
+    return Parent(resource, slug, name, related_name)

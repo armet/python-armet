@@ -19,6 +19,10 @@ class BaseModel(base.BaseResource):
     @classmethod
     def prefetch_related(cls, queryset, prefix=None):
         """Performs a `prefetch_related` on all possible fields."""
+        if cls._prefetch_related_paths is None:
+            # First call; initialize the cache.
+            cls._prefetch_related_paths = []
+
         if not cls._prefetch_related_paths and len(queryset) >= 1:
             # Get sorted list of visibile path elements
             field_paths = []
@@ -31,6 +35,10 @@ class BaseModel(base.BaseResource):
             # Cache of what to prefetch has not been built; build it.
             # First iterate and store all field names
             for field_path in field_paths:
+                if field_path is None:
+                    # No field path; nothing to check.
+                    continue
+
                 for index in range(len(field_path), 0, -1):
                     try:
                         # Attempt to prefetch
@@ -72,15 +80,26 @@ class BaseModel(base.BaseResource):
 
     def read(self):
         # Build the queryset
+        queryset = self.model.objects
+
+        # Apply transveral first.
+        # Build filter string for parents
+        parent = self.parent
+        path = []
+        while parent is not None:
+            path.append(parent.related_name)
+            queryset = queryset.filter(**{'__'.join(path): parent.slug})
+            parent = parent.resource.parent
+
         if self.slug is not None:
             # Model resources by default have the slug as the identifier.
             # TODO: Support non-pk slugs easier by allowing a
             #   hook or something.
-            queryset = self.model.objects.filter(pk=int(self.slug))
+            queryset = queryset.filter(pk=int(self.slug))
 
         else:
             # No slug; start with all the models.
-            queryset = self.model.objects.all()
+            queryset = queryset.all()
 
         # Prefetch all related fields and return the queryset.
         return self.prefetch_related(queryset)

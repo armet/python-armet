@@ -9,9 +9,9 @@ from . import models
 class Choice(resources.Model):
     model = models.Choice
 
-    # exclude = (
-    #     'poll',
-    # )
+    exclude = (
+        'poll',
+    )
 
 
 class Poll(resources.Model):
@@ -22,5 +22,5 @@ class Poll(resources.Model):
     }
 
     relations = {
-        'choices': relation(Choice, embed=False, path='poll__question', local=True)
+        'choices': relation(Choice, embed=False, local=True)
     }

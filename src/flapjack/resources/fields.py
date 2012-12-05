@@ -3,8 +3,10 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import collections
 import six
 from .. import utils
+from . import helpers
 
 
 class Field(object):
@@ -42,17 +44,15 @@ class Field(object):
     @property
     def relation(self):
         if self._relation is not None:
-            if not isinstance(self._relation[0], type):
+            if not isinstance(self._relation.resource, type):
                 # Resolve resource class object
-                relation = list(self._relation)
-                relation[0] = utils.load(relation[0])
-                self._relation = tuple(relation)
+                resource = utils.load(self._relation.resource)
+                self._relation = self._relation._replace(resource=resource)
 
-            if isinstance(self._relation[1], six.string_types):
+            if isinstance(self._relation.path, six.string_types):
                 # Relation path needs to be expanded
-                relation = list(self._relation)
-                relation[1] = relation[1].split('__')
-                self._relation = tuple(relation)
+                path = self._relation.path.split('__')
+                self._relation = self._relation._replace(path=path)
 
             # Resource class object is already resolved; return it.
             return self._relation
@@ -101,9 +101,13 @@ class Field(object):
                 # A readable descriptor at the very least
                 return lambda o, x=obj.__get__: x(o)
 
-        if hasattr(cls, '__getitem__'):
+        if issubclass(cls, collections.Mapping):
             # Some kind of mapping; use dictionary access.
             return lambda o, n=name: o[name]
+
+        if issubclass(cls, collections.Sequence):
+            # Some kind of sequence; use item access.
+            return lambda o, n=name: o[int(name)]
 
         # No alternative; attempt direct attribute access using the instance
         # dictionary.

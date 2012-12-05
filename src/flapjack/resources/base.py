@@ -12,7 +12,7 @@ from six import string_types
 from django.conf.urls import patterns, url
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
-from . import fields
+from . import fields, helpers
 from .. import utils, http, exceptions
 
 
@@ -200,8 +200,12 @@ class BaseResource(object):
         delegation.
         """
         try:
+            # Explode the path if we can.
+            if 'path' in kwargs:
+                kwargs['path'] = kwargs['path'].split('/')
+
             # Traverse path segments; determine final resource
-            resource = cls.traverse(kwargs.get('path'))
+            resource = cls.traverse(request, kwargs)
 
             # Instantiate the resource
             obj = resource(request=request, **kwargs)
@@ -224,12 +228,54 @@ class BaseResource(object):
             return http.Response(status=http.client.INTERNAL_SERVER_ERROR)
 
     @classmethod
-    def traverse(cls, segments):
-        """
-        """
-        if not segments:
-            # No sub-resource path provided; return our cls
+    def traverse(cls, request, kwargs):
+        """Traverse the resource class with the provided path segments."""
+        if not kwargs.get('path') or not kwargs['path'][0]:
+            # No sub-resource path provided; return our cls.
             return cls
+
+        # We have at least one segment in the path.
+        try:
+            # Attempt to get field object referenced.
+            name = kwargs['path'][0]
+            field = cls._fields[name]
+
+        except KeyError:
+            # No field found for reference; 404.
+            raise exceptions.NotFound()
+
+        if field.relation is None:
+            # No field relation defined; a straight access.
+            return cls
+
+        # Related field.
+        # Reduce the path by 1.
+        del kwargs['path'][0]
+
+        # Set parent on the object
+        kwargs['parent'] = helpers.parent(
+            resource=cls(
+                request=request,
+                parent=kwargs.get('parent'),
+                local=kwargs.get('local')),
+            slug=kwargs['slug'],
+            name=name,
+            related_name=field.relation.related_name)
+
+        if field.collection and kwargs['path']:
+            # Set slug to be the next segment
+            kwargs['slug'] = kwargs['path'][0]
+            del kwargs['path'][0]
+
+        else:
+            # No slug; list access.
+            del kwargs['slug']
+
+        # Declare if we are local
+        kwargs['local'] = field.relation.local
+
+        # Return the cls object to use
+        return field.relation.resource.traverse(request, kwargs)
 
     def __init__(self, **kwargs):
         """
@@ -359,14 +405,16 @@ class BaseResource(object):
     def generic_prepare(self, obj, name, value):
         relation = self._fields[name].relation
         if relation is not None:
-            # We have a relation; expand it
-            cls, path, embed, local = relation
-
             # Instantiate a reference to the relation
-            resource = cls(request=self.request, path=path, local=local,
-                parent=(self, name, self.make_slug(obj)))
+            parent = helpers.parent(self, self.make_slug(obj),
+                name, relation.related_name)
 
-            if not embed:
+            resource = relation.resource(request=self.request,
+                path=relation.path,
+                local=relation.local,
+                parent=parent)
+
+            if not relation.embed:
                 def reverser(value, obj=resource):
                     return obj.reverse(obj.make_slug(value), obj.path,
                         parent=obj.parent, local=obj.local)
@@ -387,17 +435,16 @@ class BaseResource(object):
         # Return whatever we have
         return value
 
+    def prepare_resource_uri(self, obj, value):
+        # Set the resource uri on the object.
+        return self.reverse(self.make_slug(obj),
+            parent=self.parent,
+            local=self.local)
+
     def item_prepare(self, item):
         """Prepares an item for transmission."""
         # Initialize the object that will hold the item.
         obj = {}
-
-        # Set the resource uri on the object.
-        # TODO: This must be able to support to some kind of local-based
-        #        URI just as a relation with `local=True`.
-        if self.resource_uri is not None:
-            obj[self.resource_uri] = self.reverse(self.make_slug(item),
-                parent=self.parent, local=self.local)
 
         if self.path:
             if self._cache_path_name not in self._cache_path:
@@ -493,28 +540,29 @@ class BaseResource(object):
         """
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
         #       Need to look into this later so we can have unicode here.
-        if slug is None:
-            # Accessing the resource as a whole; no path is possible.
-            return cls._url_format(cls._URL)
-
         if local and parent is not None:
             # Local path; we need to do something about it.
             # The parent must be a specific parent; ie. with a slug
-            parent_obj, parent_name, parent_slug = parent
+            # parent_obj, parent_name, parent_slug = parent
 
             # Build composite path
             composite = []
-            composite.append(parent_name)
+            composite.append(parent.name)
 
-            if parent_obj._fields[parent_name].collection:
+            if (slug is not None
+                    and parent.resource._fields[parent.name].collection):
                 composite.append(slug)
 
             if path is not None:
                 composite.extend(path)
 
             # Send it off to the parent object for reversal.
-            return parent_obj.reverse(parent_slug, composite,
-                parent=parent_obj.parent, local=parent_obj.local)
+            return parent.resource.reverse(parent.slug, composite,
+                parent=parent.resource.parent, local=parent.resource.local)
+
+        if slug is None:
+            # Accessing the resource as a whole; no path is possible.
+            return cls._url_format(cls._URL)
 
         if path is not None:
             # Accessing the resource individually with a path.

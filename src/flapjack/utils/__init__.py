@@ -18,42 +18,6 @@ class classproperty(object):
         return self.getter(cls)
 
 
-class weakclassproperty(object):
-    """
-    Declares a read-only `property` that acts on the class object only if
-    there is no instance.
-    """
-
-    def __init__(self, getter):
-        self.getter = getter
-
-    def __get__(self, obj, cls):
-        return self.getter(cls) if obj is None else self.getter(obj)
-
-
-class weakclassmethod(object):
-    """
-    Declares a read-only `method` that acts on the class object only if
-    there is no instance.
-    """
-
-    def __init__(self, method):
-        self.method = method
-
-    def __get__(self, obj, cls):
-        def method(*args, **kwargs):
-            # print('call', obj, args, kwargs)
-            if obj is not None:
-                return self.method(obj, *args, **kwargs)
-
-            return self.method(cls, *args, **kwargs)
-
-        return method
-
-    def __call__(self, *args, **kwargs):
-        return self.method(*args, **kwargs)
-
-
 def memoize(obj):
     """Memoizes a function based on its arguments."""
     from functools import wraps
@@ -128,7 +92,6 @@ def for_all(value, method, test=None):
         return values
 
     except TypeError as ex:
-        print(ex)
         pass
 
     if test is None or test(value):

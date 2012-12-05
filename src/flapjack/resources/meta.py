@@ -177,13 +177,18 @@ class DeclarativeResource(type):
         # Attempt to get the field class using the declared field.
         return _get_field_class(field)
 
+    def _get_related_name(self, field):
+        # Attempt to get the related name for the indiciated field.
+        pass
+
     def _set_field(self,
             name,
             path=None,
             collection=None,
             editable=None,
             field=None,
-            cls=None):
+            cls=None,
+            related_name=None):
         """Sets the field with the passed name on the resource."""
         if isinstance(path, six.string_types):
             # Explode the segments from the path
@@ -237,6 +242,18 @@ class DeclarativeResource(type):
             prepare = lambda s, o, v, n=name: s.generic_prepare(o, n, v)
             setattr(self, 'prepare_{}'.format(name), prepare)
 
+        # Pull the relation and attempt to determine the related name if
+        # not provided.
+        relation = self.relations.get(name)
+        if relation is not None:
+            if relation.related_name is None:
+                relation = relation._replace(
+                    related_name=self._get_related_name(field))
+
+        else:
+            # TODO: Auto-make relation?
+            pass
+
         # Instantiate the field object and set it on the resource class.
         self._fields[name] = cls(
             visible=_is_field_visible(self, name),
@@ -245,7 +262,7 @@ class DeclarativeResource(type):
             editable=editable,
             prepare=prepare,
             path=parts,
-            relation=self.relations.get(name)
+            relation=relation
         )
 
     def _discover_fields(self):
@@ -273,6 +290,14 @@ class DeclarativeResource(type):
                 self._set_field(name,
                     path=path.split('__') if path is not None else None,
                     collection=collection)
+
+        # Ensure resource URI can be added
+        if self.resource_uri in self._fields:
+            raise ImproperlyConfigured(
+                'resource_uri field in conflict with already defined field.')
+
+        # Add the resource URI field
+        self._set_field(self.resource_uri)
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
@@ -397,6 +422,25 @@ class DeclarativeModel(DeclarativeResource):
         # Return what we got
         return field
 
+    def _get_related_name(self, field):
+        try:
+            # Pretend we have a reverse related object here.
+            return field.field.attname
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        try:
+            # Try for a many-to-many relation.
+            return field.field.m2m_field_name()
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        # No related name that we can find; return nothing.
+
     def _discover_fields(self):
         # Iterate through and set these model fields on the resource.
         for name in self.model_fields:
@@ -450,4 +494,4 @@ class DeclarativeModel(DeclarativeResource):
         super(DeclarativeModel, self).__init__(name, bases, attrs)
 
         # Declare class object caches; every resource needs one of these
-        self._prefetch_related_paths = []
+        # self._prefetch_related_paths = []
