@@ -260,10 +260,9 @@ class BaseResource(object):
         kwargs['parent'] = helpers.parent(
             resource=cls(
                 request=request,
-                slug=kwargs['slug'],
+                slug=kwargs.get('slug'),
                 parent=kwargs.get('parent'),
                 local=kwargs.get('local')),
-            slug=kwargs['slug'],
             name=name,
             related_name=field.relation.related_name)
 
@@ -274,7 +273,8 @@ class BaseResource(object):
 
         else:
             # No slug; list access.
-            del kwargs['slug']
+            if 'slug' in kwargs:
+                del kwargs['slug']
 
         # Declare if we are local
         kwargs['local'] = field.relation.local
@@ -308,11 +308,12 @@ class BaseResource(object):
             #! Name of the path in the cache.
             self._cache_path_name = '__'.join(self.path)
 
+        # Find the slug if we need to
         if self.slug is None and self.parent is not None:
             field = self.parent.resource._fields[self.parent.name]
             if not field.collection:
-                # obj = self.parent.resource.get()[0]
-                self.slug = self.parent.resource.make_slug(obj)
+                obj = field.accessor(self.parent.resource.get()[0])
+                self.slug = self.make_slug(obj)
 
     def dispatch(self):
         """
@@ -417,7 +418,11 @@ class BaseResource(object):
         relation = self._fields[name].relation
         if relation is not None:
             # Instantiate a reference to the relation
-            parent = helpers.parent(self, self.make_slug(obj),
+            parent = helpers.parent(self.__class__(
+                    slug=self.make_slug(obj),
+                    request=self.request,
+                    local=self.local,
+                    parent=self.parent),
                 name, relation.related_name)
 
             resource = relation.resource(request=self.request,

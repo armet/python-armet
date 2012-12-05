@@ -110,7 +110,8 @@ class BaseModel(base.BaseResource):
             path = []
             while parent is not None:
                 path.append(parent.related_name)
-                queryset = queryset.filter(**{'__'.join(path): parent.slug})
+                queryset = queryset.filter(**{
+                    '__'.join(path): parent.resource.slug})
                 parent = parent.resource.parent
 
             if self.slug is not None:

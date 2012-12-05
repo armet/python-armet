@@ -33,9 +33,9 @@ def relation(resource, path=None, embed=False, local=False, related_name=None):
 
 #! Named tuple micro class for accessing parent information.
 Parent = collections.namedtuple('Parent', (
-    'resource', 'slug', 'name', 'related_name'
+    'resource', 'name', 'related_name'
 ))
 
-def parent(resource, slug, name, related_name):
+def parent(resource, name, related_name):
     """Used in the resource class to ease parent assignment."""
-    return Parent(resource, slug, name, related_name)
+    return Parent(resource, name, related_name)

@@ -8,11 +8,12 @@ from . import models
 
 class Choice(resources.Model):
     model = models.Choice
+    resource_uri = None
+    # exclude = ('poll',)
 
-    # exclude = (
-    #     'poll',
-    # )
-
+    relations = {
+        'poll': relation('polls.api.Poll')
+    }
 
 class Poll(resources.Model):
     model = models.Poll
@@ -22,5 +23,5 @@ class Poll(resources.Model):
     }
 
     relations = {
-        'choices': relation(Choice, embed=False, local=True)
+        'choices': relation('polls.api.Choice'),
     }
