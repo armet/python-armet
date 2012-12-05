@@ -3,8 +3,9 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from . import base
 import six
+from . import base
+from .. import exceptions
 
 
 class BaseModel(base.BaseResource):
@@ -82,20 +83,25 @@ class BaseModel(base.BaseResource):
         # Build the queryset
         queryset = self.model.objects
 
-        # Apply transveral first.
-        # Build filter string for parents
-        parent = self.parent
-        path = []
-        while parent is not None:
-            path.append(parent.related_name)
-            queryset = queryset.filter(**{'__'.join(path): parent.slug})
-            parent = parent.resource.parent
+        try:
+            # Apply transveral first.
+            # Build filter string for parents
+            parent = self.parent
+            path = []
+            while parent is not None:
+                path.append(parent.related_name)
+                queryset = queryset.filter(**{'__'.join(path): parent.slug})
+                parent = parent.resource.parent
 
-        if self.slug is not None:
-            # Model resources by default have the slug as the identifier.
-            # TODO: Support non-pk slugs easier by allowing a
-            #   hook or something.
-            queryset = queryset.filter(pk=int(self.slug))
+            if self.slug is not None:
+                # Model resources by default have the slug as the identifier.
+                # TODO: Support non-pk slugs easier by allowing a
+                #   hook or something.
+                queryset = queryset.filter(pk=self.slug)
+
+        except ValueError:
+            # Something went wront when applying the slug filtering.
+            raise exceptions.NotFound()
 
         else:
             # No slug; start with all the models.

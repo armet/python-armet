@@ -244,6 +244,10 @@ class BaseResource(object):
             # No field found for reference; 404.
             raise exceptions.NotFound()
 
+        if not field.visible:
+            # Field not visible; die.
+            raise exceptions.NotFound()
+
         if field.relation is None:
             # No field relation defined; a straight access.
             return cls
@@ -472,9 +476,15 @@ class BaseResource(object):
             obj[name] = field.prepare(self, item, value)
 
         if self.path and path_field:
-            # Navigate through some hoops to return from what we construct.
-            # Utilize the field accessor to resolve the resource path.
-            obj = path_field.accessor(obj)
+            try:
+                # Navigate through some hoops to return from what we construct.
+                # Utilize the field accessor to resolve the resource path.
+                obj = path_field.accessor(obj)
+
+            except (ValueError, AttributeError, TypeError) as ex:
+                # Something weird happened with a path segment.
+                print(ex)
+                raise exceptions.NotFound()
 
         # Return the resultant object.
         return obj

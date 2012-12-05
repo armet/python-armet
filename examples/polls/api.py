@@ -9,9 +9,9 @@ from . import models
 class Choice(resources.Model):
     model = models.Choice
 
-    exclude = (
-        'poll',
-    )
+    # exclude = (
+    #     'poll',
+    # )
 
 
 class Poll(resources.Model):
