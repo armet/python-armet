@@ -8,3 +8,7 @@ from flapjack import resources
 
 class Poll(resources.Resource):
     pass
+
+
+class Choice(resources.Resource):
+    pass
