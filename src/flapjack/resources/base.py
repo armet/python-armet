@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
+import os
 from collections import Mapping
 import logging
 import six
@@ -144,7 +145,7 @@ class BaseResource(object):
     _cache_path = {}
 
     @classmethod
-    def slug(cls, obj):
+    def make_slug(cls, obj):
         """
         The resource URI segment which is used to access and identify this
         resource.
@@ -162,24 +163,35 @@ class BaseResource(object):
                 return obj.pk
         """
 
-    @classmethod
-    def url(cls, path=''):
-        """Builds a url pattern using the passed `path` for this resource."""
-        return url(
-            r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name, path),
-            cls.view,
-            name=cls.url_name,
-            kwargs={'resource': cls.name},
-        )
-
     @utils.classproperty
     @utils.memoize
     def urls(cls):
         """Builds the complete URL configuration for this resource."""
+        # Base regex for the url format; includes the `.encoder`
+        # functionality.
+        regex = r'^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name)
+
+        # Simple kwargs so that the URL reverser has some more to go off of
+        kwargs = {'resource': cls.name}
+
+        # Instantiate a new derived resource of ourself to use in the binding
+        # This localizes each mount point of this resource to its own
+        # class object.
+        cls.cls = type(cls.name, (cls,), {})
+
+        # Collect and return URL patterns
         return patterns('',
-            cls.url(),
-            cls.url(r'/(?P<identifier>[^/]+?)'),
-            cls.url(r'/(?P<identifier>[^/]+?)/(?P<path>.*?)'),
+            # List access; eg `/poll`
+            url(regex.format(''),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
+
+            # Singular access; eg `/poll/51`
+            url(regex.format(r'/(?P<slug>[^/]+?)'),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
+
+            # Sub access; eg `/poll/1/choices/61/choice_text`
+            url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
         )
 
     @classmethod
@@ -197,7 +209,7 @@ class BaseResource(object):
 
             # Instantiate the resource
             obj = resource(request,
-                identifier=kwargs.get('identifier'),
+                slug=kwargs.get('slug'),
                 format=kwargs.get('format'))
 
             # Initiate the dispatch cycle and return its result
@@ -232,7 +244,7 @@ class BaseResource(object):
         self.request = request
 
         #! Identifier of the resource if we are being accessed directly.
-        self.identifier = kwargs.get('identifier')
+        self.slug = kwargs.get('slug')
 
         #! Explicitly declared format of the request.
         self.format = kwargs.get('format')
@@ -283,7 +295,7 @@ class BaseResource(object):
             data = self.prepare(data)
 
             # Build and return the response object
-            return self.process(encoder, data, status)
+            return self.make_response(encoder, data, status)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
@@ -307,10 +319,13 @@ class BaseResource(object):
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
 
-    def process(self, encoder, data, status):
+    def make_response(self, encoder, data, status):
         """Builds a response object from the data and status code."""
         response = http.Response(status=status)
+
         if data is not None:
+            # Some kind of data was provided; encode and provide the
+            # correct mimetype.
             response.content = encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
 
@@ -325,9 +340,9 @@ class BaseResource(object):
                 # we're not a string or some sort of mapping).
                 return (prepare(x) for x in data)
 
-            except TypeError as ex:
+            except TypeError:
                 # Definitely not an iterable.
-                logger.debug(ex, exc_info=True)
+                pass
 
         # Prepare just the singular value and return it.
         return prepare(data)
@@ -441,7 +456,7 @@ class BaseResource(object):
     _URL = 2
 
     #! Identifier to access the resource individualy.
-    _URL_IDENTIFIER = 1
+    _URL_SLUG = 1
 
     #! Identifier to access the resource individualy with a path.
     _URL_PATH = 0
@@ -458,7 +473,7 @@ class BaseResource(object):
         # TODO: Perhaps move this and the url reverse speed up bits out ?
         try:
             urlmap = cls._resolver.reverse_dict.getlist(
-                cls.view)[identifier][0][0]
+                cls.cls.view)[identifier][0][0]
 
         except IndexError:
             # No found reversal; die
@@ -470,13 +485,30 @@ class BaseResource(object):
 
         return '{}{}'.format(cls._prefix, url)
 
-    # @classmethod
-    def reverse(self):  #   , value=None, path=None):
+    @property
+    def url(self):
+        """Retrieves the reversed URL for this resource instance."""
+        return self.reverse(self.slug, self.path)
+
+    @classmethod
+    def reverse(cls, slug=None, path=None):
         """Reverses a URL for the resource or for the passed object."""
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
-        if self.identifier is None:
-            # Accessing the resource as a whole; simply return us
-            return self._url_format(self._URL)
+        #       Need to look into this later so we can have unicode here.
+        if slug is None:
+            # Accessing the resource as a whole; no path is possible.
+            return cls._url_format(cls._URL)
+
+        if path is not None:
+            # Accessing the resource individually with a path.
+            return cls._url_format(cls._URL_PATH) % (slug, os.path.join(*path))
+
+        # Accessing the resource individually without a path.
+        return cls._url_format(cls._URL_SLUG) % slug
+
+        # if self.identifier is None:
+        #     # Accessing the resource as a whole; simply return us
+        #     return self._url_format(self._URL)
 
         # else:
 

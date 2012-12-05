@@ -8,7 +8,7 @@ from django.utils import unittest
 from django.test import client
 # from lxml import etree
 # import json
-from . import http
+from .. import http
 
 
 class Client(client.Client):
