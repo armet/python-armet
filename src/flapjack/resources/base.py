@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
+import os
 from collections import Mapping
 import logging
 import six
@@ -452,17 +453,17 @@ class BaseResource(object):
         return data
 
     #! Identifier to access the resource URL as a whole.
-    _URI = 2
+    _URL = 2
 
     #! Identifier to access the resource individualy.
-    _URI_IDENTIFIER = 1
+    _URL_SLUG = 1
 
     #! Identifier to access the resource individualy with a path.
-    _URI_PATH = 0
+    _URL_PATH = 0
 
     @classmethod
     @utils.memoize
-    def _uri_format(cls, identifier):
+    def _url_format(cls, identifier):
         """Gets the string format for a URL for this resource."""
         # HACK: This is a hackish way to get a string format representing
         #       the URL that would have been reversed with `reverse`. Speed
@@ -485,32 +486,39 @@ class BaseResource(object):
         return '{}{}'.format(cls._prefix, url)
 
     @property
-    def uri(self):
-        """Retrieves the reversed URI for this resource instance."""
-        return self.reverse(self.slug)
+    def url(self):
+        """Retrieves the reversed URL for this resource instance."""
+        return self.reverse(self.slug, self.path)
 
     @classmethod
-    def reverse(cls, slug=None):
-        """Reverses a URI for the resource or for the passed object."""
+    def reverse(cls, slug=None, path=None):
+        """Reverses a URL for the resource or for the passed object."""
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
         #       Need to look into this later so we can have unicode here.
         if slug is None:
             # Accessing the resource as a whole; no path is possible.
-            return cls._uri_format(cls._URI)
+            return cls._url_format(cls._URL)
+
+        if path is not None:
+            # Accessing the resource individually with a path.
+            return cls._url_format(cls._URL_PATH) % (slug, os.path.join(*path))
+
+        # Accessing the resource individually without a path.
+        return cls._url_format(cls._URL_SLUG) % slug
 
         # if self.identifier is None:
         #     # Accessing the resource as a whole; simply return us
-        #     return self._uri_format(self._URL)
+        #     return self._url_format(self._URL)
 
         # else:
 
         # if value is not None:
         #     if path is not None:
-        #     return cls._uri_format(cls._URL_PATH) % (cls.slug(value), path)
+        #     return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
 
-        #     return cls._uri_format(cls._URL_IDENTIFIER) % cls.slug(value)
+        #     return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
 
-        # return cls._uri_format(cls._URL)
+        # return cls._url_format(cls._URL)
 
     # TODO: def resolve(self):
 
