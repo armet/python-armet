@@ -185,8 +185,13 @@ class DeclarativeResource(type):
             field=None,
             cls=None):
         """Sets the field with the passed name on the resource."""
-        # Explode the segments from the path
-        segments = path.split('__') if path is not None else ('')
+        if isinstance(path, six.string_types):
+            # Explode the segments from the path
+            segments = path.split('__') if path is not None else ('')
+
+        else:
+            # Already exploded.
+            segments = path
 
         if not segments[0]:
             # If there is no valid segment#0 then the name becomes segment#0.
@@ -234,7 +239,7 @@ class DeclarativeResource(type):
             collection=collection,
             editable=editable,
             prepare=prepare,
-            path=path if path else name,
+            path=segments,
             relation=self.relations.get(name)
         )
 
@@ -265,7 +270,9 @@ class DeclarativeResource(type):
             # Iterate through additional field names and set them.
             for name in self.include:
                 path, collection = self.include[name]
-                self._set_field(name, path=path, collection=collection)
+                self._set_field(name,
+                    path=path.split('__'),
+                    collection=collection)
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':

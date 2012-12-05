@@ -31,11 +31,10 @@ class BaseModel(base.BaseResource):
             # Cache of what to prefetch has not been built; build it.
             # First iterate and store all field names
             for field_path in field_paths:
-                segments = field_path.split('__')
-                for index in range(len(segments), 0, -1):
+                for index in range(len(field_path), 0, -1):
                     try:
                         # Attempt to prefetch
-                        path = '__'.join(segments[:index])
+                        path = '__'.join(field_path[:index])
                         if prefix:
                             path = '{}__{}'.format(prefix, path)
 
@@ -68,8 +67,20 @@ class BaseModel(base.BaseResource):
         return queryset.prefetch_related(*cls._prefetch_related_paths)
 
     @classmethod
-    def slug(cls, obj):
-        return obj.pk
+    def make_slug(cls, obj):
+        return str(obj.pk)
 
     def read(self):
-        return self.prefetch_related(self.model.objects.all())
+        # Build the queryset
+        if self.slug is not None:
+            # Model resources by default have the slug as the identifier.
+            # TODO: Support non-pk slugs easier by allowing a
+            #   hook or something.
+            queryset = self.model.objects.filter(pk=int(self.slug))
+
+        else:
+            # No slug; start with all the models.
+            queryset = self.model.objects.all()
+
+        # Prefetch all related fields and return the queryset.
+        return self.prefetch_related(queryset)

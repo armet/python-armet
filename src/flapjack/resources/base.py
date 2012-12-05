@@ -203,9 +203,7 @@ class BaseResource(object):
         """
         try:
             # Traverse path segments; determine final resource
-            segments = kwargs.get('path', '').split('/')
-            segments = [x for x in segments if x]
-            resource = cls.traverse(segments)
+            resource = cls.traverse(kwargs.get('path'))
 
             # Instantiate the resource
             obj = resource(request,
@@ -257,7 +255,11 @@ class BaseResource(object):
         self.parent = kwargs.get('parent')
 
         #! Whether internal URIs are local to the parent or not.
-        self.local = kwargs.get('local')
+        self.local = kwargs.get('local', False)
+
+        if self.path is not None:
+            #! Name of the path in the cache.
+            self._cache_path_name = '__'.join(self.path)
 
     def dispatch(self):
         """
@@ -329,6 +331,10 @@ class BaseResource(object):
             response.content = encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
 
+        # Declare who we are in the `Location` header.
+        response['Location'] = self.url
+
+        # Return the built response.
         return response
 
     def prepare(self, data):
@@ -353,33 +359,17 @@ class BaseResource(object):
             # We have a relation; expand it
             cls, path, embed, local = relation
 
-            # Instantiat a reference to the relation
-            obj = cls(self.request, path=path)
+            # Instantiate a reference to the relation
+            resource = cls(self.request, path=path, local=local,
+                parent=(self, name, self.make_slug(obj)))
 
             if not embed:
-                if not local:
-                    # We're non-local so attempt to resolve it
-                    path = '/'.join(path.split('__')) if path else None
-                    reverser = lambda x, p=path: obj.reverse(x, p)
-
-                else:
-                    # We're local or forced to be local -- resolve us
-                    path = ([name] + path.split('__')) if path else [name]
-
-                    if not isinstance(value, collections.Mapping):
-                        # This is a sequence of items; we need to get at the
-                        # individual item.
-                        # path.append(cls.slug(value))
-                        reverser = lambda x, p=path: \
-                            self.reverse(x, '/'.join(p + [str(cls.slug(x))]))
-
-                    else:
-                        # Noramlly now
-                        reverser = lambda x, p='/'.join(path): \
-                            self.reverse(x, p)
+                def reverser(value, obj=resource):
+                    return obj.reverse(obj.make_slug(value), obj.path,
+                        parent=obj.parent, local=obj.local)
 
                 try:
-                    # Execute reversers across.
+                    # Execute reverser across all values.
                     value = utils.for_all(value, reverser)
 
                 except urlresolvers.NoReverseMatch:
@@ -389,7 +379,7 @@ class BaseResource(object):
             else:
                 # We're embedded; inflate
                 # Prepare what we have using the related resource
-                value = obj.prepare(value)
+                value = resource.prepare(value)
 
         # Return whatever we have
         return value
@@ -403,17 +393,17 @@ class BaseResource(object):
         # TODO: This must be able to support to some kind of local-based
         #        URI just as a relation with `local=True`.
         if self.resource_uri is not None:
-            obj[self.resource_uri] = self.reverse(item)
+            obj[self.resource_uri] = self.reverse(self.make_slug(item),
+                parent=self.parent, local=self.local)
 
-        if self.path and self.path not in self._cache_path:
-            # No path field has been created yet; create one
-            self._cache_path[self.path] = (
-                    fields.Field(path=self.path),
-                    self.path.split('__')[0]
-                )
+        if self.path:
+            if self._cache_path_name not in self._cache_path:
+                # No path field has been created yet; create one
+                self._cache_path[self._cache_path_name] = fields.Field(
+                    path=self.path)
 
-        # Retrieve the cached path: (field, segment#0)
-        path_field, seg0 = self._cache_path.get(self.path, (None, None))
+            # Retrieve the cached path: (field, segment#0)
+            path_field = self._cache_path.get(self._cache_path_name)
 
         # Iterate through the fields and build the object from the item.
         for name, field in six.iteritems(self._fields):
@@ -421,7 +411,7 @@ class BaseResource(object):
                 # Field is not visible on the response object.
                 continue
 
-            if seg0 and seg0 != name:
+            if self.path and self.path[0] != name:
                 # Not what we are looking for; go away.
                 continue
 
@@ -431,7 +421,7 @@ class BaseResource(object):
             # Set value on object after preparing it
             obj[name] = field.prepare(self, item, value)
 
-        if path_field:
+        if self.path and path_field:
             # Navigate through some hoops to return from what we construct.
             # Utilize the field accessor to resolve the resource path.
             obj = path_field.accessor(obj)
@@ -504,14 +494,10 @@ class BaseResource(object):
             # Accessing the resource as a whole; no path is possible.
             return cls._url_format(cls._URL)
 
-        # >>> /poll/3/choices/51/poll/question
-        #  path = (question,)
-        #  parent = (<choice obj>, "poll")
-
         if local and parent is not None:
             # Local path; we need to do something about it.
             # The parent must be a specific parent; ie. with a slug
-            parent_obj, parent_name = parent
+            parent_obj, parent_name, parent_slug = parent
 
             # Build composite path
             composite = []
@@ -523,38 +509,16 @@ class BaseResource(object):
             if path is not None:
                 composite.extend(path)
 
-            # if parent_obj._fields[parent_name].relation:
-            #     parent = (parent_obj._fields[parent_name].relation, )
-
-            print(composite)
-
             # Send it off to the parent object for reversal.
-            return parent_obj.reverse(parent_obj.slug, composite,
+            return parent_obj.reverse(parent_slug, composite,
                 parent=parent_obj.parent, local=parent_obj.local)
 
         if path is not None:
-            print(path)
             # Accessing the resource individually with a path.
             return cls._url_format(cls._URL_PATH) % (slug, os.path.join(*path))
 
         # Accessing the resource individually without a path.
         return cls._url_format(cls._URL_SLUG) % slug
-
-        # if self.identifier is None:
-        #     # Accessing the resource as a whole; simply return us
-        #     return self._url_format(self._URL)
-
-        # else:
-
-        # if value is not None:
-        #     if path is not None:
-        #     return cls._url_format(cls._URL_PATH) % (cls.slug(value), path)
-
-        #     return cls._url_format(cls._URL_IDENTIFIER) % cls.slug(value)
-
-        # return cls._url_format(cls._URL)
-
-    # TODO: def resolve(self):
 
     def get(self):
         """Processes a `GET` request.
@@ -568,7 +532,7 @@ class BaseResource(object):
         # Delegate to `read` to retrieve the items.
         items = self.read()
 
-        if self.identifier is not None:
+        if self.slug is not None:
             if not items:
                 # Requested a specific resource but no resource was returned.
                 raise exceptions.NotFound()
@@ -595,7 +559,7 @@ class BaseResource(object):
     def _allowed_methods(self):
         """Retrieves a list of allowed HTTP methods for the current request.
         """
-        if self.identifier is not None:
+        if self.slug is not None:
             return self.http_detail_allowed_methods
 
         return self.http_list_allowed_methods
@@ -685,7 +649,7 @@ class BaseResource(object):
     def _allowed_operations(self):
         """Retrieves a list of allowed operations for the current request.
         """
-        if self.identifier is not None:
+        if self.slug is not None:
             return self.detail_allowed_operations
 
         return self.list_allowed_operations

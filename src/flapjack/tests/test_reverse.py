@@ -88,8 +88,8 @@ class ReverseTestCase(TestCase):
         url = '/choice/{}/poll'.format(slug)
         request = RequestFactory().get(url)
         parent = api.Choice(request, slug=slug)
-        resource = api.Poll(
-            request, slug='32', parent=(parent, 'poll'), local=True)
+        resource = api.Poll(request, slug='32', local=True,
+            parent=(parent, 'poll', slug))
 
         self.assertEqual(parent.slug, slug)
         self.assertEqual(resource.slug, '32')
@@ -102,8 +102,8 @@ class ReverseTestCase(TestCase):
         url = '/poll/{}/choices/{}'.format(poll, choice)
         request = RequestFactory().get(url)
         parent = api.Poll(request, slug=poll)
-        resource = api.Choice(request, slug=choice,
-            parent=(parent, "choices"), local=True)
+        resource = api.Choice(request, slug=choice, local=True,
+            parent=(parent, "choices", poll))
 
         self.assertEqual(resource.slug, choice)
         self.assertEqual(parent.slug, poll)
@@ -116,9 +116,8 @@ class ReverseTestCase(TestCase):
         path = ['question']
         request = RequestFactory().get(url)
         parent = api.Choice(request, slug=slug)
-        resource = api.Poll(
-            request, slug='32', parent=(parent, 'poll'), local=True,
-            path=path)
+        resource = api.Poll(request, slug='32', local=True, path=path,
+            parent=(parent, 'poll', slug))
 
         self.assertEqual(parent.slug, slug)
         self.assertEqual(resource.slug, '32')
@@ -126,15 +125,15 @@ class ReverseTestCase(TestCase):
         self.assertEqual(resource.path, path)
 
     def test_path_local_many_attribute(self):
-        """Tests for `/poll/:id/choices/:id`."""
+        """Tests for `/poll/:id/choices/:id/choice_text`."""
         poll = '262627'
         choice = '231'
         path = ['choice_text']
         url = '/poll/{}/choices/{}/choice_text'.format(poll, choice)
         request = RequestFactory().get(url)
         parent = api.Poll(request, slug=poll)
-        resource = api.Choice(request, slug=choice, path=path,
-            parent=(parent, "choices"), local=True)
+        resource = api.Choice(request, slug=choice, path=path, local=True,
+            parent=(parent, "choices", poll))
 
         self.assertEqual(resource.slug, choice)
         self.assertEqual(parent.slug, poll)
@@ -148,10 +147,10 @@ class ReverseTestCase(TestCase):
         url = '/poll/{}/choices/{}/poll'.format(poll, choice)
         request = RequestFactory().get(url)
         parent_poll = api.Poll(request, slug=poll)
-        parent_choice = api.Choice(request, slug=choice,
-            parent=(parent_poll, "choices"), local=True)
-        resource = api.Poll(request, slug=poll,
-            parent=(parent_choice, "poll"), local=True)
+        parent_choice = api.Choice(request, slug=choice, local=True,
+            parent=(parent_poll, "choices", poll))
+        resource = api.Poll(request, slug=poll, local=True,
+            parent=(parent_choice, "poll", choice))
 
         self.assertEqual(resource.slug, poll)
         self.assertEqual(parent_choice.slug, choice)
@@ -159,17 +158,17 @@ class ReverseTestCase(TestCase):
         self.assertEqual(resource.url, url)
 
     def test_path_local_nested(self):
-        """Tests for `/poll/:id/choices/:id/poll`."""
+        """Tests for `/poll/:id/choices/:id/poll/question`."""
         poll = '262627'
         choice = '231'
         path = ['question']
         url = '/poll/{}/choices/{}/poll/question'.format(poll, choice)
         request = RequestFactory().get(url)
         parent_poll = api.Poll(request, slug=poll)
-        parent_choice = api.Choice(request, slug=choice,
-            parent=(parent_poll, "choices"), local=True)
-        resource = api.Poll(request, slug=poll, path=path,
-            parent=(parent_choice, "poll"), local=True)
+        parent_choice = api.Choice(request, slug=choice, local=True,
+            parent=(parent_poll, "choices", poll))
+        resource = api.Poll(request, slug=poll, local=True, path=path,
+            parent=(parent_choice, "poll", choice))
 
         self.assertEqual(resource.slug, poll)
         self.assertEqual(parent_choice.slug, choice)

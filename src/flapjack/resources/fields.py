@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
+import six
 from .. import utils
 
 
@@ -35,9 +36,6 @@ class Field(object):
         #! Path of the field; storing for interesting purposes.
         self.path = kwargs.get('path')
 
-        #! Stored segments that correspond to lazily evaluated accessors.
-        self._segments = self.path.split('__')
-
         #! Stored relation reference.
         self._relation = kwargs.get('relation')
 
@@ -46,22 +44,29 @@ class Field(object):
         if self._relation is not None:
             if not isinstance(self._relation[0], type):
                 # Resolve resource class object
-                self._relation[0] = utils.load(self._relation[0])
+                relation = list(self._relation)
+                relation[0] = utils.load(relation[0])
+                self._relation = tuple(relation)
+
+            if isinstance(self._relation[1], six.string_types):
+                # Relation path needs to be expanded
+                relation = list(self._relation)
+                relation[1] = relation[1].split('__')
+                self._relation = tuple(relation)
 
             # Resource class object is already resolved; return it.
             return self._relation
 
-        # No relation; nothing to do.
-        return None
+        # No relation; nothing to return.
 
     def accessor(self, value):
         for accessor in self.accessors:
             # Iterate and access the entire field path
             value = accessor(value)
 
-        if value is not None and self._segments:
+        if value is not None and self.path:
             depth = 0
-            for segment in self._segments:
+            for segment in self.path:
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -75,7 +80,7 @@ class Field(object):
                 depth += 1
 
             # Remove segments used
-            self._segments = self._segments[depth:]
+            self.path = self.path[depth:]
 
         # Return what we've accessed
         return value
