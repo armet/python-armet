@@ -168,7 +168,7 @@ class BaseResource(object):
         """Builds the complete URL configuration for this resource."""
         # Base regex for the url format; includes the `.encoder`
         # functionality.
-        regex = r'^{}{}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name)
+        regex = r'^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name)
 
         # Simple kwargs so that the URL reverser has some more to go off of
         kwargs = {'resource': cls.name}
@@ -176,24 +176,21 @@ class BaseResource(object):
         # Instantiate a new derived resource of ourself to use in the binding
         # This localizes each mount point of this resource to its own
         # class object.
-        obj = type(cls.name, (cls,), {})
+        cls.cls = type(cls.name, (cls,), {})
 
         # Collect and return URL patterns
         return patterns('',
             # List access; eg `/poll`
-            url(regex.format(''), obj.view,
-                name=cls.url_name,
-                kwargs=kwargs),
+            url(regex.format(''),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
 
             # Singular access; eg `/poll/51`
-            url(regex.format(r'/(?P<slug>[^/]+?)'), obj.view,
-                name=cls.url_name,
-                kwargs=kwargs),
+            url(regex.format(r'/(?P<slug>[^/]+?)'),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
 
             # Sub access; eg `/poll/1/choices/61/choice_text`
-            url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'), obj.view,
-                name=cls.url_name,
-                kwargs=kwargs),
+            url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'),
+                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
         )
 
     @classmethod
@@ -342,7 +339,7 @@ class BaseResource(object):
                 # we're not a string or some sort of mapping).
                 return (prepare(x) for x in data)
 
-            except TypeError as ex:
+            except TypeError:
                 # Definitely not an iterable.
                 pass
 
@@ -475,7 +472,7 @@ class BaseResource(object):
         # TODO: Perhaps move this and the url reverse speed up bits out ?
         try:
             urlmap = cls._resolver.reverse_dict.getlist(
-                cls.view)[identifier][0][0]
+                cls.cls.view)[identifier][0][0]
 
         except IndexError:
             # No found reversal; die
