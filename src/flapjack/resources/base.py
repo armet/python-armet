@@ -363,7 +363,7 @@ class BaseResource(object):
             cls, path, embed, local = relation
 
             # Instantiate a reference to the relation
-            resource = cls(self.request, path=path, local=local,
+            resource = cls(request=self.request, path=path, local=local,
                 parent=(self, name, self.make_slug(obj)))
 
             if not embed:
