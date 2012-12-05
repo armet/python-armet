@@ -488,16 +488,49 @@ class BaseResource(object):
     @property
     def url(self):
         """Retrieves the reversed URL for this resource instance."""
-        return self.reverse(self.slug, self.path)
+        return self.reverse(self.slug, self.path, self.parent, self.local)
 
     @classmethod
-    def reverse(cls, slug=None, path=None):
-        """Reverses a URL for the resource or for the passed object."""
+    def reverse(cls, slug=None, path=None, parent=None, local=False):
+        """Reverses a URL for the resource or for the passed object.
+
+        @parent
+            Describes where to reverse this resource from.
+            Tuple of (<parent resource>, "field name on parent").
+        """
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
         #       Need to look into this later so we can have unicode here.
         if slug is None:
             # Accessing the resource as a whole; no path is possible.
             return cls._url_format(cls._URL)
+
+        # >>> /poll/3/choices/51/poll/question
+        #  path = (question,)
+        #  parent = (<choice obj>, "poll")
+
+        if local and parent is not None:
+            # Local path; we need to do something about it.
+            # The parent must be a specific parent; ie. with a slug
+            parent_obj, parent_name = parent
+
+            # Build composite path
+            composite = []
+            composite.append(parent_name)
+
+            if parent_obj._fields[parent_name].collection:
+                composite.append(slug)
+
+            if path is not None:
+                composite.extend(path)
+
+            # if parent_obj._fields[parent_name].relation:
+            #     parent = (parent_obj._fields[parent_name].relation, )
+
+            print(parent)
+            print(vars(parent_obj._fields[parent_name]))
+
+            # Send it off to the parent object for reversal.
+            return parent_obj.reverse(parent_obj.slug, composite)
 
         if path is not None:
             # Accessing the resource individually with a path.
