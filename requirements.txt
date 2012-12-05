@@ -6,3 +6,4 @@ python-magic
 python-dateutil
 django-nose
 coverage
+django-extensions

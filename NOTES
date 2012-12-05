@@ -1,3 +1,4 @@
+
 >>> resources.Poll(identifier=1).reverse()
 /api/poll/1
 

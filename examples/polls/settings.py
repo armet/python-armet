@@ -115,6 +115,9 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    # Extensions
+    'django_extensions',
+
     # Project
     PROJECT_NAME,
 
@@ -136,8 +139,24 @@ NOSE_ARGS = [
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {},
-    'handlers': {},
-    'loggers': {}
+    'disable_existing_loggers': True,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'flapjack': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'filters': []
+        },
+    }
 }
