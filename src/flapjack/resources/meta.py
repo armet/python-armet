@@ -78,6 +78,10 @@ def _is_field_filterable(obj, name):
 
 def _is_field_collection(field):
     """Tests if the specified field is some type of collection."""
+    if isinstance(field, RelatedObject):
+        # This happens to be a reverse relation; test using the provided.
+        return field.field.rel.multiple
+
     try:
         # Attempt to discover if the null value is some sort of
         # collection (and isn't a string) which would make it an collection.
@@ -160,6 +164,19 @@ class DeclarativeResource(type):
     """Defines the metaclass for the Resource class.
     """
 
+    def _get_field_object(self, name):
+        try:
+            # Check the form field dictionary for the field object
+            return self.form_fields[name]
+
+        except KeyError:
+            # Not a form field; return nothing.
+            pass
+
+    def _get_field_class(self, field):
+        # Attempt to get the field class using the declared field.
+        return _get_field_class(field)
+
     def _set_field(self,
             name,
             path=None,
@@ -168,24 +185,18 @@ class DeclarativeResource(type):
             field=None,
             cls=None):
         """Sets the field with the passed name on the resource."""
-        if field is None:
-            # Attempt to get the field object from the form.
-            try:
-                field = self.form.base_fields.get(name) #Possible AttributeError, yeah, riiight there
-            except AttributeError:
-                pass
-
-        if cls is None:
-            # Determine the field class from the field object (if there isn't a
-            # field object then we just use the base field class).
-            cls = _get_field_class(field)
-
         # Explode the segments from the path
         segments = path.split('__') if path is not None else ('')
 
         if not segments[0]:
             # If there is no valid segment#0 then the name becomes segment#0.
             segments[0] = name
+
+        # Attempt to get the field object.
+        field = self._get_field_object(segments[0])
+
+        # Get the field class to use.
+        cls = self._get_field_class(field)
 
         # Conditionally determine some field properites.
         if editable is None:
@@ -276,16 +287,13 @@ class DeclarativeResource(type):
             # If the form has a `declared_fields` attribute then that is what
             # would normally be at `base_fields`; else `base_fields` is the
             # list of explicitly defined fields.
-            declared_fields = self.form.base_fields
+            self.form_fields = self.form.base_fields
             if hasattr(self.form, 'declared_fields'):
-                declared_fields = self.form.declared_fields
-
-            # Store the names of the fields.
-            self.form_fields = declared_fields.keys()
+                self.form_fields = self.form.declared_fields
 
         else:
-            # No form; no form fields; make us an empty tuple.
-            self.form_fields = ()
+            # No form; no form fields; make us an empty dictionary.
+            self.form_fields = {}
 
         # Discover any fields we can.
         self._discover_fields()
@@ -352,34 +360,32 @@ class DeclarativeResource(type):
 
 class DeclarativeModel(DeclarativeResource):
 
-    def _set_field(self, name, **kwargs):
-        if kwargs.get('field') is None:
-            # Attempt to get the field object using the declared name.
-            try:
-                # Try the model class object first.
-                kwargs['field'] = self.model._meta.get_field_by_name(name)[0]
+    def _get_field_object(self, name):
+        try:
+            # Check the model field dictionary for the field object
+            return self.model_fields[name]
 
-            except FieldDoesNotExist:
-                # The field isn't present on the model.
-                pass
+        except KeyError:
+            # Not a model field; perhaps..
+            return super(DeclarativeModel, self)._get_field_object(name)
 
-        if kwargs.get('cls') is None:
-            # Attempt to get the field class using the declared field.
-            kwargs['cls'] = _get_field_class(kwargs.get('field'))
+    def _get_field_class(self, field):
+        # Attempt to get the field class using the declared field.
+        field = super(DeclarativeModel, self)._get_field_class(field)
 
-            # Meld with a Model Field
-            # TODO: Remove `b` prefix upon python3
-            kwargs['cls'] = type(b'Model{}'.format(kwargs['cls'].__name__),
-                (fields.ModelField, kwargs['cls']), {})
+        # Meld with a Model Field
+        # TODO: Remove `b` prefix upon python3
+        field = type(b'Model{}'.format(field.__name__),
+            (fields.ModelField, field), {})
 
-        # Let us go and set the field.
-        return super(DeclarativeModel, self)._set_field(name, **kwargs)
+        # Return what we got
+        return field
 
     def _discover_fields(self):
         # Iterate through and set these model fields on the resource.
         for name in self.model_fields:
             # Grab the field object
-            field = self.model._meta.get_field_by_name(name)[0]
+            field = self.model_fields[name]
 
             if isinstance(field, RelatedObject):
                 # Don't automagically generate reverse relationships.
@@ -403,11 +409,26 @@ class DeclarativeModel(DeclarativeResource):
 
         if self.model:
             # Store the model fields.
-            self.model_fields = self.model._meta.get_all_field_names()
+            self.model_fields = {}
+            for field_name in self.model._meta.get_all_field_names():
+                # Get field object from the model
+                field = self.model._meta.get_field_by_name(field_name)[0]
+
+                # We store these by accessor name and not neccessarily by
+                # field name.
+                accessor = field_name
+
+                # Touch up if we're a reverse relation as things are stored
+                # a bit differently.
+                if isinstance(field, RelatedObject):
+                    accessor =  field.get_accessor_name()
+
+                # Store these in our dictionary.
+                self.model_fields[accessor] = field
 
         else:
-            # No model; no model fields: store an empty tuple.
-            self.model_fields = ()
+            # No model; no model fields: store an empty dictionary.
+            self.model_fields = {}
 
         # Discover anything else we can from the form
         super(DeclarativeModel, self).__init__(name, bases, attrs)
