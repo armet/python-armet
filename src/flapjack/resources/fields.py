@@ -93,6 +93,10 @@ class Field(object):
     def _build_accessor(self, cls, name):
         obj = getattr(cls, name, None)
         if obj is not None:
+            if hasattr(obj, '__call__'):
+                # A readable descriptor at the very least
+                return lambda o, x=obj.__call__: x(o)
+
             if hasattr(obj, '__get__'):
                 # A readable descriptor at the very least
                 return lambda o, x=obj.__get__: x(o)

@@ -163,35 +163,33 @@ class BaseResource(object):
                 return obj.pk
         """
 
+    #! The base regex for the urls.
+    _url_base_regex = r'^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'
+
     @utils.classproperty
     @utils.memoize
     def urls(cls):
         """Builds the complete URL configuration for this resource."""
         # Base regex for the url format; includes the `.encoder`
         # functionality.
-        regex = r'^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'.format(cls.name)
+        regex = cls._url_base_regex.format(cls.name)
 
         # Simple kwargs so that the URL reverser has some more to go off of
         kwargs = {'resource': cls.name}
-
-        # Instantiate a new derived resource of ourself to use in the binding
-        # This localizes each mount point of this resource to its own
-        # class object.
-        cls.cls = type(cls.name, (cls,), {})
 
         # Collect and return URL patterns
         return patterns('',
             # List access; eg `/poll`
             url(regex.format(''),
-                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
+                cls.view, name=cls.url_name, kwargs=kwargs),
 
             # Singular access; eg `/poll/51`
             url(regex.format(r'/(?P<slug>[^/]+?)'),
-                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
+                cls.view, name=cls.url_name, kwargs=kwargs),
 
             # Sub access; eg `/poll/1/choices/61/choice_text`
             url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'),
-                cls.cls.view, name=cls.cls.url_name, kwargs=kwargs),
+                cls.view, name=cls.url_name, kwargs=kwargs),
         )
 
     @classmethod
@@ -206,9 +204,7 @@ class BaseResource(object):
             resource = cls.traverse(kwargs.get('path'))
 
             # Instantiate the resource
-            obj = resource(request,
-                slug=kwargs.get('slug'),
-                format=kwargs.get('format'))
+            obj = resource(request=request, **kwargs)
 
             # Initiate the dispatch cycle and return its result
             return obj.dispatch()
@@ -235,11 +231,11 @@ class BaseResource(object):
             # No sub-resource path provided; return our cls
             return cls
 
-    def __init__(self, request, **kwargs):
+    def __init__(self, **kwargs):
         """
         """
         #! Django WSGI request object.
-        self.request = request
+        self.request = kwargs['request']
 
         #! Identifier of the resource if we are being accessed directly.
         self.slug = kwargs.get('slug')
@@ -332,7 +328,14 @@ class BaseResource(object):
             response['Content-Type'] = encoder.mimetype
 
         # Declare who we are in the `Location` header.
+        # try:
+        # TODO: Figure out a nice way to do this without reversing;
+        #   perhaps try reverse and then fallback on a header that
+        #   specifies origin?
         response['Location'] = self.url
+
+        # except urlresolvers.NoReverseMatch:
+        #     # Resource must not be declared in `urls.py` normally.
 
         # Return the built response.
         return response
@@ -463,7 +466,7 @@ class BaseResource(object):
         # TODO: Perhaps move this and the url reverse speed up bits out ?
         try:
             urlmap = cls._resolver.reverse_dict.getlist(
-                cls.cls.view)[identifier][0][0]
+                cls.view)[identifier][0][0]
 
         except IndexError:
             # No found reversal; die

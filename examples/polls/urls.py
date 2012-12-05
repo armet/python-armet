@@ -14,7 +14,7 @@ admin.autodiscover()
 
 # Collect API endpoints
 # TODO: Replace with interface.autodiscover('polls')
-interface = Api('v1')
+interface = Api()
 interface.register(api.Choice)
 interface.register(api.Poll)
 
@@ -25,5 +25,5 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     # Application interface
-    url(r'^api/', include(interface.urls))
+    url(r'^', include(interface.urls))
 )

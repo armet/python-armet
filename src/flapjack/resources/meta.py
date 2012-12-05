@@ -187,32 +187,37 @@ class DeclarativeResource(type):
         """Sets the field with the passed name on the resource."""
         if isinstance(path, six.string_types):
             # Explode the segments from the path
-            segments = path.split('__') if path is not None else ('')
+            parts = path.split('__') if path is not None else ('')
 
         else:
             # Already exploded.
-            segments = path
+            parts = path
 
-        if not segments[0]:
+        if parts is not None and not parts[0]:
             # If there is no valid segment#0 then the name becomes segment#0.
-            segments[0] = name
+            parts[0] = name
 
-        # Attempt to get the field object.
-        field = self._get_field_object(segments[0])
+        if parts is not None:
+            # Attempt to get the field object.
+            field = self._get_field_object(parts[0])
+
+        else:
+            # No path parts; no field.
+            field = None
 
         # Get the field class to use.
         cls = self._get_field_class(field)
 
         # Conditionally determine some field properites.
         if editable is None:
-            if hasattr(self.form, '_meta') and segments:
+            if hasattr(self.form, '_meta') and parts:
                 # If a value for editable was not provided; discover it
-                editable = _is_field_editable(self.form._meta, segments[0])
+                editable = _is_field_editable(self.form._meta, parts[0])
 
             else:
                 # No black/white list on form; its editable if it happens to
                 # be on the form.
-                editable = segments[0] in self.form_fields
+                editable = parts[0] in self.form_fields if parts else False
 
         if collection is None:
             if field:
@@ -239,7 +244,7 @@ class DeclarativeResource(type):
             collection=collection,
             editable=editable,
             prepare=prepare,
-            path=segments,
+            path=parts,
             relation=self.relations.get(name)
         )
 
@@ -262,23 +267,27 @@ class DeclarativeResource(type):
 
         # Append any 'extra' fields listed in the `include` directive.
         if self.include is not None:
-            if not isinstance(self.include, collections.Mapping):
-                # Simple form was used; make a simple dictionary to
-                # ease processing.
-                self.include = {n: field_helper() for n in self.include}
-
             # Iterate through additional field names and set them.
             for name in self.include:
                 path, collection = self.include[name]
                 self._set_field(name,
-                    path=path.split('__'),
+                    path=path.split('__') if path is not None else None,
                     collection=collection)
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
             return super(DeclarativeResource, self).__init__(
-                name, bases, attrs)
+                name, bases, attrs)\
+
+        if (self.include is not None
+                and not isinstance(self.include, collections.Mapping)):
+            # Simple form was used; make a simple dictionary to
+            # ease processing.
+            self.include = {n: field_helper() for n in self.include}
+
+            # Update attrs listing for include.
+            attrs['include'] = self.include
 
         # Collect and merge all hashes for `include` and `relations`
         self.include = _collect('include', attrs, bases)
