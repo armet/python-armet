@@ -101,7 +101,7 @@ def for_all(value, method, test=None):
 
 
 def coerce_dict(obj):
-    """Attemp to coerce the passed object as a dictionary."""
+    """Attempts to coerce the passed object as a dictionary."""
     try:
         # Last attempt; use `vars(obj)` to grab everything that doesn't
         # start with an underscore from the object.
@@ -119,9 +119,13 @@ def coerce_dict(obj):
         result = {}
         for name in dir(obj):
             if not name.startswith('_'):
-                value = obj.__getattribute__(name)
-                if value != obj.__class__.__dict__[name]:
-                    result[name] = obj.__getattribute__(name)
+                try:
+                    value = obj.__getattribute__(name)
+                    if value != obj.__class__.__dict__[name]:
+                        result[name] = obj.__getattribute__(name)
+
+                except KeyError:
+                    pass
 
         return result
 

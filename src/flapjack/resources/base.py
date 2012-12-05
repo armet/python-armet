@@ -260,6 +260,7 @@ class BaseResource(object):
         kwargs['parent'] = helpers.parent(
             resource=cls(
                 request=request,
+                slug=kwargs['slug'],
                 parent=kwargs.get('parent'),
                 local=kwargs.get('local')),
             slug=kwargs['slug'],
@@ -306,6 +307,12 @@ class BaseResource(object):
         if self.path is not None:
             #! Name of the path in the cache.
             self._cache_path_name = '__'.join(self.path)
+
+        if self.slug is None and self.parent is not None:
+            field = self.parent.resource._fields[self.parent.name]
+            if not field.collection:
+                # obj = self.parent.resource.get()[0]
+                self.slug = self.parent.resource.make_slug(obj)
 
     def dispatch(self):
         """
@@ -382,7 +389,7 @@ class BaseResource(object):
         # TODO: Figure out a nice way to do this without reversing;
         #   perhaps try reverse and then fallback on a header that
         #   specifies origin?
-        response['Location'] = self.url
+        # response['Location'] = self.url
 
         # except urlresolvers.NoReverseMatch:
         #     # Resource must not be declared in `urls.py` normally.
@@ -481,7 +488,7 @@ class BaseResource(object):
                 # Utilize the field accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
-            except (ValueError, AttributeError, TypeError) as ex:
+            except (ValueError, AttributeError, TypeError):
                 # Something weird happened with a path segment.
                 raise exceptions.NotFound()
 

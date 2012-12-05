@@ -291,13 +291,15 @@ class DeclarativeResource(type):
                     path=path.split('__') if path is not None else None,
                     collection=collection)
 
-        # Ensure resource URI can be added
-        if self.resource_uri in self._fields:
-            raise ImproperlyConfigured(
-                'resource_uri field in conflict with already defined field.')
+        if self.resource_uri is not None:
+            # Ensure resource URI can be added
+            if self.resource_uri in self._fields:
+                raise ImproperlyConfigured(
+                    'resource_uri field in conflict with '
+                    'already defined field.')
 
-        # Add the resource URI field
-        self._set_field(self.resource_uri)
+            # Add the resource URI field
+            self._set_field(self.resource_uri)
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
@@ -434,6 +436,14 @@ class DeclarativeModel(DeclarativeResource):
         try:
             # Try for a many-to-many relation.
             return field.field.m2m_field_name()
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        try:
+            # Try for a foreign key relation.
+            return field.related.var_name
 
         except AttributeError:
             # Didn't work.
