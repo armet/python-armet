@@ -131,7 +131,9 @@ NOSE_ARGS = [
     '--cover-html',
     '--cover-package=flapjack,flapjack.*',
     '--with-xtraceback',
-    '--cover-branches'
+    '--cover-branches',
+    '--cover-erase',
+    '--cover-inclusive',
 ]
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
