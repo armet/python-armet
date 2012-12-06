@@ -236,6 +236,7 @@ class BaseResource(object):
     @classmethod
     def traverse(cls, request, kwargs):
         """Traverse the resource class with the provided path segments."""
+        print(kwargs)
         if not kwargs.get('path') or not kwargs['path'][0]:
             # No sub-resource path provided; return our cls.
             return cls
@@ -283,6 +284,7 @@ class BaseResource(object):
                 del kwargs['slug']
 
         # Declare if we are local
+        # print(kwargs)
         kwargs['local'] = field.relation.local
 
         # Return the cls object to use
@@ -313,6 +315,13 @@ class BaseResource(object):
 
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local', False)
+
+        # Find the slug if we need to
+        if self.slug is None and self.parent is not None:
+            field = self.parent.resource._fields[self.parent.name]
+            if not field.collection:
+                obj = field.accessor(self.parent.resource.get()[0])
+                self.slug = self.make_slug(obj)
 
     def dispatch(self):
         """
@@ -645,7 +654,7 @@ class BaseResource(object):
         # Return the response
         return None, http.client.NO_CONTENT
 
-    def head(self):
+    def head(self, data=None):
         # Pretend we're a GET; we use the request header already available
         # by HTTP.
         self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'GET'
