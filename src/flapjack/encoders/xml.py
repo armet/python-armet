@@ -19,8 +19,7 @@ def _encode_file_into_xml(e,obj):
 class Encoder(transcoders.Xml, Encoder):
 
     @classmethod
-    def _iterate_thru_object(cls,root,obj):
-       for key in obj:
+    def _insert_data_into_tree(cls,root,key,obj=None):
            try:
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion! See step 1.
@@ -53,19 +52,38 @@ class Encoder(transcoders.Xml, Encoder):
                    cls._iterate_thru_object(sub, key)
                    root.append(sub)
                else:
-                   if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-                       obj = obj.isoformat() # fix date
+                   if isinstance(key, datetime.time) or isinstance(key, datetime.date):
+                       key = key.isoformat() # fix date
 
                    # insert value, not attribute
                    root.append( E.value( str(key) ))
+
+
+    @classmethod
+    def _iterate_thru_object(cls,root,obj):
+       for key in obj:
+           cls._insert_data_into_tree(root,key,obj)
                    
     @classmethod
     def _encode_object_into_xml(cls,obj):
     
     
         e = E.object()
-        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-           obj = obj,
+
+        if isinstance(obj,six.string_types) or isinstance(obj,int) or isinstance(obj, datetime.time) or isinstance(obj, datetime.date): # Test for primitive types
+            cls._insert_data_into_tree(e,obj)
+            return e
+        
+        if not isinstance(obj, Iterable):
+
+            result = utils.coerce_dict(obj)
+
+            if result is not None:
+                cls._iterate_thru_object(e,result)
+                return e
+
+            cls._insert_data_into_tree(e,obj)
+            return e
         
         elif not isinstance(obj, Mapping):
            e = E.objects()
