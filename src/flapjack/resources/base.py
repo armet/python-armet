@@ -144,6 +144,9 @@ class BaseResource(object):
     #!     }
     relations = None
 
+    #! Name used to index into the path cache.
+    _cache_path_name = None
+
     #! Cache of the path to field accessor translations.
     _cache_path = {}
 
@@ -300,6 +303,10 @@ class BaseResource(object):
         #! Path of the resource.
         self.path = kwargs.get('path')
 
+        if self.path is not None:
+            #! Generate a cache name.
+            self._cache_path_name = '__'.join(*self.path)
+
         #! Instance of the parent resource (if navigation was resultant of a
         #! relation.
         self.parent = kwargs.get('parent')
@@ -324,6 +331,7 @@ class BaseResource(object):
             encoder = self._determine_encoder()
 
             # TODO: Assert resource-level authorization
+            body = None
 
             if self.request.body:
                 # Determine an approparite decoder.
