@@ -87,15 +87,15 @@ class BaseModel(base.BaseResource):
     @classmethod
     def prefetch_related(cls, queryset, prefix=None):
         """Performs a `prefetch_related` on all possible fields."""
-        if id(cls) not in cls._prefetch_related_paths and len(queryset) >= 1:
+        prefetch = cls._build_prefetch_related_paths
+        cache = cls._prefetch_related_paths
+        if id(cls) not in cache and len(queryset) >= 1:
             # Initialize the store
-            cls._prefetch_related_paths[id(cls)] = cls._build_prefetch_related_paths(
-                queryset, prefix)
+            cache[id(cls)] = prefetch(queryset, prefix)
 
-        if id(cls) in cls._prefetch_related_paths:
+        if id(cls) in cache:
             # Actually apply the prefetched prefetching
-            return queryset.prefetch_related(
-                *cls._prefetch_related_paths[id(cls)])
+            return queryset.prefetch_related(*cache[id(cls)])
 
         # Apply nothing.
         return queryset
