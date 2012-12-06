@@ -306,28 +306,19 @@ class BaseResource(object):
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local', False)
 
-        if self.path is not None:
-            #! Name of the path in the cache.
-            self._cache_path_name = '__'.join(self.path)
-
-        # Find the slug if we need to
-        if self.slug is None and self.parent is not None:
-            field = self.parent.resource._fields[self.parent.name]
-            if not field.collection:
-                obj = field.accessor(self.parent.resource.get()[0])
-                self.slug = self.make_slug(obj)
-
-    def dispatch(self):
+    def dispatch(self, function=None):
         """
         """
         # Set some defaults so we can reference this later
         encoder = None
+
         try:
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
 
             # Determine the HTTP method
-            function = self._determine_method()
+            if function is None:
+                function = self._determine_method()
 
             # Detect an appropriate encoder.
             encoder = self._determine_encoder()
@@ -347,8 +338,14 @@ class BaseResource(object):
                 # TODO: Assert object-level authorization
 
             # Delegate to the determined function.
-            data, status = function()
+            try:
+                message = function()
+                data, status = message
 
+	    except ValueError:
+	    	# Tuple not unpacked; assume we have just an HTTP Response
+	    	return message
+	    	
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
 
@@ -635,6 +632,11 @@ class BaseResource(object):
     def post(self):
         # Return the response
         return None, http.client.NO_CONTENT
+        
+    def head(self):
+        response = self.dispatch(function=self.get)
+        response.body = None
+        return response
 
     @property
     def _allowed_methods(self):

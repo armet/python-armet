@@ -21,6 +21,19 @@ def _encode_file_into_xml(e,obj):
 #class Xml(transcoders.Xml):
 class Encoder(transcoders.Xml, Encoder):
 
+       #for each item in obj
+           #if item is key-value pair
+               #if value is iterable
+                   #recursion!  See step 1.
+               #else
+                   #render key and value pair under root
+           #else
+               #if value is iterable
+                   #recursion!  See step 1.
+               #else
+                   #insert the item into xml under root
+                   
+
     @classmethod
     def _iterate_thru_object(cls,root,obj):
        #for each item in obj
@@ -39,12 +52,10 @@ class Encoder(transcoders.Xml, Encoder):
                    root.append(sub)
                #else
                else:
-                   if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-                       # This is some kind of date/time -- encode using ISO format.
-                       obj = obj.isoformat()
+                   obj[key] = utils.fix_date(obj[key])
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)}  ))
-           #item is NOT a key-value pair
+           #else
            except (TypeError, IndexError):
                #if value is iterable
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
@@ -57,14 +68,14 @@ class Encoder(transcoders.Xml, Encoder):
                    else:
                        sub = E.attribute( {'name':str(key)} )
 
+#                   sub = E.attribute( {'name':str(key)} )
+
                    cls._iterate_thru_object(sub, key)
                    root.append(sub)
                #else
                else:
-                   if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-                       # This is some kind of date/time -- encode using ISO format.
-                       obj = obj.isoformat()
-                   #render the item into xml under root
+                   key = utils.fix_date(key)
+               #render the item into xml under root
                    root.append( E.value( str(key) ))
                    
     @classmethod
