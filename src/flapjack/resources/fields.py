@@ -64,13 +64,9 @@ class Field(object):
             return self._relation
 
         elif self.related:
-            # if self.path:
-            #     field = self.resource._get_field_object(self.path[0])
-            #     name = self.resource._get_related_name(self.path[0])
-            #     print(name)
             if self.path:
                 resource = None
-                related_name = self.resource._get_related_name(self.path[0])
+                name = self.resource._get_related_name(self.path[0])
 
                 if self.path[0] in self.resource._resources:
                     # There really is a resource out there.
@@ -90,7 +86,7 @@ class Field(object):
                 if resource is not None:
                     # Store it.
                     self._relation = helpers.relation(resource,
-                        related_name=related_name)
+                        related_name=name)
 
                     # Let's do this again.
                     return self.relation
