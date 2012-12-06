@@ -342,9 +342,9 @@ class BaseResource(object):
                 message = function()
                 data, status = message
 
-        except ValueError:
-            # Tuple not unpacked; assume we have just an HTTP Response
-            return message
+            except ValueError:
+                # Tuple not unpacked; assume we have just an HTTP Response
+                return message
 
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
