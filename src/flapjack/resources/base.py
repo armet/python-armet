@@ -50,6 +50,7 @@ class BaseResource(object):
 
     #! List of allowed HTTP methods.
     http_allowed_methods = (
+        'head',
         'get',
         'post',
         'put',
@@ -306,7 +307,7 @@ class BaseResource(object):
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local', False)
 
-    def dispatch(self, function=None):
+    def dispatch(self):
         """
         """
         # Set some defaults so we can reference this later
@@ -317,8 +318,7 @@ class BaseResource(object):
             self.authenticate()
 
             # Determine the HTTP method
-            if function is None:
-                function = self._determine_method()
+            function = self._determine_method()
 
             # Detect an appropriate encoder.
             encoder = self._determine_encoder()
@@ -345,7 +345,7 @@ class BaseResource(object):
 	    except ValueError:
 	    	# Tuple not unpacked; assume we have just an HTTP Response
 	    	return message
-	    	
+
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
 
@@ -632,10 +632,19 @@ class BaseResource(object):
     def post(self):
         # Return the response
         return None, http.client.NO_CONTENT
-        
+
     def head(self):
-        response = self.dispatch(function=self.get)
+        # Pretend we're a GET; we use the request header already available
+        # by HTTP.
+        self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'GET'
+
+        # Run a dispatch through as if we're GET.
+        response = self.dispatch()
+
+        # Clear the body. Setting `content` auto-sets the length.
         response.body = None
+
+        # Return our fake GET.
         return response
 
     @property
