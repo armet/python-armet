@@ -330,23 +330,23 @@ class BaseResource(object):
                 decoder = self._determine_decoder()
 
                 # Decode the request body
-                content = decoder.decode(self.request, self._fields)
+                body = decoder.decode(self.request, self._fields)
 
                 # Run clean cycle over decoded body
-                content = self.clean(content)
+                body = self.clean(body)
 
                 # TODO: Assert object-level authorization
 
             # Delegate to the determined function.
             try:
-                message = function()
+                message = function(body)
                 data, status = message
 
             except ValueError:
                 # Tuple not unpacked; assume we have just an HTTP Response
                 return message
 
-            # Run prepare cycle over the returned data.
+            # Prepare the data for transmission.
             data = self.prepare(data)
 
             # Build and return the response object
@@ -602,7 +602,7 @@ class BaseResource(object):
         # Accessing the resource individually without a path.
         return cls._url_format(cls._URL_SLUG) % slug
 
-    def get(self):
+    def get(self, data=None):
         """Processes a `GET` request.
 
         @returns
@@ -633,7 +633,7 @@ class BaseResource(object):
         # Return the response
         return items, http.client.OK
 
-    def post(self):
+    def post(self, data):
         # Return the response
         return None, http.client.NO_CONTENT
 
