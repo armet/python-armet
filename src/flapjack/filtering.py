@@ -92,8 +92,7 @@ class Filter(object):
         self.filters = {}
 
     @cached_property
-    @staticmethod
-    def terminators():
+    def terminators(self):
         """The list of restricted query terminators (exact, iexact, eq, etc)
         """
         return [x for x in QUERY_TERMS.keys()]
