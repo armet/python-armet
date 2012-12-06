@@ -417,19 +417,25 @@ class BaseResource(object):
     def generic_prepare(self, obj, name, value):
         relation = self._fields[name].relation
         if relation is not None:
-            # Instantiate a reference to the relation
-            parent = helpers.parent(self.__class__(
-                    slug=self.make_slug(obj),
-                    request=self.request,
-                    local=self.local,
-                    parent=self.parent),
-                name, relation.related_name)
+            # Instantiate a reference to the resource
+            try:
+                # Attempt to make a slug.
+                slug = relation.resource.make_slug(value)
+
+            except AttributeError:
+                # Couldn't get the slug.
+                slug = None
 
             resource = relation.resource(request=self.request,
-                slug=relation.resource.make_slug(value),
+                slug=slug,
                 path=relation.path,
                 local=relation.local,
-                parent=parent)
+                parent=helpers.parent(self.__class__(
+                        slug=self.make_slug(obj),
+                        request=self.request,
+                        local=self.local,
+                        parent=self.parent),
+                    name, relation.related_name))
 
             if not relation.embed:
                 def reverser(value, obj=resource):
@@ -466,7 +472,7 @@ class BaseResource(object):
         if self.path:
             if self._cache_path_name not in self._cache_path:
                 # No path field has been created yet; create one
-                self._cache_path[self._cache_path_name] = fields.Field(
+                self._cache_path[self._cache_path_name] = fields.Field(self,
                     path=self.path)
 
             # Retrieve the cached path: (field, segment#0)

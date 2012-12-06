@@ -177,7 +177,7 @@ class DeclarativeResource(type):
         # Attempt to get the field class using the declared field.
         return _get_field_class(field)
 
-    def _get_related_name(self, field):
+    def _get_related_name(self, name):
         # Attempt to get the related name for the indiciated field.
         pass
 
@@ -249,7 +249,7 @@ class DeclarativeResource(type):
         if relation is not None:
             if relation.related_name is None:
                 relation = relation._replace(
-                    related_name=self._get_related_name(field))
+                    related_name=self._get_related_name(parts[0]))
 
         elif field is not None:
             # Is the field a related field?
@@ -431,7 +431,8 @@ class DeclarativeModel(DeclarativeResource):
         # Return what we got
         return field
 
-    def _get_related_name(self, field):
+    def _get_related_name(self, name):
+        field = self.model_fields.get(name)
         try:
             # Pretend we have a reverse related object here.
             return field.field.attname
