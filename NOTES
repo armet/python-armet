@@ -1,45 +1,3 @@
-
->>> resources.Poll(identifier=1).reverse()
-/api/poll/1
-
->>> resources.Poll(identifier=1, path=('question',)).reverse()
-/api/poll/1/question
-
->>> resources.Poll(identifier=1, path=('choices',)).reverse()
-/api/poll/1/choices
-
->>> resources.Poll(parent=(<Account>, "poll"), local=True).reverse()
-        self.parent[0].reverse(<Poll>, field=self.parent[1])
-
-/api/account/51/polls/23
-
-
-
-## Reversal notes
-# Is it worth it for Resource.reverse() to work on a class object?
-resources.Poll.reverse()
-
-
->>> resources.Poll().resource_uri
-/api/poll/1
-
-
-# 2. Only thing left with relations is to allow for
-     `resource_cls(local=True, parent=self)` -- at least this is what I think
-     would allow resource_obj.reverse to reverse properly with a local flag.
-     Of course this would need to be recursive in order to retrieve deeply
-     nested resources ala `/poll/1/choices/23/user/username`
-
-# 2.5. Nearly forgot -- the ability to resolve something like the example
-       above (`/poll/1/choices/23/user/username`) aka transversal.
-
-# 3. relations are automagically created and pointed to the canonical resource
-#    for the model; if none exists, a resource is created
-
-# 4. API browser + registar
-
-# 5. api.autodiscover()
-
 # 6. `HEAD` and `OPTIONS`
 
 # 7. `PUT`, `POST`, `DELETE`, and `PATCH`
@@ -60,4 +18,6 @@ resources.Poll.reverse()
 
 # 14. documentation
 
-# 15. release!
+# 15. api.autodiscover()
+
+# 16. release!
