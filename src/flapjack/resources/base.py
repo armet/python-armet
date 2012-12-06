@@ -342,9 +342,9 @@ class BaseResource(object):
                 message = function()
                 data, status = message
 
-	    except ValueError:
-	    	# Tuple not unpacked; assume we have just an HTTP Response
-	    	return message
+        except ValueError:
+            # Tuple not unpacked; assume we have just an HTTP Response
+            return message
 
             # Run prepare cycle over the returned data.
             data = self.prepare(data)
@@ -399,6 +399,10 @@ class BaseResource(object):
 
     def prepare(self, data):
         """Prepares the data for transmission."""
+        if data is None:
+            # No data; return nothing.
+            return None
+
         prepare = self.item_prepare
         if not (isinstance(data, string_types) or isinstance(data, Mapping)):
             try:
