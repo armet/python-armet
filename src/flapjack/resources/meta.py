@@ -245,23 +245,27 @@ class DeclarativeResource(type):
         # Pull the relation and attempt to determine the related name if
         # not provided.
         relation = self.relations.get(name)
+        related = False
         if relation is not None:
             if relation.related_name is None:
                 relation = relation._replace(
                     related_name=self._get_related_name(field))
 
-        else:
-            # TODO: Auto-make relation?
-            pass
+        elif field is not None:
+            # Is the field a related field?
+            related = (
+                isinstance(field, RelatedObject) or
+                isinstance(field, RelatedField))
 
         # Instantiate the field object and set it on the resource class.
-        self._fields[name] = cls(
+        self._fields[name] = cls(self,
             visible=_is_field_visible(self, name),
             filterable=_is_field_filterable(self, name),
             collection=collection,
             editable=editable,
             prepare=prepare,
             path=parts,
+            related=relation is not None or related,
             relation=relation
         )
 
@@ -403,6 +407,9 @@ class DeclarativeResource(type):
 
 class DeclarativeModel(DeclarativeResource):
 
+    #! Cache of canonical resources.
+    _resources = {}
+
     def _get_field_object(self, name):
         try:
             # Check the model field dictionary for the field object
@@ -500,8 +507,19 @@ class DeclarativeModel(DeclarativeResource):
             # No model; no model fields: store an empty dictionary.
             self.model_fields = {}
 
+        # Ensure the resource has a name.
+        if 'name' not in attrs:
+            self.name = name.lower()
+
+        if self.canonical and self.model is not None:
+            if self.name in self._resources:
+                # Already exists somewhere.
+                raise ImproperlyConfigured(
+                    'A canonical resource already exists for the'
+                    ' linked model.')
+
+            # Designate this as a canonical resource for the linked model.
+            self._resources[self.name] = self
+
         # Discover anything else we can from the form
         super(DeclarativeModel, self).__init__(name, bases, attrs)
-
-        # Declare class object caches; every resource needs one of these
-        # self._prefetch_related_paths = []

@@ -69,5 +69,5 @@ class NotImplemented(Error):
     status = http.client.NOT_IMPLEMENTED
 
 
-class AuthenticationRequired(Error):
+class NetworkAuthenticationRequired(Error):
     status = http.client.NETWORK_AUTHENTICATION_REQUIRED

@@ -14,6 +14,11 @@ class BaseModel(base.BaseResource):
     #! for read-only resources.
     model = None
 
+    #! Declares a resource to be the primary provider of the associated model.
+    #! There cannot be two resources linked to the same model with
+    #! `canonical = True`.
+    canonical = True
+
     #! Class object cache of what is to be prefetched.
     _prefetch_related_paths = {}
 

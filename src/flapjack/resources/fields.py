@@ -11,7 +11,10 @@ from . import helpers
 
 class Field(object):
 
-    def __init__(self, **kwargs):
+    def __init__(self, resource, **kwargs):
+        #! The resource object this field is bound to.
+        self.resource = resource
+
         #! Whether this field can be modified or not.
         self.editable = kwargs.get('editable', False)
 
@@ -38,6 +41,9 @@ class Field(object):
         #! Path of the field; storing for interesting purposes.
         self.path = kwargs.get('path')
 
+        #! This field is related to some other resource (or should be).
+        self.related = kwargs.get('related')
+
         #! Stored relation reference.
         self._relation = kwargs.get('relation')
 
@@ -57,7 +63,16 @@ class Field(object):
             # Resource class object is already resolved; return it.
             return self._relation
 
-        # No relation; nothing to return.
+        # elif self.related:
+        #     if self.path and self.path[0] in self.resource._resources:
+        #         # There really is a resource out there.
+        #         self._relation = helpers.relation(
+        #             self.resource._resources[self.path[0]])
+
+        #         # Let's do this again.
+        #         return self.relation
+
+        # Nothing to relate; go away.
 
     def accessor(self, value):
         for accessor in self.accessors:

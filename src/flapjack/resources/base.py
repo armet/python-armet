@@ -426,6 +426,7 @@ class BaseResource(object):
                 name, relation.related_name)
 
             resource = relation.resource(request=self.request,
+                slug=relation.resource.make_slug(value),
                 path=relation.path,
                 local=relation.local,
                 parent=parent)
