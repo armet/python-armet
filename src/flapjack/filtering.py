@@ -24,7 +24,7 @@ class FilterHack(Exception):
     def __init__(self, field, querystring):
         super(FilterHack, self).__init__()
         self.field = field
-        self.query = querystring
+        self.querystring = querystring
 
 
 class DummyField(object):
