@@ -16,6 +16,27 @@ LIST_CASES_EXACT_TWO = 'range',
 DEFAULT_FILTER = 'exact'
 
 
+class FilterHack(Exception):
+    """This is a hack to make filter_FOO work on resources.
+    FIXME: Replace this with an actual method
+    """
+
+    def __init__(self, field, querystring):
+        super(FilterHack, self).__init__()
+        self.field = field
+        self.query = querystring
+
+
+class DummyField(object):
+    """A dummy field object that doesn't modify the field contents
+    """
+
+    def clean(self, data):
+        """Implement a no-op clean function
+        """
+        return data
+
+
 class FilterError(Exception):
     """Class for throwing internally when theres a filter error
     """
@@ -59,7 +80,10 @@ class FilterAction(object):
 
 class Filter(object):
     """docstring for Model"""
-    def __init__(self, fields):
+    def __init__(self, resource, fields):
+        # Reference to the resource that this filtering object is attached to
+        self.resource = resource
+
         # Simple reference to the field list to start from
         self.fields = fields
 
@@ -68,7 +92,8 @@ class Filter(object):
         self.filters = {}
 
     @cached_property
-    def terminators(self):
+    @staticmethod
+    def terminators():
         """The list of restricted query terminators (exact, iexact, eq, etc)
         """
         return [x for x in QUERY_TERMS.keys()]
@@ -86,6 +111,14 @@ class Filter(object):
         try:
             for idx, field_string in enumerate(filtermap, 1):
                 field = fields[field_string]
+
+                # Check to see if we have an override method in the resource
+                # object
+                override_method = "filter_{}".format(field_string)
+                override = getattr(self.resource, override_method, None)
+                if override:
+                    # Make a new dummy filtering object for this
+                    raise FilterHack(DummyField(), override(filtermap[idx:]))
 
                 # Make sure the field is visible (not blacklisted)
                 if not field.visible:
@@ -178,20 +211,21 @@ class Filter(object):
         # Make sure that we're allowed to filter this
         try:
             action.field = self.can_filter(items)
-        except FilterError as e:
+
+        except FilterError as ex:
             # can_filter doesn't have access to the entire filter string
             # correct the filter string and re-throw it
-            e.name = name
-            raise e
+            ex.name = name
+            raise ex
 
-        # Tack on the terminator again
-        if terminator is not None:
-            items.append(terminator)
+        except FilterHack as ex:
+            # This is not an error.  This is a hack to delegate the
+            # replacement of the filterstring to the resource object
+            action.field = ex.field
+            action.name = ex.querystring
 
         # We're all good, return the action
         return action
-        return LOOKUP_SEP.join(items), terminator or DEFAULT_FILTER, negated
-
 
 class Model(Filter):
     """model specific filtering stuff
