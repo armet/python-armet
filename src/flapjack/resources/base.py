@@ -305,7 +305,7 @@ class BaseResource(object):
 
         if self.path is not None:
             #! Generate a cache name.
-            self._cache_path_name = '__'.join(*self.path)
+            self._cache_path_name = '__'.join(self.path)
 
         #! Instance of the parent resource (if navigation was resultant of a
         #! relation.
