@@ -600,7 +600,8 @@ class Base(six.with_metaclass(meta.Resource)):
         obj = OrderedDict()
 
         # Append the URI at the beginning.
-        obj[self.resource_uri] = self.reverse(item)
+        if self.resource_uri is not None:
+            obj[self.resource_uri] = self.reverse(item)
 
         # Iterate through the fields and build the object from the item.
         for name, field in self._fields.iteritems():
