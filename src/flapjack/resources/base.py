@@ -50,11 +50,11 @@ class BaseResource(object):
 
     #! List of allowed HTTP methods.
     http_allowed_methods = (
-        'head',
-        'get',
-        'post',
-        'put',
-        'delete',
+        'HEAD',
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
     )
 
     #! List of allowed HTTP methods against a whole
@@ -370,7 +370,7 @@ class BaseResource(object):
                 # TODO: Assert object-level authorization
 
             # Delegate to the determined function and return its response.
-            return function(body)
+            return function(data)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
@@ -482,10 +482,8 @@ class BaseResource(object):
         return value
 
     def prepare_resource_uri(self, obj, value):
-        # Set the resource uri on the object.
-        return self.reverse(self.make_slug(obj),
-            parent=self.parent,
-            local=self.local)
+        """Set the resource uri on the object."""
+        return self.reverse(self.make_slug(obj), None, self.parent, self.local)
 
     def item_prepare(self, item):
         """Prepares an item for transmission."""
@@ -795,8 +793,7 @@ class BaseResource(object):
 
     @property
     def _allowed_operations(self):
-        """Retrieves a list of allowed operations for the current request.
-        """
+        """Retrieves a list of allowed operations for the current request."""
         return (self.detail_allowed_operations if self.slug is not None else
             self.list_allowed_operations)
 
