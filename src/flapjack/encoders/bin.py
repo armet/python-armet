@@ -4,8 +4,8 @@ import datetime
 import six
 import pickle
 import magic
-from .http import HttpResponse
-from . import exceptions, transcoders, utils
+from ..http import Response as HttpResponse
+from .. import exceptions, transcoders, utils
 from collections import Iterable, OrderedDict
 
 class Bin(transcoders.Bin, Encoder):
@@ -28,7 +28,7 @@ class Bin(transcoders.Bin, Encoder):
             'attachment'
         return response
 
-            
+
 
 # I know this is the hackiest possible way to do it.
 # TODO: clean up this code

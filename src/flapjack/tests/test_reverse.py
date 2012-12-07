@@ -4,6 +4,7 @@ from __future__ import absolute_import, division
 import os
 from django.utils.unittest import TestCase
 from django.test.client import RequestFactory
+from flapjack.resources import helpers
 from . import api
 
 
@@ -11,8 +12,7 @@ class ReverseTestCase(TestCase):
 
     def test_list(self):
         """Tests for `/poll`."""
-        request = RequestFactory().get('/poll')
-        resource = api.Poll(request)
+        resource = api.Poll()
 
         self.assertEqual(resource.url, '/poll')
         self.assertEqual(resource.slug, None)
@@ -21,8 +21,7 @@ class ReverseTestCase(TestCase):
         """Tests for `/poll/:id`."""
         slug = '1'
         url = '/poll/{}'.format(slug)
-        request = RequestFactory().get(url)
-        resource = api.Poll(request, slug=slug)
+        resource = api.Poll(slug=slug)
 
         self.assertEqual(resource.slug, slug)
         self.assertEqual(resource.url, url)
@@ -31,8 +30,7 @@ class ReverseTestCase(TestCase):
         """Tests for `/poll/:id`."""
         slug = '1239853297572983'
         url = '/poll/{}'.format(slug)
-        request = RequestFactory().get(url)
-        resource = api.Poll(request, slug=slug)
+        resource = api.Poll(slug=slug)
 
         self.assertEqual(resource.slug, slug)
         self.assertEqual(resource.url, url)
@@ -42,8 +40,7 @@ class ReverseTestCase(TestCase):
         slug = '269'
         path = 'question'
         url = '/poll/{}/{}'.format(slug, path)
-        request = RequestFactory().get(url)
-        resource = api.Poll(request, slug=slug, path=[path])
+        resource = api.Poll(slug=slug, path=[path])
 
         self.assertEqual(resource.slug, slug)
         self.assertEqual(resource.path, [path])
@@ -58,8 +55,7 @@ class ReverseTestCase(TestCase):
         slug = '269'
         path = ['choices', '561']
         url = '/poll/{}/{}'.format(slug, os.path.join(*path))
-        request = RequestFactory().get(url)
-        resource = api.Poll(request, slug=slug, path=path)
+        resource = api.Poll(slug=slug, path=path)
 
         self.assertEqual(resource.slug, slug)
         self.assertEqual(resource.path, path)
@@ -75,8 +71,7 @@ class ReverseTestCase(TestCase):
         slug = '262627'
         path = ['choices', '2858', 'poll', 'question', '15678']
         url = '/poll/{}/{}'.format(slug, os.path.join(*path))
-        request = RequestFactory().get(url)
-        resource = api.Poll(request, slug=slug, path=path)
+        resource = api.Poll(slug=slug, path=path)
 
         self.assertEqual(resource.slug, slug)
         self.assertEqual(resource.path, path)
@@ -86,10 +81,9 @@ class ReverseTestCase(TestCase):
         """Tests for `/choice/:id/poll`."""
         slug = '262627'
         url = '/choice/{}/poll'.format(slug)
-        request = RequestFactory().get(url)
-        parent = api.Choice(request, slug=slug)
-        resource = api.Poll(request, slug='32', local=True,
-            parent=(parent, 'poll', slug))
+        parent = api.Choice(slug=slug)
+        resource = api.Poll(slug='32', local=True,
+            parent=helpers.parent(parent, 'poll'))
 
         self.assertEqual(parent.slug, slug)
         self.assertEqual(resource.slug, '32')
@@ -100,10 +94,9 @@ class ReverseTestCase(TestCase):
         poll = '262627'
         choice = '231'
         url = '/poll/{}/choices/{}'.format(poll, choice)
-        request = RequestFactory().get(url)
-        parent = api.Poll(request, slug=poll)
-        resource = api.Choice(request, slug=choice, local=True,
-            parent=(parent, "choices", poll))
+        parent = api.Poll(slug=poll)
+        resource = api.Choice(slug=choice, local=True,
+            parent=helpers.parent(parent, "choices"))
 
         self.assertEqual(resource.slug, choice)
         self.assertEqual(parent.slug, poll)
@@ -114,10 +107,9 @@ class ReverseTestCase(TestCase):
         slug = '262627'
         url = '/choice/{}/poll/question'.format(slug)
         path = ['question']
-        request = RequestFactory().get(url)
-        parent = api.Choice(request, slug=slug)
-        resource = api.Poll(request, slug='32', local=True, path=path,
-            parent=(parent, 'poll', slug))
+        parent = api.Choice(slug=slug)
+        resource = api.Poll(slug='32', local=True, path=path,
+            parent=helpers.parent(parent, 'poll'))
 
         self.assertEqual(parent.slug, slug)
         self.assertEqual(resource.slug, '32')
@@ -130,10 +122,9 @@ class ReverseTestCase(TestCase):
         choice = '231'
         path = ['choice_text']
         url = '/poll/{}/choices/{}/choice_text'.format(poll, choice)
-        request = RequestFactory().get(url)
-        parent = api.Poll(request, slug=poll)
-        resource = api.Choice(request, slug=choice, path=path, local=True,
-            parent=(parent, "choices", poll))
+        parent = api.Poll(slug=poll)
+        resource = api.Choice(slug=choice, path=path, local=True,
+            parent=helpers.parent(parent, "choices"))
 
         self.assertEqual(resource.slug, choice)
         self.assertEqual(parent.slug, poll)
@@ -145,12 +136,11 @@ class ReverseTestCase(TestCase):
         poll = '262627'
         choice = '231'
         url = '/poll/{}/choices/{}/poll'.format(poll, choice)
-        request = RequestFactory().get(url)
-        parent_poll = api.Poll(request, slug=poll)
-        parent_choice = api.Choice(request, slug=choice, local=True,
-            parent=(parent_poll, "choices", poll))
-        resource = api.Poll(request, slug=poll, local=True,
-            parent=(parent_choice, "poll", choice))
+        parent_poll = api.Poll(slug=poll)
+        parent_choice = api.Choice(slug=choice, local=True,
+            parent=helpers.parent(parent_poll, "choices"))
+        resource = api.Poll(slug=poll, local=True,
+            parent=helpers.parent(parent_choice, "poll"))
 
         self.assertEqual(resource.slug, poll)
         self.assertEqual(parent_choice.slug, choice)
@@ -163,12 +153,11 @@ class ReverseTestCase(TestCase):
         choice = '231'
         path = ['question']
         url = '/poll/{}/choices/{}/poll/question'.format(poll, choice)
-        request = RequestFactory().get(url)
-        parent_poll = api.Poll(request, slug=poll)
-        parent_choice = api.Choice(request, slug=choice, local=True,
-            parent=(parent_poll, "choices", poll))
-        resource = api.Poll(request, slug=poll, local=True, path=path,
-            parent=(parent_choice, "poll", choice))
+        parent_poll = api.Poll(slug=poll)
+        parent_choice = api.Choice(slug=choice, local=True,
+            parent=helpers.parent(parent_poll, "choices"))
+        resource = api.Poll(slug=poll, local=True, path=path,
+            parent=helpers.parent(parent_choice, "poll"))
 
         self.assertEqual(resource.slug, poll)
         self.assertEqual(parent_choice.slug, choice)

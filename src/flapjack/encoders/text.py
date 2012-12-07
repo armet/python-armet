@@ -3,8 +3,8 @@
 import datetime
 import six
 import magic
-from .http import HttpResponse
-from . import exceptions, transcoders, utils
+from ..http import Response as HttpResponse
+from .. import exceptions, transcoders, utils
 
 class Text(transcoders.Text, Encoder):
 
@@ -14,12 +14,12 @@ class Text(transcoders.Text, Encoder):
 
                #write out key after the corrent number of indents.
                #indent by length of key plus a few spaces
-               
+
                #if item value is iterable
                    #recursion!  see step 1.
                #else
                    #output value.  Newline
-                   
+
            #else
                #if value is iterable
                    #increment indent
@@ -35,7 +35,7 @@ class Text(transcoders.Text, Encoder):
            try:
                obj[key]
                #write out key after the corrent number of indents
-               retval += indent + str(key) + ':  ' 
+               retval += indent + str(key) + ':  '
                #if value is iterable
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.

@@ -295,7 +295,7 @@ class BaseResource(object):
     def __init__(self, **kwargs):
         """Initializes the resources and sets its properites."""
         #! Django WSGI request object.
-        self.request = kwargs['request']
+        self.request = kwargs.get('request')
 
         #! Identifier of the resource if we are being accessed directly.
         self.slug = kwargs.get('slug')

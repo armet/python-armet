@@ -130,7 +130,7 @@ NOSE_ARGS = [
     '--with-coverage',
     '--cover-html',
     '--cover-package=flapjack,flapjack.*',
-    '--with-xtraceback',
+    '--with-yanc',
     '--cover-branches',
     '--cover-erase',
     '--cover-inclusive',

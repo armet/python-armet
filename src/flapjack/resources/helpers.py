@@ -36,6 +36,6 @@ Parent = collections.namedtuple('Parent', (
     'resource', 'name', 'related_name'
 ))
 
-def parent(resource, name, related_name):
+def parent(resource, name, related_name=None):
     """Used in the resource class to ease parent assignment."""
     return Parent(resource, name, related_name)
