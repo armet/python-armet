@@ -10,6 +10,11 @@ import six
 from .. import transcoders
 
 
+class DecodingError(Exception):
+    """Represents an error decoding the request body.
+    """
+
+
 class Decoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
 
     @abc.abstractmethod
