@@ -265,7 +265,10 @@ class Base(six.with_metaclass(meta.Resource)):
         self.params = params or {}
 
         #! A filterer needs to be made.
-        self._filterer = self.filterer(self._fields) if self.filterer else None
+        if self.filterer:
+            self._filterer = self.filterer(self, self._fields)
+        else:
+            self._filterer = None
 
     def dispatch(self):
         # Determine the method; returns our delegation function
