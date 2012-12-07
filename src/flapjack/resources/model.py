@@ -14,6 +14,11 @@ class BaseModel(base.BaseResource):
     #! for read-only resources.
     model = None
 
+    #! Declares a resource to be the primary provider of the associated model.
+    #! There cannot be two resources linked to the same model with
+    #! `canonical = True`.
+    canonical = True
+
     #! Class object cache of what is to be prefetched.
     _prefetch_related_paths = {}
 
@@ -82,15 +87,15 @@ class BaseModel(base.BaseResource):
     @classmethod
     def prefetch_related(cls, queryset, prefix=None):
         """Performs a `prefetch_related` on all possible fields."""
-        if id(cls) not in cls._prefetch_related_paths and len(queryset) >= 1:
+        prefetch = cls._build_prefetch_related_paths
+        cache = cls._prefetch_related_paths
+        if id(cls) not in cache and len(queryset) >= 1:
             # Initialize the store
-            cls._prefetch_related_paths[id(cls)] = cls._build_prefetch_related_paths(
-                queryset, prefix)
+            cache[id(cls)] = prefetch(queryset, prefix)
 
-        if id(cls) in cls._prefetch_related_paths:
+        if id(cls) in cache:
             # Actually apply the prefetched prefetching
-            return queryset.prefetch_related(
-                *cls._prefetch_related_paths[id(cls)])
+            return queryset.prefetch_related(*cache[id(cls)])
 
         # Apply nothing.
         return queryset
@@ -101,7 +106,7 @@ class BaseModel(base.BaseResource):
 
     def read(self):
         # Build the queryset
-        queryset = self.model.objects
+        queryset = self.model.objects.all()
 
         try:
             # Apply transveral first.
@@ -114,19 +119,34 @@ class BaseModel(base.BaseResource):
                     '__'.join(path): parent.resource.slug})
                 parent = parent.resource.parent
 
+            # Prefetch all related fields and return the queryset.
+            queryset = self.prefetch_related(queryset)
+
             if self.slug is not None:
                 # Model resources by default have the slug as the identifier.
                 # TODO: Support non-pk slugs easier by allowing a
                 #   hook or something.
-                queryset = queryset.filter(pk=self.slug)
+                chance = queryset.filter(pk=self.slug)
+                if not chance.exists() and self.path:
+                    try:
+                        # Attempt to perform array access.
+                        return queryset[int(self.slug)]
+
+                    except IndexError:
+                        # Well; that failed. Move along
+                        pass
+
+                try:
+                    # Moving along; attempt to 'get' it.
+                    return chance.get()
+
+                except self.mode.DoesNotExist:
+                    # Didn't find it.
+                    raise exceptions.NotFound()
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
 
-        else:
-            # No slug; start with all the models.
-            queryset = queryset.all()
-
-        # Prefetch all related fields and return the queryset.
-        return self.prefetch_related(queryset)
+        # Return the queryset if we still have it.
+        return queryset

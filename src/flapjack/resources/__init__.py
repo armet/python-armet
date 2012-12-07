@@ -3,6 +3,9 @@ from .meta import DeclarativeResource, DeclarativeModel
 from .base import BaseResource
 from .model import BaseModel
 from .helpers import field, relation
+import logging
+
+logging.basicConfig()
 
 
 class Resource(six.with_metaclass(DeclarativeResource, BaseResource)):

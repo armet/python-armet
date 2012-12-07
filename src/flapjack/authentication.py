@@ -44,7 +44,7 @@ class Authentication(object):
     @property
     def Unauthenticated(self):
         """The response to return upon failing authentication."""
-        return exceptions.AuthenticationRequired()
+        return exceptions.NetworkAuthenticationRequired()
 
 
 class Header(six.with_metaclass(abc.ABCMeta, Authentication)):

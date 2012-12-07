@@ -7,7 +7,7 @@ from os import path
 
 
 # Project directories
-PROJECT_NAME = 'polls'
+PROJECT_NAME = 'echo'
 PROJECT_ROOT = path.abspath(path.join(__file__))
 
 # Root directories
@@ -117,9 +117,6 @@ INSTALLED_APPS = (
 
     # Extensions
     'django_extensions',
-
-    # Project
-    PROJECT_NAME,
 
     # Test runner
     'django_nose'

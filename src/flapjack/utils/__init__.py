@@ -115,6 +115,10 @@ def coerce_dict(obj):
     # Attmept to go about vars(obj) a different way; here we use a
     # combination of `dir` and `__getattribute__` to strip off fields that
     # aren't class fields.
+
+    # TODO: Attempt to execute if callable; store result if success, else
+    #   throw away item
+
     try:
         result = {}
         for name in dir(obj):

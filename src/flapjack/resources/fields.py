@@ -11,7 +11,10 @@ from . import helpers
 
 class Field(object):
 
-    def __init__(self, **kwargs):
+    def __init__(self, resource, **kwargs):
+        #! The resource object this field is bound to.
+        self.resource = resource
+
         #! Whether this field can be modified or not.
         self.editable = kwargs.get('editable', False)
 
@@ -37,6 +40,10 @@ class Field(object):
 
         #! Path of the field; storing for interesting purposes.
         self.path = kwargs.get('path')
+        self._path = self.path
+
+        #! This field is related to some other resource (or should be).
+        self.related = kwargs.get('related')
 
         #! Stored relation reference.
         self._relation = kwargs.get('relation')
@@ -57,16 +64,44 @@ class Field(object):
             # Resource class object is already resolved; return it.
             return self._relation
 
-        # No relation; nothing to return.
+        elif self.related:
+            if self.path:
+                resource = None
+                name = self.resource._get_related_name(self.path[0])
+
+                if self.path[0] in self.resource._resources:
+                    # There really is a resource out there.
+                    resource = self.resource._resources[self.path[0]]
+
+                else:
+                    # There may be a resource out there.
+                    try:
+                        field = self.resource._get_field_object(self.path[0])
+                        resource = self.resource._resources[
+                            field.field.related.var_name]
+
+                    except (KeyError, AttributeError):
+                        # Didn't fint it.
+                        pass
+
+                if resource is not None:
+                    # Store it.
+                    self._relation = helpers.relation(resource,
+                        related_name=name)
+
+                    # Let's do this again.
+                    return self.relation
+
+        # Nothing to relate; go away.
 
     def accessor(self, value):
         for accessor in self.accessors:
             # Iterate and access the entire field path
             value = accessor(value)
 
-        if value is not None and self.path:
+        if value is not None and self._path:
             depth = 0
-            for segment in self.path:
+            for segment in self._path:
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -80,7 +115,7 @@ class Field(object):
                 depth += 1
 
             # Remove segments used
-            self.path = self.path[depth:]
+            self._path = self._path[depth:]
 
         # Return what we've accessed
         return value
@@ -94,11 +129,11 @@ class Field(object):
         obj = getattr(cls, name, None)
         if obj is not None:
             if hasattr(obj, '__call__'):
-                # A readable descriptor at the very least
+                # A callable descriptor at the very least.
                 return lambda o, x=obj.__call__: x(o)
 
             if hasattr(obj, '__get__'):
-                # A readable descriptor at the very least
+                # A readable descriptor at the very least.
                 return lambda o, x=obj.__get__: x(o)
 
         if issubclass(cls, collections.Mapping):

@@ -25,6 +25,14 @@ class _TypeAwareJSONEncoder(json.JSONEncoder):
             # a list and send it back through the json encoder.
             return list(obj)
 
+        try:
+            # Attempt to invoke the object.
+            return obj()
+
+        except TypeError:
+            # Failed; move along
+            pass
+
         # Attempt to coerce this to a dictionary.
         result = utils.coerce_dict(obj)
         if result is not None:
