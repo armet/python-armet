@@ -404,7 +404,7 @@ class BaseResource(object):
 
         # Declare who we are in the `Location` header.
         # try:
-        response['Location'] = self.url
+        # response['Location'] = self.url
 
         # except urlresolvers.NoReverseMatch:
         #     # Resource must not be declared in `urls.py` normally.
