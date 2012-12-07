@@ -324,12 +324,12 @@ class BaseResource(object):
                 obj = field.accessor(self.parent.resource.get()[0])
                 self.slug = self.make_slug(obj)
 
+        # Set some defaults so we can reference this later
+        self.encoder = None
+
     def dispatch(self):
         """
         """
-        # Set some defaults so we can reference this later
-        encoder = None
-
         try:
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
@@ -338,7 +338,7 @@ class BaseResource(object):
             function = self._determine_method()
 
             # Detect an appropriate encoder.
-            encoder = self._determine_encoder()
+            self.encoder = self._determine_encoder()
 
             # TODO: Assert resource-level authorization
             body = None
@@ -355,24 +355,12 @@ class BaseResource(object):
 
                 # TODO: Assert object-level authorization
 
-            # Delegate to the determined function.
-            try:
-                message = function(body)
-                data, status = message
-
-            except ValueError:
-                # Tuple not unpacked; assume we have just an HTTP Response
-                return message
-
-            # Prepare the data for transmission.
-            data = self.prepare(data)
-
-            # Build and return the response object
-            return self.make_response(encoder, data, status)
+            # Delegate to the determined function and return its response.
+            return function(body)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
-            return ex.dispatch(encoder)
+            return ex.dispatch(self.encoder)
 
     def authenticate(self):
         """Attempts to assert authentication."""
@@ -396,10 +384,13 @@ class BaseResource(object):
         """Builds a response object from the data and status code."""
         response = http.Response(status=status)
 
+        # Prepare the data for transmission.
+        data = self.prepare(data)
+
         if data is not None:
             # Some kind of data was provided; encode and provide the
             # correct mimetype.
-            response.content = encoder.encode(data)
+            response.content = self.encoder.encode(data)
             response['Content-Type'] = encoder.mimetype
 
         # Declare who we are in the `Location` header.
@@ -668,12 +659,12 @@ class BaseResource(object):
                 # Ensure we at least have an empty list
                 items = []
 
-        # Return the response
-        return items, http.client.OK
+        # Build and return the response object
+        return self.make_response(items, http.client.OK)
 
     def post(self, data):
-        # Return the response
-        return None, http.client.NO_CONTENT
+        # Build and return the response object
+        return self.make_response(None, http.client.NO_CONTENT)
 
     @property
     def _allowed_methods(self):
