@@ -725,7 +725,7 @@ class BaseResource(object):
                     # Found an appropriate encoder; we're done
                     return encoder
 
-        elif accept is not None and accept.strip() != '*/*':
+        elif accept.strip() != '*/*':
             for name in self.allowed_encoders:
                 encoder = self.encoders[name]
                 if encoder.can_transcode(self.request.META['HTTP_ACCEPT']):
