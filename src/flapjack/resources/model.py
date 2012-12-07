@@ -119,6 +119,9 @@ class BaseModel(base.BaseResource):
                     '__'.join(path): parent.resource.slug})
                 parent = parent.resource.parent
 
+            # Prefetch all related fields and return the queryset.
+            queryset = self.prefetch_related(queryset)
+
             if self.slug is not None:
                 # Model resources by default have the slug as the identifier.
                 # TODO: Support non-pk slugs easier by allowing a
@@ -133,12 +136,17 @@ class BaseModel(base.BaseResource):
                         # Well; that failed. Move along
                         pass
 
-                # Moving along.
-                queryset = chance
+                try:
+                    # Moving along; attempt to 'get' it.
+                    return chance.get()
+
+                except self.mode.DoesNotExist:
+                    # Didn't find it.
+                    raise exceptions.NotFound()
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
 
-        # Prefetch all related fields and return the queryset.
-        return self.prefetch_related(queryset)
+        # Return the queryset if we still have it.
+        return queryset

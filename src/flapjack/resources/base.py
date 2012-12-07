@@ -321,7 +321,7 @@ class BaseResource(object):
         if self.slug is None and self.parent is not None:
             field = self.parent.resource._fields[self.parent.name]
             if not field.collection and not len(field.path) > 1:
-                obj = field.accessor(self.parent.resource.get()[0])
+                obj = field.accessor(self.parent.resource.read())
                 self.slug = self.make_slug(obj)
 
         # Set some defaults so we can reference this later
@@ -380,7 +380,7 @@ class BaseResource(object):
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
 
-    def make_response(self, encoder, data, status):
+    def make_response(self, data, status):
         """Builds a response object from the data and status code."""
         response = http.Response(status=status)
 
@@ -391,7 +391,7 @@ class BaseResource(object):
             # Some kind of data was provided; encode and provide the
             # correct mimetype.
             response.content = self.encoder.encode(data)
-            response['Content-Type'] = encoder.mimetype
+            response['Content-Type'] = self.encoder.mimetype
 
         # Declare who we are in the `Location` header.
         # try:
