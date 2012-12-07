@@ -221,7 +221,7 @@ class Filter(object):
             # This is not an error.  This is a hack to delegate the
             # replacement of the filterstring to the resource object
             action.field = ex.field
-            action.name = ex.querystring
+            action.name = LOOKUP_SEP.join((ex.querystring, action.verb))
 
         # We're all good, return the action
         return action
