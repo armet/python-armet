@@ -293,8 +293,7 @@ class BaseResource(object):
         return field.relation.resource.traverse(request, kwargs)
 
     def __init__(self, **kwargs):
-        """
-        """
+        """Initializes the resources and sets its properites."""
         #! Django WSGI request object.
         self.request = kwargs['request']
 
@@ -618,6 +617,25 @@ class BaseResource(object):
         # Accessing the resource individually without a path.
         return cls._url_format(cls._URL_SLUG) % slug
 
+    def head(self, data=None):
+        """Process a `HEAD` request.
+
+        @returns
+            A tuple containing the data and response status sequentially.
+        """
+        # Pretend we're a GET; we use the request header already available
+        # by HTTP.
+        self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'GET'
+
+        # Run a dispatch through as if we're GET.
+        response = self.dispatch()
+
+        # Clear the body. Setting `content` auto-sets the length.
+        response.body = None
+
+        # Return our fake GET.
+        return response
+
     def get(self, data=None):
         """Processes a `GET` request.
 
@@ -635,8 +653,7 @@ class BaseResource(object):
                 # Requested a specific resource but no resource was returned.
                 raise exceptions.NotFound()
 
-            if (not isinstance(items, six.string_types)
-                    and not isinstance(items, collections.Mapping)):
+            if not isinstance(items, six.string_types):
                 try:
                     # Ensure we return only a single object if we were
                     # requested to return such.
@@ -658,32 +675,16 @@ class BaseResource(object):
         # Return the response
         return None, http.client.NO_CONTENT
 
-    def head(self, data=None):
-        # Pretend we're a GET; we use the request header already available
-        # by HTTP.
-        self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'GET'
-
-        # Run a dispatch through as if we're GET.
-        response = self.dispatch()
-
-        # Clear the body. Setting `content` auto-sets the length.
-        response.body = None
-
-        # Return our fake GET.
-        return response
-
     @property
     def _allowed_methods(self):
-        """Retrieves a list of allowed HTTP methods for the current request.
-        """
+        """Retrieves a list of allowed HTTP methods for the current request."""
         if self.slug is not None:
             return self.http_detail_allowed_methods
 
         return self.http_list_allowed_methods
 
     def _determine_method(self):
-        """Determine the actual HTTP method being used and if it is acceptable.
-        """
+        """Determine the HTTP method being used and if it is acceptable."""
         if 'HTTP_X_HTTP_METHOD_OVERRIDE' in self.request.META:
             # Someone is using a client that isn't smart enough to send proper
             # verbs; but can still send headers.
@@ -747,11 +748,12 @@ class BaseResource(object):
         raise exceptions.NotAcceptable(available)
 
     def _determine_decoder(self):
-        """Determine the decoder to use according to the request object.
-        """
+        """Determine the decoder to use according to the request object."""
+        # TODO: Implement content interspection to discover the proper
+        #   decoder.
         # Attempt to get the content-type; default to an appropriate value.
-        content = self.request.META.get(
-            'CONTENT_TYPE', 'application/octet-stream')
+        content = self.request.META.get('CONTENT_TYPE',
+            'application/octet-stream')
 
         # Attempt to find a decoder and on failure, die.
         for decoder in self.decoders:
