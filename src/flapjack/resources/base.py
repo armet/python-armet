@@ -405,7 +405,7 @@ class BaseResource(object):
 
         # Declare who we are in the `Location` header.
         # try:
-        # response['Location'] = self.url
+        response['Location'] = self.url
 
         # except urlresolvers.NoReverseMatch:
         #     # Resource must not be declared in `urls.py` normally.
@@ -713,22 +713,23 @@ class BaseResource(object):
         return function
 
     def _determine_encoder(self):
-        """Determine the encoder to use according to the request object.
-        """
+        """Determine the encoder to use according to the request object."""
         accept = self.request.META.get('HTTP_ACCEPT', '*/*')
         if self.format is not None:
             # An explicit form was supplied; attempt to get it directly
             name = self.format.lower()
             if name in self.allowed_encoders:
                 encoder = self.encoders.get(name)
-                if encoder is not None:
-                    # Found an appropriate encoder; we're done
+                if encoder is not None and encoder.can_transcode(accept):
+                    # Found an appropriate encoder.
                     return encoder
 
-        elif accept is not None and accept.strip() != '*/*':
+        elif accept.strip() != '*/*':
+            # No format specified at the URL; iterate through encoders
+            # to try and match one.
             for name in self.allowed_encoders:
                 encoder = self.encoders[name]
-                if encoder.can_transcode(self.request.META['HTTP_ACCEPT']):
+                if encoder.can_transcode(accept):
                     # Found an appropriate encoder; we're done
                     return encoder
 
