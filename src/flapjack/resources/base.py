@@ -344,11 +344,8 @@ class BaseResource(object):
             body = None
 
             if self.request.body:
-                # Determine an approparite decoder.
-                decoder = self._determine_decoder()
-
-                # Decode the request body
-                body = decoder.decode(self.request, self._fields)
+                # Determine an approparite decoder and decode the request body.
+                body = self.decode(body)
 
                 # Run clean cycle over decoded body
                 body = self.clean(body)
@@ -738,22 +735,41 @@ class BaseResource(object):
         # Encode the response using the appropriate exception
         raise exceptions.NotAcceptable(available)
 
-    def _determine_decoder(self):
-        """Determine the decoder to use according to the request object."""
-        # TODO: Implement content interspection to discover the proper
-        #   decoder.
-        # Attempt to get the content-type; default to an appropriate value.
-        content = self.request.META.get('CONTENT_TYPE',
-            'application/octet-stream')
+    def decode(self, body):
+        """
+        Determine the decoder to use according to the request object and then
+        subsequently decode the request body.
+        """
+        # Attempt to get the content-type.
+        content_type = self.request.META.get('CONTENT_TYPE')
 
-        # Attempt to find a decoder and on failure, die.
-        for decoder in self.decoders:
-            if decoder.can_transcode(content):
-                # Good; return the decoder
-                return decoder
+        if content_type is not None:
+            # Attempt to find an encoder that matches the media type
+            # presented.
+            for decoder in six.itervalues(self.decoders):
+                if decoder.can_transcode(content):
+                    # Good; get out.
+                    break
 
-        # Failed to find an appropriate decoder; we have no idea how to
-        # handle the data.
+            else:
+                # Some unknown content type was presented; throw up our hands.
+                raise exceptions.UnsupportedMediaType()
+
+            # Decode and return the request body
+            return decoder.decode(self.request, self._fields)
+
+        # No content type header was presented; attempt to decode using
+        # all available decoders.
+        for decoder in six.itervalues(self.decoders):
+            try:
+                # Attemp to decode and return the body.
+                return decoder.decode(self.request, self._fields)
+
+            except decoders.DecodingError:
+                # An error occured; continue on to the next decoder.
+                pass
+
+        # We have no idea what we've received.
         raise exceptions.UnsupportedMediaType()
 
     @property
