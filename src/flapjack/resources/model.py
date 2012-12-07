@@ -106,7 +106,7 @@ class BaseModel(base.BaseResource):
 
     def read(self):
         # Build the queryset
-        queryset = self.model.objects
+        queryset = self.model.objects.all()
 
         try:
             # Apply transveral first.
@@ -123,15 +123,22 @@ class BaseModel(base.BaseResource):
                 # Model resources by default have the slug as the identifier.
                 # TODO: Support non-pk slugs easier by allowing a
                 #   hook or something.
-                queryset = queryset.filter(pk=self.slug)
+                chance = queryset.filter(pk=self.slug)
+                if not chance.exists() and self.path:
+                    try:
+                        # Attempt to perform array access.
+                        return queryset[int(self.slug)]
+
+                    except IndexError:
+                        # Well; that failed. Move along
+                        pass
+
+                # Moving along.
+                queryset = chance
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
-
-        else:
-            # No slug; start with all the models.
-            queryset = queryset.all()
 
         # Prefetch all related fields and return the queryset.
         return self.prefetch_related(queryset)

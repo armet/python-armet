@@ -236,7 +236,6 @@ class BaseResource(object):
     @classmethod
     def traverse(cls, request, kwargs):
         """Traverse the resource class with the provided path segments."""
-        print(kwargs)
         if not kwargs.get('path') or not kwargs['path'][0]:
             # No sub-resource path provided; return our cls.
             return cls
@@ -283,8 +282,11 @@ class BaseResource(object):
             if 'slug' in kwargs:
                 del kwargs['slug']
 
+        if field.relation.path:
+            # There is a path; extend it.
+            kwargs['path'] = field.relation.path + kwargs['path']
+
         # Declare if we are local
-        # print(kwargs)
         kwargs['local'] = field.relation.local
 
         # Return the cls object to use
@@ -319,7 +321,7 @@ class BaseResource(object):
         # Find the slug if we need to
         if self.slug is None and self.parent is not None:
             field = self.parent.resource._fields[self.parent.name]
-            if not field.collection:
+            if not field.collection and not len(field.path) > 1:
                 obj = field.accessor(self.parent.resource.get()[0])
                 self.slug = self.make_slug(obj)
 
@@ -403,9 +405,6 @@ class BaseResource(object):
 
         # Declare who we are in the `Location` header.
         # try:
-        # TODO: Figure out a nice way to do this without reversing;
-        #   perhaps try reverse and then fallback on a header that
-        #   specifies origin?
         # response['Location'] = self.url
 
         # except urlresolvers.NoReverseMatch:
@@ -436,7 +435,7 @@ class BaseResource(object):
 
     def generic_prepare(self, obj, name, value):
         relation = self._fields[name].relation
-        if relation is not None:
+        if relation is not None and len(self._fields[name].path) <= 1:
             # Instantiate a reference to the resource
             try:
                 # Attempt to make a slug.
@@ -520,7 +519,7 @@ class BaseResource(object):
                 # Utilize the field accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
-            except (ValueError, AttributeError, TypeError):
+            except (ValueError, AttributeError, TypeError) as ex:
                 # Something weird happened with a path segment.
                 raise exceptions.NotFound()
 
@@ -605,7 +604,7 @@ class BaseResource(object):
                 composite.extend(path)
 
             # Send it off to the parent object for reversal.
-            return parent.resource.reverse(parent.slug, composite,
+            return parent.resource.reverse(parent.resource.slug, composite,
                 parent=parent.resource.parent, local=parent.resource.local)
 
         if slug is None:
@@ -638,9 +637,14 @@ class BaseResource(object):
 
             if (not isinstance(items, six.string_types)
                     and not isinstance(items, collections.Mapping)):
-                # Ensure we return only a single object if we were requested
-                # to return such.
-                items = items[0]
+                try:
+                    # Ensure we return only a single object if we were
+                    # requested to return such.
+                    items = items[0]
+
+                except TypeError:
+                    # Whatever; assume we're just one I guess.
+                    pass
 
         else:
             if items is None:

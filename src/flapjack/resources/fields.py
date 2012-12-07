@@ -40,6 +40,7 @@ class Field(object):
 
         #! Path of the field; storing for interesting purposes.
         self.path = kwargs.get('path')
+        self._path = self.path
 
         #! This field is related to some other resource (or should be).
         self.related = kwargs.get('related')
@@ -98,9 +99,9 @@ class Field(object):
             # Iterate and access the entire field path
             value = accessor(value)
 
-        if value is not None and self.path:
+        if value is not None and self._path:
             depth = 0
-            for segment in self.path:
+            for segment in self._path:
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -114,7 +115,7 @@ class Field(object):
                 depth += 1
 
             # Remove segments used
-            self.path = self.path[depth:]
+            self._path = self._path[depth:]
 
         # Return what we've accessed
         return value
