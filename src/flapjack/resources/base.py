@@ -766,7 +766,7 @@ class BaseResource(object):
             # Attempt to find an encoder that matches the media type
             # presented.
             for decoder in six.itervalues(self.decoders):
-                if decoder.can_transcode(content):
+                if decoder.can_transcode(content_type):
                     # Good; get out.
                     break
 
