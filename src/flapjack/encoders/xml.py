@@ -21,6 +21,12 @@ class Encoder(transcoders.Xml, Encoder):
     @classmethod
     def _insert_data_into_tree(cls,root,key,obj=None):
            try:
+               # call function if needed
+               try:
+                   obj[key] = obj[key]()
+               except TypeError:
+                   pass
+
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion! See step 1.
 
@@ -33,12 +39,17 @@ class Encoder(transcoders.Xml, Encoder):
                    # item is NOT iterable; no recursion needed
                    if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
                        obj = obj.isoformat() # fix date
-
+                       
                    #insert key and value pair under root
                    root.append( E.attribute( str(obj[key]), {'name':str(key)} ))
 
            #obj is NOT a dictionary
            except (TypeError, IndexError):
+               # call function if needed
+               try:
+                   key = key()
+               except TypeError:
+                   pass
                if isinstance(key, Iterable) and not isinstance(key,six.string_types):
                    #recursion! See step 1.
 
