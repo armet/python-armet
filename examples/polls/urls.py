@@ -25,5 +25,7 @@ urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
 
     # Application interface
-    url(r'^', include(interface.urls))
+    url(r'^', include(interface.urls)),
+
+    url(^'api2/', include(api.Poll.urls)),
 )

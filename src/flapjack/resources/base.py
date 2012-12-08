@@ -702,7 +702,7 @@ class BaseResource(object):
         """Processes a `POST` request.
 
         @param[in] data
-            The body of the request after going being decoder and subsequently
+            The body of the request after going being decoded and subsequently
             cleaned by the form.
 
         @returns
