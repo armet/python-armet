@@ -418,6 +418,10 @@ class BaseResource(object):
             # correct mimetype.
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
+            
+        if not response.content:
+            if response.status_code >= 200 and response.status_code <= 299:
+                response.status_code = 204
 
         # Declare who we are in the `Location` header.
         # try:
@@ -778,7 +782,7 @@ class BaseResource(object):
             # Attempt to find an encoder that matches the media type
             # presented.
             for decoder in six.itervalues(self.decoders):
-                if decoder.can_transcode(content):
+                if decoder.can_transcode(content_type):
                     # Good; get out.
                     break
 
