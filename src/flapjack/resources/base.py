@@ -13,7 +13,7 @@ from django.conf.urls import patterns, url
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import fields, helpers
-from .. import utils, http, exceptions
+from .. import utils, http, exceptions, decoders, authorization
 
 
 # Get an instance of the logger.
@@ -37,24 +37,24 @@ class BaseResource(object):
 
     #! List of understood HTTP methods.
     http_method_names = (
-        'get',
-        'post',
-        'put',
-        'delete',
-        'patch',
-        'options',
-        'head',
-        'connect',
-        'trace',
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
+        'PATCH',
+        'OPTIONS',
+        'HEAD',
+        'CONNECT',
+        'TRACE',
     )
 
     #! List of allowed HTTP methods.
     http_allowed_methods = (
-        'head',
-        'get',
-        'post',
-        'put',
-        'delete',
+        'HEAD',
+        'GET',
+        'POST',
+        'PUT',
+        'DELETE',
     )
 
     #! List of allowed HTTP methods against a whole
@@ -103,8 +103,13 @@ class BaseResource(object):
     default_encoder = 'json'
 
     #! List of decoders known by this resource.
-    decoders = (
-        'flapjack.decoders.Form',
+    decoders = {
+        'form': 'flapjack.decoders.Form',
+    }
+
+    #! List of allowed decoders of the understood decoders.
+    allowed_decoders = (
+        'form',
     )
 
     #! URL namespace to define the url configuration inside.
@@ -143,6 +148,16 @@ class BaseResource(object):
     #!         'melon': relation('path.to.resource'),
     #!     }
     relations = None
+
+    #! Authorization class for filtering.  Takes a dict of permissions for
+    #! CRUD operations.  See the Authorization class for more information on
+    #! the parameters this takes.
+    authorization = authorization.Resource({
+        "create": ("add",),
+        "update": ("change",),
+        "delete": ("delete",),
+        "read":   ("read",)
+    })
 
     #! Name used to index into the path cache.
     _cache_path_name = None
@@ -317,7 +332,14 @@ class BaseResource(object):
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local', False)
 
-        # Find the slug if we need to
+        # Find the slug if we need to; let me explain:
+        # Take a URI like /poll/41/choices/12/document
+        # What slug does this document object have?
+        # The only way for us to know is to `.read()` the choices/12 object
+        # and ask it what value it has for its document field and then
+        # ask the document object to make a slug out of it.
+        # TODO: Think of a better way then this -- as we are double-fetching
+        #   objects here.
         if self.slug is None and self.parent is not None:
             field = self.parent.resource._fields[self.parent.name]
             if not field.collection and not len(field.path) > 1:
@@ -329,38 +351,49 @@ class BaseResource(object):
 
     def dispatch(self):
         """
+        Performs common work such as authentication, decoding, etc. before
+        handing complete control of the result to a function with the
+        same name as the request method.
         """
         try:
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
 
-            # Determine the HTTP method
+            # Determine the HTTP method; function is now the method function
+            # in this resource.
             function = self._determine_method()
 
-            # Detect an appropriate encoder.
+            # Detect an appropriate encoder and store it in the resource
+            # object for later use.
             self.encoder = self._determine_encoder()
 
-            # TODO: Assert resource-level authorization
-            body = None
+            self.authorize_resource()
 
+            data = None
             if self.request.body:
-                # Determine an approparite decoder.
-                decoder = self._determine_decoder()
-
-                # Decode the request body
-                body = decoder.decode(self.request, self._fields)
+                # Determine an approparite decoder and decode the request body.
+                data = self.decode(self.request.body)
 
                 # Run clean cycle over decoded body
-                body = self.clean(body)
+                data = self.clean(data)
 
                 # TODO: Assert object-level authorization
 
             # Delegate to the determined function and return its response.
-            return function(body)
+            return function(data)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
             return ex.dispatch(self.encoder)
+
+    def authorize_resource(self):
+        """Attempts to assert authorization for access to this resource.
+        If unable to assert, it throws a forbidden.
+        """
+        if not self.authorization.is_accessible(
+                self.request,
+                self.request.method):
+            raise exceptions.Forbidden()
 
     def authenticate(self):
         """Attempts to assert authentication."""
@@ -392,6 +425,10 @@ class BaseResource(object):
             # correct mimetype.
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
+
+        if not response.content:
+            if response.status_code >= 200 and response.status_code <= 299:
+                response.status_code = 204
 
         # Declare who we are in the `Location` header.
         # try:
@@ -468,10 +505,8 @@ class BaseResource(object):
         return value
 
     def prepare_resource_uri(self, obj, value):
-        # Set the resource uri on the object.
-        return self.reverse(self.make_slug(obj),
-            parent=self.parent,
-            local=self.local)
+        """Set the resource uri on the object."""
+        return self.reverse(self.make_slug(obj), None, self.parent, self.local)
 
     def item_prepare(self, item):
         """Prepares an item for transmission."""
@@ -580,7 +615,6 @@ class BaseResource(object):
         if local and parent is not None:
             # Local path; we need to do something about it.
             # The parent must be a specific parent; ie. with a slug
-            # parent_obj, parent_name, parent_slug = parent
 
             # Build composite path
             composite = []
@@ -611,27 +645,29 @@ class BaseResource(object):
     def head(self, data=None):
         """Process a `HEAD` request.
 
+        @param[in] data
+            The body of the request; unused in a normal `HEAD`.
+
         @returns
-            A tuple containing the data and response status sequentially.
+            The HTTPResponse object to return to the client.
         """
-        # Pretend we're a GET; we use the request header already available
-        # by HTTP.
-        self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'] = 'GET'
+        # Run through a get as if that was the real method.
+        response = self.get(data)
 
-        # Run a dispatch through as if we're GET.
-        response = self.dispatch()
-
-        # Clear the body. Setting `content` auto-sets the length.
+        # Clear the body. Setting `content` auto-sets the length to 0.
         response.body = None
 
-        # Return our fake GET.
+        # Return our response generated by the `GET`.
         return response
 
     def get(self, data=None):
         """Processes a `GET` request.
 
+        @param[in] data
+            The body of the request; unused in a normal `GET`.
+
         @returns
-            A tuple containing the data and response status sequentially.
+            The HTTPResponse object to return to the client.
         """
         # Ensure we're allowed to perform this operation.
         self._assert_operation('read')
@@ -663,45 +699,48 @@ class BaseResource(object):
         return self.make_response(items, http.client.OK)
 
     def post(self, data):
+        """Processes a `POST` request.
+
+        @param[in] data
+            The body of the request after going being decoded and subsequently
+            cleaned by the form.
+
+        @returns
+            The HTTPResponse object to return to the client.
+        """
         # Build and return the response object
         return self.make_response(None, http.client.NO_CONTENT)
 
     @property
     def _allowed_methods(self):
         """Retrieves a list of allowed HTTP methods for the current request."""
-        if self.slug is not None:
-            return self.http_detail_allowed_methods
-
-        return self.http_list_allowed_methods
+        return (self.http_detail_allowed_methods if self.slug is not None else
+            self.http_list_allowed_methods)
 
     def _determine_method(self):
         """Determine the HTTP method being used and if it is acceptable."""
         if 'HTTP_X_HTTP_METHOD_OVERRIDE' in self.request.META:
             # Someone is using a client that isn't smart enough to send proper
             # verbs; but can still send headers.
-            method = self.request.META['HTTP_X_HTTP_METHOD_OVERRIDE'].lower()
-            self.request.method = method.upper()
+            self.request.method = self.request.META[
+                'HTTP_X_HTTP_METHOD_OVERRIDE'].upper()
 
-        else:
-            # Halfway intelligent client; proceed as normal.
-            method = self.request.method.lower()
-
-        if method not in self.http_method_names:
+        if self.request.method not in self.http_method_names:
             # Method not understood by our library; die.
             raise exceptions.NotImplemented()
 
-        if method not in self._allowed_methods:
+        methods = self._allowed_methods
+        if self.request.method not in methods:
             # Method is not in the list of allowed HTTP methods for this
             # access of the resource.
-            allowed = (m.upper() for m in self._allowed_methods)
-            raise exceptions.MethodNotAllowed(', '.join(allowed).strip())
+            raise exceptions.MethodNotAllowed(', '.join(methods).strip())
 
         function = getattr(self, self.request.method.lower(), None)
         if function is None:
             # Method understood and allowed but not implemented; stupid us.
             raise exceptions.NotImplemented()
 
-        # Method is just fine; toss 'er back
+        # Method is just fine; toss 'er back.
         return function
 
     def _determine_encoder(self):
@@ -738,42 +777,60 @@ class BaseResource(object):
         # Encode the response using the appropriate exception
         raise exceptions.NotAcceptable(available)
 
-    def _determine_decoder(self):
-        """Determine the decoder to use according to the request object."""
-        # TODO: Implement content interspection to discover the proper
-        #   decoder.
-        # Attempt to get the content-type; default to an appropriate value.
-        content = self.request.META.get('CONTENT_TYPE',
-            'application/octet-stream')
+    def decode(self, body):
+        """
+        Determine the decoder to use according to the request object and then
+        subsequently decode the request body.
+        """
+        # Attempt to get the content-type.
+        content_type = self.request.META.get('CONTENT_TYPE')
 
-        # Attempt to find a decoder and on failure, die.
-        for decoder in self.decoders:
-            if decoder.can_transcode(content):
-                # Good; return the decoder
-                return decoder
+        if content_type is not None:
+            # Attempt to find an encoder that matches the media type
+            # presented.
+            for decoder in six.itervalues(self.decoders):
+                if decoder.can_transcode(content_type):
+                    # Good; get out.
+                    break
 
-        # Failed to find an appropriate decoder; we have no idea how to
-        # handle the data.
+            else:
+                # Some unknown content type was presented; throw up our hands.
+                raise exceptions.UnsupportedMediaType()
+
+            # Decode and return the request body
+            return decoder.decode(self.request, self._fields)
+
+        # No content type header was presented; attempt to decode using
+        # all available decoders.
+        for decoder in six.itervalues(self.decoders):
+            try:
+                # Attemp to decode and return the body.
+                return decoder.decode(self.request, self._fields)
+
+            except decoders.DecodingError:
+                # An error occured; continue on to the next decoder.
+                pass
+
+        # We have no idea what we've received.
         raise exceptions.UnsupportedMediaType()
 
     @property
     def _allowed_operations(self):
-        """Retrieves a list of allowed operations for the current request.
-        """
-        if self.slug is not None:
-            return self.detail_allowed_operations
-
-        return self.list_allowed_operations
+        """Retrieves a list of allowed operations for the current request."""
+        return (self.detail_allowed_operations if self.slug is not None else
+            self.list_allowed_operations)
 
     def _assert_operation(self, operation):
-        """Determine of the requested operation is allowed in this context.
-        """
-        if operation not in self._allowed_operations:
-            # Operation not allowed in this context; bail
+        """Determine if the requested operation is allowed in this context."""
+        operations = self._allowed_operations
+        if operation not in operations:
+            # Operation not allowed in this context; build message
+            # to display in the body.
             data = {}
-            data['allowed'] = self._allowed_operations
+            data['allowed'] = operations
             data['message'] = (
                 'Operation not allowed on `{}`; '
                 'see `allowed` for allowed operations.').format(operation)
 
+            # Assert conditiion and bail.
             raise exceptions.Forbidden(data)

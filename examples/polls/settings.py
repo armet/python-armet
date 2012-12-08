@@ -153,6 +153,11 @@ LOGGING = {
         },
     },
     'loggers': {
+        # 'django.db': {
+        #     'handlers': ['console'],
+        #     'level': 'DEBUG',
+        #     'filters': []
+        # },
         'flapjack': {
             'handlers': ['console'],
             'level': 'DEBUG',

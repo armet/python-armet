@@ -1,2 +1,2 @@
-from .base import Decoder
+from .base import Decoder, DecodingError
 from .form import Decoder as Form
