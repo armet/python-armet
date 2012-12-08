@@ -37,7 +37,8 @@ Unless otherwise specified, the default values are as follows: ::
 
 ``http_allowed_methods``
 ------------------------
-The list of allowed HTTP methods.
+The list of allowed HTTP methods. Any method not added to this list will
+result in a ``501`` response.
 
 Unless otherwise specified, the default values are as follows: ::
 
@@ -80,14 +81,14 @@ Unless otherwise specified, the default values are as follows: ::
 
 ``list_allowed_operations``
 ---------------------------
-List of allowed operations against a whole resource.
+List of allowed operations against a whole resource. (eg /user).
 If undeclared or None, will be defaulted to `allowed_operations`.
 
 Unless otherwise specified, the default values are as follows: ``None``
 
 ``detail_allowed_operations``
 -----------------------------
-List of allowed operations against a single resource.
+List of allowed operations against a single resource. (eg /user/1).
 If undeclared or None, will be defaulted to `allowed_operations`.
 
 Unless otherwise specified, the default values are as follows: ``None``
@@ -202,4 +203,89 @@ Example::
         return str(obj.pk)
 
 .. note::
-    This method is only valid and used if this resource is exposed via an urls.py.
+    This method is only valid and used if this resource is exposed via an
+    urls.py.
+
+
+``urls``
+--------
+Builds the complete URL configuration for this resource.
+
+Example::
+
+    urlpatterns = patterns('',
+        url(r'^api2/', include(api.Poll.urls)),
+    )
+
+``head``
+--------
+Processes a ``HEAD`` request. Accepts the body of the request and returns a
+HTTPResponse Object. A successful HEAD request will result in a ``200``
+response.
+
+According to `RFC 2616 § 9.4`_::
+
+    The HEAD method is identical to GET except that the server MUST NOT
+    return a message-body in the response. The metainformation contained in
+    the HTTP headers in response to a HEAD request SHOULD be identical to the
+    information sent in response to a GET request. This method can be used for
+    obtaining metainformation about the entity implied by the request without
+    transferring the entity-body itself. This method is often used for testing
+    hypertext links for validity, accessibility, and recent modification.
+
+    The response to a HEAD request MAY be cacheable in the sense that the
+    information contained in the response MAY be used to update a previously
+    cached entity from that resource. If the new field values indicate that
+    the cached entity differs from the current entity (as would be indicated
+    by a change in Content-Length, Content-MD5, ETag or Last-Modified), then
+    the cache MUST treat the cache entry as stale.
+
+.. _RFC 2616 § 9.4: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.4
+
+``get``
+-------
+Processes a ``GET`` request. Accepts the body of the request and returns a
+HTTPResponse Object. A successful GET request will result in a ``200`` response.
+
+According to `RFC 2616 § 9.3`_::
+
+    The GET method means retrieve whatever information
+    (in the form of an entity) is identified by the Request-URI.
+    If the Request-URI refers to a data-producing process, it is the produced
+    data which shall be returned as the entity in the response and not the
+    source text of the process, unless that text happens to be the output of
+    the process.
+
+.. _RFC 2616 § 9.3: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.3
+
+``post``
+--------
+Processes a ``POST`` request. Accepts the body of the request after going
+being decoded and subsequently cleaned by the form. A successful POST request
+will result in a ``201`` response.
+
+According to `RFC 2616 § 9.5`_::
+
+    The POST method is used to request that the origin server accept the
+    entity enclosed in the request as a new subordinate of the resource
+    identified by the Request-URI in the Request-Line. POST is designed to
+    allow a uniform method to cover the following functions:
+
+          - Annotation of existing resources;
+          - Posting a message to a bulletin board, newsgroup, mailing list,
+            or similar group of articles;
+          - Providing a block of data, such as the result of submitting a
+            form, to a data-handling process;
+          - Extending a database through an append operation.
+
+    The actual function performed by the POST method is determined by the
+    server and is usually dependent on the Request-URI. The posted entity is
+    subordinate to that URI in the same way that a file is subordinate to a
+    directory containing it, a news article is subordinate to a newsgroup to
+    which it is posted, or a record is subordinate to a database.
+
+.. _RFC 2616 § 9.5: http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
+
+
+
+
