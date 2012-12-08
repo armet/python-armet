@@ -13,8 +13,7 @@ from django.conf.urls import patterns, url
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import fields, helpers
-from .. import utils, http, exceptions, decoders
-from ..authorization import Resource as Authorization
+from .. import utils, http, exceptions, decoders, authorization
 
 
 # Get an instance of the logger.
@@ -153,7 +152,7 @@ class BaseResource(object):
     #! Authorization class for filtering.  Takes a dict of permissions for
     #! CRUD operations.  See the Authorization class for more information on
     #! the parameters this takes.
-    authorization = Authorization({
+    authorization = authorization.Resource({
         "create": ("add",),
         "update": ("change",),
         "delete": ("delete",),
@@ -368,7 +367,6 @@ class BaseResource(object):
             # object for later use.
             self.encoder = self._determine_encoder()
 
-            # TODO: Assert resource-level accessiblity
             self.authorize_resource()
 
             data = None
@@ -387,6 +385,15 @@ class BaseResource(object):
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
             return ex.dispatch(self.encoder)
+
+    def authorize_resource(self):
+        """Attempts to assert authorization for access to this resource.
+        If unable to assert, it throws a forbidden.
+        """
+        if not self.authorization.is_accessible(
+                self.request,
+                self.request.method):
+            raise exceptions.Forbidden()
 
     def authenticate(self):
         """Attempts to assert authentication."""
@@ -418,7 +425,7 @@ class BaseResource(object):
             # correct mimetype.
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
-            
+
         if not response.content:
             if response.status_code >= 200 and response.status_code <= 299:
                 response.status_code = 204
