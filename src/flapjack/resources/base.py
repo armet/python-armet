@@ -14,6 +14,7 @@ from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import fields, helpers
 from .. import utils, http, exceptions, decoders
+from ..authorization import Resource as Authorization
 
 
 # Get an instance of the logger.
@@ -148,6 +149,16 @@ class BaseResource(object):
     #!         'melon': relation('path.to.resource'),
     #!     }
     relations = None
+
+    #! Authorization class for filtering.  Takes a dict of permissions for
+    #! CRUD operations.  See the Authorization class for more information on
+    #! the parameters this takes.
+    authorization = Authorization({
+        "create": ("add",),
+        "update": ("change",),
+        "delete": ("delete",),
+        "read":   ("read",)
+    })
 
     #! Name used to index into the path cache.
     _cache_path_name = None
@@ -358,6 +369,7 @@ class BaseResource(object):
             self.encoder = self._determine_encoder()
 
             # TODO: Assert resource-level accessiblity
+            self.authorize_resource()
 
             data = None
             if self.request.body:

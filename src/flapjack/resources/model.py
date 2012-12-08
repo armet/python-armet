@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 import six
 from . import base
 from .. import exceptions
+from .authorization import Model as Authorization
 
 
 class BaseModel(base.BaseResource):
@@ -21,6 +22,18 @@ class BaseModel(base.BaseResource):
 
     #! Class object cache of what is to be prefetched.
     _prefetch_related_paths = {}
+
+    # Authorization.  See base class for more information
+    authorization = Authorization({
+        "create": ("add",),
+        "update": ("change",),
+        "delete": ("delete",),
+        "read":   ("read",)
+    })
+
+    @classmethod
+    def authorize_queryset(self, queryset, operation):
+        return self.authorization.filter(self.request, operation, queryset)
 
     @classmethod
     def _build_prefetch_related_paths(cls, queryset, prefix=None, skip=None):
@@ -107,6 +120,9 @@ class BaseModel(base.BaseResource):
     def read(self):
         # Build the queryset
         queryset = self.model.objects.all()
+
+        # Filter the queryset based on permissions you can have
+        queryset = self.authorize_queryset(queryset, 'read')
 
         try:
             # Apply transveral first.
