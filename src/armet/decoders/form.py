@@ -7,6 +7,7 @@ from StringIO import StringIO
 from django.http import MultiPartParser
 from .. import transcoders
 from . import Decoder
+from django.core.files.uploadhandler import load_handler
 
 
 class Decoder(transcoders.Form, Decoder):
@@ -14,12 +15,23 @@ class Decoder(transcoders.Form, Decoder):
     def decode(self, request, fields=None):
         # Instantiate an instance of django's multi-part parser
         stream = StringIO(request.body)
-        parser = MultiPartParser(request.META, stream, (), request.encoding)
+        handlers =[ load_handler('django.core.files.uploadhandler.TemporaryFileUploadHandler', request) ]
+        parser = MultiPartParser(request.META, stream, handlers, request.encoding)
 
         # Parse the form-data as data, files
         data, files = parser.parse()
 
-        # Append values in files into the data dictionary
+        data = dict(data)
+
+        #flatten the data dictionary if possible
+        for key in data:
+            if (len(data[key]) == 1):
+                data[key] = data[key][0]
+
+        data.update(dict(files))
+        return data
+
+"""        # Append values in files into the data dictionary
         obj = dict(data)
         for name in files:
             if name not in obj:
@@ -39,4 +51,4 @@ class Decoder(transcoders.Form, Decoder):
                 obj[name] = obj[name][0]
 
         # Return the constructed object
-        return obj
+        return obj """
