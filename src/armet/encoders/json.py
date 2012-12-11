@@ -14,27 +14,8 @@ from . import Encoder
 class _TypeAwareJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
-        if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-            # This is some kind of date/time -- encode using ISO format.
-            return obj.isoformat()
-
-        # TODO: base-64 encode a file stream
-
-        if isinstance(obj, Iterable):
-            # Since we can iterate but apparently can't encode -- make this
-            # a list and send it back through the json encoder.
-            return list(obj)
-
-        try:
-            # Attempt to invoke the object.
-            return obj()
-
-        except TypeError:
-            # Failed; move along
-            pass
-
-        # Attempt to coerce this to a dictionary.
-        result = utils.coerce_dict(obj)
+        # Attempt to coerce this value.
+        result = utils.coerce_value(obj)
         if result is not None:
             return result
 
