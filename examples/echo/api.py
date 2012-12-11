@@ -14,4 +14,4 @@ class Echo(resources.Resource):
 
     def post(self, data):
         # Return the response
-        return data, http.client.OK
+        return self.make_response(data, http.client.OK)
