@@ -32,7 +32,7 @@ class Encoder(transcoders.Xml, Encoder):
             if isinstance(info, dict):
                 sub = E.object()
             else:
-                sub = E.attribute( {'name': name } )
+                 sub = getattr(E, name)()
             for key in info:
                 cls._insert_data_into_tree(sub,key,info)
             root.append(sub)
@@ -45,7 +45,7 @@ class Encoder(transcoders.Xml, Encoder):
             if name is None:
                 root.append( E.value( str(info) ) )
             else:
-                root.append(E.attribute( str(info), {'name': name} ) )
+                 root.append(getattr(E, name)(str(info)) )
 
     @classmethod
     def _insert_data_into_tree(cls,root,key,obj=None):
@@ -73,7 +73,10 @@ class Encoder(transcoders.Xml, Encoder):
 
             result = utils.coerce_dict(obj)
 
-            cls._iterate_thru_object(e,result)
+            if result is not None:
+                cls._iterate_thru_object(e,result)
+            else:
+                cls._iterate_thru_object(e,obj)
             return e
         
         elif not isinstance(obj, Mapping):
@@ -84,6 +87,7 @@ class Encoder(transcoders.Xml, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
+        print (obj)
         try:
             e = E.data()
             _encode_file_into_xml(e,obj)

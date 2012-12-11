@@ -14,7 +14,7 @@ class Resource(six.with_metaclass(DeclarativeResource, BaseResource)):
     Derive from this class to extend and create your own generic resources.
 
     @example
-        from flapjack import resources
+        from armet import resources
 
 
         class MyResource(resources.Resource):
@@ -31,7 +31,7 @@ class Model(six.with_metaclass(DeclarativeModel, BaseModel)):
     Derive from this class to extend and create your own model-bound resources.
 
     @example
-        from flapjack import resources
+        from armet import resources
         from . import models
 
 

@@ -123,18 +123,8 @@ class BaseModel(base.BaseResource):
         # queryset = self.authorize_queryset(queryset, 'read')
 
         try:
-            # Apply transveral first.
-            # Build filter string for parents
-            parent = self.parent
-            path = []
-            while parent is not None:
-                path.append(parent.related_name)
-                queryset = queryset.filter(**{
-                    '__'.join(path): parent.resource.slug})
-                parent = parent.resource.parent
-
-            # Prefetch all related fields and return the queryset.
-            queryset = self.prefetch_related(queryset)
+            # # Prefetch all related fields and return the queryset.
+            # queryset = self.prefetch_related(queryset)
 
             if self.slug is not None:
                 # Model resources by default have the slug as the identifier.
@@ -143,24 +133,33 @@ class BaseModel(base.BaseResource):
                 chance = queryset.filter(pk=self.slug)
                 if not chance.exists() and self.path:
                     try:
-                        # Attempt to perform array access.
+                        # Attempt to perform array access; and just return it.
                         return queryset[int(self.slug)]
 
                     except IndexError:
-                        # Well; that failed. Move along
+                        # Not an array; oh well.
                         pass
-
-                try:
-                    # Moving along; attempt to 'get' it.
-                    return chance.get()
-
-                except self.model.DoesNotExist:
-                    # Didn't find it.
-                    raise exceptions.NotFound()
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
+
+        # Build filter string for parents
+        parent, path = self.parent, []
+        while parent is not None:
+            slug = parent.resource.slug
+            path.append(parent.related_name)
+            queryset = queryset.filter(**{'__'.join(path): slug})
+            parent = parent.resource.parent
+
+        if self.slug is not None:
+            try:
+                # Attempt to get what we have.
+                queryset = chance.get()
+
+            except self.model.DoesNotExist:
+                # Didn't find it.
+                raise exceptions.NotFound()
 
         # Return the queryset if we still have it.
         return queryset
