@@ -7,7 +7,7 @@ from os import path
 
 
 # Project directories
-PROJECT_NAME = 'flapjack.tests'
+PROJECT_NAME = 'armet.tests'
 PROJECT_ROOT = path.abspath(path.join(__file__))
 
 # Root directories

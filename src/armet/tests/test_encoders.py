@@ -4,7 +4,7 @@ from __future__ import absolute_import, division
 import itertools
 import json
 from django.utils import unittest
-from flapjack import encoders
+from armet import encoders
 
 
 class JsonTestCase(unittest.TestCase):
