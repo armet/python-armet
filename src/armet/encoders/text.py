@@ -11,10 +11,12 @@ import six
 import os
 import magic
 import collections
+from collections import Mapping
+import decimal
+import fractions
 from ..http import Response as HttpResponse
 from urllib import quote_plus
 from .. import transcoders
-# from .. import exceptions, transcoders, utils
 from . import Encoder, utils
 from six.moves import cStringIO
 
@@ -22,26 +24,28 @@ from six.moves import cStringIO
 class Encoder(transcoders.Text, Encoder):
 
     def _encode_mapping(self, stream, depth, obj):
-        if depth:
-            # We have some depth because we're inside a mapping;
-            # get off the key line
-            stream.write('\n')
-
-        for key in obj:
+        for index, key in enumerate(obj):
             if depth:
-                stream.write(' ' * depth * 2)
+                # If we have depth we need to offset the value.
+                stream.write('\t' * depth)
+
+            # Then write the key (as we know we have a dict now).
             stream.write('{}: '.format(key))
+
+            # Write the value
             self._encode_value(stream, depth + 1, obj[key])
+
+            # Move on to the next one.
             stream.write('\n')
 
     def _encode_sequence(self, stream, depth, obj):
-        if depth:
-            stream.write('\n')
-        for value in obj:
+        for index, item in enumerate(obj):
             if depth:
-                stream.write(' ' * depth * 2)
-            self._encode_value(stream, depth, value)
-            stream.write('\n')
+                # We're not first; add a line.
+                stream.write('\n')
+
+            # Write the value
+            self._encode_value(stream, depth, item)
 
     def _encode_value(self, stream, depth, obj):
         if obj is None:
@@ -68,6 +72,10 @@ class Encoder(transcoders.Text, Encoder):
             # Some kind of number.
             stream.write(str(obj))
 
+        elif isinstance(obj, (float, fractions.Fraction, decimal.Decimal)):
+            # Some kind of something.
+            stream.write(str(obj))
+
         elif isinstance(obj, bool):
             # Boolean
             stream.write("true" if obj else "false")
@@ -77,70 +85,15 @@ class Encoder(transcoders.Text, Encoder):
             self._encode_value(stream, depth, utils.coerce_value(obj))
 
     def encode(self, obj=None):
+        # Instantiate an in-memory stream.
         stream = cStringIO()
+
+        # Initiate the encoding of object to the stream.
         self._encode_value(stream, 0, obj)
-        result = stream.getvalue()
+
+        # Retrieve the value of the stream and close it.
+        text = stream.getvalue()
         stream.close()
-        return result
 
-       #for each item in obj
-           #if item is key-value pair
-
-               #write out key after the corrent number of indents.
-               #indent by length of key plus a few spaces
-
-               #if item value is iterable
-                   #recursion!  see step 1.
-               #else
-                   #output value.  Newline
-
-           #else
-               #if value is iterable
-                   #increment indent
-                   #recursion!  See step 1.
-               #else
-                   #write out value after correct number of indents, then comma, then newline
-
-    # @classmethod
-    # def _encode_this_text(cls,obj,indent='',retval=''):
-    #    #for each item in obj
-    #    for key in obj:
-    #        #if item is key-value pair
-    #        try:
-    #            obj[key]
-    #            #write out key after the corrent number of indents
-    #            retval += indent + str(key) + ':  '
-    #            #if value is iterable
-    #            if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
-    #                #recursion!  See step 1.
-    #                retval = cls._encode_this_text(obj[key],indent + (' ' * len(str(key)) ) + '   ',retval + '\n') + '\n'
-    #            #else
-    #            else:
-    #                #write out the value, then newline,
-    #                obj[key] = utils.fix_date(obj[key])
-    #                retval += str(obj[key]) + '\n'
-    #        #else
-    #        except (TypeError, IndexError):
-    #            #if value is iterable
-    #            if isinstance(key, Iterable) and not isinstance(key,six.string_types):
-    #                #recursion!  See step 1.
-    #                retval = cls._encode_this_text(key,indent + '   ',retval + '\n') + '\n'
-    #            #else
-    #            else:
-    #                key = utils.fix_date(key)
-    #                retval += indent + str(key) + '\n'
-    #    return retval
-
-    # @classmethod
-    # def encode(cls, obj=None):
-    #     try:
-    #         obj = base64.b64encode(obj.read())
-    #         return super(Text,cls).encode(obj)
-    #     except AttributeError:
-    #         pass
-    #     if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-    #        # We need this to be at least a list
-    #        obj = obj,
-    #     textval = cls._encode_this_text(obj)
-    #     #text = etree.tostring(root,pretty_print=True)
-    #     return super(Text, cls).encode(textval)
+        # Return the encoded text.
+        return text
