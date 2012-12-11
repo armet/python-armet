@@ -3,8 +3,8 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from flapjack import resources
-from flapjack.resources import field, relation
+from armet import resources
+from armet.resources import field, relation
 from . import models
 
 

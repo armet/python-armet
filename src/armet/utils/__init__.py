@@ -3,8 +3,8 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-import collections
 import six
+import collections
 
 
 class classproperty(object):
@@ -99,40 +99,3 @@ def for_all(value, method, test=None):
 
     return value
 
-
-def coerce_dict(obj):
-    """Attempts to coerce the passed object as a dictionary."""
-    try:
-        # Last attempt; use `vars(obj)` to grab everything that doesn't
-        # start with an underscore from the object.
-        iterator = six.iteritems(vars(obj))
-        return dict((n, v) for n, v in iterator if not n.startswith('_'))
-
-    except (AttributeError, TypeError):
-        # Apparently this is not an object.
-        pass
-
-    # Attmept to go about vars(obj) a different way; here we use a
-    # combination of `dir` and `__getattribute__` to strip off fields that
-    # aren't class fields.
-
-    # TODO: Attempt to execute if callable; store result if success, else
-    #   throw away item
-
-    try:
-        result = {}
-        for name in dir(obj):
-            if not name.startswith('_'):
-                try:
-                    value = obj.__getattribute__(name)
-                    if value != obj.__class__.__dict__[name]:
-                        result[name] = obj.__getattribute__(name)
-
-                except KeyError:
-                    pass
-
-        return result
-
-    except AttributeError:
-        # Guess that didn't work either.
-        pass
