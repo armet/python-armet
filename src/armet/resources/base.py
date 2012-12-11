@@ -17,7 +17,7 @@ from .. import utils, http, exceptions, decoders, authorization
 
 
 # Get an instance of the logger.
-logger = logging.getLogger('flapjack.resources')
+logger = logging.getLogger('armet.resources')
 
 
 class BaseResource(object):
@@ -25,7 +25,7 @@ class BaseResource(object):
 
     @note
         This is not the class to derive from when implementing your own
-        resources. Derive from `flapjack.resources.Resource` (defined in
+        resources. Derive from `armet.resources.Resource` (defined in
         the `__init__.py`).
     """
 
@@ -89,8 +89,8 @@ class BaseResource(object):
 
     #! Mapping of encoders known by this resource.
     encoders = {
-        'json': 'flapjack.encoders.Json',
-        'xml': 'flapjack.encoders.Xml',
+        'json': 'armet.encoders.Json',
+        'xml': 'armet.encoders.Xml',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -104,7 +104,7 @@ class BaseResource(object):
 
     #! List of decoders known by this resource.
     decoders = {
-        'form': 'flapjack.decoders.Form',
+        'form': 'armet.decoders.Form',
     }
 
     #! List of allowed decoders of the understood decoders.
@@ -136,7 +136,7 @@ class BaseResource(object):
 
     #! Authentication protocol(s) to use to authenticate access to
     #! the resource.
-    authentication = ('flapjack.authentication.Authentication',)
+    authentication = ('armet.authentication.Authentication',)
 
     #! Dictionary of the relations for this resource; maps the names of the
     #! fields to the resources they relate to. The key is the name of the

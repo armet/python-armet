@@ -9,13 +9,13 @@ def read(filename):
 
 
 setup(
-        name='django-flapjack',
+        name='django-armet',
         version=read('VERSION'),
         description=read('description'),
         long_description=read('README.md'),
         author='Concordus Applications',
         author_email='support@concordusapps.com',
-        url='http://github.com/concordusapps/django-flapjack',
-        package_dir={'flapjack': 'src/flapjack'},
+        url='http://github.com/armet/django-armet',
+        package_dir={'armet': 'src/armet'},
         packages=find_packages('src')
     )

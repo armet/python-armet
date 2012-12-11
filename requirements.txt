@@ -1,10 +1,10 @@
-django
-python-mimeparse
 six
+django
 lxml
+python-mimeparse
 python-magic
 python-dateutil
+django-extensions
 django-nose
 coverage
-django-extensions
 yanc

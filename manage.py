@@ -9,5 +9,5 @@ from django.core.management import execute_from_command_line
 
 if __name__ == "__main__":
     sys.path.append(os.path.join('src'))
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "flapjack.tests.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "armet.tests.settings")
     execute_from_command_line(sys.argv)

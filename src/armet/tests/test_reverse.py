@@ -4,7 +4,7 @@ from __future__ import absolute_import, division
 import os
 from django.utils.unittest import TestCase
 from django.test.client import RequestFactory
-from flapjack.resources import helpers
+from armet.resources import helpers
 from . import api
 
 

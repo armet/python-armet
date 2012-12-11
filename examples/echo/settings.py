@@ -129,7 +129,7 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 NOSE_ARGS = [
     '--with-coverage',
     '--cover-html',
-    '--cover-package=flapjack.*,flapjack',
+    '--cover-package=armet.*,armet',
 ]
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
@@ -155,7 +155,7 @@ LOGGING = {
         #     'level': 'DEBUG',
         #     'filters': []
         # },
-        'flapjack': {
+        'armet': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'filters': []

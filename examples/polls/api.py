@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """ Defines the RESTful interface for this sample project.
 """
-from flapjack import http
-from flapjack import resources
-from flapjack.resources import field, relation
+from armet import http
+from armet import resources
+from armet.resources import field, relation
 from . import models
 
 
