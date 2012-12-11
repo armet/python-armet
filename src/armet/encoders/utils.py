@@ -43,10 +43,6 @@ def coerce_dict(obj):
 
 
 def coerce_value(obj):
-    if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-        # This is some kind of date/time -- encode using ISO format.
-        return obj.isoformat()
-
     try:
         # Attempt to encode a file as base64.
         return obj.read().encode('base64')
