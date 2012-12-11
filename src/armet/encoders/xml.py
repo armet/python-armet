@@ -3,7 +3,6 @@ Implements XML encoder.  Allows the server to send any resource in XML format.
 """
 import datetime
 import six
-from ..http import Response
 from .. import transcoders, utils
 from lxml.builder import E
 from lxml import etree

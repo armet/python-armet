@@ -106,11 +106,13 @@ class BaseResource(object):
     #! List of decoders known by this resource.
     decoders = {
         'form': 'armet.decoders.Form',
+        'xml': 'armet.decoders.Xml',
     }
 
     #! List of allowed decoders of the understood decoders.
     allowed_decoders = (
         'form',
+        'xml',
     )
 
     #! URL namespace to define the url configuration inside.
