@@ -559,7 +559,6 @@ class BaseResource(object):
 
             except (ValueError, AttributeError, TypeError) as ex:
                 # Something weird happened with a path segment.
-                print(ex)
                 raise exceptions.NotFound()
 
         # Return the resultant object.
