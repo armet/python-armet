@@ -47,24 +47,40 @@ def coerce_value(obj):
         # This is some kind of date/time -- encode using ISO format.
         return obj.isoformat()
 
-        # TODO: base-64 encode a file stream
+    try:
+        # Attempt to encode a file as base64.
+        return obj.read().encode('base64')
+
+    except AttributeError:
+        # Not a file; move along
+        pass
+
+    try:
+        if isinstance(obj, complex):
+            # Complex type; return it as a str
+            return '{:G}+{:G}i'.format(obj.real, obj.imag)
+
+    except NameError:
+        # No complex type support here.
+        pass
 
     if isinstance(obj, collections.Iterable):
         # Since we can iterate but apparently can't encode -- make this
         # a list and send it back through the json encoder.
         return list(obj)
 
-    # Attempt to coerce this as a dictionary
-    value = coerce_dict(obj)
-    if value is not None:
-        return value
-
     try:
-        # Attempt to invoke the object.
-        return obj()
+        # Attempt to invoke the object only if we're not a type.
+        if not isinstance(obj, type):
+            return obj()
 
     except TypeError:
         # Failed; move along
         pass
+
+    # Attempt to coerce this as a dictionary
+    value = coerce_dict(obj)
+    if value is not None:
+        return value
 
     # We have no idea; return nothing
