@@ -3,7 +3,7 @@
 """
 from armet import http
 from armet import resources
-from armet.resources import field, relation
+from armet.resources import attribute, relation
 
 
 class Echo(resources.Resource):

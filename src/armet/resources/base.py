@@ -13,7 +13,7 @@ from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
-from . import fields, helpers
+from . import attributes, helpers
 from .. import utils, http, exceptions, decoders, authorization
 
 
@@ -120,22 +120,22 @@ class BaseResource(object):
     #! URL namespace to define the url configuration inside.
     url_name = 'api_view'
 
-    #! Blacklist of fields to exclude from display.
+    #! Blacklist of attributes to exclude from display.
     exclude = None
 
-    #! Whitelist of fields to include in the display.
-    fields = None
+    #! Whitelist of attributes to include in the display.
+    attributes = None
 
-    #! Additional fields to include in the display.
+    #! Additional attributes to include in the display.
     include = None
 
-    #! Whitelist of fields that are filterable.
-    #! Default is to be an empty () which excludes all fields from filtering.
-    #! To have all fields be eligible for filtering, explicitly specify
+    #! Whitelist of attributes that are filterable.
+    #! Default is to be an empty () which excludes all attributes from filtering.
+    #! To have all attributes be eligible for filtering, explicitly specify
     #! `filterable = None` on a resource or any of its parents.
     filterable = None
 
-    #! The name of the resource URI field on the resource.
+    #! The name of the resource URI attribute on the resource.
     #! Specify `None` to not have the URI be included.
     resource_uri = 'resource_uri'
 
@@ -144,8 +144,8 @@ class BaseResource(object):
     authentication = ('armet.authentication.Authentication',)
 
     #! Dictionary of the relations for this resource; maps the names of the
-    #! fields to the resources they relate to. The key is the name of the
-    #! field on the resource; the value is a call to the `resources.relation`
+    #! attributes to the resources they relate to. The key is the name of the
+    #! attribute on the resource; the value is a call to the `resources.relation`
     #! method found in resources.helpers (and imported into resources).
     #!
     #! @example
@@ -167,7 +167,7 @@ class BaseResource(object):
     #! Name used to index into the path cache.
     _cache_path_name = None
 
-    #! Cache of the path to field accessor translations.
+    #! Cache of the path to attribute accessor translations.
     _cache_path = {}
 
     @classmethod
@@ -262,23 +262,23 @@ class BaseResource(object):
 
         # We have at least one segment in the path.
         try:
-            # Attempt to get field object referenced.
+            # Attempt to get attribute object referenced.
             name = kwargs['path'][0]
-            field = cls._fields[name]
+            attribute = cls._attributes[name]
 
         except KeyError:
-            # No field found for reference; 404.
+            # No attribute found for reference; 404.
             raise exceptions.NotFound()
 
-        if not field.visible:
+        if not attribute.visible:
             # Field not visible; die.
             raise exceptions.NotFound()
 
-        if field.relation is None:
-            # No field relation defined; a straight access.
+        if attribute.relation is None:
+            # No attribute relation defined; a straight access.
             return cls
 
-        # Related field.
+        # Related attribute.
         # Reduce the path by 1.
         del kwargs['path'][0]
 
@@ -290,9 +290,9 @@ class BaseResource(object):
                 parent=kwargs.get('parent'),
                 local=kwargs.get('local')),
             name=name,
-            related_name=field.relation.related_name)
+            related_name=attribute.relation.related_name)
 
-        if field.collection and kwargs['path']:
+        if attribute.collection and kwargs['path']:
             # Set slug to be the next segment
             kwargs['slug'] = kwargs['path'][0]
             del kwargs['path'][0]
@@ -302,27 +302,27 @@ class BaseResource(object):
                 # No slug; list access.
                 del kwargs['slug']
 
-        if field.relation.path:
+        if attribute.relation.path:
             # There is a path; extend it.
-            kwargs['path'] = field.relation.path + kwargs['path']
+            kwargs['path'] = attribute.relation.path + kwargs['path']
 
         # Declare if we are local
-        kwargs['local'] = field.relation.local
+        kwargs['local'] = attribute.relation.local
 
         # Find the slug if we need to; let me explain:
         # Take a URI like /poll/41/choices/12/document
         # What slug does this document object have?
         # The only way for us to know is to `.read()` the choices/12 object
-        # and ask it what value it has for its document field and then
+        # and ask it what value it has for its document attribute and then
         # ask the document object to make a slug out of it.
         if not kwargs.get('slug'):
-            field = parent.resource._fields[parent.name]
-            if not field.collection and not len(field.path) > 1:
+            attribute = parent.resource._attributes[parent.name]
+            if not attribute.collection and not len(attribute.path) > 1:
                 obj = parent.resource.read()
-                kwargs['slug'] = cls.make_slug(field.accessor(obj))
+                kwargs['slug'] = cls.make_slug(attribute.accessor(obj))
 
         # Return the cls object to use
-        return field.relation.resource.traverse(request, kwargs)
+        return attribute.relation.resource.traverse(request, kwargs)
 
     def __init__(self, **kwargs):
         """Initializes the resources and sets its properites."""
@@ -456,8 +456,8 @@ class BaseResource(object):
         return prepare(data)
 
     def generic_prepare(self, obj, name, value):
-        relation = self._fields[name].relation
-        if relation is not None and len(self._fields[name].path) <= 1:
+        relation = self._attributes[name].relation
+        if relation is not None and len(self._attributes[name].path) <= 1:
             # Instantiate a reference to the resource
             try:
                 # Attempt to make a slug.
@@ -526,17 +526,17 @@ class BaseResource(object):
 
         if self.path:
             if self._cache_path_name not in self._cache_path:
-                # No path field has been created yet; create one
-                path_field_cls = self._fields[self.path[0]].__class__
+                # No path attribute has been created yet; create one
+                path_field_cls = self._attributes[self.path[0]].__class__
                 self._cache_path[self._cache_path_name] = path_field_cls(self,
                     path=self.path)
 
-            # Retrieve the cached path: (field, segment#0)
+            # Retrieve the cached path: (attribute, segment#0)
             path_field = self._cache_path.get(self._cache_path_name)
 
-        # Iterate through the fields and build the object from the item.
-        for name, field in six.iteritems(self._fields):
-            if not field.visible:
+        # Iterate through the attributes and build the object from the item.
+        for name, attribute in six.iteritems(self._attributes):
+            if not attribute.visible:
                 # Field is not visible on the response object.
                 continue
 
@@ -545,20 +545,20 @@ class BaseResource(object):
                 continue
 
             try:
-                # Apply the field accessor and request the value of the item.
-                value = field.accessor(item)
+                # Apply the attribute accessor and request the value of the item.
+                value = attribute.accessor(item)
 
             except KeyError:
                 # Field not found.. okay.
                 raise exceptions.NotFound()
 
             # Set value on object after preparing it
-            obj[name] = field.prepare(self, item, value)
+            obj[name] = attribute.prepare(self, item, value)
 
         if self.path and path_field:
             try:
                 # Navigate through some hoops to return from what we construct.
-                # Utilize the field accessor to resolve the resource path.
+                # Utilize the attribute accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
             except (ValueError, AttributeError, TypeError) as ex:
@@ -571,7 +571,7 @@ class BaseResource(object):
     def clean(self, data):
         """Cleans data from the request for processing."""
         # TODO: Resolve relation URIs (eg. /resource/:slug/).
-        # TODO: Run micro-clean cycle using field-level cleaning in order to
+        # TODO: Run micro-clean cycle using attribute-level cleaning in order to
         #       support things like fuzzy dates.
 
         if self.form is not None:
@@ -625,7 +625,7 @@ class BaseResource(object):
 
         @parent
             Describes where to reverse this resource from.
-            Tuple of (<parent resource>, "field name on parent").
+            Tuple of (<parent resource>, "attribute name on parent").
         """
         # NOTE: Not using `iri_to_uri` here; therefore only ASCII is permitted.
         #       Need to look into this later so we can have unicode here.
@@ -638,7 +638,7 @@ class BaseResource(object):
             composite.append(parent.name)
 
             if (slug is not None
-                    and parent.resource._fields[parent.name].collection):
+                    and parent.resource._attributes[parent.name].collection):
                 composite.append(slug)
 
             if path is not None:
@@ -815,14 +815,14 @@ class BaseResource(object):
                 raise exceptions.UnsupportedMediaType()
 
             # Decode and return the request body
-            return decoder.decode(self.request, self._fields)
+            return decoder.decode(self.request, self._attributes)
 
         # No content type header was presented; attempt to decode using
         # all available decoders.
         for decoder in six.itervalues(self.decoders):
             try:
                 # Attemp to decode and return the body.
-                return decoder.decode(self.request, self._fields)
+                return decoder.decode(self.request, self._attributes)
 
             except decoders.DecodingError:
                 # An error occured; continue on to the next decoder.

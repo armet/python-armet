@@ -21,8 +21,8 @@ def coerce_dict(obj):
         pass
 
     # Attmept to go about vars(obj) a different way; here we use a
-    # combination of `dir` and `__getattribute__` to strip off fields that
-    # aren't class fields.
+    # combination of `dir` and `__getattribute__` to strip off attributes that
+    # aren't class attributes.
     try:
         result = {}
         for name in dir(obj):

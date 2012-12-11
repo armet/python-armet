@@ -1,4 +1,4 @@
-""" 
+"""
 Implements XML decoder.  Allows the server to consume XML into resources.
 """
 import datetime
@@ -47,7 +47,7 @@ class Decoder(transcoders.Xml, Decoder):
        return retval
 
     @classmethod
-    def decode(cls, request, fields=None):
+    def decode(cls, request, attributes=None):
         nxml = objectify.fromstring(request.body)
         retval = cls._decode_xml(nxml)
         return retval

@@ -26,8 +26,8 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
     resource_uri = None
 
     include = {
-        'name': resources.field('name'),
-        'link': resources.field(),
+        'name': resources.attribute('name'),
+        'link': resources.attribute(),
     }
 
     def prepare_link(self, obj, value):

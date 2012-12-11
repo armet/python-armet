@@ -6,16 +6,16 @@ from __future__ import absolute_import, division
 import collections
 
 
-def field(path=None, collection=None):
-    """Used in the `include` option to supply additional fields.
+def attribute(path=None, collection=None):
+    """Used in the `include` option to supply additional attributes.
 
     @param[in] path
         Path on the resource object to return; if none is specified than there
-        is no default value for this field (ie. unless a prepare_FOO method is
-        declared it will always be `None`).
+        is no default value for this attributes (ie. unless a prepare_FOO
+        method is declared it will always be `None`).
 
     @param[in] collection
-        Whether the field is some kind of collection. This effects what is
+        Whether the attribute is some kind of collection. This effects what is
         returned on `None` (null or []), etc.
     """
     return (path, collection)
@@ -27,7 +27,7 @@ Relation = collections.namedtuple('Relation', (
 ))
 
 def relation(resource, path=None, embed=False, local=False, related_name=None):
-    """Used in the `relations` option to relate fields with other resources."""
+    """Used in the `relations` option to relate attributes."""
     return Relation(resource, path, embed, local, related_name)
 
 

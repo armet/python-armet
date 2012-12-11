@@ -96,7 +96,7 @@ class Paginator(object):
             # Just one result, lets check out what we got
             match = results[0]
 
-            # Check for prefix and suffix stuff and populate start end fields
+            # Check for prefix and suffix stuff and populate start end attributes
             # None is special cased for end when we do not know how long it is
             if match[0] == '-':
                 # Prefix match

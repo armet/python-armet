@@ -131,23 +131,23 @@ Unless otherwise specified, the default values are as follows: ::
 
 ``exlude``
 ----------
-Blacklist of fields to exclude from display.
+Blacklist of attributes to exclude from display.
 
 Unless otherwise specified, the default values are as follows: ::
 
     exclude = None
 
-``fields``
+``attributes``
 ----------
-Whitelist of fields to include in the display.
+Whitelist of attributes to include in the display.
 
 Unless otherwise specified, the default values are as follows: ::
 
-    fields = None
+    attributes = None
 
 ``include``
 -----------
-Additional fields to include in the display.
+Additional attributes to include in the display.
 
 Unless otherwise specified, the default values are as follows: ::
 
@@ -155,9 +155,9 @@ Unless otherwise specified, the default values are as follows: ::
 
 ``filterable``
 --------------
-Whitelist of fields that are filterable.
-Default is to be an empty () which excludes all fields from filtering.
-To have all fields be eligible for filtering, explicitly specify
+Whitelist of attributes that are filterable.
+Default is to be an empty () which excludes all attributes from filtering.
+To have all attributes be eligible for filtering, explicitly specify
 `filterable = None` on a resource or any of its parents.
 
 Unless otherwise specified, the default values are as follows: ::
@@ -166,7 +166,7 @@ Unless otherwise specified, the default values are as follows: ::
 
 ``resource_uri``
 ----------------
-The name of the resource URI field on the resource.
+The name of the resource URI attribute on the resource.
 Specify `None` to not have the URI be included.
 
 Unless otherwise specified, the default values are as follows: ::
@@ -184,8 +184,8 @@ Unless otherwise specified, the default values are as follows: ::
 ``relations``
 -------------
 Dictionary of the relations for this resource; maps the names of the
-fields to the resources they relate to. The key is the name of the
-field on the resource; the value is a call to the `resources.relation`
+attributes to the resources they relate to. The key is the name of the
+attribute on the resource; the value is a call to the `resources.relation`
 method found in resources.helpers (and imported into resources).
 
 Unless otherwise specified, the default values are as follows: ::
@@ -235,7 +235,7 @@ According to `RFC 2616 § 9.4`_::
 
     The response to a HEAD request MAY be cacheable in the sense that the
     information contained in the response MAY be used to update a previously
-    cached entity from that resource. If the new field values indicate that
+    cached entity from that resource. If the new attribute values indicate that
     the cached entity differs from the current entity (as would be indicated
     by a change in Content-Length, Content-MD5, ETag or Last-Modified), then
     the cache MUST treat the cache entry as stale.

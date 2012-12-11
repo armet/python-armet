@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Defines resource attribute objects encapsulating metadata of the
+resource's attributes.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
@@ -13,25 +15,25 @@ from .proxy import find as find_proxy
 class Field(object):
 
     def __init__(self, resource, **kwargs):
-        #! The resource object this field is bound to.
+        #! The resource object this attribute is bound to.
         self.resource = resource
 
-        #! Whether this field can be modified or not.
+        #! Whether this attribute can be modified or not.
         self.editable = kwargs.get('editable', False)
 
-        #! Whether this field is a collection or not.
+        #! Whether this attribute is a collection or not.
         self.collection = kwargs.get('collection', False)
 
-        #! Whether this field may be filtered or not.
+        #! Whether this attribute may be filtered or not.
         self.filterable = kwargs.get('filterable', False)
 
-        #! Visibility of the field.
+        #! Visibility of the attribute.
         self.visible = kwargs.get('visible', False)
 
-        #! Whether this fields is bound to a model or not.
+        #! Whether this attributes is bound to a model or not.
         self.model = kwargs.get('model', False)
 
-        #! Accessor functions that will get the value of the field
+        #! Accessor functions that will get the value of the attribute
         #! from a obj.
         self.accessors = kwargs.get('accessors', [])
 
@@ -39,10 +41,10 @@ class Field(object):
         #! instantiating resource.
         self.prepare = kwargs.get('prepare')
 
-        #! Path of the field; storing for interesting purposes.
+        #! Path of the attribute; storing for interesting purposes.
         self._path = self.path = kwargs.get('path')
 
-        #! This field is related to some other resource (or should be).
+        #! This attribute is related to some other resource (or should be).
         self.related = kwargs.get('related')
 
         #! Stored relation reference.
@@ -76,9 +78,9 @@ class Field(object):
                 else:
                     # There may be a resource out there.
                     try:
-                        field = self.resource._get_field_object(self.path[0])
+                        attr = self.resource._get_field_object(self.path[0])
                         resource = self.resource._resources[
-                            field.field.related.var_name]
+                            attr.field.related.var_name]
 
                     except (KeyError, AttributeError):
                         # Didn't fint it.
@@ -96,7 +98,7 @@ class Field(object):
 
     def accessor(self, value):
         for accessor in self.accessors:
-            # Iterate and access the entire field path
+            # Iterate and access the entire attribute path
             value = accessor(value)
 
         if value is not None and self._path:
@@ -126,7 +128,7 @@ class Field(object):
 
     def clean(self, value):
         """Cleans the value for consumption by the form clean cycle."""
-        # Base field class just passes the value through.
+        # Base attribute class just passes the value through.
         return value
 
     def _build_accessor(self, cls, name):

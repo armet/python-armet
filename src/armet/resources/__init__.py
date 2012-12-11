@@ -2,7 +2,7 @@ import six
 from .meta import DeclarativeResource, DeclarativeModel
 from .base import BaseResource
 from .model import BaseModel
-from .helpers import field, relation
+from .helpers import attribute, relation
 import logging
 
 logging.basicConfig()
@@ -47,6 +47,6 @@ __all__ = [
     Resource,
     BaseModel,
     Model,
-    field,
+    attribute,
     relation
 ]

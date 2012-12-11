@@ -12,7 +12,7 @@ from django.core.files.uploadhandler import load_handler
 
 class Decoder(transcoders.Form, Decoder):
 
-    def decode(self, request, fields=None):
+    def decode(self, request, attributes=None):
         # Instantiate an instance of django's multi-part parser
         stream = StringIO(request.body)
         parser = MultiPartParser(request.META, stream, request.upload_handlers)
@@ -23,7 +23,7 @@ class Decoder(transcoders.Form, Decoder):
         # Flatten the data dictionary if possible.
         obj = dict(data)
         for key in obj:
-            if fields and key in fields and fields[key].collection:
+            if attributes and key in attributes and attributes[key].collection:
                 # Field declared to be an array; don't bother.
                 pass
 

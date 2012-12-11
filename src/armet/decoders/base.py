@@ -18,7 +18,7 @@ class DecodingError(Exception):
 class Decoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
 
     @abc.abstractmethod
-    def decode(self, request, fields=None):
+    def decode(self, request, attributes=None):
         """
         Transforms the request into an acceptable object for consumption.
 

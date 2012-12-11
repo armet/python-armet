@@ -158,11 +158,11 @@ class Basic(Http):
         """Initialize this and store any needed properties."""
         super(Basic, self).__init__(**kwargs)
 
-        #! Username field to use to authn with.
+        #! Username attribute to use to authn with.
         self.username = utils.config_fallback(kwargs.get('username'),
             'authentication.basic.username', 'username')
 
-        #! Password field to use to authn with.
+        #! Password attribute to use to authn with.
         self.password = utils.config_fallback(kwargs.get('password'),
             'authentication.basic.password', 'password')
 
