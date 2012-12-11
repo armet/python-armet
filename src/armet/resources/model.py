@@ -154,7 +154,7 @@ class BaseModel(base.BaseResource):
                     # Moving along; attempt to 'get' it.
                     return chance.get()
 
-                except self.mode.DoesNotExist:
+                except self.model.DoesNotExist:
                     # Didn't find it.
                     raise exceptions.NotFound()
 
