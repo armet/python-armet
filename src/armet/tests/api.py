@@ -14,9 +14,7 @@ class Choice(resources.Model):
 
 class Poll(resources.Model):
     model = models.Poll
-    relations = {
-        'choices': relation(Choice)
-    }
+
     include = {
         'choices': attribute('choice_set')
     }
