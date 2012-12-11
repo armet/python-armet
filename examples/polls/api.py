@@ -10,15 +10,14 @@ from . import models
 class Choice(resources.Model):
     model = models.Choice
 
-    include = {
-        'question': field('poll__question')
-    }
+    # include = {
+    #     'question': field('poll__question')
+    # }
 
-
-    relations = {
-        'question': relation('polls.api.Poll'),
-        'poll': relation('polls.api.Poll'),
-    }
+    # relations = {
+    #     'question': relation('polls.api.Poll'),
+    #     'poll': relation('polls.api.Poll'),
+    # }
 
 
 class Poll(resources.Model):
@@ -27,3 +26,7 @@ class Poll(resources.Model):
     include = {
         'choices': field('choice_set')
     }
+
+    # relations = {
+    #     'choices': relation('polls.api.Choice', path='choice_text', embed=True),
+    # }

@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
+import six
 import datetime
 
 
@@ -15,9 +16,8 @@ def coerce_dict(obj):
         iterator = six.iteritems(vars(obj))
         return dict((n, v) for n, v in iterator if not n.startswith('_'))
 
-    except (AttributeError, TypeError) as ex:
+    except (AttributeError, TypeError):
         # Apparently this is not an object.
-        print(ex)
         pass
 
     # Attmept to go about vars(obj) a different way; here we use a

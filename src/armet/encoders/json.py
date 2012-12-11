@@ -7,8 +7,8 @@ from collections import Iterable, Mapping
 import datetime
 import json
 import six
-from .. import transcoders, utils
-from . import Encoder
+from .. import transcoders
+from . import Encoder, utils
 
 
 class _TypeAwareJSONEncoder(json.JSONEncoder):
