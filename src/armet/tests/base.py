@@ -7,8 +7,6 @@ from armet import http
 class BaseTest(unittest.TestCase):
     """Unit Tests for Invitation related API calls"""
 
-    fixtures = ['initial_data']
-
     def setUp(self):
         """Sets up a user and HTTP Django test clients
         """
@@ -24,13 +22,13 @@ class BaseTest(unittest.TestCase):
         """
         Ensures the response is valid JSON
         """
-        return self.deserialize(response, type='json')
+        return self.deserialize(response, format='json')
 
     def assertValidXML(self, response):
         """
         Ensures the response is valid JSON
         """
-        return self.deserialize(response, type='xml')
+        return self.deserialize(response, format='xml')
 
     def assertHttpOK(self, response):
         """
@@ -146,13 +144,13 @@ class BaseTest(unittest.TestCase):
         """
         return self.assertEqual(response.status_code, http.client.NOT_IMPLEMENTED)
 
-    def deserialize(self, response, type='json'):
-        if type == 'json':
+    def deserialize(self, response, format='json'):
+        if format == 'json':
             try:
                 return json.loads(response.content)
             except ValueError:
                 return self.assertEqual(False, 'Invalid JSON format.')
-        elif type == 'xml':
+        elif format == 'xml':
             try:
                 content = etree.fromstring(response.content)
                 return dict((x.get('name'), x.text)
@@ -163,4 +161,4 @@ class BaseTest(unittest.TestCase):
     def assertValidJSONResponse(self, response):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
-        return self.deserialize(response, type='json')
+        return self.deserialize(response, format='json')

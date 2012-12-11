@@ -3,7 +3,7 @@
 """
 from armet import http
 from armet import resources
-from armet.resources import field, relation
+from armet.resources import attribute, relation
 from . import models
 
 
@@ -11,7 +11,7 @@ class Choice(resources.Model):
     model = models.Choice
 
     # include = {
-    #     'question': field('poll__question')
+    #     'question': attribute('poll__question')
     # }
 
     # relations = {
@@ -19,14 +19,21 @@ class Choice(resources.Model):
     #     'poll': relation('polls.api.Poll'),
     # }
 
+    include = {
+        'complex': attribute()
+    }
+
+    def prepare_complex(self, obj, value=None):
+        return complex(1, 2)
+
 
 class Poll(resources.Model):
     model = models.Poll
 
     include = {
-        'choices': field('choice_set')
+        'choices': attribute('choice_set')
     }
 
     # relations = {
-    #     'choices': relation('polls.api.Choice', path='choice_text', embed=True),
+    #     'choices': relation('polls.api.Choice', embed=True, local=True, path='choice_text'),
     # }

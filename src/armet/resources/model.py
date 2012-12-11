@@ -40,17 +40,17 @@ class BaseModel(base.BaseResource):
 
         # Get sorted list of visibile path elements
         field_paths = []
-        for field in six.itervalues(cls._fields):
-            if field.visible:
-                field_paths.append(field.path)
+        for attribute in six.itervalues(cls._attributes):
+            if attribute.visible:
+                field_paths.append(attribute.path)
 
         field_paths.sort(reverse=True)
 
         # Cache of what to prefetch has not been built; build it.
-        # First iterate and store all field names
+        # First iterate and store all attribute names
         for field_path in field_paths:
             if field_path is None:
-                # No field path; nothing to check.
+                # No attribute path; nothing to check.
                 continue
 
             for index in range(len(field_path), 0, -1):
@@ -75,8 +75,8 @@ class BaseModel(base.BaseResource):
             # Initialize skip list if we need to.
             skip = []
 
-        for name, field in six.iteritems(cls._fields):
-            relation = field.relation
+        for name, attribute in six.iteritems(cls._attributes):
+            relation = attribute.relation
             if relation and issubclass(relation.resource, BaseModel):
                 # Do we need to skip this?
                 if relation in skip:
@@ -87,7 +87,7 @@ class BaseModel(base.BaseResource):
 
                 # Attempt to apply a test prefetch related
                 paths = relation.resource._build_prefetch_related_paths(
-                    queryset, prefix=field.path, skip=skip)
+                    queryset, prefix=attribute.path, skip=skip)
 
                 # Append these to our list as well
                 prefetched.extend(paths)
@@ -97,7 +97,7 @@ class BaseModel(base.BaseResource):
 
     @classmethod
     def prefetch_related(cls, queryset, prefix=None):
-        """Performs a `prefetch_related` on all possible fields."""
+        """Performs a `prefetch_related` on all possible attributes."""
         prefetch = cls._build_prefetch_related_paths
         cache = cls._prefetch_related_paths
         if id(cls) not in cache and len(queryset) >= 1:
@@ -122,9 +122,17 @@ class BaseModel(base.BaseResource):
         # Filter the queryset based on permissions you can have
         # queryset = self.authorize_queryset(queryset, 'read')
 
+        # Build filter string for parents
+        parent, path = self.parent, []
+        while parent is not None:
+            slug = parent.resource.slug
+            path.append(parent.related_name)
+            queryset = queryset.filter(**{'__'.join(path): slug})
+            parent = parent.resource.parent
+
         try:
-            # # Prefetch all related fields and return the queryset.
-            # queryset = self.prefetch_related(queryset)
+            # Prefetch all related attributes and return the queryset.
+            queryset = self.prefetch_related(queryset)
 
             if self.slug is not None:
                 # Model resources by default have the slug as the identifier.
@@ -134,23 +142,31 @@ class BaseModel(base.BaseResource):
                 if not chance.exists() and self.path:
                     try:
                         # Attempt to perform array access; and just return it.
-                        return queryset[int(self.slug)]
+                        index = int(self.slug)
+                        if index < 0:
+                            # Negative indexing not supported by django.
+                            index = len(queryset) + index
+                            if index < 0:
+                                raise exceptions.NotFound()
 
-                    except IndexError:
+                        elif index == 0:
+                            # Couldn't find it
+                            raise exceptions.NotFound()
+
+                        else:
+                            # Positive indexing; 1-offset
+                            index -= 1
+
+                        # Perform indexing
+                        return queryset[index]
+
+                    except (IndexError, TypeError):
                         # Not an array; oh well.
                         pass
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
-
-        # Build filter string for parents
-        parent, path = self.parent, []
-        while parent is not None:
-            slug = parent.resource.slug
-            path.append(parent.related_name)
-            queryset = queryset.filter(**{'__'.join(path): slug})
-            parent = parent.resource.parent
 
         if self.slug is not None:
             try:

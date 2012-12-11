@@ -14,6 +14,10 @@ from . import Encoder, utils
 class _TypeAwareJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
+        if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
+            # This is some kind of date/time -- encode using ISO format.
+            return obj.isoformat()
+
         # Attempt to coerce this value.
         result = utils.coerce_value(obj)
         if result is not None:

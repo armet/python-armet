@@ -45,8 +45,8 @@ class FilterAction(object):
         # Boolean for when the filter has been negated
         self.negated = False
 
-        # Field reference to the field that will actually get filtered for this
-        self.field = None
+        # Field reference to the attribute that will actually get filtered for this
+        self.attribute = None
 
         # Verb (exact, equals, in, etc) that will be run on this filter
         self.verb = ''
@@ -59,9 +59,9 @@ class FilterAction(object):
 
 class Filter(object):
     """docstring for Model"""
-    def __init__(self, fields):
-        # Simple reference to the field list to start from
-        self.fields = fields
+    def __init__(self, attributes):
+        # Simple reference to the attribute list to start from
+        self.attributes = attributes
 
         # Name is the filter parameter passed in the url, and value is a
         # FilterAction
@@ -81,48 +81,48 @@ class Filter(object):
             'Filtering on this resource is not implemented'})
 
     def can_filter(self, filtermap):
-        # Make sure the first field is in the allowable list of fields
-        fields = self.fields
+        # Make sure the first attribute is in the allowable list of attributes
+        attributes = self.attributes
         try:
             for idx, field_string in enumerate(filtermap, 1):
-                field = fields[field_string]
+                attribute = attributes[field_string]
 
-                # Make sure the field is visible (not blacklisted)
-                if not field.visible:
+                # Make sure the attribute is visible (not blacklisted)
+                if not attribute.visible:
                     raise FilterError(
                         FILTER_SEPARATOR.join(filtermap),
-                        '{} is not a valid field'.format(field_string))
+                        '{} is not a valid attribute'.format(field_string))
 
-                # Make sure the field is filterable
-                if not field.filterable:
+                # Make sure the attribute is filterable
+                if not attribute.filterable:
                     raise FilterError(
                         FILTER_SEPARATOR.join(filtermap),
                        'Filtering is not allowed on {}'.format(filtermap[0]))
 
                 # Navigate to a relation
                 if idx < len(filtermap):
-                    if field.relation is None:
-                        # This is not a relational field
+                    if attribute.relation is None:
+                        # This is not a relational attribute
                         raise FilterError(
                             FILTER_SEPARATOR.join(filtermap),
-                            '{} is not a related field'.format(field_string))
-                    fields = field.relation.fields
+                            '{} is not a related attribute'.format(field_string))
+                    attributes = attribute.relation.attributes
 
         except KeyError as e:
-            # Happens when field_string can't be found in the fields lookup
+            # Happens when field_string can't be found in the attributes lookup
             raise FilterError(
                 FILTER_SEPARATOR.join(filtermap),
-                '{} is not a valid field'.format(e.message))
+                '{} is not a valid attribute'.format(e.message))
 
-        return field
+        return attribute
 
     def pythonify(self, item, action):
         """Pythonifys item according to action
         """
         try:
-            return action.field.clean(item)
+            return action.attribute.clean(item)
         except ValidationError as e:
-            # The field was unable to parse this thing  Raise a filter error
+            # The attribute was unable to parse this thing  Raise a filter error
             raise FilterError(action.original_name, e.messages)
 
     def parse(self, name, value):
@@ -147,7 +147,7 @@ class Filter(object):
 
     def parse_name(self, name):
         """Parses filters and checks to see if our filter params are valid.
-        Filters that do not appear in the fields list are not valid.  Returns
+        Filters that do not appear in the attributes list are not valid.  Returns
         a string
         """
         # Create a FilterAction object and start populating it
@@ -177,7 +177,7 @@ class Filter(object):
 
         # Make sure that we're allowed to filter this
         try:
-            action.field = self.can_filter(items)
+            action.attribute = self.can_filter(items)
         except FilterError as e:
             # can_filter doesn't have access to the entire filter string
             # correct the filter string and re-throw it
@@ -251,7 +251,7 @@ class Model(Filter):
         for k in filters.keys():
             v = filters.getlist(k)
             try:
-                # Populate self.filters and do validation on fields and values
+                # Populate self.filters and do validation on attributes and values
                 self.parse(k, v)
             except FilterError as e:
                 # Some sort of error occured, populate our error list

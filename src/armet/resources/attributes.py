@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Defines resource attribute objects encapsulating metadata of the
+resource's attributes.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
@@ -7,30 +9,31 @@ import collections
 import six
 from .. import utils
 from . import helpers
+from .proxy import find as find_proxy
 
 
 class Field(object):
 
     def __init__(self, resource, **kwargs):
-        #! The resource object this field is bound to.
+        #! The resource object this attribute is bound to.
         self.resource = resource
 
-        #! Whether this field can be modified or not.
+        #! Whether this attribute can be modified or not.
         self.editable = kwargs.get('editable', False)
 
-        #! Whether this field is a collection or not.
+        #! Whether this attribute is a collection or not.
         self.collection = kwargs.get('collection', False)
 
-        #! Whether this field may be filtered or not.
+        #! Whether this attribute may be filtered or not.
         self.filterable = kwargs.get('filterable', False)
 
-        #! Visibility of the field.
+        #! Visibility of the attribute.
         self.visible = kwargs.get('visible', False)
 
-        #! Whether this fields is bound to a model or not.
+        #! Whether this attributes is bound to a model or not.
         self.model = kwargs.get('model', False)
 
-        #! Accessor functions that will get the value of the field
+        #! Accessor functions that will get the value of the attribute
         #! from a obj.
         self.accessors = kwargs.get('accessors', [])
 
@@ -38,11 +41,10 @@ class Field(object):
         #! instantiating resource.
         self.prepare = kwargs.get('prepare')
 
-        #! Path of the field; storing for interesting purposes.
-        self.path = kwargs.get('path')
-        self._path = self.path
+        #! Path of the attribute; storing for interesting purposes.
+        self._path = self.path = kwargs.get('path')
 
-        #! This field is related to some other resource (or should be).
+        #! This attribute is related to some other resource (or should be).
         self.related = kwargs.get('related')
 
         #! Stored relation reference.
@@ -76,9 +78,9 @@ class Field(object):
                 else:
                     # There may be a resource out there.
                     try:
-                        field = self.resource._get_field_object(self.path[0])
+                        attr = self.resource._get_field_object(self.path[0])
                         resource = self.resource._resources[
-                            field.field.related.var_name]
+                            attr.field.related.var_name]
 
                     except (KeyError, AttributeError):
                         # Didn't fint it.
@@ -96,12 +98,16 @@ class Field(object):
 
     def accessor(self, value):
         for accessor in self.accessors:
-            # Iterate and access the entire field path
+            # Iterate and access the entire attribute path
             value = accessor(value)
 
         if value is not None and self._path:
             depth = 0
             for segment in self._path:
+                if value is None:
+                    # If we don't have a value anymore; get out.
+                    break
+
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -122,10 +128,16 @@ class Field(object):
 
     def clean(self, value):
         """Cleans the value for consumption by the form clean cycle."""
-        # Base field class just passes the value through.
+        # Base attribute class just passes the value through.
         return value
 
     def _build_accessor(self, cls, name):
+        # Determine proxy if we have one
+        proxy = find_proxy(cls)
+        if proxy is not None:
+            # We have one; apply it.
+            cls = proxy
+
         obj = getattr(cls, name, None)
         if obj is not None:
             if hasattr(obj, '__call__'):
@@ -142,7 +154,16 @@ class Field(object):
 
         if issubclass(cls, collections.Sequence):
             # Some kind of sequence; use item access.
-            return lambda o, n=name: o[int(name)]
+            index = int(name)
+            if index == 0:
+                def accessor(obj):
+                    # Can't index-0 into a 1-index'd string.
+                    raise TypeError()
+
+                return accessor
+
+            index = index - 1 if index > 0 else index
+            return lambda o, n=name: o[index]
 
         # No alternative; attempt direct attribute access using the instance
         # dictionary.
@@ -207,7 +228,6 @@ class TimeField(Field):
 
 class DateTimeField(Field):
     pass
-
 
 class FileField(Field):
     pass

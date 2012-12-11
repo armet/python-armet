@@ -1,72 +1,99 @@
-""" ..
+# -*- coding: utf-8 -*-
+"""Implements the encoder protocol for encoding an object into plain text.
+
+@note
+    This is close but not quite the `text/plain` mimetype defined in HTML5.
 """
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 import datetime
 import six
+import os
 import magic
+import collections
+from collections import Mapping
+import decimal
+import fractions
 from ..http import Response as HttpResponse
-from .. import exceptions, transcoders, utils
+from urllib import quote_plus
+from .. import transcoders
+from . import Encoder, utils
+from six.moves import cStringIO
 
-class Text(transcoders.Text, Encoder):
 
+class Encoder(transcoders.Text, Encoder):
 
-       #for each item in obj
-           #if item is key-value pair
+    def _encode_mapping(self, stream, depth, obj):
+        for index, key in enumerate(obj):
+            if depth:
+                # If we have depth we need to offset the value.
+                stream.write('\t' * depth)
 
-               #write out key after the corrent number of indents.
-               #indent by length of key plus a few spaces
+            # Then write the key (as we know we have a dict now).
+            stream.write('{}: '.format(key))
 
-               #if item value is iterable
-                   #recursion!  see step 1.
-               #else
-                   #output value.  Newline
+            # Write the value
+            self._encode_value(stream, depth + 1, obj[key])
 
-           #else
-               #if value is iterable
-                   #increment indent
-                   #recursion!  See step 1.
-               #else
-                   #write out value after correct number of indents, then comma, then newline
+            # Move on to the next one.
+            stream.write('\n')
 
-    @classmethod
-    def _encode_this_text(cls,obj,indent='',retval=''):
-       #for each item in obj
-       for key in obj:
-           #if item is key-value pair
-           try:
-               obj[key]
-               #write out key after the corrent number of indents
-               retval += indent + str(key) + ':  '
-               #if value is iterable
-               if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
-                   #recursion!  See step 1.
-                   retval = cls._encode_this_text(obj[key],indent + (' ' * len(str(key)) ) + '   ',retval + '\n') + '\n'
-               #else
-               else:
-                   #write out the value, then newline,
-                   obj[key] = utils.fix_date(obj[key])
-                   retval += str(obj[key]) + '\n'
-           #else
-           except (TypeError, IndexError):
-               #if value is iterable
-               if isinstance(key, Iterable) and not isinstance(key,six.string_types):
-                   #recursion!  See step 1.
-                   retval = cls._encode_this_text(key,indent + '   ',retval + '\n') + '\n'
-               #else
-               else:
-                   key = utils.fix_date(key)
-                   retval += indent + str(key) + '\n'
-       return retval
+    def _encode_sequence(self, stream, depth, obj):
+        for index, item in enumerate(obj):
+            if depth:
+                # We're not first; add a line.
+                stream.write('\n')
 
-    @classmethod
-    def encode(cls, obj=None):
-        try:
-            obj = base64.b64encode(obj.read())
-            return super(Text,cls).encode(obj)
-        except AttributeError:
-            pass
-        if not isinstance(obj, Iterable) or isinstance(obj,six.string_types):
-           # We need this to be at least a list
-           obj = obj,
-        textval = cls._encode_this_text(obj)
-        #text = etree.tostring(root,pretty_print=True)
-        return super(Text, cls).encode(textval)
+            # Write the value
+            self._encode_value(stream, depth, item)
+
+    def _encode_value(self, stream, depth, obj):
+        if obj is None:
+            # We have nothing; and nothing in text is nothing.
+            stream.write('')
+
+        if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
+            # This is some kind of date/time -- encode using ISO format.
+            self._encode_value(stream, depth, obj.isoformat())
+
+        elif isinstance(obj, six.string_types):
+            # We have a string; simply return what we have.
+            stream.write(obj.replace('\n', '\\n'))
+
+        elif isinstance(obj, collections.Mapping):
+            # Some kind of dictionary.
+            self._encode_mapping(stream, depth, obj)
+
+        elif isinstance(obj, collections.Sequence):
+            # Some kind of sequence.
+            self._encode_sequence(stream, depth, obj)
+
+        elif isinstance(obj, six.integer_types):
+            # Some kind of number.
+            stream.write(str(obj))
+
+        elif isinstance(obj, (float, fractions.Fraction, decimal.Decimal)):
+            # Some kind of something.
+            stream.write(str(obj))
+
+        elif isinstance(obj, bool):
+            # Boolean
+            stream.write("true" if obj else "false")
+
+        else:
+            # We have no idea what we are..
+            self._encode_value(stream, depth, utils.coerce_value(obj))
+
+    def encode(self, obj=None):
+        # Instantiate an in-memory stream.
+        stream = cStringIO()
+
+        # Initiate the encoding of object to the stream.
+        self._encode_value(stream, 0, obj)
+
+        # Retrieve the value of the stream and close it.
+        text = stream.getvalue()
+        stream.close()
+
+        # Return the encoded text.
+        return text

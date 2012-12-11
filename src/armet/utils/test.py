@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
 from django.utils import unittest
+from django.core import management
 from django.test import client
 # from lxml import etree
 # import json

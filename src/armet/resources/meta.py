@@ -14,8 +14,8 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.related import RelatedField
 from django.db.models.related import RelatedObject
 from .. import utils
-from .helpers import field as field_helper
-from . import fields
+from .helpers import attribute as field_helper
+from . import attributes
 
 
 def _has(name, attrs, bases):
@@ -58,26 +58,26 @@ def _config(self, name, config, attrs, bases):
 
 
 def _is_field_visible(obj, name):
-    """Checks for the visibility in displaying of the field."""
-    visible = not (obj.fields and name not in obj.fields)
+    """Checks for the visibility in displaying of the attribute."""
+    visible = not (obj.attributes and name not in obj.attributes)
     visible = visible and (not (obj.exclude and name in obj.exclude))
     return visible
 
 
 def _is_field_editable(obj, name):
-    """Checks if the field is declared to be editable."""
+    """Checks if the attribute is declared to be editable."""
     visible = not (obj.fields and name not in obj.fields)
     visible = visible and (not (obj.exclude and name in obj.exclude))
     return visible
 
 
 def _is_field_filterable(obj, name):
-    """Checks if the specified field is declared to be filterable."""
+    """Checks if the specified attribute is declared to be filterable."""
     return not (obj.filterable and name not in obj.filterable)
 
 
 def _is_field_collection(field):
-    """Tests if the specified field is some type of collection."""
+    """Tests if the specified attribute is some type of collection."""
     if isinstance(field, RelatedObject):
         # This happens to be a reverse relation; test using the provided.
         return field.field.rel.multiple
@@ -97,15 +97,15 @@ def _is_field_collection(field):
 def _get_field_class(field):
     """Determines what class object to instantiate for the specified field."""
     if field is None:
-        # No field passed; return the base class
-        return fields.Field
+        # No attribute passed; return the base class
+        return attributes.Field
 
     try:
         # Attempt to handle date/times
         test = datetime.datetime.now()
         if field.to_python(test) == test:
-            # Looks like we're a datetime field
-            return fields.DateTimeField
+            # Looks like we're a datetime attribute
+            return attributes.DateTimeField
 
     except (forms.ValidationError, AttributeError):
         # Times cannot be handled.
@@ -116,7 +116,7 @@ def _get_field_class(field):
         test = datetime.datetime.now().time()
         if field.to_python(test) == test:
             # Looks like we're a time field
-            return fields.TimeField
+            return attributes.TimeField
 
     except (forms.ValidationError, AttributeError):
         # Times cannot be handled.
@@ -127,7 +127,7 @@ def _get_field_class(field):
         test = datetime.datetime.now().date()
         if field.to_python(test) == test:
             # Looks like we're a date field
-            return fields.DateField
+            return attributes.DateField
 
     except (forms.ValidationError, AttributeError):
         # Dates cannot be handled.
@@ -139,7 +139,7 @@ def _get_field_class(field):
         field.to_python(test)
 
         # Looks like we're capable of dealing with file streams
-        return fields.FileField
+        return attributes.FileField
 
     except (forms.ValidationError, AttributeError):
         # File streams cannot be handled
@@ -150,14 +150,14 @@ def _get_field_class(field):
         test = True
         if field.to_python(test) is True:
             # Looks we can explicitly handle booleans
-            return fields.BooleanField
+            return attributes.BooleanField
 
     except (forms.ValidationError, AttributeError):
         # Booleans cannot be handled
         pass
 
     # We have no idea what we are; assume we're just text
-    return fields.Field
+    return attributes.Field
 
 
 class DeclarativeResource(type):
@@ -166,30 +166,30 @@ class DeclarativeResource(type):
 
     def _get_field_object(self, name):
         try:
-            # Check the form field dictionary for the field object
+            # Check the form attribute dictionary for the attribute object
             return self.form_fields[name]
 
         except KeyError:
-            # Not a form field; return nothing.
+            # Not a form attribute; return nothing.
             pass
 
-    def _get_field_class(self, field):
-        # Attempt to get the field class using the declared field.
-        return _get_field_class(field)
+    def _get_field_class(self, attribute):
+        # Attempt to get the attribute class using the declared attribute.
+        return _get_field_class(attribute)
 
     def _get_related_name(self, name):
-        # Attempt to get the related name for the indiciated field.
+        # Attempt to get the related name for the indiciated attribute.
         pass
 
-    def _set_field(self,
+    def _set_attribute(self,
             name,
             path=None,
             collection=None,
             editable=None,
-            field=None,
+            attribute=None,
             cls=None,
             related_name=None):
-        """Sets the field with the passed name on the resource."""
+        """Sets the attribute with the passed name on the resource."""
         if isinstance(path, six.string_types):
             # Explode the segments from the path
             parts = path.split('__') if path is not None else ('')
@@ -203,17 +203,17 @@ class DeclarativeResource(type):
             parts[0] = name
 
         if parts is not None:
-            # Attempt to get the field object.
-            field = self._get_field_object(parts[0])
+            # Attempt to get the attribute object.
+            attribute = self._get_field_object(parts[0])
 
         else:
-            # No path parts; no field.
-            field = None
+            # No path parts; no attribute.
+            attribute = None
 
-        # Get the field class to use.
-        cls = self._get_field_class(field)
+        # Get the attribute class to use.
+        cls = self._get_field_class(attribute)
 
-        # Conditionally determine some field properites.
+        # Conditionally determine some attribute properites.
         if editable is None:
             if hasattr(self.form, '_meta') and parts:
                 # If a value for editable was not provided; discover it
@@ -225,16 +225,16 @@ class DeclarativeResource(type):
                 editable = parts[0] in self.form_fields if parts else False
 
         if collection is None:
-            if field:
-                # We have a field; figure it out
-                collection = _is_field_collection(field)
+            if attribute:
+                # We have a attribute; figure it out
+                collection = _is_field_collection(attribute)
 
             else:
                 # No value was provided for collection; it isn't one
                 collection = False
 
         try:
-            # Attempt to get the prepare_FOO function for the field by name.
+            # Attempt to get the prepare_FOO function for the attribute by name.
             prepare = getattr(self, 'prepare_{}'.format(name))
 
         except AttributeError:
@@ -251,14 +251,14 @@ class DeclarativeResource(type):
                 relation = relation._replace(
                     related_name=self._get_related_name(parts[0]))
 
-        elif field is not None:
-            # Is the field a related field?
+        elif attribute is not None:
+            # Is the attribute a related attribute?
             related = (
-                isinstance(field, RelatedObject) or
-                isinstance(field, RelatedField))
+                isinstance(attribute, RelatedObject) or
+                isinstance(attribute, RelatedField))
 
-        # Instantiate the field object and set it on the resource class.
-        self._fields[name] = cls(self,
+        # Instantiate the attribute object and set it on the resource class.
+        self._attributes[name] = cls(self,
             visible=_is_field_visible(self, name),
             filterable=_is_field_filterable(self, name),
             collection=collection,
@@ -269,41 +269,41 @@ class DeclarativeResource(type):
             relation=relation
         )
 
-    def _discover_fields(self):
+    def _discover_attributes(self):
         """
-        Finds all fields declared on the class object and collects them
+        Finds all attributes declared on the class object and collects them
         into a dictionary.
         """
-        # Discover any fields we can.
-        # If the resource has a form we need to discover its fields.
+        # Discover any attributes we can.
+        # If the resource has a form we need to discover its attributes.
         if self.form is not None:
-            # Iterate through explicitly defined fields to gather their
+            # Iterate through explicitly defined attributes to gather their
             # properites and store them.
             for name in self.form_fields:
-                # If a field has been explicitly defined; according to
+                # If a attribute has been explicitly defined; according to
                 # the django forms protocol it is -always- editable --
                 # regardless of whatever the black/white lists on the
                 # form state.
-                self._set_field(name, editable=True)
+                self._set_attribute(name, editable=True)
 
-        # Append any 'extra' fields listed in the `include` directive.
+        # Append any 'extra' attributes listed in the `include` directive.
         if self.include is not None:
-            # Iterate through additional field names and set them.
+            # Iterate through additional attribute names and set them.
             for name in self.include:
                 path, collection = self.include[name]
-                self._set_field(name,
+                self._set_attribute(name,
                     path=path.split('__') if path is not None else None,
                     collection=collection)
 
         if self.resource_uri is not None:
             # Ensure resource URI can be added
-            if self.resource_uri in self._fields:
+            if self.resource_uri in self._attributes:
                 raise ImproperlyConfigured(
-                    'resource_uri field in conflict with '
-                    'already defined field.')
+                    'resource_uri attribute in conflict with '
+                    'already defined attribute.')
 
-            # Add the resource URI field
-            self._set_field(self.resource_uri)
+            # Add the resource URI attribute
+            self._set_attribute(self.resource_uri)
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
@@ -324,26 +324,26 @@ class DeclarativeResource(type):
         self.include = _collect('include', attrs, bases)
         self.relations = _collect('relations', attrs, bases)
 
-        # Initialize our ordered fields dictionary.
-        self._fields = collections.OrderedDict()
+        # Initialize our ordered attributes dictionary.
+        self._attributes = collections.OrderedDict()
 
         if self.form is not None:
             # Ensure this is a valid form; attempt to instantiate one.
             self.form()
 
-            # If the form has a `declared_fields` attribute then that is what
-            # would normally be at `base_fields`; else `base_fields` is the
-            # list of explicitly defined fields.
+            # If the form has a `declared_attributes` attribute then that is what
+            # would normally be at `base_attributes`; else `base_attributes` is the
+            # list of explicitly defined attributes.
             self.form_fields = self.form.base_fields
             if hasattr(self.form, 'declared_fields'):
                 self.form_fields = self.form.declared_fields
 
         else:
-            # No form; no form fields; make us an empty dictionary.
+            # No form; no form attributes; make us an empty dictionary.
             self.form_fields = {}
 
-        # Discover any fields we can.
-        self._discover_fields()
+        # Discover any attributes we can.
+        self._discover_attributes()
 
         # Ensure the resource has a name.
         if 'name' not in attrs:
@@ -388,12 +388,12 @@ class DeclarativeResource(type):
             # Ensure things that need to be instantied are instantiated.
             setattr(self, name, for_all(getattr(self, name), method, callable))
 
-        # Find and store all `prepare_FOO` functions on fields for fast
+        # Find and store all `prepare_FOO` functions on attributes for fast
         # access.
-        for name in self._fields:
+        for name in self._attributes:
             prepare = 'prepare_{}'.format(name)
             if hasattr(self, prepare):
-                self._fields[name].prepare = getattr(self, prepare)
+                self._attributes[name].prepare = getattr(self, prepare)
 
         # Let's get it cracking!
         # Store anything accessed frequently through `getattr` on the cls
@@ -412,30 +412,30 @@ class DeclarativeModel(DeclarativeResource):
 
     def _get_field_object(self, name):
         try:
-            # Check the model field dictionary for the field object
+            # Check the model attribute dictionary for the attribute object
             return self.model_fields[name]
 
         except KeyError:
-            # Not a model field; perhaps..
+            # Not a model attribute; perhaps..
             return super(DeclarativeModel, self)._get_field_object(name)
 
-    def _get_field_class(self, field):
-        # Attempt to get the field class using the declared field.
-        field = super(DeclarativeModel, self)._get_field_class(field)
+    def _get_field_class(self, attribute):
+        # Attempt to get the attribute class using the declared attribute.
+        attribute = super(DeclarativeModel, self)._get_field_class(attribute)
 
         # Meld with a Model Field
         # TODO: Remove `b` prefix upon python3
-        field = type(b'Model{}'.format(field.__name__),
-            (fields.ModelField, field), {})
+        attribute = type(b'Model{}'.format(attribute.__name__),
+            (attributes.ModelField, attribute), {})
 
         # Return what we got
-        return field
+        return attribute
 
     def _get_related_name(self, name):
-        field = self.model_fields.get(name)
+        attribute = self.model_fields.get(name)
         try:
             # Pretend we have a reverse related object here.
-            return field.field.attname
+            return attribute.field.attname
 
         except AttributeError:
             # Didn't work.
@@ -443,7 +443,7 @@ class DeclarativeModel(DeclarativeResource):
 
         try:
             # Try for a many-to-many relation.
-            return field.field.m2m_field_name()
+            return attribute.field.m2m_field_name()
 
         except AttributeError:
             # Didn't work.
@@ -451,7 +451,7 @@ class DeclarativeModel(DeclarativeResource):
 
         try:
             # Try for a foreign key relation.
-            return field.related.var_name
+            return attribute.related.var_name
 
         except AttributeError:
             # Didn't work.
@@ -459,21 +459,21 @@ class DeclarativeModel(DeclarativeResource):
 
         # No related name that we can find; return nothing.
 
-    def _discover_fields(self):
-        # Iterate through and set these model fields on the resource.
+    def _discover_attributes(self):
+        # Iterate through and set these model attributes on the resource.
         for name in self.model_fields:
-            # Grab the field object
-            field = self.model_fields[name]
+            # Grab the attribute object
+            attribute = self.model_fields[name]
 
-            if isinstance(field, RelatedObject):
+            if isinstance(attribute, RelatedObject):
                 # Don't automagically generate reverse relationships.
                 continue
 
-            # Set the field on the resource.
-            self._set_field(name, path=name)
+            # Set the attribute on the resource.
+            self._set_attribute(name, path=name)
 
-        # Discover any additional fields.
-        super(DeclarativeModel, self)._discover_fields()
+        # Discover any additional attributes.
+        super(DeclarativeModel, self)._discover_attributes()
 
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
@@ -486,26 +486,26 @@ class DeclarativeModel(DeclarativeResource):
             self.model = self.form._meta.model
 
         if self.model:
-            # Store the model fields.
+            # Store the model attributes.
             self.model_fields = {}
             for field_name in self.model._meta.get_all_field_names():
-                # Get field object from the model
-                field = self.model._meta.get_field_by_name(field_name)[0]
+                # Get attribute object from the model
+                attribute = self.model._meta.get_field_by_name(field_name)[0]
 
                 # We store these by accessor name and not neccessarily by
-                # field name.
+                # attribute name.
                 accessor = field_name
 
                 # Touch up if we're a reverse relation as things are stored
                 # a bit differently.
-                if isinstance(field, RelatedObject):
-                    accessor =  field.get_accessor_name()
+                if isinstance(attribute, RelatedObject):
+                    accessor =  attribute.get_accessor_name()
 
                 # Store these in our dictionary.
-                self.model_fields[accessor] = field
+                self.model_fields[accessor] = attribute
 
         else:
-            # No model; no model fields: store an empty dictionary.
+            # No model; no model attributes: store an empty dictionary.
             self.model_fields = {}
 
         # Ensure the resource has a name.

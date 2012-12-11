@@ -3,7 +3,6 @@ Implements XML encoder.  Allows the server to send any resource in XML format.
 """
 import datetime
 import six
-from ..http import Response
 from .. import transcoders, utils
 from lxml.builder import E
 from lxml import etree
@@ -87,7 +86,6 @@ class Encoder(transcoders.Xml, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        print (obj)
         try:
             e = E.data()
             _encode_file_into_xml(e,obj)

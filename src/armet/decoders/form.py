@@ -7,36 +7,32 @@ from StringIO import StringIO
 from django.http import MultiPartParser
 from .. import transcoders
 from . import Decoder
+from django.core.files.uploadhandler import load_handler
 
 
 class Decoder(transcoders.Form, Decoder):
 
-    def decode(self, request, fields=None):
+    def decode(self, request, attributes=None):
         # Instantiate an instance of django's multi-part parser
         stream = StringIO(request.body)
-        parser = MultiPartParser(request.META, stream, (), request.encoding)
+        parser = MultiPartParser(request.META, stream, request.upload_handlers)
 
         # Parse the form-data as data, files
         data, files = parser.parse()
 
-        # Append values in files into the data dictionary
+        # Flatten the data dictionary if possible.
         obj = dict(data)
-        for name in files:
-            if name not in obj:
-                obj[name] = []
+        for key in obj:
+            if attributes and key in attributes and attributes[key].collection:
+                # Field declared to be an array; don't bother.
+                pass
 
-            # This is absurd. Why can't we just do `files[name]` here?
-            obj[name].extend(files.getlist([name]))
+            if len(obj[key]) == 1:
+                # Field probably supposed to be scalar.
+                obj[key] = obj[key][0]
 
-        # Normalize and flatten this as much as we can.
-        for name in obj:
-            if fields is None or name not in fields:
-                # Field not declared; don't bother with it
-                continue
+        # Merge files dictionary with the data dictionary.
+        obj.update(dict(files))
 
-            if fields[name].collection and len(obj[name]) == 1:
-                # Field is really meant to be scalar
-                obj[name] = obj[name][0]
-
-        # Return the constructed object
+        # Return the decoded object.
         return obj
