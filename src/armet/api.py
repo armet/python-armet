@@ -11,6 +11,7 @@ from armet import resources
 from armet.resources.meta import DeclarativeResource
 from armet import http
 
+
 class ApiBase(DeclarativeResource, abc.ABCMeta):
     pass
 
