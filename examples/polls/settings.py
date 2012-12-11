@@ -139,7 +139,7 @@ NOSE_ARGS = [
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
     'formatters': {
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -153,12 +153,11 @@ LOGGING = {
         },
     },
     'loggers': {
-        # 'django.db': {
-        #     'handlers': ['console'],
-        #     'level': 'DEBUG',
-        #     'filters': []
-        # },
-        'flapjack': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'armet': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'filters': []

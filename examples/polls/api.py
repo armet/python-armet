@@ -19,21 +19,9 @@ class Choice(resources.Model):
     #     'poll': relation('polls.api.Poll'),
     # }
 
-    include = {
-        'complex': attribute()
-    }
-
-    def prepare_complex(self, obj, value=None):
-        return complex(1, 2)
-
-
 class Poll(resources.Model):
     model = models.Poll
 
     include = {
         'choices': attribute('choice_set')
     }
-
-    # relations = {
-    #     'choices': relation('polls.api.Choice', embed=True, local=True, path='choice_text'),
-    # }
