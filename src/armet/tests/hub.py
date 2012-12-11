@@ -57,6 +57,50 @@ class HubTest(object):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
 
+    def test_get_poll_question_xml(self):
+        """Gets poll file in xml"""
+        response = self.c.get(self.endpoint + 'poll/1/question.{}/'
+            .format('json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        response = self.c.get(self.endpoint + 'poll/1/question.{}/'
+            .format('xml'))
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
+
+    def test_get_poll_uri_xml(self):
+        """Gets poll file in xml"""
+        response = self.c.get(self.endpoint + 'poll/1/resource_uri.{}/'
+            .format('json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        response = self.c.get(self.endpoint + 'poll/1/resource_uri.{}/'
+            .format('xml'))
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
+
+    def test_get_poll_id_xml(self):
+        """Gets poll file in xml"""
+        response = self.c.get(self.endpoint + 'poll/1/id.{}/'
+            .format('json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        response = self.c.get(self.endpoint + 'poll/1/id.{}/'
+            .format('xml'))
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
+
+    def test_get_poll_pubdate_xml(self):
+        """Gets poll file in xml"""
+        response = self.c.get(self.endpoint + 'poll/1/pub_date.{}/'
+            .format('json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        response = self.c.get(self.endpoint + 'poll/1/pub_date.{}/'
+            .format('xml'))
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
+
     def test_get_choice_votes(self):
         """Gets choice votes"""
         response = self.c.get(self.endpoint + 'choice/1/votes.{}/'
@@ -100,3 +144,13 @@ class HubTest(object):
             .format('json'))
         self.assertHttpOK(response)
         self.assertValidJSON(response)
+
+    def test_recursiveness(self):
+        response = self.c.get(self.endpoint +
+            'poll/1/choices/1/poll/choices/1/poll/choices/1/poll/choices/' +
+            '1/poll/choices/1/poll/choices/1/poll/choices/1/poll/choices/' +
+            '1/poll/choices/1/poll/choices/1/poll/choices/1.{}/'
+            .format('xml')
+        )
+        self.assertHttpOK(response)
+        self.assertValidXML(response)
