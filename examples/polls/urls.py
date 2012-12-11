@@ -27,5 +27,5 @@ urlpatterns = patterns('',
     # Application interface
     url(r'^', include(interface.urls)),
 
-    url(^'api2/', include(api.Poll.urls)),
+    # url(^'api2/', include(api.Poll.urls)),
 )

@@ -120,7 +120,7 @@ class BaseModel(base.BaseResource):
         queryset = self.model.objects.all()
 
         # Filter the queryset based on permissions you can have
-        queryset = self.authorize_queryset(queryset, 'read')
+        # queryset = self.authorize_queryset(queryset, 'read')
 
         try:
             # Apply transveral first.
