@@ -92,12 +92,14 @@ class BaseResource(object):
     encoders = {
         'json': 'armet.encoders.Json',
         'xml': 'armet.encoders.Xml',
+        'text': 'armet.encoders.Text',
     }
 
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
         'xml',
+        'text',
     )
 
     #! Name of the default encoder of the list of understood encoders.

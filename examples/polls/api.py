@@ -19,6 +19,13 @@ class Choice(resources.Model):
     #     'poll': relation('polls.api.Poll'),
     # }
 
+    include = {
+        'complex': field()
+    }
+
+    def prepare_complex(self, obj, value=None):
+        return complex(1, 2)
+
 
 class Poll(resources.Model):
     model = models.Poll
@@ -28,5 +35,5 @@ class Poll(resources.Model):
     }
 
     # relations = {
-    #     'choices': relation('polls.api.Choice', path='choice_text', embed=True),
+    #     'choices': relation('polls.api.Choice', embed=True, local=True, path='choice_text'),
     # }

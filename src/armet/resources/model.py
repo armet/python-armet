@@ -122,9 +122,17 @@ class BaseModel(base.BaseResource):
         # Filter the queryset based on permissions you can have
         # queryset = self.authorize_queryset(queryset, 'read')
 
+        # Build filter string for parents
+        parent, path = self.parent, []
+        while parent is not None:
+            slug = parent.resource.slug
+            path.append(parent.related_name)
+            queryset = queryset.filter(**{'__'.join(path): slug})
+            parent = parent.resource.parent
+
         try:
-            # # Prefetch all related fields and return the queryset.
-            # queryset = self.prefetch_related(queryset)
+            # Prefetch all related fields and return the queryset.
+            queryset = self.prefetch_related(queryset)
 
             if self.slug is not None:
                 # Model resources by default have the slug as the identifier.
@@ -134,23 +142,31 @@ class BaseModel(base.BaseResource):
                 if not chance.exists() and self.path:
                     try:
                         # Attempt to perform array access; and just return it.
-                        return queryset[int(self.slug)]
+                        index = int(self.slug)
+                        if index < 0:
+                            # Negative indexing not supported by django.
+                            index = len(queryset) + index
+                            if index < 0:
+                                raise exceptions.NotFound()
 
-                    except IndexError:
+                        elif index == 0:
+                            # Couldn't find it
+                            raise exceptions.NotFound()
+
+                        else:
+                            # Positive indexing; 1-offset
+                            index -= 1
+
+                        # Perform indexing
+                        return queryset[index]
+
+                    except (IndexError, TypeError):
                         # Not an array; oh well.
                         pass
 
         except ValueError:
             # Something went wront when applying the slug filtering.
             raise exceptions.NotFound()
-
-        # Build filter string for parents
-        parent, path = self.parent, []
-        while parent is not None:
-            slug = parent.resource.slug
-            path.append(parent.related_name)
-            queryset = queryset.filter(**{'__'.join(path): slug})
-            parent = parent.resource.parent
 
         if self.slug is not None:
             try:

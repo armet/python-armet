@@ -152,7 +152,16 @@ class Field(object):
 
         if issubclass(cls, collections.Sequence):
             # Some kind of sequence; use item access.
-            return lambda o, n=name: o[int(name)]
+            index = int(name)
+            if index == 0:
+                def accessor(obj):
+                    # Can't index-0 into a 1-index'd string.
+                    raise TypeError()
+
+                return accessor
+
+            index = index - 1 if index > 0 else index
+            return lambda o, n=name: o[index]
 
         # No alternative; attempt direct attribute access using the instance
         # dictionary.
