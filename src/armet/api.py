@@ -19,7 +19,7 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
     """Implements an api registry used to wrangle apis.
     """
 
-    http_allowed_methods = ('get',)
+    http_allowed_methods = ('GET',)
 
     allowed_operations = ('read',)
 
