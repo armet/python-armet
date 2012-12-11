@@ -279,7 +279,7 @@ class BaseResource(object):
         del kwargs['path'][0]
 
         # Set parent on the object
-        kwargs['parent'] = helpers.parent(
+        kwargs['parent'] = parent = helpers.parent(
             resource=cls(
                 request=request,
                 slug=kwargs.get('slug'),
@@ -294,8 +294,8 @@ class BaseResource(object):
             del kwargs['path'][0]
 
         else:
-            # No slug; list access.
             if 'slug' in kwargs:
+                # No slug; list access.
                 del kwargs['slug']
 
         if field.relation.path:
@@ -311,13 +311,11 @@ class BaseResource(object):
         # The only way for us to know is to `.read()` the choices/12 object
         # and ask it what value it has for its document field and then
         # ask the document object to make a slug out of it.
-        # TODO: Think of a better way then this -- as we are double-fetching
-        #   objects here.
         if not kwargs.get('slug'):
-            field = kwargs['parent'].resource._fields[kwargs['parent'].name]
+            field = parent.resource._fields[parent.name]
             if not field.collection and not len(field.path) > 1:
-                obj = field.accessor(kwargs['parent'].resource.read())
-                kwargs['slug'] = cls.make_slug(obj)
+                obj = parent.resource.read()
+                kwargs['slug'] = cls.make_slug(field.accessor(obj))
 
         # Return the cls object to use
         return field.relation.resource.traverse(request, kwargs)
@@ -525,7 +523,8 @@ class BaseResource(object):
         if self.path:
             if self._cache_path_name not in self._cache_path:
                 # No path field has been created yet; create one
-                self._cache_path[self._cache_path_name] = fields.Field(self,
+                path_field_cls = self._fields[self.path[0]].__class__
+                self._cache_path[self._cache_path_name] = path_field_cls(self,
                     path=self.path)
 
             # Retrieve the cached path: (field, segment#0)
@@ -541,8 +540,13 @@ class BaseResource(object):
                 # Not what we are looking for; go away.
                 continue
 
-            # Apply the field accessor and request the value of the item.
-            value = field.accessor(item)
+            try:
+                # Apply the field accessor and request the value of the item.
+                value = field.accessor(item)
+
+            except KeyError:
+                # Field not found.. okay.
+                raise exceptions.NotFound()
 
             # Set value on object after preparing it
             obj[name] = field.prepare(self, item, value)
@@ -555,6 +559,7 @@ class BaseResource(object):
 
             except (ValueError, AttributeError, TypeError) as ex:
                 # Something weird happened with a path segment.
+                print(ex)
                 raise exceptions.NotFound()
 
         # Return the resultant object.

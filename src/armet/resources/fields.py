@@ -7,6 +7,7 @@ import collections
 import six
 from .. import utils
 from . import helpers
+from .proxy import find as find_proxy
 
 
 class Field(object):
@@ -39,8 +40,7 @@ class Field(object):
         self.prepare = kwargs.get('prepare')
 
         #! Path of the field; storing for interesting purposes.
-        self.path = kwargs.get('path')
-        self._path = self.path
+        self._path = self.path = kwargs.get('path')
 
         #! This field is related to some other resource (or should be).
         self.related = kwargs.get('related')
@@ -102,6 +102,10 @@ class Field(object):
         if value is not None and self._path:
             depth = 0
             for segment in self._path:
+                if value is None:
+                    # If we don't have a value anymore; get out.
+                    break
+
                 # If additional accessors are needed; build them now
                 accessor = self._build_accessor(value.__class__, segment)
 
@@ -126,6 +130,12 @@ class Field(object):
         return value
 
     def _build_accessor(self, cls, name):
+        # Determine proxy if we have one
+        proxy = find_proxy(cls)
+        if proxy is not None:
+            # We have one; apply it.
+            cls = proxy
+
         obj = getattr(cls, name, None)
         if obj is not None:
             if hasattr(obj, '__call__'):
@@ -207,7 +217,6 @@ class TimeField(Field):
 
 class DateTimeField(Field):
     pass
-
 
 class FileField(Field):
     pass
