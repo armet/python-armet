@@ -3,8 +3,8 @@ Filtering
 
 FILTER SEPERATOR
 ================
-The filter seperator, "`__`", seperates the filter and other options you 
-can use in a query set. 
+The filter seperator, "`__`", seperates the filter and other options you
+can use in a query set.
 
 Example::
 
@@ -12,12 +12,18 @@ Example::
 
 This will give you all results where the id is greater than 4.
 
+Not Seperator
+-------------
+
 Example::
-    
+
     http://www.example.com/api/poll?id__gt__not=4
 
 This will give you all results where the id is NOT greater than 4. All results
-will be from ids less than or equal to 4. 
+will be from ids less than or equal to 4.
+
+Filters List
+------------
 
 The following filters are supported, taken from the django standard::
 
@@ -34,7 +40,7 @@ The following filters are supported, taken from the django standard::
     istartswith - Case insensitive startswith
     endswith - Match ends with
     iendswith - Case insensitive endswith
-    year 
+    year
     month
     day
     week_day
@@ -43,13 +49,13 @@ The following filters are supported, taken from the django standard::
     regex - Perform regex, returns a match
     iregex - Case insensitive regex.
 
-All filters can be followed by the not operator for negation. The default 
+All filters can be followed by the not operator for negation. The default
 filter is exact.
 
 OR SEPERATOR
 ============
 
-The OR seperator, a simple semi-colon, is used to search for many values in a 
+The OR seperator, a simple semi-colon, is used to search for many values in a
 query search.
 
 Example::
