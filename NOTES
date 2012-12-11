@@ -19,3 +19,21 @@
 # 17. `OPTIONS`
 
 # 18. release!
+
+# Additional notes
+
+# Resource options:
+#  - methods that can `return data`
+#  - validation (off switch)
+
+# Filtering
+#  - ?name[__operation][__not][:sort]=value[;or_value]
+
+# Pagination (?)
+
+# Caching
+# Throttling
+# Location
+# Content-Location
+# Content-MD5
+# Host
