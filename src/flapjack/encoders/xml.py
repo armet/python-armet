@@ -1,4 +1,5 @@
-""" ..
+""" 
+Implements XML encoder.  Allows the server to send any resource in XML format.
 """
 import datetime
 import six
@@ -19,56 +20,39 @@ def _encode_file_into_xml(e,obj):
 class Encoder(transcoders.Xml, Encoder):
 
     @classmethod
+    def _process_xml_info(cls,root,info,name=None):
+        # call function if needed
+        try:
+            info = info()
+        except TypeError:
+            pass
+
+        if isinstance(info, Iterable) and not isinstance(info,six.string_types):
+            #recursion! See step 1.
+            if isinstance(info, dict):
+                sub = E.object()
+            else:
+                sub = E.attribute( {'name': name } )
+            for key in info:
+                cls._insert_data_into_tree(sub,key,info)
+            root.append(sub)
+
+        else:
+            try:
+                info = info.isoformat()
+            except AttributeError:
+                pass
+            if name is None:
+                root.append( E.value( str(info) ) )
+            else:
+                root.append(E.attribute( str(info), {'name': name} ) )
+
+    @classmethod
     def _insert_data_into_tree(cls,root,key,obj=None):
            try:
-               # call function if needed
-               try:
-                   obj[key] = obj[key]()
-               except TypeError:
-                   pass
-
-               if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
-                   #recursion! See step 1.
-
-                   sub = E.attribute( {'name':str(key)} )
-
-                   cls._iterate_thru_object(sub, obj[key])
-
-                   root.append(sub)
-               else:
-                   # item is NOT iterable; no recursion needed
-                   if isinstance(obj, datetime.time) or isinstance(obj, datetime.date):
-                       obj = obj.isoformat() # fix date
-                       
-                   #insert key and value pair under root
-                   root.append( E.attribute( str(obj[key]), {'name':str(key)} ))
-
-           #obj is NOT a dictionary
+               cls._process_xml_info(root, obj[key], str(key) )
            except (TypeError, IndexError):
-               # call function if needed
-               try:
-                   key = key()
-               except TypeError:
-                   pass
-               if isinstance(key, Iterable) and not isinstance(key,six.string_types):
-                   #recursion! See step 1.
-
-                   # if the key is a dictionary, it means it is an object, not attribute
-                   if type(key) == type({}):
-                       sub = E.object()
-
-                   else:
-                       sub = E.attribute( {'name':str(key)} )
-
-                   cls._iterate_thru_object(sub, key)
-                   root.append(sub)
-               else:
-                   if isinstance(key, datetime.time) or isinstance(key, datetime.date):
-                       key = key.isoformat() # fix date
-
-                   # insert value, not attribute
-                   root.append( E.value( str(key) ))
-
+               cls._process_xml_info(root, key)
 
     @classmethod
     def _iterate_thru_object(cls,root,obj):
@@ -78,10 +62,10 @@ class Encoder(transcoders.Xml, Encoder):
     @classmethod
     def _encode_object_into_xml(cls,obj):
     
-    
         e = E.object()
+        primitive = (int, six.string_types, datetime.time, datetime.date)
 
-        if isinstance(obj,six.string_types) or isinstance(obj,int) or isinstance(obj, datetime.time) or isinstance(obj, datetime.date): # Test for primitive types
+        if isinstance(obj,primitive):
             cls._insert_data_into_tree(e,obj)
             return e
         
@@ -89,18 +73,13 @@ class Encoder(transcoders.Xml, Encoder):
 
             result = utils.coerce_dict(obj)
 
-            if result is not None:
-                cls._iterate_thru_object(e,result)
-                return e
-
-            cls._insert_data_into_tree(e,obj)
+            cls._iterate_thru_object(e,result)
             return e
         
         elif not isinstance(obj, Mapping):
            e = E.objects()
 
         cls._iterate_thru_object(e,obj)
-            
         return e
 
     @classmethod

@@ -102,6 +102,8 @@ def for_all(value, method, test=None):
 
 def coerce_dict(obj):
     """Attempts to coerce the passed object as a dictionary."""
+    if isinstance(obj, dict):
+        return obj
     try:
         # Last attempt; use `vars(obj)` to grab everything that doesn't
         # start with an underscore from the object.
