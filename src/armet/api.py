@@ -7,9 +7,9 @@ import abc
 from collections import MutableSequence
 import six
 from django.conf.urls import patterns, url, include
-from flapjack import resources
-from flapjack.resources.meta import DeclarativeResource
-from flapjack import http
+from armet import resources
+from armet.resources.meta import DeclarativeResource
+from armet import http
 
 class ApiBase(DeclarativeResource, abc.ABCMeta):
     pass
@@ -43,7 +43,7 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
             # tell it we don't care.
             kwargs['request'] = None
 
-        # Let flapjack set us up.
+        # Let armet set us up.
         super(Api, self).__init__(*args, **kwargs)
 
         #! The name of the resource; overridden to be what is passed in.
