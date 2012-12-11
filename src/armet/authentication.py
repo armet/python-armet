@@ -134,7 +134,7 @@ class Http(Header):
 
         #! WWW realm to declare upon challenge.
         self.realm = utils.config_fallback(kwargs.get('realm'),
-            'authentication.http.realm', 'django:flapjack')
+            'authentication.http.realm', 'django:armet')
 
     @property
     def Unauthenticated(self):
