@@ -10,6 +10,7 @@ import logging
 import six
 from six import string_types
 from django.conf.urls import patterns, url
+from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import fields, helpers
@@ -304,6 +305,20 @@ class BaseResource(object):
         # Declare if we are local
         kwargs['local'] = field.relation.local
 
+        # Find the slug if we need to; let me explain:
+        # Take a URI like /poll/41/choices/12/document
+        # What slug does this document object have?
+        # The only way for us to know is to `.read()` the choices/12 object
+        # and ask it what value it has for its document field and then
+        # ask the document object to make a slug out of it.
+        # TODO: Think of a better way then this -- as we are double-fetching
+        #   objects here.
+        if not kwargs.get('slug'):
+            field = kwargs['parent'].resource._fields[kwargs['parent'].name]
+            if not field.collection and not len(field.path) > 1:
+                obj = field.accessor(kwargs['parent'].resource.read())
+                kwargs['slug'] = cls.make_slug(obj)
+
         # Return the cls object to use
         return field.relation.resource.traverse(request, kwargs)
 
@@ -331,20 +346,6 @@ class BaseResource(object):
 
         #! Whether internal URIs are local to the parent or not.
         self.local = kwargs.get('local', False)
-
-        # Find the slug if we need to; let me explain:
-        # Take a URI like /poll/41/choices/12/document
-        # What slug does this document object have?
-        # The only way for us to know is to `.read()` the choices/12 object
-        # and ask it what value it has for its document field and then
-        # ask the document object to make a slug out of it.
-        # TODO: Think of a better way then this -- as we are double-fetching
-        #   objects here.
-        if self.slug is None and self.parent is not None:
-            field = self.parent.resource._fields[self.parent.name]
-            if not field.collection and not len(field.path) > 1:
-                obj = field.accessor(self.parent.resource.read())
-                self.slug = self.make_slug(obj)
 
         # Set some defaults so we can reference this later
         self.encoder = None
@@ -426,16 +427,8 @@ class BaseResource(object):
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
 
-        if not response.content:
-            if response.status_code >= 200 and response.status_code <= 299:
-                response.status_code = 204
-
-        # Declare who we are in the `Location` header.
-        # try:
-        # response['Location'] = self.url
-
-        # except urlresolvers.NoReverseMatch:
-        #     # Resource must not be declared in `urls.py` normally.
+        # Declare who we are in the header.
+        response['Content-Location'] = self.url
 
         # Return the built response.
         return response
@@ -494,7 +487,10 @@ class BaseResource(object):
 
                 except urlresolvers.NoReverseMatch:
                     # No URL found; force switch to local perhaps ?
-                    pass
+                    if not relation.local:
+                        raise ImproperlyConfigured(
+                            'A resource cannot have a non-local relation to '
+                            'another resource that isn\'t publicly exposed.')
 
             else:
                 # We're embedded; inflate
@@ -505,8 +501,21 @@ class BaseResource(object):
         return value
 
     def prepare_resource_uri(self, obj, value):
-        """Set the resource uri on the object."""
-        return self.reverse(self.make_slug(obj), None, self.parent, self.local)
+        """Set the resource URI on the object."""
+        try:
+            # Reverse the url to make the `resource_uri`.
+            return self.reverse(self.make_slug(obj), None,
+                self.parent, self.local)
+
+        except urlresolvers.NoReverseMatch:
+            if not self.local:
+                # Are we mis-used?
+                raise ImproperlyConfigured(
+                    'A non-publicly exposed resource must be '
+                    'declared local.')
+
+            # Nope; re-raise the proper error message.
+            raise
 
     def item_prepare(self, item):
         """Prepares an item for transmission."""
@@ -635,7 +644,7 @@ class BaseResource(object):
             # Accessing the resource as a whole; no path is possible.
             return cls._url_format(cls._URL)
 
-        if path is not None:
+        if path:
             # Accessing the resource individually with a path.
             return cls._url_format(cls._URL_PATH) % (slug, os.path.join(*path))
 
