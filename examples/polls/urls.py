@@ -26,9 +26,4 @@ urlpatterns = patterns('',
 
     # Application interface
     url(r'^', include(interface.urls)),
-<<<<<<< HEAD
-
-    # url(^'api2/', include(api.Poll.urls)),
-=======
->>>>>>> 7c420c3dbb2dbbb2678d8f5398e0e249c8cdd4e5
 )
