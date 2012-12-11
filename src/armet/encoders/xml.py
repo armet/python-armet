@@ -87,7 +87,6 @@ class Encoder(transcoders.Xml, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        print (obj)
         try:
             e = E.data()
             _encode_file_into_xml(e,obj)
