@@ -45,6 +45,15 @@ class ChoiceTest(GetBase, BaseTest, test.TestCase):
 
     def setUp(self):
         super(ChoiceTest, self).setUp()
+        self.poll = Poll.objects.create(
+            question="Why???How????When????",
+            pub_date='1988-10-08T10:11:12+01:00'
+        )
+        self.choice_one = Choice.objects.create(
+            poll=self.poll,
+            choice_text="Because...",
+            votes=5
+        )
 
     def test_get_choice_votes(self):
         """Gets choice votes"""
@@ -67,6 +76,22 @@ class ChoiceTest(GetBase, BaseTest, test.TestCase):
             .format('json'))
         self.assertHttpOK(response)
         self.assertValidJSON(response)
+
+    def test_numerator_on_votes(self):
+        response = self.client.get(self.endpoint + 'choice/{}/votes/numerator.{}'
+            .format(self.choice_one.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        self.assertEqual(self.choice_one.votes.numerator, content[0])
+
+    def test_denominator_on_votes(self):
+        response = self.client.get(self.endpoint + 'choice/{}/votes/denominator.{}'
+            .format(self.choice_one.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        self.assertEqual(self.choice_one.votes.denominator, content[0])
 
 
 class PollTest(GetBase, BaseTest, test.TestCase):
@@ -198,7 +223,7 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         self.assertValidJSON(response)
         content = self.deserialize(response, format='json')
         t = parse(self.poll.pub_date)
-        self.assertEqual(t.hour, content[0])
+        self.assertEqual(t.hour - 1, content[0])
 
     def test_get_minute_on_pubdate(self):
         response = self.client.get(self.endpoint + 'poll/{}/pub_date/minute.{}'
@@ -236,15 +261,19 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         t = parse(self.poll.pub_date)
         self.assertEqual(t.microsecond, content[0])
 
-    # def test_get_dst_on_pubdate(self):
-    #     response = self.client.get(self.endpoint + 'poll/{}/pub_date/dst.{}'
-    #         .format(self.poll.id, 'json'))
-    #     self.assertHttpOK(response)
-    #     self.assertValidJSON(response)
-    #     content = self.deserialize(response, format='json')
-    #     t = parse(self.poll.pub_date)
-    #     dst = t.dst() if t.dst() is not None else datetime.timedelta()
-    #     self.assertEqual(dst, content[0])
+    def test_get_dst_on_pubdate(self):
+        response = self.client.get(self.endpoint + 'poll/{}/pub_date/dst.{}'
+            .format(self.poll.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        print(content)
+        t = parse(self.poll.pub_date)
+        dst = t.dst() if t.dst() is not None else datetime.timedelta()
+        self.assertEqual(dst.total_seconds(), content['total_seconds'])
+        # # self.assertEqual(dst.seconds(), content['seconds'])
+        # self.assertEqual(dst.days(), content['days'])
+        # self.assertEqual(dst.microseconds(), content['microseconds'])
 
     def test_get_tzname_on_pubdate(self):
         response = self.client.get(self.endpoint + 'poll/{}/pub_date/timezone.{}'
@@ -252,7 +281,13 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
         content = self.deserialize(response, format='json')
-        t = parse(self.poll.pub_date)
-        print(t.tzname())
-        self.assertEqual(t.tzname(), content[0])
+        self.assertEqual('UTC', content[0])
 
+    def test_get_ordinal_of_pubdate(self):
+        response = self.client.get(self.endpoint + 'poll/{}/pub_date/ordinal.{}'
+            .format(self.poll.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        t = parse(self.poll.pub_date)
+        self.assertEqual(t.toordinal(), content[0])
