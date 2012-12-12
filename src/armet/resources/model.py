@@ -122,13 +122,10 @@ class BaseModel(base.BaseResource):
         # Filter the queryset based on permissions you can have
         # queryset = self.authorize_queryset(queryset, 'read')
 
-        # Build filter string for parents
-        parent, path = self.parent, []
-        while parent is not None:
-            slug = parent.resource.slug
-            path.append(parent.related_name)
-            queryset = queryset.filter(**{'__'.join(path): slug})
-            parent = parent.resource.parent
+        # Filter based on the direct parent
+        if self.parent is not None:
+            slug = self.parent.resource.slug
+            queryset = queryset.filter(**{self.parent.related_name: slug})
 
         try:
             # Prefetch all related attributes and return the queryset.
