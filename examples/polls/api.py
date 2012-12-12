@@ -31,9 +31,10 @@ class Poll(resources.Model):
     model = models.Poll
 
     include = {
-        'choices': attribute('choice_set')
+        'choices': attribute('choice_set'),
+        'answers': attribute('choice_set')
     }
 
-    # relations = {
-    #     'choices': relation('polls.api.Choice', embed=True, local=True, path='choice_text'),
-    # }
+    relations = {
+        'answers': relation(Choice, path='choice_text', embed=True)
+    }

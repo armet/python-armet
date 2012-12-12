@@ -37,6 +37,13 @@ class GetBase(object):
             self.deserialize(response, format)
             self.assertHttpStatus(response, http.client.OK)
 
+    def test_uri_out_of_range(self):
+        for format in self.formats:
+            url = '{}{}/1/resource_uri/1/2.{}'.format(self.endpoint,
+                self.model, format)
+            response = self.client.get(url)
+            self.assertHttpNotFound(response)
+
 
 class ChoiceTest(GetBase, BaseTest, test.TestCase):
 
@@ -92,6 +99,39 @@ class ChoiceTest(GetBase, BaseTest, test.TestCase):
         self.assertValidJSON(response)
         content = self.deserialize(response, format='json')
         self.assertEqual(self.choice_one.votes.denominator, content[0])
+
+    def test_get_real_on_complex(self):
+        response = self.client.get(self.endpoint + 'choice/{}/complex/real.{}'
+            .format(self.choice_one.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        self.assertEqual(complex(1, 2).real, content[0])
+
+
+    def test_get_imag_on_complex(self):
+        response = self.client.get(self.endpoint + 'choice/{}/complex/imag.{}'
+            .format(self.choice_one.id, 'json'))
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
+        content = self.deserialize(response, format='json')
+        self.assertEqual(complex(1, 2).imag, content[0])
+
+    def test_overflow_uri(self):
+        from six.moves import cStringIO
+        url = cStringIO()
+        url.write('{}{}/1/resource_uri/1/1/length/'.format(self.endpoint,
+            self.model, format))
+        for x in range(0, 32767 * 5):
+            url.write('numerator/denominator/')
+
+        url = url.getvalue()
+        import time
+        start = time.time()
+        response = self.client.get(url)
+        end = time.time() - start
+        raise Exception(end)
+        self.assertHttpOK(response)
 
 
 class PollTest(GetBase, BaseTest, test.TestCase):
@@ -161,7 +201,17 @@ class PollTest(GetBase, BaseTest, test.TestCase):
             self.assertHttpOK(response)
             self.assertValidJSON(response)
             content = self.deserialize(response, format='json')
-            self.assertEqual(self.poll.question[x-1], content[0])
+            self.assertEqual(self.poll.question[x - 1], content[0])
+
+    def test_question_negative_string_array(self):
+        for x in range((len(self.poll.question)), 1):
+            response = self.client.get(self.endpoint + 'poll/{}/question/-{}.{}'
+                .format(self.poll.id, x, 'json'))
+
+            self.assertHttpOK(response)
+            self.assertValidJSON(response)
+            content = self.deserialize(response, format='json')
+            self.assertEqual(self.poll.question[x], content[0])
 
     def test_question_length(self):
         response = self.client.get(self.endpoint + 'poll/{}/question/length.{}'
@@ -271,7 +321,7 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         t = parse(self.poll.pub_date)
         dst = t.dst() if t.dst() is not None else datetime.timedelta()
         self.assertEqual(dst.total_seconds(), content['total_seconds'])
-        # # self.assertEqual(dst.seconds(), content['seconds'])
+        # self.assertEqual(dst.seconds(), content['seconds'])
         # self.assertEqual(dst.days(), content['days'])
         # self.assertEqual(dst.microseconds(), content['microseconds'])
 
@@ -291,3 +341,11 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         content = self.deserialize(response, format='json')
         t = parse(self.poll.pub_date)
         self.assertEqual(t.toordinal(), content[0])
+
+    def test_not_found_out_of_range(self):
+        response = self.client.get(self.endpoint + 'poll/{}/question/{}/'
+            .format(self.poll.id, len(self.poll.question) + 5))
+        self.assertHttpNotFound(response)
+        response = self.client.get(self.endpoint + 'poll/{}/question/-{}/'
+            .format(self.poll.id, len(self.poll.question) + 5))
+        self.assertHttpNotFound(response)
