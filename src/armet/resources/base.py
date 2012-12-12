@@ -8,13 +8,14 @@ import os
 from collections import Mapping
 import logging
 import six
+import operator
 from six import string_types
 from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import attributes, helpers
-from .. import utils, http, exceptions, decoders, authorization
+from .. import utils, http, exceptions, decoders, authorization, query
 
 
 # Get an instance of the logger.
@@ -359,6 +360,9 @@ class BaseResource(object):
         same name as the request method.
         """
         try:
+            # Parse query parameters
+            self.query = query.Query(self.request.META['QUERY_STRING'])
+
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
 
@@ -568,16 +572,60 @@ class BaseResource(object):
         # Return the resultant object.
         return obj
 
+    def item_clean(self, item):
+        for name in item:
+            # Attempt to get a field from the item name
+            field = self._attributes.get(name)
+
+            if field is not None:
+                # Invoke the micro-clean cycle on the field for this value
+                item[name] = field.clean(item[name])
+
+        # Return our primed object.
+        return item
+
     def clean(self, data):
         """Cleans data from the request for processing."""
         # TODO: Resolve relation URIs (eg. /resource/:slug/).
-        # TODO: Run micro-clean cycle using attribute-level cleaning in order to
-        #       support things like fuzzy dates.
+
+        if isinstance(data, collections.Sequence):
+            # Invoke the micro-clean cycle on all objects passed.
+            data = [self.item_clean(item) for item in data]
+
+        else:
+            # Not a list; do a singular object.
+            data = self.item_clean(data)
 
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
             # form = self.form()
             pass
+
+        return data
+
+    def filter(self, iterable):
+        """Filters and returns the iterable.  Implemented as a no-op in the
+        base class.
+        """
+        return iterable
+
+    def sort(self, data):
+        """Sorts and returns the data.
+        """
+        for parameter in self.query:
+            direction = parameter.direction
+            # Short circuit the sort
+            if direction is None:
+                continue
+
+            # Get a callable that will return the proper lookup
+            attr = operator.attrgetter(query.LOOKUP_SEP.join(parameter.path))
+
+            # Do the actual sorting
+            if direction == 'asc':
+                data = sorted(data, attr=attr, reverse=True)
+            else:
+                data = sorted(data, attr=attr)
 
         return data
 
@@ -725,8 +773,24 @@ class BaseResource(object):
         @returns
             The HTTPResponse object to return to the client.
         """
+        # Ensure we're allowed to create
+        self._assert_operation('create')
+
+        if self.slug is not None:
+            # Set our initial status code
+            status = http.client.CREATED
+
+            # Delegate to the `create` function to actually create the
+            # object.
+            response = self.create(data)
+
+        else:
+            # We don't implement object POST.
+            # TODO: Figure out something to do here I suppose?
+            raise exceptions.NotImplemented()
+
         # Build and return the response object
-        return self.make_response(None, http.client.NO_CONTENT)
+        return self.make_response(response, status)
 
     @property
     def _allowed_methods(self):

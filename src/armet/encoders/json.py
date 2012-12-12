@@ -24,6 +24,7 @@ class _TypeAwareJSONEncoder(json.JSONEncoder):
             return result
 
         # Raise up our hands; we can not encode this.
+        # There should be no possible way to get here.
         return super(_TypeAwareJSONEncoder, self).default(obj)
 
 
