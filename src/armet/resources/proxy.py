@@ -30,15 +30,6 @@ class ComplexProxy(object):
 
 class StringProxy(collections.Sequence):
 
-    def __contains__(obj, key):
-        return key in obj
-
-    def __iter__(obj):
-        return iter(obj)
-
-    def __getitem__(obj, index):
-        return obj[index]
-
     @property
     def length(obj):
         """The number of characters in this string."""
