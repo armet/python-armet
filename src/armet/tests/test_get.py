@@ -163,7 +163,6 @@ class PollTest(GetBase, BaseTest, test.TestCase):
             url += 'choices/{}/poll/'.format(self.choice_one.id)
         url += 'choices'
         response = self.client.get(self.endpoint + url)
-        print(url)
         self.assertHttpOK(response)
         self.assertValidJSON(response)
 
@@ -301,13 +300,12 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
         content = self.deserialize(response, format='json')
-        print(content)
         t = parse(self.poll.pub_date)
         dst = t.dst() if t.dst() is not None else datetime.timedelta()
         self.assertEqual(dst.total_seconds(), content['total_seconds'])
-        # self.assertEqual(dst.seconds(), content['seconds'])
-        # self.assertEqual(dst.days(), content['days'])
-        # self.assertEqual(dst.microseconds(), content['microseconds'])
+        self.assertEqual(dst.seconds, content['seconds'])
+        self.assertEqual(dst.days, content['days'])
+        self.assertEqual(dst.microseconds, content['microseconds'])
 
     def test_get_tzname_on_pubdate(self):
         response = self.client.get(self.endpoint + 'poll/{}/pub_date/timezone.{}'
