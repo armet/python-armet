@@ -3,12 +3,11 @@ Implements XML encoder.  Allows the server to send any resource in XML format.
 """
 import datetime
 import six
-from .. import transcoders, utils
+from .. import transcoders
 from lxml.builder import E
 from lxml import etree
 from collections import Iterable, Mapping
-from .. import transcoders
-from . import Encoder
+from . import Encoder, utils
 
 
 def _encode_file_into_xml(e,obj):
@@ -93,4 +92,4 @@ class Encoder(transcoders.Xml, Encoder):
             return text
         except:
             root = cls._encode_object_into_xml(obj)
-            return etree.tostring(root,pretty_print=True)
+            return etree.tostring(root,pretty_print=False)
