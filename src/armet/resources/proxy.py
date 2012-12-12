@@ -14,6 +14,7 @@ class NullProxy(object):
     """A null proxy that denies access to object properties.
     """
 
+
 class ComplexProxy(object):
 
     @property
@@ -36,6 +37,11 @@ class StringProxy(collections.Sequence):
         return iter(obj)
 
     def __getitem__(obj, index):
+        if len(obj) == 1:
+            # 1-index 'strings' are characters
+            raise TypeError
+
+        # Return the index if we can index
         return obj[index]
 
     @property
