@@ -69,7 +69,7 @@ class QueryItem(object):
         self.value = kwargs.get('value', None)
 
 
-class Query(object, collections.Sequence):
+class Query(collections.Sequence):
     """Query parameter parser.  This behaves like an iterable and returns a
     QueryItem
     """

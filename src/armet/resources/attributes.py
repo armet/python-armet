@@ -162,8 +162,6 @@ class Attribute(object):
                     # Can't index-0 into a 1-index'd string.
                     raise TypeError()
 
-                return accessor
-
             else:
                 index = index - 1 if index > 0 else index
                 def accessor(obj, index=index):
@@ -173,6 +171,9 @@ class Attribute(object):
 
                     # Return the character or array element.
                     return obj[index]
+
+            # Return the built accessor
+            return accessor
 
         # No alternative; attempt direct attribute access using the instance
         # dictionary.

@@ -361,7 +361,7 @@ class BaseResource(object):
         """
         try:
             # Parse query parameters
-            self.query = query.Query(self.request.META['QUERY_STRING'])
+            # self.query = query.Query(self.request.META['QUERY_STRING'])
 
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
