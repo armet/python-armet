@@ -8,13 +8,14 @@ import os
 from collections import Mapping
 import logging
 import six
+import operator
 from six import string_types
 from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import attributes, helpers
-from .. import utils, http, exceptions, decoders, authorization
+from .. import utils, http, exceptions, decoders, authorization, query
 
 
 # Get an instance of the logger.
@@ -359,6 +360,9 @@ class BaseResource(object):
         same name as the request method.
         """
         try:
+            # Parse query parameters
+            self.query = query.Query(self.request.META['QUERY_STRING'])
+
             # Assert authentication and attempt to get a valid user object.
             self.authenticate()
 
@@ -596,6 +600,32 @@ class BaseResource(object):
             # Instantiate form using provided data (if form exists).
             # form = self.form()
             pass
+
+        return data
+
+    def filter(self, iterable):
+        """Filters and returns the iterable.  Implemented as a no-op in the
+        base class.
+        """
+        return iterable
+
+    def sort(self, data):
+        """Sorts and returns the data.
+        """
+        for parameter in self.query:
+            direction = parameter.direction
+            # Short circuit the sort
+            if direction is None:
+                continue
+
+            # Get a callable that will return the proper lookup
+            attr = operator.attrgetter(query.LOOKUP_SEP.join(parameter.path))
+
+            # Do the actual sorting
+            if direction == 'asc':
+                data = sorted(data, attr=attr, reverse=True)
+            else:
+                data = sorted(data, attr=attr)
 
         return data
 
