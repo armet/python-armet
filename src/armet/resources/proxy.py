@@ -10,18 +10,9 @@ import six
 import collections
 
 
-class NumericProxy(object):
-
-    @property
-    def numerator(obj):
-        """The numerator of this number."""
-        return obj.numerator
-
-    @property
-    def denominator(obj):
-        """The denominator of this number."""
-        return obj.denominator
-
+class NullProxy(object):
+    """A null proxy that denies access to object properties.
+    """
 
 class ComplexProxy(object):
 
@@ -153,8 +144,8 @@ def find(cls):
             or issubclass(cls, float)
             or issubclass(cls, decimal.Decimal)
             or issubclass(cls, fractions.Fraction)):
-        # Some kind of number
-        return NumericProxy
+        # Some kind of something
+        return NullProxy
 
     if issubclass(cls, datetime.datetime):
         # A date/time instance
