@@ -179,3 +179,7 @@ class BaseModel(base.BaseResource):
 
         # Return the queryset if we still have it.
         return queryset
+
+    def create(self, data):
+        print(data)
+        # return data

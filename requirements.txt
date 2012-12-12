@@ -8,3 +8,4 @@ django-extensions
 django-nose
 coverage
 yanc
+parsedatetime

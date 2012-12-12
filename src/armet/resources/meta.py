@@ -98,14 +98,14 @@ def _get_field_class(field):
     """Determines what class object to instantiate for the specified field."""
     if field is None:
         # No attribute passed; return the base class
-        return attributes.Field
+        return attributes.Attribute
 
     try:
         # Attempt to handle date/times
         test = datetime.datetime.now()
         if field.to_python(test) == test:
             # Looks like we're a datetime attribute
-            return attributes.DateTimeField
+            return attributes.DateTimeAttribute
 
     except (forms.ValidationError, AttributeError):
         # Times cannot be handled.
@@ -116,7 +116,7 @@ def _get_field_class(field):
         test = datetime.datetime.now().time()
         if field.to_python(test) == test:
             # Looks like we're a time field
-            return attributes.TimeField
+            return attributes.TimeAttribute
 
     except (forms.ValidationError, AttributeError):
         # Times cannot be handled.
@@ -127,7 +127,7 @@ def _get_field_class(field):
         test = datetime.datetime.now().date()
         if field.to_python(test) == test:
             # Looks like we're a date field
-            return attributes.DateField
+            return attributes.DateAttribute
 
     except (forms.ValidationError, AttributeError):
         # Dates cannot be handled.
@@ -136,10 +136,9 @@ def _get_field_class(field):
     try:
         # Attempt to handle file streams
         test = StringIO()
-        field.to_python(test)
-
-        # Looks like we're capable of dealing with file streams
-        return attributes.FileField
+        if field.to_python(test).getvalue() == '':
+            # Looks like we're capable of dealing with file streams
+            return attributes.FileAttribute
 
     except (forms.ValidationError, AttributeError):
         # File streams cannot be handled
@@ -150,14 +149,14 @@ def _get_field_class(field):
         test = True
         if field.to_python(test) is True:
             # Looks we can explicitly handle booleans
-            return attributes.BooleanField
+            return attributes.BooleanAttribute
 
     except (forms.ValidationError, AttributeError):
         # Booleans cannot be handled
         pass
 
     # We have no idea what we are; assume we're just text
-    return attributes.Field
+    return attributes.Attribute
 
 
 class DeclarativeResource(type):
@@ -426,7 +425,7 @@ class DeclarativeModel(DeclarativeResource):
         # Meld with a Model Field
         # TODO: Remove `b` prefix upon python3
         attribute = type(b'Model{}'.format(attribute.__name__),
-            (attributes.ModelField, attribute), {})
+            (attributes.ModelAttribute, attribute), {})
 
         # Return what we got
         return attribute

@@ -7,12 +7,14 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
 import six
+from datetime import datetime
+from time import mktime
 from .. import utils
 from . import helpers
 from .proxy import find as find_proxy
 
 
-class Field(object):
+class Attribute(object):
 
     def __init__(self, resource, **kwargs):
         #! The resource object this attribute is bound to.
@@ -162,15 +164,22 @@ class Field(object):
 
                 return accessor
 
-            index = index - 1 if index > 0 else index
-            return lambda o, n=name: o[index]
+            else:
+                index = index - 1 if index > 0 else index
+                def accessor(obj, index=index):
+                    if isinstance(obj, six.string_types) and len(obj) == 1:
+                        # We cannot index into a character of 1.
+                        raise TypeError
+
+                    # Return the character or array element.
+                    return obj[index]
 
         # No alternative; attempt direct attribute access using the instance
         # dictionary.
         return lambda o, n=name: o.__dict__[n]
 
 
-class ModelField(object):
+class ModelAttribute(object):
 
     def _build_accessor(self, cls, name):
         obj = getattr(cls, name, None)
@@ -180,10 +189,10 @@ class ModelField(object):
                 return lambda o, x=obj.__get__: x(o).all()
 
         # No alternative; let the base take it.
-        return super(ModelField, self)._build_accessor(cls, name)
+        return super(ModelAttribute, self)._build_accessor(cls, name)
 
 
-class BooleanField(Field):
+class BooleanAttribute(Attribute):
 
     #! Values accepted for `True`.
     TRUE = (
@@ -218,16 +227,69 @@ class BooleanField(Field):
         return value
 
 
-class DateField(Field):
-    pass
+class TemporalAttribute(object):
+
+    @staticmethod
+    def _try(value):
+        try:
+            # Attempt to use the dateutil library to parse.
+            from dateutil.parser import parse
+            return parse(value, fuzzy=False)
+
+        except ValueError:
+            # Not a strictly formatted date; return nothing.
+            pass
+
+        try:
+            import parsedatetime.parsedatetime as pdt
+            import parsedatetime.parsedatetime_consts as pdc
+            c = pdc.Constants()
+            c.BirthdayEpoch = 80
+            p = pdt.Calendar(c)
+            result = p.parse(value)
+            if result[1] != 0:
+                return datetime.fromtimestamp(mktime(result[0]))
+
+        except NameError:
+            # No magic date/time support
+            pass
 
 
-class TimeField(Field):
-    pass
+class DateAttribute(Attribute, TemporalAttribute):
+
+    def clean(self, value):
+        result = self._try(value)
+        if result is not None:
+            # Return our new date/time
+            return result.date()
+
+        # We can't figure it out; pass it on.
+        return value
 
 
-class DateTimeField(Field):
-    pass
+class TimeAttribute(Attribute, TemporalAttribute):
 
-class FileField(Field):
+    def clean(self, value):
+        result = self._try(value)
+        if result is not None:
+            # Return our new date/time
+            return result.time()
+
+        # We can't figure it out; pass it on.
+        return value
+
+
+class DateTimeAttribute(Attribute, TemporalAttribute):
+
+    def clean(self, value):
+        result = self._try(value)
+        if result is not None:
+            # Return our new date/time
+            return result
+
+        # We can't figure it out; pass it on.
+        return value
+
+
+class FileAttribute(Attribute):
     pass
