@@ -84,22 +84,6 @@ class ChoiceTest(GetBase, BaseTest, test.TestCase):
         self.assertHttpOK(response)
         self.assertValidJSON(response)
 
-    def test_numerator_on_votes(self):
-        response = self.client.get(self.endpoint + 'choice/{}/votes/numerator.{}'
-            .format(self.choice_one.id, 'json'))
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, format='json')
-        self.assertEqual(self.choice_one.votes.numerator, content[0])
-
-    def test_denominator_on_votes(self):
-        response = self.client.get(self.endpoint + 'choice/{}/votes/denominator.{}'
-            .format(self.choice_one.id, 'json'))
-        self.assertHttpOK(response)
-        self.assertValidJSON(response)
-        content = self.deserialize(response, format='json')
-        self.assertEqual(self.choice_one.votes.denominator, content[0])
-
     def test_get_real_on_complex(self):
         response = self.client.get(self.endpoint + 'choice/{}/complex/real.{}'
             .format(self.choice_one.id, 'json'))
@@ -117,21 +101,21 @@ class ChoiceTest(GetBase, BaseTest, test.TestCase):
         content = self.deserialize(response, format='json')
         self.assertEqual(complex(1, 2).imag, content[0])
 
-    def test_overflow_uri(self):
-        from six.moves import cStringIO
-        url = cStringIO()
-        url.write('{}{}/1/resource_uri/1/1/length/'.format(self.endpoint,
-            self.model, format))
-        for x in range(0, 32767 * 5):
-            url.write('numerator/denominator/')
+    # def test_overflow_uri(self):
+    #     from six.moves import cStringIO
+    #     url = cStringIO()
+    #     url.write('{}{}/1/resource_uri/1/1/length/'.format(self.endpoint,
+    #         self.model, format))
+    #     for x in range(0, 32767 * 5):
+    #         url.write('numerator/denominator/')
 
-        url = url.getvalue()
-        import time
-        start = time.time()
-        response = self.client.get(url)
-        end = time.time() - start
-        raise Exception(end)
-        self.assertHttpOK(response)
+    #     url = url.getvalue()
+    #     import time
+    #     start = time.time()
+    #     response = self.client.get(url)
+    #     end = time.time() - start
+    #     raise Exception(end)
+    #     self.assertHttpOK(response)
 
 
 class PollTest(GetBase, BaseTest, test.TestCase):
@@ -173,15 +157,15 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         self.assertHttpOK(response)
         self.assertValidXML(response)
 
-    # def test_recursiveness(self):
-    #     url = 'poll/{}/'.format(self.poll.id)
-    #     for x in range(0, 10):
-    #         url += 'choices/{}/poll/'.format(self.choice_one.id)
-    #     url += 'choices'
-    #     response = self.client.get(self.endpoint + url)
-    #     print(url)
-    #     self.assertHttpOK(response)
-    #     self.assertValidXML(response)
+    def test_recursiveness(self):
+        url = 'poll/{}/'.format(self.poll.id)
+        for x in range(0, 10):
+            url += 'choices/{}/poll/'.format(self.choice_one.id)
+        url += 'choices'
+        response = self.client.get(self.endpoint + url)
+        print(url)
+        self.assertHttpOK(response)
+        self.assertValidJSON(response)
 
     def test_get_question(self):
         response = self.client.get(self.endpoint + 'poll/{}/question.{}/'
@@ -204,7 +188,7 @@ class PollTest(GetBase, BaseTest, test.TestCase):
             self.assertEqual(self.poll.question[x - 1], content[0])
 
     def test_question_negative_string_array(self):
-        for x in range((len(self.poll.question)), 1):
+        for x in range(1, (len(self.poll.question))):
             response = self.client.get(self.endpoint + 'poll/{}/question/-{}.{}'
                 .format(self.poll.id, x, 'json'))
 
@@ -342,7 +326,7 @@ class PollTest(GetBase, BaseTest, test.TestCase):
         t = parse(self.poll.pub_date)
         self.assertEqual(t.toordinal(), content[0])
 
-    def test_not_found_out_of_range(self):
+    def test_length_out_of_range(self):
         response = self.client.get(self.endpoint + 'poll/{}/question/{}/'
             .format(self.poll.id, len(self.poll.question) + 5))
         self.assertHttpNotFound(response)
