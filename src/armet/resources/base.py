@@ -565,7 +565,7 @@ class BaseResource(object):
                 # Utilize the attribute accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
-            except (ValueError, AttributeError, TypeError) as ex:
+            except (IndexError, ValueError, AttributeError, TypeError) as ex:
                 # Something weird happened with a path segment.
                 raise exceptions.NotFound()
 
