@@ -195,7 +195,7 @@ class PollTest(GetBase, BaseTest, test.TestCase):
             self.assertHttpOK(response)
             self.assertValidJSON(response)
             content = self.deserialize(response, format='json')
-            self.assertEqual(self.poll.question[x], content[0])
+            self.assertEqual(self.poll.question[-x], content[0])
 
     def test_question_length(self):
         response = self.client.get(self.endpoint + 'poll/{}/question/length.{}'
