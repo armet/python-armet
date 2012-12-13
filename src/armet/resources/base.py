@@ -434,7 +434,9 @@ class BaseResource(object):
             response['Content-Type'] = self.encoder.mimetype
 
         # Declare who we are in the header.
-        response['Content-Location'] = self.url
+        # TODO: The link headers should be an object so they are not
+        #   constructed via strings here.
+        response['Link'] = '<{}>; rel=self'.format(self.url)
 
         # Return the built response.
         return response
@@ -776,7 +778,7 @@ class BaseResource(object):
         # Ensure we're allowed to create
         self._assert_operation('create')
 
-        if self.slug is not None:
+        if self.slug is None:
             # Set our initial status code
             status = http.client.CREATED
 

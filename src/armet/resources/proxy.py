@@ -28,14 +28,6 @@ class ComplexProxy(object):
         return obj.imag
 
 
-class StringProxy(collections.Sequence):
-
-    @property
-    def length(obj):
-        """The number of characters in this string."""
-        return len(obj)
-
-
 class TemporalProxy(object):
 
     @property
@@ -135,8 +127,9 @@ def find(cls):
     if (issubclass(cls, six.integer_types)
             or issubclass(cls, float)
             or issubclass(cls, decimal.Decimal)
-            or issubclass(cls, fractions.Fraction)):
-        # Some kind of something
+            or issubclass(cls, fractions.Fraction)
+            or issubclass(cls, six.string_types)):
+        # Some kind of something that has no properties we swear
         return NullProxy
 
     if issubclass(cls, datetime.datetime):
@@ -150,9 +143,5 @@ def find(cls):
     if issubclass(cls, datetime.time):
         # A time instance
         return TimeProxy
-
-    if issubclass(cls, six.string_types):
-        # A string
-        return StringProxy
 
     # No proxy needed; return nothing
