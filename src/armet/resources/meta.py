@@ -479,6 +479,15 @@ class DeclarativeModel(DeclarativeResource):
             # Six contrivance; we don't care
             return super(DeclarativeModel, self).__init__(name, bases, attrs)
 
+        if self.form is None and self.model is not None:
+            # Create a model form automatically if none exists
+            class Form(forms.ModelForm):
+                class Meta:
+                    model = self.model
+
+            # Assign our new model form
+            self.form = Form
+
         # Discover what we can from the model form.
         if self.form is not None and issubclass(self.form, forms.ModelForm):
             # Store the model from the form.

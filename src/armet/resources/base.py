@@ -14,7 +14,8 @@ from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
-from . import attributes, helpers
+from .attributes import FileAttribute
+from .helpers import parent as parent_helper
 from .. import utils, http, exceptions, decoders, authorization, query
 
 
@@ -108,12 +109,14 @@ class BaseResource(object):
 
     #! List of decoders known by this resource.
     decoders = {
+        'json': 'armet.decoders.Json',
         'form': 'armet.decoders.Form',
         'xml': 'armet.decoders.Xml',
     }
 
     #! List of allowed decoders of the understood decoders.
     allowed_decoders = (
+        'json',
         'form',
         'xml',
     )
@@ -284,7 +287,7 @@ class BaseResource(object):
         del kwargs['path'][0]
 
         # Set parent on the object
-        kwargs['parent'] = parent = helpers.parent(
+        kwargs['parent'] = parent = parent_helper(
             resource=cls(
                 request=request,
                 slug=kwargs.get('slug'),
@@ -353,6 +356,10 @@ class BaseResource(object):
         # Set some defaults so we can reference this later
         self.encoder = None
 
+        #! This is the form instance that is constructed during the clean
+        #! and validation cycle.
+        self._form = None
+
     def dispatch(self):
         """
         Performs common work such as authentication, decoding, etc. before
@@ -374,7 +381,7 @@ class BaseResource(object):
             # object for later use.
             self.encoder = self._determine_encoder()
 
-            self.authorize_resource()
+            # self.authorize_resource()
 
             data = None
             if self.request.body:
@@ -477,7 +484,7 @@ class BaseResource(object):
                 slug=slug,
                 path=relation.path,
                 local=relation.local,
-                parent=helpers.parent(self.__class__(
+                parent=parent_helper(self.__class__(
                         slug=self.make_slug(obj),
                         request=self.request,
                         local=self.local,
@@ -575,6 +582,7 @@ class BaseResource(object):
         return obj
 
     def item_clean(self, item):
+        """Performs the micro-clean cycle over an item using its attribute."""
         for name in item:
             # Attempt to get a field from the item name
             field = self._attributes.get(name)
@@ -588,7 +596,21 @@ class BaseResource(object):
 
     def clean(self, data):
         """Cleans data from the request for processing."""
-        # TODO: Resolve relation URIs (eg. /resource/:slug/).
+        # Before even the micro-clean cycle; things need to happen to make
+        # the data more pythonic and less dumb as decoders are just that,
+        # dumb.
+        for name, attribute in six.iteritems(self._attributes):
+            value = data.get(name)
+            if value is not None:
+                if attribute.relation is not None:
+                    # Resolve relation URIs (eg. /resource/:slug/) if we
+                    # need to.
+                    data[name] = self.relation_clean(value)
+
+            elif attribute.collection and attribute.editable:
+                # No value at all but the value is a collection; set an
+                # empty iterable.
+                data[name] = ()
 
         if isinstance(data, collections.Sequence):
             # Invoke the micro-clean cycle on all objects passed.
@@ -598,12 +620,41 @@ class BaseResource(object):
             # Not a list; do a singular object.
             data = self.item_clean(data)
 
+        # Split data items and files; this process also removes all data
+        # that we do not understand; ie. extra fields passed.
+        items, files = {}, {}
+        for name, value in six.iteritems(data):
+            attribute = self._attributes.get(name)
+            if attribute is not None:
+                if isinstance(attribute, FileAttribute):
+                    # Value is supposed to be a file object
+                    files[name] = value
+
+                else:
+                    # Value is something more normal
+                    items[name] = value
+
+        if not files:
+            # Files were empty; so explicitly set to None so the form
+            # doesn't get confused.
+            files = None
+
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
-            # form = self.form()
-            pass
+            self._form = self.form(data=items, files=files)
 
-        return data
+            # Ensure the form is valid and if not; throw a 400
+            if not self._form.is_valid():
+                raise exceptions.BadRequest(self._form.errors)
+
+            # Return the cleaned data that should be sanitized, etc.
+            return self._form.cleaned_data
+
+        else:
+            # No form to do the dirty work; we need to merge items and files
+            # ourselves
+            items.update(files or {})
+            return items
 
     def filter(self, iterable):
         """Filters and returns the iterable.  Implemented as a no-op in the
@@ -880,8 +931,13 @@ class BaseResource(object):
                 # Some unknown content type was presented; throw up our hands.
                 raise exceptions.UnsupportedMediaType()
 
-            # Decode and return the request body
-            return decoder.decode(self.request, self._attributes)
+            try:
+                # Decode and return the request body
+                return decoder.decode(self.request, self._attributes)
+
+            except decoders.DecoderError:
+                # No dice; we don't understand it.
+                raise exceptions.UnsupportedMediaType()
 
         # No content type header was presented; attempt to decode using
         # all available decoders.
@@ -890,7 +946,7 @@ class BaseResource(object):
                 # Attemp to decode and return the body.
                 return decoder.decode(self.request, self._attributes)
 
-            except decoders.DecodingError:
+            except decoders.DecoderError:
                 # An error occured; continue on to the next decoder.
                 pass
 
@@ -917,3 +973,20 @@ class BaseResource(object):
 
             # Assert conditiion and bail.
             raise exceptions.Forbidden(data)
+
+    def read(self):
+        """Retrieves data to be displayed; called via GET.
+
+        @param[in] self.slug
+            The slug that was captured in the URL, if any.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
+
+    def create(self, data):
+        """Creates the object that is being requested; via POST or PUT."""
+        # Proxy to the form to save the data.
+        self._form.save()
+
+        # Return the form object instance.
+        return self._form.instance
