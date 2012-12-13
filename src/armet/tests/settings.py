@@ -115,18 +115,19 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
 
+    # Extensions
+    'django_nose',
+
     # Project
     PROJECT_NAME,
-
-    # Test runner
-    'django_nose'
 )
 
-# Use nose to run all tests
+# Use nose to run all tests.
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-# Tell nose to measure coverage on the 'foo' and 'bar' apps
+# Tell nose to do what we want.
 NOSE_ARGS = [
+    '--where=src/armet/tests',
     '--with-coverage',
     '--cover-html',
     '--cover-package=armet,armet.*',
