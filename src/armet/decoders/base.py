@@ -10,7 +10,7 @@ import six
 from .. import transcoders
 
 
-class DecodingError(Exception):
+class DecoderError(Exception):
     """Represents an error decoding the request body.
     """
 

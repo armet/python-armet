@@ -5,8 +5,9 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from StringIO import StringIO
 from django.http import MultiPartParser
+from django.http.multipartparser import MultiPartParserError
 from .. import transcoders
-from . import Decoder
+from . import Decoder, DecoderError
 from django.core.files.uploadhandler import load_handler
 
 
@@ -15,10 +16,17 @@ class Decoder(transcoders.Form, Decoder):
     def decode(self, request, attributes=None):
         # Instantiate an instance of django's multi-part parser
         stream = StringIO(request.body)
-        parser = MultiPartParser(request.META, stream, request.upload_handlers)
 
-        # Parse the form-data as data, files
-        data, files = parser.parse()
+        try:
+            # Attempt to instantiate and parse the request using the built-in
+            # django multi-part parser
+            headers = request.META
+            parser = MultiPartParser(headers, stream, request.upload_handlers)
+            data, files = parser.parse()
+
+        except MultiPartParserError:
+            # Something went wrong here;
+            raise DecoderError
 
         # Flatten the data dictionary if possible.
         obj = dict(data)
