@@ -138,7 +138,7 @@ class Filter(object):
                         raise FilterError(
                             FILTER_SEPARATOR.join(filtermap),
                             '{} is not a related field'.format(field_string))
-                    fields = field.relation.fields
+                    fields = field.relation._fields
 
         except KeyError as e:
             # Happens when field_string can't be found in the fields lookup
