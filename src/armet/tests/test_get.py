@@ -1,7 +1,7 @@
-from .base import BaseTest
+from armet.tests.base import BaseTest
 from armet.utils import test
 from armet import http
-from .models import Choice, Poll
+from armet.tests.models import Choice, Poll
 from datetime import datetime
 from dateutil.parser import parse
 
