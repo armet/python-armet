@@ -67,11 +67,11 @@ class QueryTestCase(TestCase):
             self.parser.add_query('marinas:{}=trench'.format(direction))
             query = self.parser.parameters[-1]
 
-            self.assertEqual(query.path, ['eifel'])
+            self.assertEqual(query.path, ['marinas'])
             self.assertEqual(query.operation, 'exact')
             self.assertFalse(query.negated)
             self.assertEqual(query.direction, djangoified)
-            self.assertEqual(query.value, ['tower'])
+            self.assertEqual(query.value, ['trench'])
 
     def test_operations(self):
         operations = (
@@ -87,15 +87,15 @@ class QueryTestCase(TestCase):
             self.assertEqual(query.operation, operation)
             self.assertFalse(query.negated)
             self.assertFalse(query.direction)
-            self.assertEqual(query.value, 'true')
+            self.assertEqual(query.value, ['true'])
 
     def test_fusion(self):
         """Test something from everything combined
         """
-        q = 'the__rolling__stones__iregexp__not:asc=sympathy;for;the;devil'
+        q = 'the__rolling__stones__iregex__not:asc=sympathy;for;the;devil'
         query = self.add(q)
         self.assertEqual(query.path, ['the', 'rolling', 'stones'])
-        self.assertEqual(query.operation, 'iregexp')
+        self.assertEqual(query.operation, 'iregex')
         self.assertTrue(query.negated)
         self.assertEqual(query.direction, '+')
         self.assertEqual(query.value, ['sympathy', 'for', 'the', 'devil'])
