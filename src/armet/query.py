@@ -35,11 +35,25 @@ class QueryItem(object):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
-        value = value.lower()
+        if value is not None:
+            value = value.lower()
+        # Normalize none
+        # TODO: can we use coerce value to get this none here?
+        if value == 'none':
+            value = None
+
         if value not in SORT_VALID:
             raise ValueError(
-                'Sorting direction must be in {}'.format(SORT_VALID))
-        self._direction = value
+                "Sorting direction must be 'asc' or 'desc'.")
+
+        # Internally, declare ascending order as a '+' and descending order as
+        # a '-' to optimize for django's ORM
+        if value == 'asc':
+            self._direction = '+'
+        elif value == 'desc':
+            self._direction = '-'
+        else:
+            self._direction = None
 
     def __init__(self, **kwargs):
         super(QueryItem, self).__init__()
@@ -110,7 +124,7 @@ class Query(collections.Sequence):
                 keys = key.split(LOOKUP_SEP)
 
                 # Detect negation
-                if keys[-1].lower() is OPERATION_NOT:
+                if keys[-1].lower() == OPERATION_NOT:
                     item.negated = True
                     keys = keys[:-1]
 
@@ -118,7 +132,7 @@ class Query(collections.Sequence):
                 operation = keys[-1]
                 if keys[-1].lower() in QUERY_TERMS:
                     item.operation = operation
-                    keys = keys[-1]
+                    keys = keys[:-1]
 
                 # Make sure we still have a path to filter by
                 if not len(keys):
@@ -127,7 +141,7 @@ class Query(collections.Sequence):
 
                 item.path = keys
 
-            except ValueError, KeyError:
+            except (ValueError, KeyError):
                 # This will be reached if there was a failure to break
                 # up the query into key value paris,
                 # or if the query did not include enough parameters
