@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 import collections
 import os
 from collections import Mapping
+import hashlib
 import logging
 import six
 import operator
@@ -439,6 +440,10 @@ class BaseResource(object):
             # correct mimetype.
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
+
+        # Make an MD5 digest of the content and add it to the response.
+        # Use hexdigest so it is actually readable.
+        response['Content-MD5'] = hashlib.md5(response.content).hexdigest()
 
         # Declare who we are in the header.
         # TODO: The link headers should be an object so they are not
