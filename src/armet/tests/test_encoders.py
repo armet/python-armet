@@ -29,6 +29,12 @@ class JsonTestCase(unittest.TestCase):
 
         self.assertEqual(content, {})
 
+    def test_json_complex(self):
+        encoded = self.json.encode(complex(16, 12))
+        content = json.loads(encoded)
+
+        self.assertEqual(content[0], '16+12i')
+
     def test_json_bool(self):
         encoded = self.json.encode(False)
         content = json.loads(encoded)
