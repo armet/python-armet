@@ -1,10 +1,11 @@
-Welcome to flapjack!
-====================
+Welcome to armet!
+=================
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
+
 
 Indices and tables
 ==================
