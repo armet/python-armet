@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from hashlib import md5
+import hashlib
 from armet.utils import test
 
 
@@ -16,6 +16,6 @@ class ResponseTestCase(test.TestCase):
         # Assert we got a Content-MD5 header
         self.assertTrue(response.has_header('Content-MD5'))
         # Make an MD5 of the body.
-        md5_body = md5(response.content).hexdigest()
+        md5_body = hashlib.md5(response.content).hexdigest()
         # Assert the MD5 is correct.
         self.assertEqual(response['Content-MD5'], md5_body)
