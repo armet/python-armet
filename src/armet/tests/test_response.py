@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import hashlib
+from armet import http
 from armet.utils import test
 
 

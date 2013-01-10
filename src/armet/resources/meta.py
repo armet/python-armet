@@ -308,7 +308,22 @@ class DeclarativeResource(type):
         if name == 'NewBase':
             # Six contrivance; we don't care
             return super(DeclarativeResource, self).__init__(
-                name, bases, attrs)\
+                name, bases, attrs)
+
+        for base in bases:
+            if base.__name__ == 'NewBase':
+                # This is a six contrivance; move along
+                continue
+
+            if isinstance(base, DeclarativeResource):
+                # This is some sort of derived resource; good
+                break
+
+        else:
+            # There isn't a single resource that is derived from another
+            # resource in the bases lists. This is the root resource object.
+            return super(DeclarativeResource, self).__init__(
+                name, bases, attrs)
 
         if (self.include is not None
                 and not isinstance(self.include, collections.Mapping)):
@@ -352,6 +367,51 @@ class DeclarativeResource(type):
         # default `filterable` to an empty tuple.
         if not _has('filterable', attrs, bases):
             self.filterable = ()
+
+        if not _has('http_allowed_methods', attrs, bases):
+            if _has('allowed_operations', attrs, bases):
+                # Specified allowed_operations but not http_allowed_methods;
+                # derive the later
+                self.http_allowed_methods = set(['HEAD', 'OPTIONS'])
+                for operation in self.allowed_operations:
+                    if operation == 'read':
+                        self.http_allowed_methods.add('GET')
+
+                    if operation == 'update':
+                        self.http_allowed_methods.add('PUT')
+                        self.http_allowed_methods.add('PATCH')
+
+                    if operation == 'create':
+                        self.http_allowed_methods.add('PUT')
+                        self.http_allowed_methods.add('POST')
+                        self.http_allowed_methods.add('PATCH')
+
+                    if operation == 'destroy':
+                        self.http_allowed_methods.add('PUT')
+                        self.http_allowed_methods.add('DELETE')
+
+        elif not _has('allowed_operations', attrs, bases):
+            # Specified http_allowed_methods but not allowed_operations;
+            # derive the later
+            self.allowed_operations = set()
+            for method in self.http_allowed_methods:
+                if method == 'GET':
+                    self.allowed_operations.add('read')
+
+                if method == 'PUT':
+                    self.allowed_operations.add('update')
+                    self.allowed_operations.add('create')
+                    self.allowed_operations.add('delete')
+
+                if method == 'POST':
+                    self.allowed_operations.add('create')
+
+                if method == 'PATCH':
+                    self.allowed_operations.add('create')
+                    self.allowed_operations.add('update')
+
+                if method == 'DELETE':
+                    self.allowed_operations.add('destroy')
 
         # Ensure list and detail allowed methods and operations are populated.
         for fmt, default in (
