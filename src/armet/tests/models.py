@@ -13,3 +13,8 @@ class Choice(models.Model):
     poll = models.ForeignKey(Poll)
     choice_text = models.CharField(max_length=512)
     votes = models.IntegerField()
+
+
+class Booth(models.Model):
+    name = models.CharField(max_length=1024)
+    polls = models.ManyToManyField(Poll)
