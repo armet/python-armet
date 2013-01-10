@@ -107,7 +107,7 @@ def _get_field_class(field):
             # Looks like we're a datetime attribute
             return attributes.DateTimeAttribute
 
-    except (forms.ValidationError, AttributeError):
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # Times cannot be handled.
         pass
 
@@ -118,7 +118,7 @@ def _get_field_class(field):
             # Looks like we're a time field
             return attributes.TimeAttribute
 
-    except (forms.ValidationError, AttributeError):
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # Times cannot be handled.
         pass
 
@@ -129,7 +129,7 @@ def _get_field_class(field):
             # Looks like we're a date field
             return attributes.DateAttribute
 
-    except (forms.ValidationError, AttributeError):
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # Dates cannot be handled.
         pass
 
@@ -140,7 +140,7 @@ def _get_field_class(field):
             # Looks like we're capable of dealing with file streams
             return attributes.FileAttribute
 
-    except (forms.ValidationError, AttributeError):
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # File streams cannot be handled
         pass
 
@@ -151,7 +151,7 @@ def _get_field_class(field):
             # Looks we can explicitly handle booleans
             return attributes.BooleanAttribute
 
-    except (forms.ValidationError, AttributeError):
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # Booleans cannot be handled
         pass
 
