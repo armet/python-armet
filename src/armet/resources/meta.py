@@ -93,11 +93,18 @@ def _is_field_collection(field):
         # None cannot be a valid value; definitely not an collection.
         return False
 
+def _is_field_related(field):
+    return (isinstance(field, RelatedObject)
+        or  isinstance(field, RelatedField))
 
 def _get_field_class(field):
     """Determines what class object to instantiate for the specified field."""
     if field is None:
         # No attribute passed; return the base class
+        return attributes.Attribute
+
+    if _is_field_related(field):
+        # This is actually a related field or object.
         return attributes.Attribute
 
     try:
@@ -250,12 +257,6 @@ class DeclarativeResource(type):
                 relation = relation._replace(
                     related_name=self._get_related_name(parts[0]))
 
-        elif attribute is not None:
-            # Is the attribute a related attribute?
-            related = (
-                isinstance(attribute, RelatedObject) or
-                isinstance(attribute, RelatedField))
-
         # Instantiate the attribute object and set it on the resource class.
         self._attributes[name] = cls(self,
             visible=_is_field_visible(self, name),
@@ -264,7 +265,7 @@ class DeclarativeResource(type):
             editable=editable,
             prepare=prepare,
             path=parts,
-            related=relation is not None or related,
+            related=relation is not None or _is_field_related(attribute),
             relation=relation
         )
 

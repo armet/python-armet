@@ -49,8 +49,42 @@ class Attribute(object):
         #! This attribute is related to some other resource (or should be).
         self.related = kwargs.get('related')
 
-        #! Stored relation reference.
+        #! Stored relation reference
         self._relation = kwargs.get('relation')
+
+    def _find_relation(self):
+        """
+        Take the related name and the path and attempt to figure out who
+        we're related to.
+        """
+        if self.path[0] in self.resource._resources:
+            # There really is a resource out there.
+            return self.resource._resources[self.path[0]]
+
+        else:
+            # There may be a resource out there.
+            try:
+                attr = self.resource._get_field_object(self.path[0])
+
+            except KeyError:
+                # Didn't find it... die
+                return None
+
+            try:
+                # Pretend this is a reverse or a direct foreign.
+                return self.resource._resources[attr.field.related.var_name]
+
+            except AttributeError:
+                # Didn't find it.
+                pass
+
+            try:
+                # Pretend this is a normal m2m field.
+                return self.resource._resources[attr.m2m_reverse_field_name()]
+
+            except AttributeError:
+                # Didn't find it.
+                pass
 
     @property
     def relation(self):
@@ -70,25 +104,10 @@ class Attribute(object):
 
         elif self.related:
             if self.path:
-                resource = None
-                name = self.resource._get_related_name(self.path[0])
-
-                if self.path[0] in self.resource._resources:
-                    # There really is a resource out there.
-                    resource = self.resource._resources[self.path[0]]
-
-                else:
-                    # There may be a resource out there.
-                    try:
-                        attr = self.resource._get_field_object(self.path[0])
-                        resource = self.resource._resources[
-                            attr.field.related.var_name]
-
-                    except (KeyError, AttributeError):
-                        # Didn't fint it.
-                        pass
-
+                resource = self._find_relation()
                 if resource is not None:
+                    name = self.resource._get_related_name(self.path[0])
+
                     # Store it.
                     self._relation = helpers.relation(resource,
                         related_name=name)
