@@ -30,16 +30,27 @@ class _TypeAwareJSONEncoder(json.JSONEncoder):
 
 class Encoder(transcoders.Json, Encoder):
 
+    def __init__(self, pretty_print=False):
+        #! The options that are passed into the json method.
+        self._options = {
+            'ensure_ascii': True,
+            'separators': (',', ':'),
+            'cls': _TypeAwareJSONEncoder,
+        }
+
+        if pretty_print:
+            # We are pretty printing; turn on idents and
+            # add spaces around separators
+            self._options['indent'] = 2
+            self._options['separators'] = (', ', ': ')
+
     def encode(self, obj=None):
         if obj is None:
             # If we have nothing; encode as an empty object.
             obj = {}
 
         # Encode and return the resultant text
-        text = json.dumps(obj,
-            ensure_ascii=True,
-            separators=(',', ':'),
-            cls=_TypeAwareJSONEncoder)
+        text = json.dumps(obj, **self._options)
 
         # Ensure it is atleast wrapped in an array.
         if not (text.startswith('[') or text.startswith('{')):
