@@ -1,0 +1,45 @@
+ ☐ Integration with django-haystack to provide search indexes to facilitate filtering
+ ☐ Resolving arbitrary URLs
+ ☐ POST
+ ☐ PUT
+ ☐ PATCH
+ ☐ DELETE
+ ☐ OPTIONS
+ ☐ Header: Link
+     ☐ Automatic generation of link headers for related resources
+     ☐ Ability to add additional link headers through like a 'links' option
+ ☐ Header: Link; rel="schema"
+     This is going to require a small RFC to accompany it.
+ ☐ Headers: Range / Content-Range
+     Pagination. This will have to firmly integrated into the base resources (
+     perhaps in View) as it will need to make successive calls to dispatch to
+     get multiple ranges.
+ ☐ Query parsing
+     We really need to get a specification describing this.
+     ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
+     ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
+     ☐ '.' is equivalent to '__'
+ ☐ Filtering
+ ☐ Sorting
+ ☐ Authorization
+ ☐ Authentication
+     ☐ Digest
+     ☐ OAuth 1
+     ☐ OAuth 2
+     ☐ SAML
+ ☐ Configuration
+     ☐ Turning off data being returned from PUT / POST / PATCH
+     ☐ Turning off validation
+ ☐ Policies
+     General abstract idea that could be used to implement throttling.
+ ☐ Caching
+ ☐ Plucking
+     By 'plucking' we mean that if there is a resource called 'Apple' with a
+     property 'color'; then `GET /apple/color` will get an array of all colors
+     for every apple.
+ ☐ Through reference; referencing properties from the relationship between two resources
+     /team/5/user?(owner)=true   all owners of team 5
+ ☐ Set specifiers
+     /team/1,2 will return both teams 1 and 2
+     /team/10-20 will return teams 10 through 20
+     /apple,orange will return all apples and oranges using a base class resource (if available) or 400
