@@ -5,7 +5,7 @@ Defines the query parser for Armet
 
 from __future__ import (print_function, unicode_literals, absolute_import,
     division)
-from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from django.db.models.sql.constants import LOOKUP_SEP
 from . import exceptions
 import collections
 
@@ -14,8 +14,15 @@ DJANGO_ASC = '+'
 DJANGO_DESC = '-'
 
 #! Some constants
+PATH_SEP = LOOKUP_SEP
 OPERATION_DEFAULT = 'exact'
 OPERATION_NOT = 'not'
+# We only support a subset of django's query operations
+OPERATIONS = (
+    'exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt', 'lte',
+    'startswith', 'istartswith', 'endswith', 'iendswith', 'isnull', 'regex',
+    'iregex',
+)
 PARAM_SEP = '&'
 KEY_VALUE_SEP = '='
 VALUE_SEP = ';'
@@ -26,7 +33,7 @@ SORT_DEFAULT = None
 SORT_VALID = (SORT_ASC, SORT_DESC, None)
 
 
-class QueryItem(object):
+class Query(object):
     """Simple structure to wrangle query parameters"""
 
     @property
@@ -61,7 +68,7 @@ class QueryItem(object):
             self._direction = None
 
     def __init__(self, **kwargs):
-        super(QueryItem, self).__init__()
+        super(Query, self).__init__()
 
         # Initialize some junk
         self._direction = None
@@ -91,7 +98,7 @@ def parse_segment(segment):
     """an individual query segment parser.
     """
 
-    item = QueryItem()
+    item = Query()
 
 
     try:
@@ -118,7 +125,7 @@ def parse_segment(segment):
             key, item.direction = key.split(SORT_SEP)
 
         # Break up keys
-        keys = key.split(LOOKUP_SEP)
+        keys = key.split(PATH_SEP)
 
         # Detect negation
         if keys[-1].lower() == OPERATION_NOT:
@@ -127,7 +134,7 @@ def parse_segment(segment):
 
         # Detect operation
         operation = keys[-1]
-        if keys[-1].lower() in QUERY_TERMS:
+        if keys[-1].lower() in OPERATIONS:
             item.operation = operation
             keys = keys[:-1]
 
@@ -149,7 +156,7 @@ def parse_segment(segment):
 
 
 def parse(querystring):
-    """Query parameter parser.  Returns a list of QueryItems.
+    """Query parameter parser.  Returns a list of Querys.
     """
     # Break up partitions in the querystring
     segments = querystring.split(PARAM_SEP)

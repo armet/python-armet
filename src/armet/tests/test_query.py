@@ -2,7 +2,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from django.utils.unittest import TestCase
-from armet.query import parse
+from armet.query import parse, OPERATIONS
 from armet import exceptions
 
 
@@ -73,13 +73,7 @@ class QueryTestCase(TestCase):
             self.assertRaises(exceptions.BadRequest, parse, query)
 
     def test_operations(self):
-        operations = (
-            'exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt',
-            'lte', 'in', 'startswith', 'istartswith', 'endswith', 'iendswith',
-            'range', 'year', 'month', 'day', 'week_day', 'isnull', 'search',
-            'regex', 'iregex',
-        )
-        for operation in operations:
+        for operation in OPERATIONS:
             item = self.parse('crazy__{}=true'.format(operation))
             self.assertEqual(item.path, ['crazy'])
             self.assertEqual(item.operation, operation)
