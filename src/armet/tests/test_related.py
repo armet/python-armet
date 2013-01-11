@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import hashlib
 from django.test.client import RequestFactory
-from armet import http
+from armet import http, exceptions
 from armet.utils import test
 from armet import resources, encoders
 from django import forms
@@ -17,7 +17,6 @@ class RelatedTest(test.TestCase):
         self.booth.polls.add(15)
 
     def test_property(self):
-
         class TeamModel(models.Model):
             name = models.CharField(max_length=30)
 
@@ -53,7 +52,6 @@ class RelatedTest(test.TestCase):
         self.assertEquals(data['team'], 'Bob')
 
     def test_many_to_many(self):
-
         class BoothResource(resources.Model):
             model = local_models.Booth
             canonical = False
@@ -66,12 +64,25 @@ class RelatedTest(test.TestCase):
         self.assertEquals(data['polls'][0], "/poll/5")
         self.assertEquals(data['polls'][1], "/poll/15")
 
-        # request = RequestFactory().get('/property/5')
-        # resource = UserResource(request=request, slug=5)
-        # user = UserModel(first_name="Bob", last_name="Smith")
-        # user.id = 2
-        # user.teams.add(TeamModel(id=32, name="Steve"))
+    def test_missing_resource(self):
+        try:
+            class AppleModel(models.Model):
+                name = models.CharField(max_length=30)
 
-        # data = resource.prepare()
+            class FruitModel(models.Model):
+                apple = models.ManyToManyField(AppleModel)
 
-        # self.assertEquals(data['team'], 'Bob')
+            class FruitResource(resources.Model):
+                model = FruitModel
+                canonical = False
+                resource_uri = None
+
+            request = RequestFactory().get('/fruit/1')
+            resource = FruitResource(request=request, slug=1)
+            data = resource.prepare({'apple': 3})
+
+        except exceptions.NotFound:
+            pass
+
+        except:
+            self.fail()

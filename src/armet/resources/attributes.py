@@ -64,27 +64,33 @@ class Attribute(object):
         else:
             # There may be a resource out there.
             try:
-                attr = self.resource._get_field_object(self.path[0])
+                obj = self.resource._get_field_object(self.path[0])
 
             except KeyError:
                 # Didn't find it... die
                 return None
 
+            name = None
             try:
                 # Pretend this is a reverse or a direct foreign.
-                return self.resource._resources[attr.field.related.var_name]
+                name = obj.field.related.var_name
 
             except AttributeError:
-                # Didn't find it.
+                # Didn't find it; move along.
                 pass
 
             try:
                 # Pretend this is a normal m2m field.
-                return self.resource._resources[attr.m2m_reverse_field_name()]
+                name = obj.m2m_reverse_field_name()
 
             except AttributeError:
-                # Didn't find it.
+                # Didn't find it; move along.
                 pass
+
+            if name is not None:
+                # Attempt to retrieve the resource by its canonical name
+                return self.resource._resources.get(name)
+
 
     @property
     def relation(self):
