@@ -2,76 +2,75 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from django.utils.unittest import TestCase
-from armet.query import Query
+from armet.query import parse
+from armet import exceptions
 
 
 class QueryTestCase(TestCase):
     """Testing the Query parser
     """
 
-    def setUp(self):
-        self.parser = Query()
-
-    def tearDown(self):
-        """ Delete the parser after every test to flush the parameters array
+    def parse(self, querystring):
+        """Simple convenience function to unwrap the array of parameters.
         """
-        del self.parser
-
-    def add(self, querystring):
-        """Simple convenience function to add a query string and return
-        the query object
-        """
-        self.parser.add_query(querystring)
-        return self.parser.parameters[0]
+        return parse(querystring)[0]
 
     def test_simple_filter(self):
-        query = self.add('foo=bar')
-        self.assertEqual(query.path, ['foo'])
-        self.assertEqual(query.operation, 'exact')
-        self.assertFalse(query.negated)
-        self.assertFalse(query.direction)
-        self.assertEqual(query.value, ['bar'])
+        item = self.parse('foo=bar')
+        self.assertEqual(item.path, ['foo'])
+        self.assertEqual(item.operation, 'exact')
+        self.assertFalse(item.negated)
+        self.assertFalse(item.direction)
+        self.assertEqual(item.value, ['bar'])
 
     def test_relational_filter(self):
-        query = self.add('bread__sticks=delicious')
+        item = self.parse('bread__sticks=delicious')
 
-        self.assertEqual(query.path, ['bread', 'sticks'])
-        self.assertEqual(query.operation, 'exact')
-        self.assertFalse(query.negated)
-        self.assertFalse(query.direction)
-        self.assertEqual(query.value, ['delicious'])
+        self.assertEqual(item.path, ['bread', 'sticks'])
+        self.assertEqual(item.operation, 'exact')
+        self.assertFalse(item.negated)
+        self.assertFalse(item.direction)
+        self.assertEqual(item.value, ['delicious'])
 
     def test_negation(self):
-        query = self.add('cheese__not=cheddar')
+        item = self.parse('cheese__not=cheddar')
 
-        self.assertEqual(query.path, ['cheese'])
-        self.assertEqual(query.operation, 'exact')
-        self.assertTrue(query.negated)
-        self.assertFalse(query.direction)
-        self.assertEqual(query.value, ['cheddar'])
+        self.assertEqual(item.path, ['cheese'])
+        self.assertEqual(item.operation, 'exact')
+        self.assertTrue(item.negated)
+        self.assertFalse(item.direction)
+        self.assertEqual(item.value, ['cheddar'])
 
     def test_multiple_values(self):
-        query = self.add('fruit=apples;oranges')
+        item = self.parse('fruit=apples;oranges')
 
-        self.assertEqual(query.path, ['fruit'])
-        self.assertEqual(query.operation, 'exact')
-        self.assertFalse(query.negated)
-        self.assertFalse(query.direction)
-        self.assertEqual(query.value, ['apples', 'oranges'])
+        self.assertEqual(item.path, ['fruit'])
+        self.assertEqual(item.operation, 'exact')
+        self.assertFalse(item.negated)
+        self.assertFalse(item.direction)
+        self.assertEqual(item.value, ['apples', 'oranges'])
 
     def test_sorting(self):
 
         directions = {'aSc': '+', 'dEsC': '-'}
 
         for direction, djangoified in directions.iteritems():
-            self.parser.add_query('marinas:{}=trench'.format(direction))
-            query = self.parser.parameters[-1]
+            item = self.parse('marinas:{}'.format(direction))
 
-            self.assertEqual(query.path, ['marinas'])
-            self.assertEqual(query.operation, 'exact')
-            self.assertFalse(query.negated)
-            self.assertEqual(query.direction, djangoified)
-            self.assertEqual(query.value, ['trench'])
+            self.assertEqual(item.path, ['marinas'])
+            self.assertEqual(item.operation, 'exact')
+            self.assertFalse(item.negated)
+            self.assertEqual(item.direction, djangoified)
+            self.assertEqual(item.value, [])
+
+    def test_bogus(self):
+        queries = [
+            'foo:bogus=bar'
+            'foo=bogus=bar'
+            'icontains__not=bar'
+        ]
+        for query in queries:
+            self.assertRaises(exceptions.BadRequest, parse, query)
 
     def test_operations(self):
         operations = (
@@ -81,21 +80,23 @@ class QueryTestCase(TestCase):
             'regex', 'iregex',
         )
         for operation in operations:
-            self.add('crazy__{}=true'.format(operation))
-            query = self.parser.parameters[-1]
-            self.assertEqual(query.path, ['crazy'])
-            self.assertEqual(query.operation, operation)
-            self.assertFalse(query.negated)
-            self.assertFalse(query.direction)
-            self.assertEqual(query.value, ['true'])
+            item = self.parse('crazy__{}=true'.format(operation))
+            self.assertEqual(item.path, ['crazy'])
+            self.assertEqual(item.operation, operation)
+            self.assertFalse(item.negated)
+            self.assertFalse(item.direction)
+            self.assertEqual(item.value, ['true'])
 
     def test_fusion(self):
         """Test something from everything combined
         """
-        q = 'the__rolling__stones__iregex__not:asc=sympathy;for;the;devil'
-        query = self.add(q)
-        self.assertEqual(query.path, ['the', 'rolling', 'stones'])
-        self.assertEqual(query.operation, 'iregex')
-        self.assertTrue(query.negated)
-        self.assertEqual(query.direction, '+')
-        self.assertEqual(query.value, ['sympathy', 'for', 'the', 'devil'])
+        q = '''the__rolling__stones__iregex__not:asc=sympathy;for;the;devil&\
+guns__n__roses__istartswith__not:desc=paradise;city&queen:asc'''
+
+        # Don't care about the other ones, as they're testing the &
+        item = parse(q)[1]
+        self.assertEqual(item.path, ['guns', 'n', 'roses'])
+        self.assertEqual(item.operation, 'istartswith')
+        self.assertTrue(item.negated)
+        self.assertEqual(item.direction, '-')
+        self.assertEqual(item.value, ['paradise', 'city'])
