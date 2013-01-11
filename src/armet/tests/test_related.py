@@ -7,6 +7,7 @@ from armet import resources, encoders
 from django import forms
 from django.db import models
 from . import models as local_models
+import six
 
 
 class RelatedTest(test.TestCase):
@@ -17,39 +18,49 @@ class RelatedTest(test.TestCase):
         self.booth.polls.add(15)
 
     def test_property(self):
+        class HatModel(models.Model):
+            name = models.CharField(max_length=30)
+
         class TeamModel(models.Model):
             name = models.CharField(max_length=30)
+
+            @property
+            def hat(self):
+                return HatModel(name=self.name)
 
         class UserModel(models.Model):
             first_name = models.CharField(max_length=30)
             last_name = models.CharField(max_length=30)
+            team = models.OneToOneField(TeamModel)
 
-            @property
-            def team(self):
-                return TeamModel(name=self.first_name)
-
-        class TeamResource(resources.Model):
-            model = TeamModel
+        class HatResource(resources.Model):
+            model = HatModel
             resource_uri = None
-            canonical = False
 
         class UserResource(resources.Model):
             model = UserModel
-            canonical = False
             resource_uri = None
+            exclude = ('team',)
             include = {
-                'team': resources.attribute('team')
+                'hat': resources.attribute('team__hat')
             }
 
             relations = {
-                'team': resources.relation(TeamResource, path='name', embed=True)
+                'hat': resources.relation(HatResource)
             }
 
         request = RequestFactory().get('/property/5')
         resource = UserResource(request=request, slug=5)
-        data = resource.prepare(UserModel(first_name="Bob", last_name="Smith"))
 
-        self.assertEquals(data['team'], 'Bob')
+        model = UserModel(
+            first_name="Bob", last_name="Smith",
+            team=TeamModel(name='George'))
+
+        data = resource.prepare(model)
+
+        self.assertIs(data['hat'], six.string_types)
+
+        # self.assertEquals(data['team'], 'Bob')
 
     def test_many_to_many(self):
         class BoothResource(resources.Model):
