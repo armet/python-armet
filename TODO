@@ -18,7 +18,7 @@
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
      ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
-     ☐ '.' is equivalent to '__'
+     ☐ '.' instead of'__'
  ☐ Filtering
  ☐ Sorting
  ☐ Authorization
@@ -26,20 +26,26 @@
      ☐ Digest
      ☐ OAuth 1
      ☐ OAuth 2
-     ☐ SAML
+     ☐ SAML Client
  ☐ Configuration
      ☐ Turning off data being returned from PUT / POST / PATCH
      ☐ Turning off validation
  ☐ Policies
      General abstract idea that could be used to implement throttling.
- ☐ Caching
- ☐ Plucking
-     By 'plucking' we mean that if there is a resource called 'Apple' with a
-     property 'color'; then `GET /apple/color` will get an array of all colors
-     for every apple.
+ ☐ Browser side Cacheing
  ☐ Through reference; referencing properties from the relationship between two resources
      /team/5/user?(owner)=true   all owners of team 5
  ☐ Set specifiers
      /team/1,2 will return both teams 1 and 2
      /team/10-20 will return teams 10 through 20
+     /team/<format> will mirror the HTTP RANGE header request syntax without the `items=` portion
      /apple,orange will return all apples and oranges using a base class resource (if available) or 400
+
+----- The following is already possible through query strings.  This is just syntactic sugar -----
+☐ Plucking
+     By 'plucking' we mean that if there is a resource called 'Apple' with a
+     property 'color'; then `GET /apple/color` will get an array of all colors
+     for every apple.
+☐ URL segment filtering
+     /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
+     /apple:color=red/core  selects all cores of all apples that are red
