@@ -5,23 +5,35 @@ Defines the query parser for Armet
 
 from __future__ import (print_function, unicode_literals, absolute_import,
     division)
-from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from django.db.models.sql.constants import LOOKUP_SEP
 from . import exceptions
 import collections
 
+#! django constants
+DJANGO_ASC = '+'
+DJANGO_DESC = '-'
 
 #! Some constants
+PATH_SEP = LOOKUP_SEP
+OPERATION_DEFAULT = 'exact'
+OPERATION_NOT = 'not'
+# We only support a subset of django's query operations
+OPERATIONS = (
+    'exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt', 'lte',
+    'startswith', 'istartswith', 'endswith', 'iendswith', 'isnull', 'regex',
+    'iregex',
+)
 PARAM_SEP = '&'
 KEY_VALUE_SEP = '='
 VALUE_SEP = ';'
 SORT_SEP = ':'
-SORT_VALID = ('asc', 'desc', None)
+SORT_ASC = 'asc'
+SORT_DESC = 'desc'
+SORT_DEFAULT = None
+SORT_VALID = (SORT_ASC, SORT_DESC, None)
 
-OPERATION_DEFAULT = 'exact'
-OPERATION_NOT = 'not'
 
-
-class QueryItem(object):
+class Query(object):
     """Simple structure to wrangle query parameters"""
 
     @property
@@ -37,35 +49,35 @@ class QueryItem(object):
         # lowercase it and make sure that its valid
         if value is not None:
             value = value.lower()
-        # Normalize none
-        # TODO: can we use coerce value to get this none here?
-        if value == 'none':
-            value = None
 
         if value not in SORT_VALID:
             raise ValueError(
-                "Sorting direction must be 'asc' or 'desc'.")
+                "Sorting direction must be {} or {}.".format(
+                    SORT_ASC,
+                    SORT_DESC,
+                )
+            )
 
         # Internally, declare ascending order as a '+' and descending order as
         # a '-' to optimize for django's ORM
-        if value == 'asc':
-            self._direction = '+'
-        elif value == 'desc':
-            self._direction = '-'
+        if value == SORT_ASC:
+            self._direction = DJANGO_ASC
+        elif value == SORT_DESC:
+            self._direction = DJANGO_DESC
         else:
             self._direction = None
 
     def __init__(self, **kwargs):
-        super(QueryItem, self).__init__()
+        super(Query, self).__init__()
 
         # Initialize some junk
         self._direction = None
 
         #! Attribute Path.  This does not include any operations or negation.
-        self.path = kwargs.get('path', None)
+        self.path = kwargs.get('path', [])
 
         #! Operation.  This is the operation being done to the attribute.
-        self.operation = kwargs.get('operation', 'exact')
+        self.operation = kwargs.get('operation', OPERATION_DEFAULT)
 
         #! Negation.  If the operation has been negated, this is true.
         self.negated = kwargs.get('negated', False)
@@ -80,81 +92,73 @@ class QueryItem(object):
         #! [foo, bar] where foo and bar must be ORed, and the result
         #! ANDed with any other queries, including other queries with the same
         #! name.
-        self.value = kwargs.get('value', None)
+        self.value = kwargs.get('value', [])
 
-
-class Query(collections.Sequence):
-    """Query parameter parser.  This behaves like an iterable and returns a
-    QueryItem
+def parse_segment(segment):
+    """an individual query segment parser.
     """
 
-    def __init__(self, querystring=None):
-        super(Query, self).__init__()
+    item = Query()
 
-        self.parameters = []
 
-        #! Takes one query string to seed the iterable
-        if querystring is not None:
-            self.add_query(querystring)
+    try:
+        # Break up into key value pairs
+        try:
+            key, value = segment.split(KEY_VALUE_SEP)
+        except ValueError:
+            # There was a problem unpacking the tuple, see if we have
+            # a separator at all
+            if KEY_VALUE_SEP in segment:
+                # There was more than one equals sign, delegate to the
+                # exception below
+                raise
+            # No value, so use an empty array
+            key = segment
+            item.value = []
 
-    def add_query(self, querystring):
-        """Adds a raw querystring to this iterable
-        """
+        else:
+            # Break up values if we didn't run into problems above
+            item.value = value.split(VALUE_SEP)
 
-        # Break up partitions in the querystring
-        segments = querystring.split(PARAM_SEP)
+        # Break up key into key and sorting direction
+        if SORT_SEP in key:
+            key, item.direction = key.split(SORT_SEP)
 
-        for segment in segments:
-            try:
-                # Make a new query and append it to the list
-                item = QueryItem()
-                self.parameters.append(item)
+        # Break up keys
+        keys = key.split(PATH_SEP)
 
-                # Break up into key value pairs
-                key, value = segment.split(KEY_VALUE_SEP)
+        # Detect negation
+        if keys[-1].lower() == OPERATION_NOT:
+            item.negated = True
+            keys = keys[:-1]
 
-                # Break up values
-                item.value = value.split(VALUE_SEP)
+        # Detect operation
+        operation = keys[-1]
+        if keys[-1].lower() in OPERATIONS:
+            item.operation = operation
+            keys = keys[:-1]
 
-                # Break up key into key and sorting direction
-                if SORT_SEP in key:
-                    key, item.direction = key.split(SORT_SEP)
+        # Make sure we still have a path to filter by
+        if not len(keys):
+            # Delegate to the except down below
+            raise KeyError
 
-                # Break up keys
-                keys = key.split(LOOKUP_SEP)
+        item.path = keys
 
-                # Detect negation
-                if keys[-1].lower() == OPERATION_NOT:
-                    item.negated = True
-                    keys = keys[:-1]
+    except (ValueError, KeyError):
+        # This will be reached if there was a failure to break
+        # up the query into key value paris,
+        # or if the query did not include enough parameters
+        raise exceptions.BadRequest('Bad query: ' + segment)
 
-                # Detect operation
-                operation = keys[-1]
-                if keys[-1].lower() in QUERY_TERMS:
-                    item.operation = operation
-                    keys = keys[:-1]
+    # All went well, return the item
+    return item
 
-                # Make sure we still have a path to filter by
-                if not len(keys):
-                    # Delegate to the except down below
-                    raise KeyError
 
-                item.path = keys
+def parse(querystring):
+    """Query parameter parser.  Returns a list of Querys.
+    """
+    # Break up partitions in the querystring
+    segments = querystring.split(PARAM_SEP)
 
-            except (ValueError, KeyError):
-                # This will be reached if there was a failure to break
-                # up the query into key value paris,
-                # or if the query did not include enough parameters
-                raise exceptions.BadRequest('Bad query: ' + segment)
-
-    def __len__(self):
-        return len(self.parameters)
-
-    def __iter__(self):
-        return self.parameters
-
-    def __contains__(self, item):
-        return item in self.parameters
-
-    def __getitem__(self, index):
-        return self.parameters[index]
+    return [parse_segment(x) for x in segments]
