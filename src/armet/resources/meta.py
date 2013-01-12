@@ -496,6 +496,9 @@ class DeclarativeModel(DeclarativeResource):
     #! Cache of canonical resources.
     _resources = {}
 
+    #! Cache of prefetchable attributes.
+    _prefetchable = set()
+
     def _get_field_object(self, name):
         try:
             # Check the model attribute dictionary for the attribute object

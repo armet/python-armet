@@ -1006,16 +1006,35 @@ class BaseResource(object):
     def read(self):
         """Retrieves data to be displayed; called via GET.
 
-        @param[in] self.slug
-            The slug that was captured in the URL, if any.
+        @returns
+            Either a single object or an iterable of objects to be encoded
+            and returned to the client.
         """
         # There is no default behavior.
         raise exceptions.NotImplemented()
 
     def create(self, data):
-        """Creates the object that is being requested; via POST or PUT."""
+        """Creates the object that is being requested; via POST or PUT.
+
+        @returns
+            The object that has been created; or, None, to indicate that no
+            object was created.
+        """
         # Proxy to the form to save the data.
         self._form.save()
 
         # Return the form object instance.
         return self._form.instance
+
+    def destroy(self, obj):
+        """Destroy the passed object (or objects).
+
+        @param[in] obj
+            The objects represented by the current request; the results of
+            invoking `self.read()`.
+
+        @returns
+            Nothing.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
