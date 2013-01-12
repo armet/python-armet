@@ -14,6 +14,60 @@ from . import helpers
 from .proxy import find as find_proxy
 
 
+def _find_relation(resource, path):
+    """
+    Take the related name and the path and attempt to figure out who
+    we're related to.
+    """
+    if path[-1] in resource._resources:
+        # There really is a resource out there.
+        return resource._resources[path[-1]]
+
+    else:
+        # There may be a resource out there.
+        try:
+            if len(path) > 1:
+                # Attempt to get the resource object in question
+                resource = _find_relation(resource, path[:-1])
+
+            # Try and get the actual field object here
+            obj = resource._get_field_object(path[-1])
+
+        except KeyError:
+            # Didn't find it... die
+            return None
+
+        name = None
+        try:
+            # Attempt to find the name of the module for the related model.
+            name = obj.rel.to._meta.module_name
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        try:
+            # Pretend this is a reverse or a direct foreign.
+            name = obj.field.related.var_name
+
+        except AttributeError:
+            # Didn't find it; move along.
+            pass
+
+        try:
+            # Pretend this is a normal m2m field.
+            name = obj.m2m_reverse_field_name()
+
+        except AttributeError:
+            # Didn't find it; move along.
+            pass
+
+        if name is not None:
+            # Attempt to retrieve the resource by its canonical name
+            for resource in six.itervalues(resource._resources):
+                if resource.model._meta.module_name == name:
+                    return resource
+
 class Attribute(object):
 
     def __init__(self, resource, **kwargs):
@@ -46,73 +100,43 @@ class Attribute(object):
         #! Path of the attribute; storing for interesting purposes.
         self._path = self.path = kwargs.get('path')
 
-        #! This attribute is related to some other resource (or should be).
-        self.related = kwargs.get('related')
+        #! This attribute starts out possibly being related.
+        self.relatable = True
 
         #! Stored relation reference
         self._relation = kwargs.get('relation')
 
-    def _find_relation(self):
-        """
-        Take the related name and the path and attempt to figure out who
-        we're related to.
-        """
-        if self.path[0] in self.resource._resources:
-            # There really is a resource out there.
-            return self.resource._resources[self.path[0]]
-
-        else:
-            # There may be a resource out there.
-            try:
-                obj = self.resource._get_field_object(self.path[0])
-
-            except KeyError:
-                # Didn't find it... die
-                return None
-
-            name = None
-            try:
-                # Pretend this is a reverse or a direct foreign.
-                name = obj.field.related.var_name
-
-            except AttributeError:
-                # Didn't find it; move along.
-                pass
-
-            try:
-                # Pretend this is a normal m2m field.
-                name = obj.m2m_reverse_field_name()
-
-            except AttributeError:
-                # Didn't find it; move along.
-                pass
-
-            if name is not None:
-                # Attempt to retrieve the resource by its canonical name
-                return self.resource._resources.get(name)
-
+    def _get_related_name(self, resource, name):
+        # I have no idea as a normal attribute..
+        pass
 
     @property
     def relation(self):
         if self._relation is not None:
             if not isinstance(self._relation.resource, type):
-                # Resolve resource class object
+                # Resolve resource class object.
                 resource = utils.load(self._relation.resource)
                 self._relation = self._relation._replace(resource=resource)
 
             if isinstance(self._relation.path, six.string_types):
-                # Relation path needs to be expanded
+                # Relation path needs to be expanded.
                 path = self._relation.path.split('__')
                 self._relation = self._relation._replace(path=path)
+
+            if self._relation.related_name is None:
+                # Related name needs to be discovered.
+                name = self._get_related_name(self.resource, self.path)
+                self._relation = self._relation._replace(related_name=name)
 
             # Resource class object is already resolved; return it.
             return self._relation
 
-        elif self.related:
+        elif self.relatable:
             if self.path:
-                resource = self._find_relation()
+                resource = _find_relation(self.resource, self.path)
                 if resource is not None:
-                    name = self.resource._get_related_name(self.path[0])
+                    # We're related.. yay
+                    name = self.resource._get_related_name(self.path[-1])
 
                     # Store it.
                     self._relation = helpers.relation(resource,
@@ -120,6 +144,10 @@ class Attribute(object):
 
                     # Let's do this again.
                     return self.relation
+
+                else:
+                    # We're not relatable
+                    self.relatable = False
 
         # Nothing to relate; go away.
 
@@ -206,6 +234,46 @@ class Attribute(object):
 
 
 class ModelAttribute(object):
+
+    @classmethod
+    def _get_related_name(cls, resource, path):
+        # Iterate and attempt to resolve the path down.
+        for segment in path[:-1]:
+            resource = resource._attributes[segment].relation.resource
+
+        try:
+            # Get the actual model field
+            obj = resource.model_fields.get(path[-1])
+
+        except AttributeError:
+            # Something really weird.. resource has no model.
+            return None
+
+        try:
+            # Pretend we have a reverse related object here.
+            return obj.field.attname
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        try:
+            # Try for a many-to-many relation.
+            return obj.field.m2m_field_name()
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        try:
+            # Try for a foreign key relation.
+            return obj.related.var_name
+
+        except AttributeError:
+            # Didn't work.
+            pass
+
+        # No related name that we can find; return nothing.
 
     def _build_accessor(self, cls, name):
         obj = getattr(cls, name, None)

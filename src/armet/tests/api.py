@@ -30,3 +30,19 @@ class Poll(resources.Model):
     relations = {
         'answers': relation(Choice, path='choice_text', embed=True)
     }
+
+
+class Booth(resources.Model):
+    model = models.Booth
+
+
+class Cushion(resources.Model):
+    model = models.Cushion
+
+    include = {
+        'poll': attribute('booth__poll')
+    }
+
+    relations = {
+        'poll': relation(Poll)
+    }
