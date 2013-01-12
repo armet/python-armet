@@ -115,6 +115,10 @@ class BaseModel(base.BaseResource):
     def make_slug(cls, obj):
         return str(obj.pk)
 
+    def destroy(self, items):
+        # Destroy the object.
+        items.delete()
+
     def read(self):
         # Build the queryset
         queryset = self.model.objects.all()
