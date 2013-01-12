@@ -33,7 +33,7 @@ def _find_relation(resource, path):
             # Try and get the actual field object here
             obj = resource._get_field_object(path[-1])
 
-        except KeyError:
+        except (KeyError, AttributeError):
             # Didn't find it... die
             return None
 
