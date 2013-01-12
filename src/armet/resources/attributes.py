@@ -106,7 +106,7 @@ class Attribute(object):
         #! Stored relation reference
         self._relation = kwargs.get('relation')
 
-    def _get_related_name(self, resource, name):
+    def _get_related_name(cls, resource, path):
         # I have no idea as a normal attribute..
         pass
 
@@ -237,9 +237,13 @@ class ModelAttribute(object):
 
     @classmethod
     def _get_related_name(cls, resource, path):
-        # Iterate and attempt to resolve the path down.
-        for segment in path[:-1]:
-            resource = resource._attributes[segment].relation.resource
+        if len(path) > 1:
+            # Iterate and attempt to resolve the path down.
+            resource = _find_relation(resource, path[:-1])
+
+        if resource is None:
+            # No resource provided; bail
+            return None
 
         try:
             # Get the actual model field
