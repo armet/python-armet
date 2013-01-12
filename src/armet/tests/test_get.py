@@ -1,4 +1,4 @@
-from armet.tests.base import BaseTest
+# from armet.tests.base import BaseTest
 from armet.utils import test
 from armet import http
 from armet.tests.models import Choice, Poll
