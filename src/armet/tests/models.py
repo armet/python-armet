@@ -2,6 +2,7 @@
 """ Defines models for this test project.
 """
 from django.db import models
+from django.utils import timezone
 
 
 class Poll(models.Model):
@@ -18,3 +19,12 @@ class Choice(models.Model):
 class Booth(models.Model):
     name = models.CharField(max_length=1024)
     polls = models.ManyToManyField(Poll)
+
+    @property
+    def poll(self):
+        return Poll(question=self.name, pub_date=timezone.now())
+
+
+class Cushion(models.Model):
+    color = models.CharField(max_length=1024)
+    booth = models.ForeignKey(Booth)

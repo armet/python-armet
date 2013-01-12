@@ -475,7 +475,7 @@ class BaseResource(object):
 
     def generic_prepare(self, obj, name, value):
         relation = self._attributes[name].relation
-        if relation is not None and len(self._attributes[name].path) <= 1:
+        if relation is not None:
             # Instantiate a reference to the resource
             try:
                 # Attempt to make a slug.

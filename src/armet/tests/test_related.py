@@ -7,6 +7,7 @@ from armet import resources, encoders
 from django import forms
 from django.db import models
 from . import models as local_models
+from . import api
 import six
 
 
@@ -18,58 +19,19 @@ class RelatedTest(test.TestCase):
         self.booth.polls.add(15)
 
     def test_property(self):
-        class HatModel(models.Model):
-            name = models.CharField(max_length=30)
+        request = RequestFactory().get('/cushion/5')
+        resource = api.Cushion(request=request, slug=5)
 
-        class TeamModel(models.Model):
-            name = models.CharField(max_length=30)
-
-            @property
-            def hat(self):
-                return HatModel(name=self.name)
-
-        class UserModel(models.Model):
-            first_name = models.CharField(max_length=30)
-            last_name = models.CharField(max_length=30)
-            team = models.OneToOneField(TeamModel)
-
-        class HatResource(resources.Model):
-            model = HatModel
-            resource_uri = None
-
-        class UserResource(resources.Model):
-            model = UserModel
-            resource_uri = None
-            exclude = ('team',)
-            include = {
-                'hat': resources.attribute('team__hat')
-            }
-
-            relations = {
-                'hat': resources.relation(HatResource)
-            }
-
-        request = RequestFactory().get('/property/5')
-        resource = UserResource(request=request, slug=5)
-
-        model = UserModel(
-            first_name="Bob", last_name="Smith",
-            team=TeamModel(name='George'))
+        model = local_models.Cushion(color="Bob",
+            booth=local_models.Booth(name='Red'))
 
         data = resource.prepare(model)
 
-        self.assertIs(data['hat'], six.string_types)
-
-        # self.assertEquals(data['team'], 'Bob')
+        self.assertIsInstance(data['poll'], six.string_types)
 
     def test_many_to_many(self):
-        class BoothResource(resources.Model):
-            model = local_models.Booth
-            canonical = False
-            resource_uri = None
-
         request = RequestFactory().get('/booth/1')
-        resource = BoothResource(request=request, slug=1)
+        resource = api.Booth(request=request, slug=1)
         data = resource.prepare(self.booth)
 
         self.assertEquals(data['polls'][0], "/poll/5")

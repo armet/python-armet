@@ -251,7 +251,6 @@ class DeclarativeResource(type):
         # Pull the relation and attempt to determine the related name if
         # not provided.
         relation = self.relations.get(name)
-        related = False
         if relation is not None:
             if relation.related_name is None:
                 relation = relation._replace(
@@ -265,7 +264,6 @@ class DeclarativeResource(type):
             editable=editable,
             prepare=prepare,
             path=parts,
-            related=relation is not None or _is_field_related(attribute),
             relation=relation
         )
 
@@ -490,34 +488,6 @@ class DeclarativeModel(DeclarativeResource):
 
         # Return what we got
         return attribute
-
-    def _get_related_name(self, name):
-        attribute = self.model_fields.get(name)
-        try:
-            # Pretend we have a reverse related object here.
-            return attribute.field.attname
-
-        except AttributeError:
-            # Didn't work.
-            pass
-
-        try:
-            # Try for a many-to-many relation.
-            return attribute.field.m2m_field_name()
-
-        except AttributeError:
-            # Didn't work.
-            pass
-
-        try:
-            # Try for a foreign key relation.
-            return attribute.related.var_name
-
-        except AttributeError:
-            # Didn't work.
-            pass
-
-        # No related name that we can find; return nothing.
 
     def _discover_attributes(self):
         # Iterate through and set these model attributes on the resource.
