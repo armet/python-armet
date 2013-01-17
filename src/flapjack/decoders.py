@@ -64,8 +64,8 @@ class Url(transcoders.Url, Decoder):
 @Decoder.register()
 class Json(transcoders.Json, Decoder):
 
-    @staticmethod
-    def object_hook(obj):
+    @classmethod
+    def object_hook(cls, obj):
         # Iterate and attempt to parse any date/time like values
         for name, value in obj.iteritems():
             if not isinstance(value, basestring):
@@ -79,7 +79,7 @@ class Json(transcoders.Json, Decoder):
             try:
                 obj[name] = parse(value)
 
-            except ValueError:
+            except (OverflowError, ValueError, TypeError):
                 # Guess it wasn't a date
                 pass
 
