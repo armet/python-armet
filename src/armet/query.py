@@ -174,6 +174,10 @@ def parse_segment(segment):
         # Break up key into key and sorting direction
         if SORT_SEP in key:
             key, item.direction = key.split(SORT_SEP)
+            # Django will break if you attempt to sort randomly on a particular
+            # field, so specifically disallow that
+            if item.direction == '?':
+                raise KeyError
 
         # Break up keys
         keys = key.split(PATH_SEP)
