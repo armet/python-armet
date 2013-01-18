@@ -19,6 +19,7 @@
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
      ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
      ☐ '.' instead of'__'
+     ☐ '!' instead of ':' for sorting
  ☐ Filtering
  ☐ Sorting
  ☐ Authorization
@@ -40,8 +41,6 @@
      /team/10-20 will return teams 10 through 20
      /team/<format> will mirror the HTTP RANGE header request syntax without the `items=` portion
      /apple,orange will return all apples and oranges using a base class resource (if available) or 400
-
------ The following is already possible through query strings.  This is just syntactic sugar -----
 ☐ Plucking
      By 'plucking' we mean that if there is a resource called 'Apple' with a
      property 'color'; then `GET /apple/color` will get an array of all colors
@@ -49,3 +48,4 @@
 ☐ URL segment filtering
      /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
      /apple:color=red/core  selects all cores of all apples that are red
+     /apple:color!asc selects all apple sorted asc by color

@@ -97,6 +97,49 @@ def _is_field_related(field):
     return (isinstance(field, RelatedObject)
         or  isinstance(field, RelatedField))
 
+def _method_to_operation(method):
+    if method == 'GET':
+        return set(['read',])
+
+    if method == 'PUT':
+        return set(['update', 'create', 'delete',])
+
+    if method == 'POST':
+        return set(['create',])
+
+    if method == 'PATCH':
+        return set(['update', 'create',])
+
+    if method == 'DELETE':
+        return set(['destory',])
+
+def _methods_to_operations(methods):
+    operations = set()
+    for method in operations:
+        operations = operations.union(_method_to_operation(method))
+
+    return operations
+
+def _operation_to_method(operation):
+    if operation == 'read':
+        return set(['GET',])
+
+    if operation == 'update':
+        return set(['PUT', 'PATCH',])
+
+    if operation == 'create':
+        return set(['PUT', 'PATCH', 'POST',])
+
+    if operation == 'destroy':
+        return set(['PUT', 'DELETE',])
+
+def _operations_to_methods(operations):
+    methods = set(['HEAD', 'OPTIONS',])
+    for operation in operations:
+        methods = methods.union(_operation_to_method(operation))
+
+    return methods
+
 def _get_field_class(field):
     """Determines what class object to instantiate for the specified field."""
     if field is None:
@@ -367,50 +410,17 @@ class DeclarativeResource(type):
         if not _has('filterable', attrs, bases):
             self.filterable = ()
 
+        # Ensure that detail and list allowed methods and operations are as
+        # synced up as possible
+        # FIXME: This could be a nice loop I suppose
         if not _has('http_allowed_methods', attrs, bases):
             if _has('allowed_operations', attrs, bases):
-                # Specified allowed_operations but not http_allowed_methods;
-                # derive the later
-                self.http_allowed_methods = set(['HEAD', 'OPTIONS'])
-                for operation in self.allowed_operations:
-                    if operation == 'read':
-                        self.http_allowed_methods.add('GET')
-
-                    if operation == 'update':
-                        self.http_allowed_methods.add('PUT')
-                        self.http_allowed_methods.add('PATCH')
-
-                    if operation == 'create':
-                        self.http_allowed_methods.add('PUT')
-                        self.http_allowed_methods.add('POST')
-                        self.http_allowed_methods.add('PATCH')
-
-                    if operation == 'destroy':
-                        self.http_allowed_methods.add('PUT')
-                        self.http_allowed_methods.add('DELETE')
+                self.http_allowed_methods = _operations_to_methods(
+                    self.allowed_operations)
 
         elif not _has('allowed_operations', attrs, bases):
-            # Specified http_allowed_methods but not allowed_operations;
-            # derive the later
-            self.allowed_operations = set()
-            for method in self.http_allowed_methods:
-                if method == 'GET':
-                    self.allowed_operations.add('read')
-
-                if method == 'PUT':
-                    self.allowed_operations.add('update')
-                    self.allowed_operations.add('create')
-                    self.allowed_operations.add('delete')
-
-                if method == 'POST':
-                    self.allowed_operations.add('create')
-
-                if method == 'PATCH':
-                    self.allowed_operations.add('create')
-                    self.allowed_operations.add('update')
-
-                if method == 'DELETE':
-                    self.allowed_operations.add('destroy')
+            self.allowed_operations = _methods_to_operations(
+                self.http_allowed_methods)
 
         # Ensure list and detail allowed methods and operations are populated.
         for fmt, default in (
@@ -420,6 +430,24 @@ class DeclarativeResource(type):
                 attr = fmt.format(key)
                 if not _has(attr, attrs, bases):
                     setattr(self, attr, default)
+
+        if not _has('http_detail_allowed_methods', attrs, bases):
+            if _has('detail_allowed_operations', attrs, bases):
+                self.http_detail_allowed_methods = _operations_to_methods(
+                    self.detail_allowed_operations)
+
+        elif not _has('detail_allowed_operations', attrs, bases):
+            self.detail_allowed_operations = _methods_to_operations(
+                self.http_detail_allowed_methods)
+
+        if not _has('http_list_allowed_methods', attrs, bases):
+            if _has('list_allowed_operations', attrs, bases):
+                self.http_list_allowed_methods = _operations_to_methods(
+                    self.list_allowed_operations)
+
+        elif not _has('list_allowed_operations', attrs, bases):
+            self.list_allowed_operations = _methods_to_operations(
+                self.http_list_allowed_methods)
 
         # Override properties that can be provided by configuration options
         # if we should.
@@ -467,6 +495,9 @@ class DeclarativeModel(DeclarativeResource):
 
     #! Cache of canonical resources.
     _resources = {}
+
+    #! Cache of prefetchable attributes.
+    _prefetchable = set()
 
     def _get_field_object(self, name):
         try:

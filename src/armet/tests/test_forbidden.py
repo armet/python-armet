@@ -11,7 +11,8 @@ class ForbiddenMethod(Resource):
 
 
 class ForbiddenOperation(Resource):
-    allowed_operations = ('destroy',)
+    list_allowed_operations = ('create',)
+    detail_allowed_operations = ('read',)
 
 
 # class ForbiddenPartiallyPut(Resource):
@@ -33,8 +34,10 @@ class ForbiddenTestCase(test.TestCase):
 
     def test_forbidden_operation(self):
         """Asserting that forbbiden operations return 405."""
-        request = RequestFactory().get('/choice/1')
-        response = ForbiddenOperation.view(request, slug=1)
+        # import ipdb; ipdb.set_trace()
+
+        request = RequestFactory().get('/choice')
+        response = ForbiddenOperation.view(request)
 
         self.assertHttpStatus(response, http.client.METHOD_NOT_ALLOWED)
 
