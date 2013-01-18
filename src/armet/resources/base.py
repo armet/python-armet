@@ -828,48 +828,61 @@ class BaseResource(object):
         """
         response = self.make_response(data, http.client.OK)
 
+        # Step 1
         # Check for Origin header.
         origin = self.request.META.get('ORIGIN')
         if not origin:
             return response
 
+        # Step 2
         # Check if the origin is in the list of allowed origins.
-        if not (origin in self._allowed_origins and
+        if not (origin in self._allowed_origins or
                 '*' in self._allowed_origins):
             return response
 
+        # Step 3
         # Try to parse the Request-Method header if it exists.
-        method = self.request.META.get('ACCESS-CONTROL-REQUEST-METHOD')
+        method = self.request.META.get('ACCESS_CONTROL_REQUEST_METHOD')
         if not method or method not in self.http_method_names:
             return response
 
-        # Try to parse the Request-Method header if it exists.
-        headers = self.request.META.get('ACCESS-CONTROL-REQUEST-HEADERS', ())
+        # Step 4
+        # Try to parse the Request-Header header if it exists.
+        headers = self.request.META.get('ACCESS_CONTROL_REQUEST_HEADERS', ())
+        # Need to check parsing here.
 
+        # Step 5
         # Check if the method is allowed on this resource.
         if method not in self._allowed_methods:
             return response
 
+        # Step 6
         # Check if the headers is allowed on this resource.
         # This needs to be case insensitive.
         allowed_headers = [header.lower() for header in self._allowed_headers]
         if any(header.lower() not in allowed_headers for header in headers):
             return response
 
+        # Step 7
         # Always add the origin.
         response['Access-Control-Allow-Origin'] = origin
         # Check if we can provide credentials.
         if self.authentication:
             response['Access-Control-Allow-Credentials'] = 'true'
 
+        # Step 8
+        # Optionally add Max-Age header.
+
+        # Step 9
         # Add the allowed methods.
         allowed_methods = ','.join(self._allowed_methods)
         response['Access-Control-Allow-Methods'] = allowed_methods
 
+        # Step 10
         # Add any allowed headers.
         allowed_headers = ','.join(self._allowed_headers)
-        if allowed_headers:
-            response['Access-Control-Allow-Headers'] = allowed_headers
+        # if allowed_headers:
+        response['Access-Control-Allow-Headers'] = allowed_headers
 
         # Return the response with our new headers applied.
         return response

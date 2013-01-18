@@ -7,8 +7,6 @@ from armet.utils import test
 class ResponseTestCase(test.TestCase):
 
     def test_content_md5(self):
-        import ipdb
-        ipdb.set_trace()
         # Check some random endpoint
         response = self.client.get('/choice/')
         # Assert we got a Content-MD5 header

@@ -5,20 +5,18 @@ from armet.utils import test
 
 class OptionsMethodTestCase(test.TestCase):
 
-    # def setUp(self):
-    #     # super(OptionsMethodTestCase, self).setUp()
-    #     self.endpoint = '/'
-    #     self.choice_origin = 'http://127.0.0.1:80'
-    #     self.poll_origin = 'http://10.0.0.1'
-    #     self.default_method = 'GET'
+    def setUp(self):
+        super(OptionsMethodTestCase, self).setUp()
+        self.endpoint = '/'
+        self.choice_origin = 'http://127.0.0.1:80'
+        self.poll_origin = 'http://10.0.0.1'
+        self.default_method = 'GET'
 
     def test_origin_header(self):
-        endpoint = '/'
+        # endpoint = '/'
         # Check an endpoint with a specific origin.
-        endpoint = '{}choice'.format(endpoint)
+        endpoint = '{}choice'.format(self.endpoint)
 
-        import ipdb
-        ipdb.set_trace()
         # Try with no Origin request.
         # Should just send back 200.
         response = self.client.options(endpoint)
