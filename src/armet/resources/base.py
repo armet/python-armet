@@ -726,6 +726,17 @@ class BaseResource(object):
         return self.reverse(self.slug, self.path, self.parent, self.local)
 
     @classmethod
+    def resolve(cls, url):
+        """Resolves a url into its corresponding view by proxying to the
+        django url resolver.
+        """
+        # Django cannot resolve urls that begin with a site prefix (for sites
+        # that are not mounted on root.  Slice off the site prefix if one
+        # exists)
+        stripped = url.lstrip(urlresolvers.get_script_prefix())
+        return urlresolvers.resolve(stripped)
+
+    @classmethod
     def reverse(cls, slug=None, path=None, parent=None, local=False):
         """Reverses a URL for the resource or for the passed object.
 
