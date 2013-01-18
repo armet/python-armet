@@ -6,8 +6,8 @@ Defines the query parser for Armet
 from __future__ import (print_function, unicode_literals, absolute_import,
     division)
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models import Q
 from . import exceptions
-import collections
 
 #! django constants
 DJANGO_ASC = '+'
@@ -33,8 +33,62 @@ SORT_DEFAULT = None
 SORT_VALID = (SORT_ASC, SORT_DESC, None)
 
 
+class QueryList(list):
+    """A simple list for Querys that allows for easy django qification.  Note
+    that QueryList assumes that it contains only Query objects
+    """
+
+    def _single_q(self, query):
+        """Returns a q object for a single query object
+        """
+        key = query.django_query
+
+        # Build query objects for all the values
+        qobjects = (Q(**{key: value}) for value in query.value)
+
+        # Reduce them all to a single one via 'or'ing them
+        q = reduce(lambda x, y: x | y, qobjects)
+
+        # Negate it if neccesary
+        return (~q) if query.negated else q
+
+    @property
+    def q(self):
+        """get a Q object for all the Query objects stored within
+        """
+        # gather all the Q objects
+        qobjects = (q for q in (self._single_q(query) for query in self))
+
+        # Reduce them to a single q object
+        qobject = reduce(lambda x, y: x & y, qobjects)
+
+        return qobject
+
+    def sort(self, queryset):
+        """Sorts a queryset based on the query objects within
+        """
+        # Gather all the sorting params
+        so = ((x.direction, x.django_path).join() for x in self if x.direction)
+
+        # Apply sorting on the queryset
+        return queryset.order_by(*so)
+
+
 class Query(object):
     """Simple structure to wrangle query parameters"""
+
+    @property
+    def django_query(self):
+        """A simple property that returns the string used in a django query for
+        this object
+        """
+        return (self.django_path, self.operation).join(LOOKUP_SEP)
+
+    @property
+    def django_path(self):
+        """The django path for the current query lookup
+        """
+        return self.path.join(LOOKUP_SEP)
 
     @property
     def direction(self):
@@ -43,7 +97,7 @@ class Query(object):
         return self._direction
 
     @direction.setter
-    def direction(self, value):
+    def direction_setter(self, value):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
@@ -94,12 +148,12 @@ class Query(object):
         #! name.
         self.value = kwargs.get('value', [])
 
+
 def parse_segment(segment):
     """an individual query segment parser.
     """
 
     item = Query()
-
 
     try:
         # Break up into key value pairs
@@ -161,4 +215,4 @@ def parse(querystring):
     # Break up partitions in the querystring
     segments = querystring.split(PARAM_SEP)
 
-    return [parse_segment(x) for x in segments]
+    return QueryList(parse_segment(x) for x in segments)
