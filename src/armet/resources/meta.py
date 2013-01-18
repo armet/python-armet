@@ -449,6 +449,36 @@ class DeclarativeResource(type):
             self.list_allowed_operations = _methods_to_operations(
                 self.http_list_allowed_methods)
 
+        # Add the allowed headers for a list.
+        if not _has('http_list_allowed_headers', attrs, bases):
+            setattr(self, 'http_list_allowed_headers',
+                    self.http_allowed_headers)
+
+        # Add the allowed headers for a detail.
+        if not _has('http_detail_allowed_headers', attrs, bases):
+            setattr(self, 'http_detail_allowed_headers',
+                    self.http_allowed_headers)
+
+        # Add the exposed headers for a list.
+        if not _has('http_list_exposed_headers', attrs, bases):
+            setattr(self, 'http_list_exposed_headers',
+                    self.http_exposed_headers)
+
+        # Add the exposed headers for a detail.
+        if not _has('http_detail_exposed_headers', attrs, bases):
+            setattr(self, 'http_detail_exposed_headers',
+                    self.http_exposed_headers)
+
+        # Add the allowed origins for a list.
+        if not _has('list_allowed_origins', attrs, bases):
+            setattr(self, 'list_allowed_origins',
+                    self.allowed_origins)
+
+        # Add the allowed origins for a detail.
+        if not _has('detail_allowed_origins', attrs, bases):
+            setattr(self, 'detail_allowed_origins',
+                    self.allowed_origins)
+
         # Override properties that can be provided by configuration options
         # if we should.
         _config(self, 'url_name', 'url', attrs, bases)
