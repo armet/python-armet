@@ -33,6 +33,11 @@ SORT_DEFAULT = None
 SORT_VALID = (SORT_ASC, SORT_DESC, None)
 
 
+class QueryList(collections.Sequence):
+    """A simple query list that implements a Q function for django qification.
+    """
+
+
 class Query(object):
     """Simple structure to wrangle query parameters"""
 
@@ -43,7 +48,7 @@ class Query(object):
         return self._direction
 
     @direction.setter
-    def direction(self, value):
+    def direction_set(self, value):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
@@ -94,12 +99,12 @@ class Query(object):
         #! name.
         self.value = kwargs.get('value', [])
 
+
 def parse_segment(segment):
     """an individual query segment parser.
     """
 
     item = Query()
-
 
     try:
         # Break up into key value pairs

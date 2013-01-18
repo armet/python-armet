@@ -140,13 +140,7 @@ class BaseModel(base.BaseResource):
                     try:
                         # Attempt to perform array access; and just return it.
                         index = int(self.slug)
-                        if index < 0:
-                            # Negative indexing not supported by django.
-                            index = len(queryset) + index
-                            if index < 0:
-                                raise exceptions.NotFound()
-
-                        elif index == 0:
+                        if index == 0:
                             # Couldn't find it
                             raise exceptions.NotFound()
 

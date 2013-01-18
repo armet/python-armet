@@ -224,12 +224,29 @@ class BaseResource(object):
         )
 
     @classmethod
+    def prep_request(self, request):
+        """A simple helper method that adds some cachable reference holders to
+        the request object.
+        """
+        # A set containing all of the authentication classes used to
+        # authenticate this request
+        request.authenticated_by = set()
+
+        # A set containing all of the authorization classes used to grant
+        # access to the resource during this request
+        request.accessed_via = set()
+
+    @classmethod
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
         """
         Entry-point of the request cycle; handles resource creation and
         delegation.
         """
+
+        # Prep the request object with some cachable stuff for complex queries
+        cls.prep_request(request)
+
         try:
             # Explode the path if we can.
             if 'path' in kwargs:
@@ -405,6 +422,8 @@ class BaseResource(object):
         """Attempts to assert authorization for access to this resource.
         If unable to assert, it throws a forbidden.
         """
+        # TODO: when adding authorization, remember to checked the cached
+        # resource
         if not self.authorization.is_accessible(
                 self.request,
                 self.request.method):
@@ -412,7 +431,15 @@ class BaseResource(object):
 
     def authenticate(self):
         """Attempts to assert authentication."""
-        for auth in self.authentication:
+        # Check for cached authentication
+        auths = self.authentication
+        auth_cache = self.request.authenticated_by
+        if any(x.__class__ in auth_cache for x in auths):
+            # We've already been authenticated by one of the available methods
+            # Bail
+            return
+
+        for auth in auths:
             user = auth.authenticate(self.request)
             if user is None:
                 # A user object cannot be retrieved with this
@@ -422,6 +449,9 @@ class BaseResource(object):
             if user.is_authenticated() or auth.allow_anonymous:
                 # A user object has been successfully retrieved.
                 self.request.user = user
+
+                # Add the auth method to the cache
+                auth_cache.add(auth.__class__)
                 break
 
         else:
@@ -579,7 +609,7 @@ class BaseResource(object):
                 # Utilize the attribute accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
-            except (IndexError, ValueError, AttributeError, TypeError) as ex:
+            except (IndexError, ValueError, AttributeError, TypeError):
                 # Something weird happened with a path segment.
                 raise exceptions.NotFound()
 
@@ -725,16 +755,19 @@ class BaseResource(object):
         """Retrieves the reversed URL for this resource instance."""
         return self.reverse(self.slug, self.path, self.parent, self.local)
 
-    @classmethod
-    def resolve(cls, url):
-        """Resolves a url into its corresponding view by proxying to the
-        django url resolver.
-        """
-        # Django cannot resolve urls that begin with a site prefix (for sites
-        # that are not mounted on root.  Slice off the site prefix if one
-        # exists)
-        stripped = url.lstrip(urlresolvers.get_script_prefix())
-        return urlresolvers.resolve(stripped)
+    # @classmethod
+    # def resolve(cls, url):
+    #     """Resolves a url into its corresponding view by proxying to the
+    #     django url resolver.
+    #     """
+    #     # Django cannot resolve urls that begin with a site prefix (for sites
+    #     # that are not mounted on root.  Slice off the site prefix if one
+    #     # exists)
+    #     stripped = url.lstrip(urlresolvers.get_script_prefix())
+    #     try:
+    #         match = urlresolvers.resolve(stripped)
+    #     except urlresolvers.Resolver404 as ex:
+    #         # Failed to resolve this url, raise something
 
     @classmethod
     def reverse(cls, slug=None, path=None, parent=None, local=False):
