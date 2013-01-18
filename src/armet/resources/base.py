@@ -881,8 +881,8 @@ class BaseResource(object):
         # Step 10
         # Add any allowed headers.
         allowed_headers = ','.join(self._allowed_headers)
-        # if allowed_headers:
-        response['Access-Control-Allow-Headers'] = allowed_headers
+        if allowed_headers:
+            response['Access-Control-Allow-Headers'] = allowed_headers
 
         # Return the response with our new headers applied.
         return response

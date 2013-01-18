@@ -16,6 +16,7 @@ class ChoiceEndPoint(Resource):
     )
 
     allowed_origins = ('http://127.0.0.1:80',)
+    http_allowed_headers = ('Content-Type', 'Content-MD5', 'Accept')
 
 
 class PollEndPoint(Resource):
@@ -29,6 +30,7 @@ class PollEndPoint(Resource):
     )
 
     allowed_origins = ('*',)
+    http_allowed_headers = ('Content-Type', 'Content-MD5', 'Accept')
 
 
 class OptionsMethodTestCase(test.TestCase):
@@ -43,9 +45,6 @@ class OptionsMethodTestCase(test.TestCase):
     def test_origin_header(self):
         # Check an endpoint with a specific origin.
         endpoint = '{}choice'.format(self.endpoint)
-
-        # import ipdb
-        # ipdb.set_trace()
 
         # Try with no Origin request.
         # Should just send back 200.
