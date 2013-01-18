@@ -86,7 +86,7 @@ class BaseModel(base.BaseResource):
 
         # Filter the queryset based on several possible factors.
         # The query is just a Q object which django natively consumes.
-        # TODO: queryset = queryset.filter(self.query)
+        queryset = queryset.filter(self.query.as_q())
 
         if self.slug is not None:
             # Filter the queryset based on the current slug.
