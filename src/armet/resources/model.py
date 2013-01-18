@@ -75,20 +75,13 @@ class BaseModel(base.BaseResource):
         #   faciliate interacting with the slug elsewhere.
         return str(obj.pk)
 
-    def filter(self, queryset):
-        # TODO: There should be a method in the base class that is called
-        #   during __init__ that builds a large Q object with all kinds of
-        #   filtering thrown in there including self.slug, parent relations,
-        #   etc.
-        # TODO: Implement filtering.
-        return queryset
-
     def read(self):
         # Initially instantiate a queryset representing every object.
         queryset = self.model.objects.all()
 
         # Filter the queryset based on several possible factors.
-        queryset = self.filter(queryset)
+        # The query is just a Q object which django natively consumes.
+        # TODO: queryset = queryset.filter(self.query)
 
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
