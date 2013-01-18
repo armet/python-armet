@@ -57,12 +57,10 @@ class QueryList(list):
         """get a Q object for all the Query objects stored within
         """
         # gather all the Q objects
-        qobjects = (q for q in (self._single_q(query) for query in self))
+        qobjects = (self._single_q(query) for query in self if query.values)
 
         # Reduce them to a single q object
-        qobject = reduce(lambda x, y: x & y, qobjects)
-
-        return qobject
+        return reduce(lambda x, y: x & y, qobjects)
 
     def sort(self, queryset):
         """Sorts a queryset based on the query objects within
