@@ -8,6 +8,7 @@ from django import forms
 from django.db import models
 from . import models as local_models
 from . import api
+from django.utils import timezone
 import six
 
 
@@ -15,8 +16,11 @@ class RelatedTest(test.TestCase):
 
     def setUp(self):
         self.booth = local_models.Booth.objects.create(name="Steve")
-        self.booth.polls.add(5)
-        self.booth.polls.add(15)
+
+        data = {'question': "...", 'pub_date': timezone.now()}
+        self.booth.polls.add(local_models.Poll.objects.create(**data))
+        self.booth.polls.add(local_models.Poll.objects.create(**data))
+        self.booth.polls.add(local_models.Poll.objects.create(**data))
 
     def test_property(self):
         request = RequestFactory().get('/cushion/5')
@@ -34,8 +38,8 @@ class RelatedTest(test.TestCase):
         resource = api.Booth(request=request, slug=1)
         data = resource.prepare(self.booth)
 
-        self.assertEquals(data['polls'][0], "/poll/5")
-        self.assertEquals(data['polls'][1], "/poll/15")
+        self.assertIsInstance(data['polls'][0], six.string_types)
+        self.assertIsInstance(data['polls'][1], six.string_types)
 
     def test_missing_resource(self):
         try:

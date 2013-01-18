@@ -27,7 +27,11 @@ class BaseModel(base.BaseResource):
 
     @utils.classproperty
     def _prefetch_related_cache(cls):
-        if not cls._prefetchable and cls.model.objects.all().exists():
+        if cls._prefetchable and cls.model.objects.all().exists():
+            # Initialize the cache and declare us as no longer prefetchable
+            cls._prefetchable = False
+            cls._prefetch_cache = set()
+
             # Cache has not yet been made; we should do this.
             for attribute in six.itervalues(cls._attributes):
                 if not attribute.visible or not attribute.path:
@@ -41,8 +45,9 @@ class BaseModel(base.BaseResource):
                     if rel:
                         # We have some sort of cache listing from the related
                         # resource.
-                        join = lambda x: '{}__{}'.format(attribute.path, x)
-                        cls._prefetchable.update(map(join, rel))
+                        path = '__'.join(attribute.path)
+                        join = lambda x: '{}__{}'.format(path, x)
+                        cls._prefetch_cache.update(map(join, rel))
 
                         # The cache of a related resource implies the
                         # cache of this attribute; skip it.
@@ -63,11 +68,11 @@ class BaseModel(base.BaseResource):
 
                     # Prefetch was successful; append this path to our cache
                     # and break out of this loop.
-                    cls._prefetchable.add(path)
+                    cls._prefetch_cache.add(path)
                     break
 
         # The cache exists; return it and hope it doesn't break.
-        return cls._prefetchable
+        return cls._prefetch_cache
 
     @classmethod
     def make_slug(cls, obj):
@@ -75,20 +80,18 @@ class BaseModel(base.BaseResource):
         #   faciliate interacting with the slug elsewhere.
         return str(obj.pk)
 
-    def filter(self, queryset):
-        # TODO: There should be a method in the base class that is called
-        #   during __init__ that builds a large Q object with all kinds of
-        #   filtering thrown in there including self.slug, parent relations,
-        #   etc.
-        # TODO: Implement filtering.
-        return queryset
-
     def read(self):
         # Initially instantiate a queryset representing every object.
         queryset = self.model.objects.all()
 
         # Filter the queryset based on several possible factors.
-        queryset = self.filter(queryset)
+        # The query is just a Q object which django natively consumes.
+        # TODO: queryset = queryset.filter(self.query)
+
+        if self.slug is not None:
+            # Filter the queryset based on the current slug.
+            # TODO: Allow configuring what property the slug corresponds to.
+            queryset = queryset.filter(pk=self.slug)
 
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
