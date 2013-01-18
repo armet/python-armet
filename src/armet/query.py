@@ -215,4 +215,4 @@ def parse(querystring):
     # Break up partitions in the querystring
     segments = querystring.split(PARAM_SEP)
 
-    return [parse_segment(x) for x in segments]
+    return QueryList(parse_segment(x) for x in segments)
