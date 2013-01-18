@@ -8,6 +8,7 @@ from __future__ import (print_function, unicode_literals, absolute_import,
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models import Q
 from . import exceptions
+import operator
 
 #! django constants
 DJANGO_ASC = '+'
@@ -47,7 +48,7 @@ class QueryList(list):
         qobjects = (Q(**{key: value}) for value in query.value)
 
         # Reduce them all to a single one via 'or'ing them
-        q = reduce(lambda x, y: x | y, qobjects)
+        q = reduce(operator.or_, qobjects)
 
         # Negate it if neccesary
         return (~q) if query.negated else q
@@ -57,12 +58,10 @@ class QueryList(list):
         """get a Q object for all the Query objects stored within
         """
         # gather all the Q objects
-        qobjects = (q for q in (self._single_q(query) for query in self))
+        qobjects = (self._single_q(query) for query in self if query.values)
 
         # Reduce them to a single q object
-        qobject = reduce(lambda x, y: x & y, qobjects)
-
-        return qobject
+        return reduce(operator.and_, qobjects)
 
     def sort(self, queryset):
         """Sorts a queryset based on the query objects within
@@ -97,7 +96,7 @@ class Query(object):
         return self._direction
 
     @direction.setter
-    def direction_setter(self, value):
+    def direction(self, value):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
