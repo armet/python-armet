@@ -86,7 +86,8 @@ class BaseModel(base.BaseResource):
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
             # This significantly reduces the number of queries.
-            queryset = queryset.prefetch_related(*self._prefetch_related_cache)
+            # queryset = queryset.prefetch_related(*self._prefetch_related_cache)
+            pass
 
         # Return the queryset if we still have it.
         return queryset
