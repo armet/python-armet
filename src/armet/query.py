@@ -58,7 +58,7 @@ class QueryList(list):
         """get a Q object for all the Query objects stored within
         """
         # gather all the Q objects
-        qobjects = (self._single_q(query) for query in self if query.values)
+        qobjects = (self._single_q(query) for query in self if query.value)
 
         # Reduce them to a single q object
         return reduce(operator.and_, qobjects)
