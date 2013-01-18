@@ -42,6 +42,10 @@ class QueryList(list):
     def _single_q(self, query):
         """Returns a q object for a single query object
         """
+        # If the query is empty, then just make a no-op Q object
+        if not query.path:
+            return Q()
+
         key = query.django_query
 
         # Build query objects for all the values
@@ -62,14 +66,10 @@ class QueryList(list):
         # Reduce them to a single q object
         return reduce(operator.and_, qobjects)
 
-    def sort(self, queryset):
-        """Sorts a queryset based on the query objects within
+    def as_order(self):
+        """Returns a list of all the sorting directions
         """
-        # Gather all the sorting params
-        so = ((x.direction + x.django_path) for x in self if x.direction)
-
-        # Apply sorting on the queryset
-        return queryset.order_by(*so)
+        return [(x.direction + x.django_path) for x in self if x.direction]
 
 
 class Query(object):
