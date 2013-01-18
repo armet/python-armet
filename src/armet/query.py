@@ -53,8 +53,7 @@ class QueryList(list):
         # Negate it if neccesary
         return (~q) if query.negated else q
 
-    @property
-    def q(self):
+    def as_q(self):
         """get a Q object for all the Query objects stored within
         """
         # gather all the Q objects
