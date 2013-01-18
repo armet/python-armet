@@ -6,14 +6,9 @@ from armet.utils import test
 
 class ResponseTestCase(test.TestCase):
 
-    def setUp(self):
-        super(ResponseTestCase, self).setUp()
-        self.endpoint = '/'
-
     def test_content_md5(self):
         # Check some random endpoint
-        endpoint = '{}choice/1'.format(self.endpoint)
-        response = self.client.get(endpoint)
+        response = self.client.get('/choice/')
         # Assert we got a Content-MD5 header
         self.assertTrue(response.has_header('Content-MD5'))
         # Make an MD5 of the body.

@@ -497,7 +497,7 @@ class DeclarativeModel(DeclarativeResource):
     _resources = {}
 
     #! Cache of prefetchable attributes.
-    _prefetchable = set()
+    _prefetchable = True
 
     def _get_field_object(self, name):
         try:

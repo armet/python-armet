@@ -12,6 +12,8 @@ from . import models as local_models
 
 class DeleteTest(test.TestCase):
 
+    fixtures = ['initial_data']
+
     def setUp(self):
         super(DeleteTest, self).setUp()
         self.poll = local_models.Poll.objects.create(
