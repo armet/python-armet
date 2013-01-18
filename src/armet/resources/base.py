@@ -448,7 +448,13 @@ class BaseResource(object):
         # Declare who we are in the header.
         # TODO: The link headers should be an object so they are not
         #   constructed via strings here.
-        response['Link'] = '<{}>; rel=self'.format(self.url)
+        # response['Link'] = '<{}>; rel=self'.format(self.url)
+        Links = []
+        for names in self._attributes:
+            attribute = self._attributes[name]
+            Links.append(attribute)
+
+        response['Link'] = ', '.join(Links)
 
         # Return the built response.
         return response
