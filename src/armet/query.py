@@ -66,7 +66,7 @@ class QueryList(list):
         """Sorts a queryset based on the query objects within
         """
         # Gather all the sorting params
-        so = ((x.direction, x.django_path).join() for x in self if x.direction)
+        so = ((x.direction + x.django_path) for x in self if x.direction)
 
         # Apply sorting on the queryset
         return queryset.order_by(*so)
@@ -80,13 +80,13 @@ class Query(object):
         """A simple property that returns the string used in a django query for
         this object
         """
-        return (self.django_path, self.operation).join(LOOKUP_SEP)
+        return LOOKUP_SEP.join((self.django_path, self.operation))
 
     @property
     def django_path(self):
         """The django path for the current query lookup
         """
-        return self.path.join(LOOKUP_SEP)
+        return LOOKUP_SEP.join(self.path)
 
     @property
     def direction(self):
