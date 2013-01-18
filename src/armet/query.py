@@ -47,7 +47,10 @@ class QueryList(list):
         qobjects = (Q(**{key: value}) for value in query.value)
 
         # Reduce them all to a single one via 'or'ing them
-        return reduce(lambda x, y: x | y, qobjects)
+        q = reduce(lambda x, y: x | y, qobjects)
+
+        # Negate it if neccesary
+        return (~q) if query.negated else q
 
     @property
     def q(self):
@@ -59,14 +62,16 @@ class QueryList(list):
         # Reduce them to a single q object
         qobject = reduce(lambda x, y: x & y, qobjects)
 
-        # gather all the valid sorting directions
+        return qobject
+
+    def sort(self, queryset):
+        """Sorts a queryset based on the query objects within
+        """
+        # Gather all the sorting params
         so = ((x.direction, x.django_path).join() for x in self if x.direction)
 
-        # apply sorting
-        if so:
-            qobject = qobject.order_by(*so)
-
-        return qobject
+        # Apply sorting on the queryset
+        return queryset.order_by(*so)
 
 
 class Query(object):
