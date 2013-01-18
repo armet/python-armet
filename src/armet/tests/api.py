@@ -18,17 +18,6 @@ class Choice(resources.Model):
     def prepare_complex(self, obj, value=None):
         return complex(1, 2)
 
-    http_allowed_methods = (
-        'HEAD',
-        'GET',
-        'POST',
-        'PUT',
-        'DELETE',
-        'OPTIONS',
-    )
-
-    allowed_origins = ('http://127.0.0.1:80',)
-
 
 class Poll(resources.Model):
     model = models.Poll
@@ -41,17 +30,6 @@ class Poll(resources.Model):
     relations = {
         'answers': relation(Choice, path='choice_text', embed=True)
     }
-
-    http_allowed_methods = (
-        'HEAD',
-        'GET',
-        'POST',
-        'PUT',
-        'DELETE',
-        'OPTIONS',
-    )
-
-    allowed_origins = ('*',)
 
 
 class Booth(resources.Model):

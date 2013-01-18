@@ -826,7 +826,7 @@ class BaseResource(object):
         @returns
             The HTTPResponse object to return to the client.
         """
-        response = self.make_response(data, http.client.OK)
+        response = http.Response(status=http.client.OK)
 
         # Step 1
         # Check for Origin header.
