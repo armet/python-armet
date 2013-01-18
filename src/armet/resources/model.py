@@ -93,6 +93,10 @@ class BaseModel(base.BaseResource):
             # TODO: Allow configuring what property the slug corresponds to.
             queryset = queryset.filter(pk=self.slug)
 
+        else:
+            # Order list
+            queryset = queryset.order_by(self.query.as_order())
+
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
             # This significantly reduces the number of queries.
