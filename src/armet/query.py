@@ -2,16 +2,15 @@
 """
 Defines the query parser for Armet
 """
-
-from __future__ import (print_function, unicode_literals, absolute_import,
-    division)
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models import Q
 from . import exceptions
 import operator
 
 #! Some constants
-PATH_SEP = LOOKUP_SEP
+PATH_SEP = '.'
 OPERATION_DEFAULT = 'exact'
 OPERATION_NOT = 'not'
 # We only support a subset of django's query operations
@@ -80,11 +79,6 @@ class QueryList(list):
         return orders
 
 
-class QueryList(collections.Sequence):
-    """A simple query list that implements a Q function for django qification.
-    """
-
-
 class Query(object):
     """Simple structure to wrangle query parameters"""
 
@@ -108,7 +102,7 @@ class Query(object):
         return self._direction
 
     @direction.setter
-    def direction_set(self, value):
+    def direction(self, value):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
