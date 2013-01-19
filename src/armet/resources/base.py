@@ -60,6 +60,7 @@ class BaseResource(object):
         'POST',
         'PUT',
         'DELETE',
+        'OPTIONS',
     )
 
     #! List of allowed HTTP methods against a whole
@@ -71,6 +72,32 @@ class BaseResource(object):
     #! resource (eg /user/1); if undeclared or None, will be defaulted
     #! to `http_allowed_methods`.
     http_detail_allowed_methods = None
+
+    #! List of allowed headers.
+    http_allowed_headers = ()
+
+    #! List of allowed HTTP headers against a whole resource (eg /user)
+    #! if undeclared or None, will be defaulted to `http_allowed_headers`
+    #! in the meta class.
+    http_list_allowed_headers = None
+
+    #! List of allowed HTTP headers against a single resource (eg /user/1)
+    #! if undeclared or None, will be defaulted to `http_allowed_headers`
+    #! in the meta class.
+    http_detail_allowed_headers = None
+
+    #! List of exposed headers
+    http_exposed_headers = ()
+
+    #! List of exposed HTTP headers against a whole resource (eg /user)
+    #! if undeclared or None, will be defaulted to `http_exposed_headers`
+    #! in the meta class.
+    http_list_exposed_headers = None
+
+    #! List of exposed HTTP headers against a single resource (eg /user/1)
+    #! if undeclared or None, will be defaulted to `http_exposed_headers`
+    #! in the meta class.
+    http_detail_exposed_headers = None
 
     #! List of allowed operations.
     #! Resource operations are meant to generalize and blur the
@@ -91,6 +118,20 @@ class BaseResource(object):
     #! List of allowed operations against a single resource.
     #! If undeclared or None, will be defaulted to `allowed_operations`.
     detail_allowed_operations = None
+
+    #! The only allowed origins for the resource.
+    #! Must have something in here if you want to support CORS.
+    allowed_origins = ()
+
+    #! List of allowed origins against a whole resource (eg /user)
+    #! if undeclared or None, will be defaulted to `allowed_origins`
+    #! in the meta class.
+    list_allowed_origins = None
+
+    #! List of allowed origins against a single resource (eg /user/1)
+    #! if undeclared or None, will be defaulted to `allowed_origins`
+    #! in the meta class.
+    detail_allowed_origins = None
 
     #! Mapping of encoders known by this resource.
     encoders = {
@@ -867,6 +908,76 @@ class BaseResource(object):
         # Accessing the resource individually without a path.
         return cls._url_format(cls._URL_SLUG) % slug
 
+    def options(self, data=None):
+        """Process a `OPTIONS` request.
+
+        @param[in] data
+            The body of the request; unused in a normal `OPTIONS`.
+
+        @returns
+            The HTTPResponse object to return to the client.
+        """
+        response = http.Response(status=http.client.OK)
+
+        # Step 1
+        # Check for Origin header.
+        origin = self.request.META.get('ORIGIN')
+        if not origin:
+            return response
+
+        # Step 2
+        # Check if the origin is in the list of allowed origins.
+        if not (origin in self._allowed_origins or
+                '*' in self._allowed_origins):
+            return response
+
+        # Step 3
+        # Try to parse the Request-Method header if it exists.
+        method = self.request.META.get('ACCESS_CONTROL_REQUEST_METHOD')
+        if not method or method not in self.http_method_names:
+            return response
+
+        # Step 4
+        # Try to parse the Request-Header header if it exists.
+        headers = self.request.META.get('ACCESS_CONTROL_REQUEST_HEADERS', ())
+        # Need to check parsing here.
+
+        # Step 5
+        # Check if the method is allowed on this resource.
+        if method not in self._allowed_methods:
+            return response
+
+        # Step 6
+        # Check if the headers is allowed on this resource.
+        # This needs to be case insensitive.
+        allowed_headers = [header.lower() for header in self._allowed_headers]
+        if any(header.lower() not in allowed_headers for header in headers):
+            return response
+
+        # Step 7
+        # Always add the origin.
+        response['Access-Control-Allow-Origin'] = origin
+        # Check if we can provide credentials.
+        if self.authentication:
+            response['Access-Control-Allow-Credentials'] = 'true'
+
+        # Step 8
+        # Optionally add Max-Age header.
+
+        # Step 9
+        # Add the allowed methods.
+        allowed_methods = ','.join(self._allowed_methods)
+        response['Access-Control-Allow-Methods'] = allowed_methods
+
+        # Step 10
+        # Add any allowed headers.
+        allowed_headers = ','.join(self._allowed_headers)
+        if allowed_headers:
+            response['Access-Control-Allow-Headers'] = allowed_headers
+
+        # Return the response with our new headers applied.
+        return response
+
     def head(self, data=None):
         """Process a `HEAD` request.
 
@@ -981,6 +1092,24 @@ class BaseResource(object):
         """Retrieves a list of allowed HTTP methods for the current request."""
         return (self.http_detail_allowed_methods if self.slug is not None else
             self.http_list_allowed_methods)
+
+    @property
+    def _allowed_headers(self):
+        """Retrieves a list of allowed headers for the current request."""
+        return (self.http_detail_allowed_headers if self.slug is not None else
+            self.http_list_allowed_headers)
+
+    @property
+    def _exposed_headers(self):
+        """Retrieves a list of exposed headers for the current request."""
+        return (self.http_detail_exposed_headers if self.slug is not None else
+            self.http_list_exposed_headers)
+
+    @property
+    def _allowed_origins(self):
+        """Retrieves a list of allowed origins for the current request."""
+        return (self.detail_allowed_origins if self.slug is not None else
+            self.list_allowed_origins)
 
     def _determine_method(self):
         """Determine the HTTP method being used and if it is acceptable."""
