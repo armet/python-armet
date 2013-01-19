@@ -3,7 +3,7 @@
  ☐ POST
  ☐ PUT
  ☐ PATCH
- ☐ DELETE
+ ✔ DELETE @done (13-01-18 22:55)
  ✔ OPTIONS @done (13-01-18 16:16)
  ☐ Header: Link
      ☐ Automatic generation of link headers for related resources
@@ -18,10 +18,10 @@
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
      ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
-     ☐ '.' instead of'__'
+     ✔ '.' instead of'__' @done (13-01-18 22:57)
      ☐ '!' instead of ':' for sorting
- ☐ Filtering
- ☐ Sorting
+ ✔ Filtering @done (13-01-18 22:57)
+ ✔ Sorting @done (13-01-18 22:57)
  ☐ Authorization
  ☐ Authentication
      ☐ Digest
