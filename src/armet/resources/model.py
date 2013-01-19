@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
 from . import base
-from .. import exceptions, authorization
+from .. import exceptions, authorization, utils
 
 
 class BaseModel(base.BaseResource):
@@ -19,164 +19,92 @@ class BaseModel(base.BaseResource):
     #! `canonical = True`.
     canonical = True
 
-    #! Class object cache of what is to be prefetched.
-    _prefetch_related_paths = {}
+    #! Whether to use prefetch_related or not to reduce the number of
+    #! database queries.
+    # TODO: If this is disabled `.iterator` should be used to access the
+    #   queryset.
+    prefetch = True
 
-    # Authorization.  See base class for more information
-    authorization = authorization.Model({
-        "create": ("add",),
-        "update": ("change",),
-        "delete": ("delete",),
-        "read":   ("read",)
-    })
+    @utils.classproperty
+    def _prefetch_related_cache(cls):
+        if cls._prefetchable and cls.model.objects.all().exists():
+            # Initialize the cache and declare us as no longer prefetchable
+            cls._prefetchable = False
+            cls._prefetch_cache = set()
 
-    def authorize_queryset(self, queryset, operation):
-        return self.authorization.filter(self.request, operation, queryset)
-
-    @classmethod
-    def _build_prefetch_related_paths(cls, queryset, prefix=None, skip=None):
-        # Initialize the store
-        prefetched = []
-
-        # Get sorted list of visibile path elements
-        field_paths = []
-        for attribute in six.itervalues(cls._attributes):
-            if attribute.visible:
-                field_paths.append(attribute.path)
-
-        field_paths.sort(reverse=True)
-
-        # Cache of what to prefetch has not been built; build it.
-        # First iterate and store all attribute names
-        for field_path in field_paths:
-            if field_path is None:
-                # No attribute path; nothing to check.
-                continue
-
-            for index in range(len(field_path), 0, -1):
-                try:
-                    # Attempt to prefetch
-                    path = '__'.join(field_path[:index])
-                    if prefix:
-                        path = '{}__{}'.format(prefix, path)
-
-                    queryset.prefetch_related(path)[0]
-
-                except (ValueError, AttributeError):
-                    # Not able to prefetch; move along
-                    pass
-
-                else:
-                    # Worked somehow; store it and get out
-                    prefetched.append(path)
-                    break
-
-        if skip is None:
-            # Initialize skip list if we need to.
-            skip = []
-
-        for name, attribute in six.iteritems(cls._attributes):
-            relation = attribute.relation
-            if relation and issubclass(relation.resource, BaseModel):
-                # Do we need to skip this?
-                if relation in skip:
+            # Cache has not yet been made; we should do this.
+            for attribute in six.itervalues(cls._attributes):
+                if not attribute.visible or not attribute.path:
+                    # Attribute is not visible or has no path.
                     continue
 
-                # Nope; add to skip list
-                skip.append(relation)
+                if attribute.relation is not None:
+                    # This is a related attribute; attempt to explode the
+                    # prefetchable attributes of the related resource.
+                    rel = attribute.relation.resource._prefetch_related_cache
+                    if rel:
+                        # We have some sort of cache listing from the related
+                        # resource.
+                        path = '__'.join(attribute.path)
+                        join = lambda x: '{}__{}'.format(path, x)
+                        cls._prefetch_cache.update(map(join, rel))
 
-                # Attempt to apply a test prefetch related
-                paths = relation.resource._build_prefetch_related_paths(
-                    queryset, prefix=attribute.path, skip=skip)
+                        # The cache of a related resource implies the
+                        # cache of this attribute; skip it.
+                        continue
 
-                # Append these to our list as well
-                prefetched.extend(paths)
+                # Enumerate through a path so we attempt sub sections in order.
+                # Eg. for apple__fruit__orange we try that first than
+                # apple__fruit and so on.
+                for index in reversed(range(len(attribute.path))):
+                    path = '__'.join(attribute.path[index:])
+                    try:
+                        # Attempt to prefetch by the constructed path
+                        cls.model.objects.all().prefetch_related(path)[0]
 
-        # Ensure cache is unique and sorted properly
-        return sorted(set(prefetched), reverse=True)
+                    except (ValueError, AttributeError):
+                        # Prefetch failed; move along.
+                        continue
 
-    @classmethod
-    def prefetch_related(cls, queryset, prefix=None):
-        """Performs a `prefetch_related` on all possible attributes."""
-        prefetch = cls._build_prefetch_related_paths
-        cache = cls._prefetch_related_paths
-        if id(cls) not in cache and len(queryset) >= 1:
-            # Initialize the store
-            cache[id(cls)] = prefetch(queryset, prefix)
+                    # Prefetch was successful; append this path to our cache
+                    # and break out of this loop.
+                    cls._prefetch_cache.add(path)
+                    break
 
-        if id(cls) in cache:
-            # Actually apply the prefetched prefetching
-            return queryset.prefetch_related(*cache[id(cls)])
-
-        # Apply nothing.
-        return queryset
+        # The cache exists; return it and hope it doesn't break.
+        return cls._prefetch_cache
 
     @classmethod
     def make_slug(cls, obj):
+        # TODO: This method should be declarative instead of functional to
+        #   faciliate interacting with the slug elsewhere.
         return str(obj.pk)
 
-    def destroy(self, items):
-        # Destroy the object.
-        items.delete()
-
     def read(self):
-        # Build the queryset
+        # Initially instantiate a queryset representing every object.
         queryset = self.model.objects.all()
 
-        # Filter the queryset based on permissions you can have
-        # queryset = self.authorize_queryset(queryset, 'read')
-
-        # Filter based on the direct parent
-        if self.parent is not None:
-            slug = self.parent.resource.slug
-            queryset = queryset.filter(**{self.parent.related_name: slug})
-
-        try:
-            # Prefetch all related attributes and return the queryset.
-            queryset = self.prefetch_related(queryset)
-
-            if self.slug is not None:
-                # Model resources by default have the slug as the identifier.
-                # TODO: Support non-pk slugs easier by allowing a
-                #   hook or something.
-                chance = queryset.filter(pk=self.slug)
-                if not chance.exists() and self.path:
-                    try:
-                        # Attempt to perform array access; and just return it.
-                        index = int(self.slug)
-                        if index < 0:
-                            # Negative indexing not supported by django.
-                            index = len(queryset) + index
-                            if index < 0:
-                                raise exceptions.NotFound()
-
-                        elif index == 0:
-                            # Couldn't find it
-                            raise exceptions.NotFound()
-
-                        else:
-                            # Positive indexing; 1-offset
-                            index -= 1
-
-                        # Perform indexing
-                        return queryset[index]
-
-                    except (IndexError, TypeError):
-                        # Not an array; oh well.
-                        pass
-
-        except ValueError:
-            # Something went wront when applying the slug filtering.
-            raise exceptions.NotFound()
+        # Filter the queryset based on several possible factors.
+        # The query is just a Q object which django natively consumes.
+        queryset = queryset.filter(self.query.as_q())
 
         if self.slug is not None:
-            try:
-                # Attempt to get what we have.
-                queryset = chance.get()
+            # Filter the queryset based on the current slug.
+            # TODO: Allow configuring what property the slug corresponds to.
+            queryset = queryset.filter(pk=self.slug)
 
-            except self.model.DoesNotExist:
-                # Didn't find it.
-                raise exceptions.NotFound()
+        else:
+            # Order list as appropriate.
+            queryset = queryset.order_by(*self.query.as_order())
+
+        if self.prefetch:
+            # Prefetch all related attributes and store in a cache.
+            # This significantly reduces the number of queries.
+            queryset = queryset.prefetch_related(*self._prefetch_related_cache)
 
         # Return the queryset if we still have it.
         return queryset
+
+    def destroy(self, queryset):
+        # The object should be a queryset or a model; delete the model(s).
+        queryset.delete()

@@ -6,12 +6,9 @@ Defines the query parser for Armet
 from __future__ import (print_function, unicode_literals, absolute_import,
     division)
 from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models import Q
 from . import exceptions
-import collections
-
-#! django constants
-DJANGO_ASC = '+'
-DJANGO_DESC = '-'
+import operator
 
 #! Some constants
 PATH_SEP = LOOKUP_SEP
@@ -27,14 +24,77 @@ PARAM_SEP = '&'
 KEY_VALUE_SEP = '='
 VALUE_SEP = ';'
 SORT_SEP = ':'
-SORT_ASC = 'asc'
-SORT_DESC = 'desc'
-SORT_DEFAULT = None
-SORT_VALID = (SORT_ASC, SORT_DESC, None)
+
+#! Sorting directions and their corresponding verbs in django
+SORT = {
+    'asc': '',
+    'desc': '-',
+    None: None,
+}
+# SORT_ASC =
+# SORT_DESC =
+# SORT_RAND =
+# SORT_DEFAULT =
+# SORT_VALID = (SORT_ASC, SORT_DESC, SORT_RAND, None)
+
+
+class QueryList(list):
+    """A simple list for Querys that allows for easy django qification.  Note
+    that QueryList assumes that it contains only Query objects
+    """
+
+    def _single_q(self, query):
+        """Returns a q object for a single query object
+        """
+        # If the query is empty, then just make a no-op Q object
+        if not query.path or not query.value:
+            return Q()
+
+        key = query.django_query
+
+        # Build query objects for all the values
+        qobjects = (Q(**{key: value}) for value in query.value)
+
+        # Reduce them all to a single one via 'or'ing them
+        q = reduce(operator.or_, qobjects)
+
+        # Negate it if neccesary
+        return (~q) if query.negated else q
+
+    def as_q(self):
+        """get a Q object for all the Query objects stored within
+        """
+        # gather all the Q objects
+        qobjects = (self._single_q(query) for query in self)
+
+        # Reduce them to a single q object
+        return reduce(operator.and_, qobjects)
+
+    def as_order(self):
+        """Returns a list of all the sorting directions
+        """
+        orders = []
+        for query in self:
+            if query.direction is not None:
+                orders.append(query.direction + query.django_path)
+        return orders
 
 
 class Query(object):
     """Simple structure to wrangle query parameters"""
+
+    @property
+    def django_query(self):
+        """A simple property that returns the string used in a django query for
+        this object
+        """
+        return LOOKUP_SEP.join((self.django_path, self.operation))
+
+    @property
+    def django_path(self):
+        """The django path for the current query lookup
+        """
+        return LOOKUP_SEP.join(self.path)
 
     @property
     def direction(self):
@@ -50,22 +110,12 @@ class Query(object):
         if value is not None:
             value = value.lower()
 
-        if value not in SORT_VALID:
-            raise ValueError(
-                "Sorting direction must be {} or {}.".format(
-                    SORT_ASC,
-                    SORT_DESC,
-                )
-            )
+        if value not in SORT.keys():
+            raise ValueError("Sorting direction must be asc or desc.")
 
         # Internally, declare ascending order as a '+' and descending order as
         # a '-' to optimize for django's ORM
-        if value == SORT_ASC:
-            self._direction = DJANGO_ASC
-        elif value == SORT_DESC:
-            self._direction = DJANGO_DESC
-        else:
-            self._direction = None
+        self._direction = SORT[value]
 
     def __init__(self, **kwargs):
         super(Query, self).__init__()
@@ -94,12 +144,12 @@ class Query(object):
         #! name.
         self.value = kwargs.get('value', [])
 
+
 def parse_segment(segment):
     """an individual query segment parser.
     """
 
     item = Query()
-
 
     try:
         # Break up into key value pairs
@@ -123,6 +173,10 @@ def parse_segment(segment):
         # Break up key into key and sorting direction
         if SORT_SEP in key:
             key, item.direction = key.split(SORT_SEP)
+
+            # Sorting without a property to sort via is an invalid operation
+            if not key and item.direction is not None:
+                raise KeyError
 
         # Break up keys
         keys = key.split(PATH_SEP)
@@ -161,4 +215,4 @@ def parse(querystring):
     # Break up partitions in the querystring
     segments = querystring.split(PARAM_SEP)
 
-    return [parse_segment(x) for x in segments]
+    return QueryList(parse_segment(x) for x in segments)

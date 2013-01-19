@@ -436,6 +436,9 @@ class BaseResource(object):
         # Set some defaults so we can reference this later
         self.encoder = None
 
+        #! A list of query.Query objects representing the query parameters
+        self.query = query.parse(self.request.META['QUERY_STRING'])
+
         #! This is the form instance that is constructed during the clean
         #! and validation cycle.
         self._form = None
@@ -805,6 +808,17 @@ class BaseResource(object):
         return self.reverse(self.slug, self.path, self.parent, self.local)
 
     @classmethod
+    def resolve(cls, url):
+        """Resolves a url into its corresponding view by proxying to the
+        django url resolver.
+        """
+        # Django cannot resolve urls that begin with a site prefix (for sites
+        # that are not mounted on root.  Slice off the site prefix if one
+        # exists)
+        stripped = url.lstrip(urlresolvers.get_script_prefix())
+        return urlresolvers.resolve(stripped)
+
+    @classmethod
     def reverse(cls, slug=None, path=None, parent=None, local=False):
         """Reverses a URL for the resource or for the passed object.
 
@@ -1085,16 +1099,35 @@ class BaseResource(object):
     def read(self):
         """Retrieves data to be displayed; called via GET.
 
-        @param[in] self.slug
-            The slug that was captured in the URL, if any.
+        @returns
+            Either a single object or an iterable of objects to be encoded
+            and returned to the client.
         """
         # There is no default behavior.
         raise exceptions.NotImplemented()
 
     def create(self, data):
-        """Creates the object that is being requested; via POST or PUT."""
+        """Creates the object that is being requested; via POST or PUT.
+
+        @returns
+            The object that has been created; or, None, to indicate that no
+            object was created.
+        """
         # Proxy to the form to save the data.
         self._form.save()
 
         # Return the form object instance.
         return self._form.instance
+
+    def destroy(self, obj):
+        """Destroy the passed object (or objects).
+
+        @param[in] obj
+            The objects represented by the current request; the results of
+            invoking `self.read()`.
+
+        @returns
+            Nothing.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
