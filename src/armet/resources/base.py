@@ -452,12 +452,14 @@ class BaseResource(object):
         # TODO: The link headers should be an object so they are not
         #   constructed via strings here.
         # response['Link'] = '<{}>; rel=self'.format(self.url)
-        Links = []
-        for names in self._attributes:
-            attribute = self._attributes[name]
-            Links.append(attribute)
+        links = []
+        for name in self._attributes:
+            links.append("<{}>;rel=relation;title={}".format(name,name))
+            # links.append(name)
 
-        response['Link'] = ', '.join(Links)
+        # import ipdb; ipdb.set_trace()
+
+        response['Links'] = ', '.join(links)
 
         # Return the built response.
         return response
