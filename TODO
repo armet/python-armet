@@ -20,20 +20,45 @@
      ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
      ✔ '.' instead of'__' @done (13-01-18 22:57)
      ☐ '!' instead of ':' for sorting
+     ☐ Refactor as a state machine to allow for arbitrarily complex queries
+           eg. /poll?question='/choice/1/choice_text' would grab every poll with
+           the same text as the choice #1's choice_text -- another example is
+           /user?instance(owner)=True would get every owner of an instance
+           Keep in mind this is just the parsing
  ✔ Filtering @done (13-01-18 22:57)
  ✔ Sorting @done (13-01-18 22:57)
+ ☐ Sub-resource navigation
+     ☐ Traversal (resource navigation)
+         The actual traversal method is done; just need some tests and some
+         bugs worked out.
+     ☐ Navigation
+         Basically `/poll/1/choices/` should only return the choices for
+         the poll in question.
  ☐ Authorization
+     Most of this work is done; we just need to work out some bugs and invoke
+     it appropriately (most importantly for cases like creating an object).
  ☐ Authentication
+     ✔ Basic @done (13-01-18 23:07)
      ☐ Digest
      ☐ OAuth 1
      ☐ OAuth 2
      ☐ SAML Client
+     ☐ Django session/cookie
+     ☐ Generic token (perhaps?)
  ☐ Configuration
      ☐ Turning off data being returned from PUT / POST / PATCH
      ☐ Turning off validation
  ☐ Policies
      General abstract idea that could be used to implement throttling.
+     I'm thinking something like a small rules engine that can govern the
+     API. I don't (right now) see any use for a policy besides throttling so
+     we could reduce the scope to just throttling but I would still like a
+     declarative way to specify that a resource should be throttled to 15 calls
+     every 30 minutes per user or perhaps the call limit is determine by a
+     user property to allow for use tiers.
  ☐ Browser side Cacheing
+     Basically I mean just faciltiating this through ETag, Last modified dates,
+     etc.
  ☐ Through reference; referencing properties from the relationship between two resources
      /team/5/user?(owner)=true   all owners of team 5
  ☐ Set specifiers
@@ -41,11 +66,11 @@
      /team/10-20 will return teams 10 through 20
      /team/<format> will mirror the HTTP RANGE header request syntax without the `items=` portion
      /apple,orange will return all apples and oranges using a base class resource (if available) or 400
-☐ Plucking
+ ☐ Plucking
      By 'plucking' we mean that if there is a resource called 'Apple' with a
      property 'color'; then `GET /apple/color` will get an array of all colors
      for every apple.
-☐ URL segment filtering
+ ☐ URL segment filtering
      /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
      /apple:color=red/core  selects all cores of all apples that are red
      /apple:color!asc selects all apple sorted asc by color
