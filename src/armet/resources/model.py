@@ -94,8 +94,8 @@ class BaseModel(base.BaseResource):
             queryset = queryset.filter(pk=self.slug)
 
         else:
-            # Order list
-            queryset = queryset.order_by(self.query.as_order())
+            # Order list as appropriate.
+            queryset = queryset.order_by(*self.query.as_order())
 
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
