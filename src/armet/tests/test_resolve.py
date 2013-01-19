@@ -15,9 +15,8 @@ class ResolveTestCase(test.TestCase):
         self.poll_endpoint = '/poll'
         self.choice_endpoint = '/choice'
 
-    def test_resolve(self):
-        """Test the resolvability of a url."""
-        # Poll tests.
+    def test_resolve_poll(self):
+        """Test the resolvability of a poll url."""
         # Test all the polls.
         request = RequestFactory().get(self.poll_endpoint)
         objs = Resolve(request=request).resolve(request.path)
@@ -30,7 +29,8 @@ class ResolveTestCase(test.TestCase):
         obj = Resolve(request=request).resolve(request.path)[0]
         self.assertEquals(Poll.objects.get(pk=poll_number), obj)
 
-        # Choice tests.
+    def test_resolve_choice(self):
+        """Test the resolvability of a choice url."""
         # Test all the choices.
         request = RequestFactory().get(self.choice_endpoint)
         objs = Resolve(request=request).resolve(request.path)
@@ -41,4 +41,4 @@ class ResolveTestCase(test.TestCase):
                                                       choice_number))
         # Returns a list, so grab the first one.
         obj = Resolve(request=request).resolve(request.path)[0]
-        self.assertEquals(Choice.objects.get(pk=poll_number), obj)
+        self.assertEquals(Choice.objects.get(pk=choice_number), obj)
