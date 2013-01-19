@@ -43,7 +43,7 @@ class QueryTestCase(TestCase):
         self.assertEqual(item.value, ['cheddar'])
 
     def test_multiple_values(self):
-        item = self.parse('fruit=apples;oranges')
+        item = self.parse('fruit=apples,oranges')
 
         self.assertEqual(item.path, ['fruit'])
         self.assertEqual(item.operation, 'exact')
@@ -87,8 +87,8 @@ class QueryTestCase(TestCase):
     def test_fusion(self):
         """Test something from everything combined
         """
-        q = '''the.rolling.stones.iregex.not:asc=sympathy;for;the;devil&\
-guns.n.roses.istartswith.not:desc=paradise;city&queen:asc'''
+        q = '''the.rolling.stones.iregex.not:asc=sympathy,for,the,devil&\
+guns.n.roses.istartswith.not:desc=paradise,city&queen:asc'''
 
         # Don't care about the other ones, as they're testing the &
         item = parse(q)[1]
@@ -103,7 +103,7 @@ guns.n.roses.istartswith.not:desc=paradise;city&queen:asc'''
             'amazing_q': Q(),
             'thing=foo': Q(thing__exact='foo'),
             'youre.a.kitty=yes': Q(youre__a__kitty__exact='yes'),
-            'foo=bar;baz': Q(foo__exact='bar') | Q(foo__exact='baz'),
+            'foo=bar,baz': Q(foo__exact='bar') | Q(foo__exact='baz'),
             'x=y&z=t': Q(x__exact='y') & Q(z__exact='t'),
             'sort:asc=bar': Q(sort__exact='bar'),
             'some.iexact=people': Q(some__iexact='people'),

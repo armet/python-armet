@@ -21,7 +21,7 @@ OPERATIONS = (
 )
 PARAM_SEP = '&'
 KEY_VALUE_SEP = '='
-VALUE_SEP = ';'
+VALUE_SEP = ','
 SORT_SEP = ':'
 
 #! Sorting directions and their corresponding verbs in django
