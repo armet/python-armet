@@ -9,6 +9,7 @@ from . import models
 
 class Choice(resources.Model):
     model = models.Choice
+    # exclude = ('poll',)
 
     # include = {
     #     'question': attribute('poll__question')
@@ -19,22 +20,22 @@ class Choice(resources.Model):
     #     'poll': relation('polls.api.Poll'),
     # }
 
-    include = {
-        'complex': attribute()
-    }
+    # include = {
+    #     'complex': attribute()
+    # }
 
-    def prepare_complex(self, obj, value=None):
-        return complex(1, 2)
+    # def prepare_complex(self, obj, value=None):
+    #     return complex(1, 2)
 
 
 class Poll(resources.Model):
     model = models.Poll
 
-    include = {
-        'choices': attribute('choice_set'),
-        'answers': attribute('choice_set')
-    }
+    # include = {
+    #     'choices': attribute('choice_set'),
+    #     'answers': attribute('choice_set')
+    # }
 
-    relations = {
-        'answers': relation(Choice, path='choice_text', embed=True)
-    }
+    # relations = {
+    #     'answers': relation(Choice, path='choice_text', embed=True)
+    # }
