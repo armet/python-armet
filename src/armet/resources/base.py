@@ -737,9 +737,13 @@ class BaseResource(object):
         # slice off the site prefix if one exists.
         # Will replace "/" with "/" if that's the prefix.
         stripped = url.replace(urlresolvers.get_script_prefix(), '/')
+        # Get the actual resource.
         resolved = urlresolvers.resolve(stripped)
+        # Rip out the class and kwargs from it.
         klass = resolved.func.__self__
         kw = resolved.kwargs
+        # Instantiate and read that class,
+        # returning whatever object is at that resource.
         obj = klass(request=self.request, **kw)
         obj._assert_operation('read')
         return obj.read()
