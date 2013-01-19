@@ -528,6 +528,8 @@ class BaseResource(object):
         """Attempts to assert authorization for access to this resource.
         If unable to assert, it throws a forbidden.
         """
+        # TODO: when adding authorization, remember to checked the cached
+        # resource
         if not self.authorization.is_accessible(
                 self.request,
                 self.request.method):
@@ -535,6 +537,7 @@ class BaseResource(object):
 
     def authenticate(self):
         """Attempts to assert authentication."""
+        # Check for cached authentication
         for auth in self.authentication:
             user = auth.authenticate(self.request)
             if user is None:
@@ -702,7 +705,7 @@ class BaseResource(object):
                 # Utilize the attribute accessor to resolve the resource path.
                 obj = path_field.accessor(obj)
 
-            except (IndexError, ValueError, AttributeError, TypeError) as ex:
+            except (IndexError, ValueError, AttributeError, TypeError):
                 # Something weird happened with a path segment.
                 raise exceptions.NotFound()
 

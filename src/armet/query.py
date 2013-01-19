@@ -80,6 +80,11 @@ class QueryList(list):
         return orders
 
 
+class QueryList(collections.Sequence):
+    """A simple query list that implements a Q function for django qification.
+    """
+
+
 class Query(object):
     """Simple structure to wrangle query parameters"""
 
@@ -103,7 +108,7 @@ class Query(object):
         return self._direction
 
     @direction.setter
-    def direction(self, value):
+    def direction_set(self, value):
         """Getter for the sorting direction.
         """
         # lowercase it and make sure that its valid
