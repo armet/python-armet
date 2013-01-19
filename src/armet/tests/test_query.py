@@ -4,6 +4,7 @@ from __future__ import absolute_import, division
 from django.utils.unittest import TestCase
 from armet.query import parse, OPERATIONS
 from armet import exceptions
+from django.db.models import Q
 
 
 class QueryTestCase(TestCase):
@@ -52,7 +53,7 @@ class QueryTestCase(TestCase):
 
     def test_sorting(self):
 
-        directions = {'aSc': '+', 'dEsC': '-'}
+        directions = {'aSc': '', 'dEsC': '-'}
 
         for direction, djangoified in directions.iteritems():
             item = self.parse('marinas:{}'.format(direction))
@@ -68,6 +69,8 @@ class QueryTestCase(TestCase):
             'foo:bogus=bar'
             'foo=bogus=bar'
             'icontains__not=bar'
+            ':asc'
+            ':desc=foo'
         ]
         for query in queries:
             self.assertRaises(exceptions.BadRequest, parse, query)
@@ -94,3 +97,29 @@ guns__n__roses__istartswith__not:desc=paradise;city&queen:asc'''
         self.assertTrue(item.negated)
         self.assertEqual(item.direction, '-')
         self.assertEqual(item.value, ['paradise', 'city'])
+
+    def test_as_q(self):
+        equality = {
+            'amazing_q': Q(),
+            'thing=foo': Q(thing__exact='foo'),
+            'youre__a__kitty=yes': Q(youre__a__kitty__exact='yes'),
+            'foo=bar;baz': Q(foo__exact='bar') | Q(foo__exact='baz'),
+            'x=y&z=t': Q(x__exact='y') & Q(z__exact='t'),
+            'sort:asc=bar': Q(sort__exact='bar'),
+            'some__iexact=people': Q(some__iexact='people'),
+        }
+        for name, qobject in equality.iteritems():
+            # Q objects don't have an equality operator, so compare their vars
+            self.assertEqual(vars(parse(name).as_q()), vars(qobject))
+
+    def test_as_order(self):
+        params = {
+            'thing__asf': None,
+            'asdf__asc': None,
+            'wrggr:desc': '-wrggr',
+            'wjtra24g:asc': 'wjtra24g',
+        }
+
+        got = parse('&'.join(params.keys())).as_order()
+        expected = [x for x in params.values() if x is not None]
+        self.assertEqual(got, expected)
