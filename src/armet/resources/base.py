@@ -732,8 +732,6 @@ class BaseResource(object):
         """Resolves a url into its corresponding view by proxying to the
         django url resolver.
         """
-        import ipdb
-        ipdb.set_trace()
         # Django cannot resolve urls that begin with a site prefix.
         # For sites that are not mounted on root,
         # slice off the site prefix if one exists.
@@ -742,7 +740,7 @@ class BaseResource(object):
         resolved = urlresolvers.resolve(stripped)
         klass = resolved.func.__self__
         kw = resolved.kwargs
-        obj = klass(request=self.request, kwargs=kw)
+        obj = klass(request=self.request, **kw)
         obj._assert_operation('read')
         return obj.read()
 
@@ -837,8 +835,6 @@ class BaseResource(object):
         @returns
             The HTTPResponse object to return to the client.
         """
-        import ipdb
-        ipdb.set_trace()
         # Ensure we're allowed to perform this operation.
         self._assert_operation('read')
 
