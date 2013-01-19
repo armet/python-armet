@@ -69,6 +69,8 @@ class QueryTestCase(TestCase):
             'foo:bogus=bar'
             'foo=bogus=bar'
             'icontains__not=bar'
+            ':asc'
+            ':desc=foo'
         ]
         for query in queries:
             self.assertRaises(exceptions.BadRequest, parse, query)

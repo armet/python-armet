@@ -29,7 +29,6 @@ SORT_SEP = ':'
 SORT = {
     'asc': '',
     'desc': '-',
-    'rand': '?',
     None: None,
 }
 # SORT_ASC =
@@ -112,7 +111,7 @@ class Query(object):
             value = value.lower()
 
         if value not in SORT.keys():
-            raise ValueError("Sorting direction must be asc, desc or rand.")
+            raise ValueError("Sorting direction must be asc or desc.")
 
         # Internally, declare ascending order as a '+' and descending order as
         # a '-' to optimize for django's ORM
@@ -174,9 +173,9 @@ def parse_segment(segment):
         # Break up key into key and sorting direction
         if SORT_SEP in key:
             key, item.direction = key.split(SORT_SEP)
-            # Django will break if you attempt to sort randomly on a particular
-            # field, so specifically disallow that
-            if item.direction == '?':
+
+            # Sorting without a property to sort via is an invalid operation
+            if not key and item.direction is not None:
                 raise KeyError
 
         # Break up keys
