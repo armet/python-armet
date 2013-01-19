@@ -86,12 +86,16 @@ class BaseModel(base.BaseResource):
 
         # Filter the queryset based on several possible factors.
         # The query is just a Q object which django natively consumes.
-        # TODO: queryset = queryset.filter(self.query)
+        queryset = queryset.filter(self.query.as_q())
 
         if self.slug is not None:
             # Filter the queryset based on the current slug.
             # TODO: Allow configuring what property the slug corresponds to.
             queryset = queryset.filter(pk=self.slug)
+
+        else:
+            # Order list
+            queryset = queryset.order_by(self.query.as_order())
 
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
