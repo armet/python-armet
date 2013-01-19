@@ -15,6 +15,7 @@ from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
+from . import attributes
 from .attributes import FileAttribute
 from .helpers import parent as parent_helper
 from .. import utils, http, exceptions, decoders, authorization, query
@@ -222,6 +223,84 @@ class BaseResource(object):
             url(regex.format(r'/(?P<slug>[^/]+?)/(?P<path>.*?)'),
                 cls.view, name=cls.url_name, kwargs=kwargs),
         )
+
+    @classmethod
+    def schema(cls, format):
+        if format == "xml":
+            from lxml import etree
+            from lxml.builder import ElementMaker
+
+            # Schema namespace
+            namespace = "http://www.w3.org/2001/XMLSchema"
+
+            E = ElementMaker(namespace=namespace, nsmap={'xs': namespace})
+
+            # Declare an empty list
+            xml = []
+
+            # Iterate through the attributes
+            for name, attribute in six.iteritems(cls._attributes):
+                if isinstance(attribute, attributes.DateAttribute):
+                    xml.append(E.element(name=name, type='xs:date'))
+                elif isinstance(attribute, attributes.TimeAttribute):
+                    xml.append(E.element(name=name, type='xs:time'))
+                elif isinstance(attribute, attributes.DateTimeAttribute):
+                    xml.append(E.element(name=name, type='xs:dateTime'))
+                elif isinstance(attribute, attributes.NumericalAttribute):
+                    xml.append(E.element(name=name, type='xs:integer'))
+                elif isinstance(attribute, attributes.BooleanAttribute):
+                    xml.append(E.element(name=name, type='xs:boolean'))
+                elif isinstance(attribute, attributes.FileAttribute):
+                    xml.append(E.element(name=name, type='xs:base64Binary'))
+                else:
+                    xml.append(E.element(name=name, type='xs:string'))
+
+            # Create the schema
+            xsd = E.schema(
+                E.element(E.complexType(
+                        E.sequence(*xml)
+                    ),
+                    {'name': cls.name}
+                )
+            )
+
+            # return the schema in readable format
+            return etree.tostring(xsd, pretty_print=True)
+        elif format == "yaml" or format == "json":
+            import json
+            import yaml
+
+            # Declare an empty dictionary
+            data = {}
+
+            data[b'type'] = b'//rec'
+
+            # Required as another dictionary
+            data[b'required'] = {}
+
+            # Iterate through the elements
+            for name, attribute in six.iteritems(cls._attributes):
+                if isinstance(attribute, attributes.DateAttribute):
+                    data[b'required'][str(name)] = b'//def'
+                elif isinstance(attribute, attributes.TimeAttribute):
+                    data[b'required'][str(name)] = b'//def'
+                elif isinstance(attribute, attributes.DateTimeAttribute):
+                    data[b'required'][str(name)] = b'//def'
+                elif isinstance(attribute, attributes.NumericalAttribute):
+                    data[b'required'][str(name)] = b'//int'
+                elif isinstance(attribute, attributes.BooleanAttribute):
+                    data[b'required'][str(name)] = b'//bool'
+                elif isinstance(attribute, attributes.FileAttribute):
+                    data[b'required'][str(name)] = b'//def'
+                elif attribute.collection:
+                    data[b'required'][str(name)] = b'//arr'
+                else:
+                    data[b'required'][str(name)] = b'//str'
+
+            return json.dumps(data) if format == "json" else yaml.dump(data,
+                default_flow_style=True, explicit_start=True, canonical=False)
+
+        return Exception("Something bad happened ...")
 
     @classmethod
     @csrf_exempt

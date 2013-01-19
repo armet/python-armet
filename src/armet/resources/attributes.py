@@ -391,3 +391,7 @@ class DateTimeAttribute(Attribute, TemporalAttribute):
 
 class FileAttribute(Attribute):
     pass
+
+
+class NumericalAttribute(Attribute):
+    pass

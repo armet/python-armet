@@ -151,6 +151,17 @@ def _get_field_class(field):
         return attributes.Attribute
 
     try:
+        # Attempt to handle numbers
+        test = 78647848
+        if field.to_python(test) == test:
+            # Looks like we're a numbers attribute
+            return attributes.NumericalAttribute
+
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
+        # Times cannot be handled.
+        pass
+
+    try:
         # Attempt to handle date/times
         test = datetime.datetime.now()
         if field.to_python(test) == test:
