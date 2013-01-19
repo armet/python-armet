@@ -4,7 +4,7 @@
  ☐ PUT
  ☐ PATCH
  ☐ DELETE
- ☐ OPTIONS
+ ✔ OPTIONS @done (13-01-18 16:16)
  ☐ Header: Link
      ☐ Automatic generation of link headers for related resources
      ☐ Ability to add additional link headers through like a 'links' option
