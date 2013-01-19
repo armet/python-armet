@@ -729,10 +729,18 @@ class BaseResource(object):
         return self.reverse(self.slug, self.path, self.parent, self.local)
 
     @classmethod
-    def resolve(cls, url):
+    def resolve(cls, request):
         """Resolves a url into its corresponding view by proxying to the
         django url resolver.
         """
+
+        import ipdb
+        ipdb.set_trace()
+        # Ensure we're allowed to perform this operation.
+        request._assert_operation('read')
+
+        # Delegate to `read` to retrieve the items.
+        # items = request.read()
         # Django cannot resolve urls that begin with a site prefix (for sites
         # that are not mounted on root.  Slice off the site prefix if one
         # exists)
@@ -830,6 +838,8 @@ class BaseResource(object):
         @returns
             The HTTPResponse object to return to the client.
         """
+        import ipdb
+        ipdb.set_trace()
         # Ensure we're allowed to perform this operation.
         self._assert_operation('read')
 
