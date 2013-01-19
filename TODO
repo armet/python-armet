@@ -1,5 +1,5 @@
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
- ☐ Resolving arbitrary URLs
+ ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
  ☐ POST
  ☐ PUT
  ☐ PATCH

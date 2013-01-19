@@ -807,16 +807,25 @@ class BaseResource(object):
         """Retrieves the reversed URL for this resource instance."""
         return self.reverse(self.slug, self.path, self.parent, self.local)
 
-    @classmethod
-    def resolve(cls, url):
+    def resolve(self, url):
         """Resolves a url into its corresponding view by proxying to the
         django url resolver.
         """
-        # Django cannot resolve urls that begin with a site prefix (for sites
-        # that are not mounted on root.  Slice off the site prefix if one
-        # exists)
-        stripped = url.lstrip(urlresolvers.get_script_prefix())
-        return urlresolvers.resolve(stripped)
+        # Django cannot resolve urls that begin with a site prefix.
+        # For sites that are not mounted on root,
+        # slice off the site prefix if one exists.
+        # Will replace "/" with "/" if that's the prefix.
+        stripped = url.replace(urlresolvers.get_script_prefix(), '/')
+        # Get the actual resource.
+        resolved = urlresolvers.resolve(stripped)
+        # Rip out the class and kwargs from it.
+        klass = resolved.func.__self__
+        kw = resolved.kwargs
+        # Instantiate and read that class,
+        # returning whatever object is at that resource.
+        obj = klass(request=self.request, **kw)
+        obj._assert_operation('read')
+        return obj.read()
 
     @classmethod
     def reverse(cls, slug=None, path=None, parent=None, local=False):
