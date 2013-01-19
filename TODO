@@ -10,6 +10,7 @@
      ☐ Ability to add additional link headers through like a 'links' option
  ☐ Header: Link; rel="schema"
      This is going to require a small RFC to accompany it.
+     ☐ We can remove the resource_uri property now
  ☐ Headers: Range / Content-Range
      Pagination. This will have to firmly integrated into the base resources (
      perhaps in View) as it will need to make successive calls to dispatch to
@@ -25,8 +26,16 @@
            the same text as the choice #1's choice_text -- another example is
            /user?instance(owner)=True would get every owner of an instance
            Keep in mind this is just the parsing
- ✔ Filtering @done (13-01-18 22:57)
- ✔ Sorting @done (13-01-18 22:57)
+ ☐ Filtering
+     ✔ Applying the query @done (13-01-18 23:29)
+     ☐ Ensuring non-filterable properties are not filterable
+         This has to actually traverse and ask each resource if it can be
+         filtered by the property in question
+     ☐ Allow configuring what properties can be filtered by a 'filtering' prop
+ ☐ Sorting
+     ✔ Applying the query @done (13-01-18 23:29)
+     ☐ Ensuring non-sortable properties are not sortable
+     ☐ Allow configuring what properties can be sorted by a 'ordering' prop
  ☐ Sub-resource navigation
      ☐ Traversal (resource navigation)
          The actual traversal method is done; just need some tests and some
@@ -48,6 +57,13 @@
  ☐ Configuration
      ☐ Turning off data being returned from PUT / POST / PATCH
      ☐ Turning off validation
+     ☐ Changing the field name of the slug
+         Right now it will always be pk; there is a make_slug method but is
+         broken because if you try and do /poll/3910 it will still only
+         try the PK. `slug_attribute = "pk"` might work though its a long name.
+ ☐ Transactional requests
+     Begin, commit, and rollback methods (or similar) should (inside model.py)
+     facilitate a database transaction
  ☐ Policies
      General abstract idea that could be used to implement throttling.
      I'm thinking something like a small rules engine that can govern the
@@ -74,3 +90,26 @@
      /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
      /apple:color=red/core  selects all cores of all apples that are red
      /apple:color!asc selects all apple sorted asc by color
+ ☐ Decoders
+     ☐ Text (plain/text)
+     ☐ Form (multipart/form-data)
+     ☐ Url (application/x-www-form-urlencoded)
+     ☐ Json (application/json)
+     ☐ Yaml
+     ☐ Binary (perhaps messagepack ?)
+     ☐ Direct (pass-through, as-in, an image file)
+ ☐ Encoders
+     ☐ Text (plain/text)
+     ☐ Form (multipart/form-data)
+     ☐ Json (application/json)
+     ☐ Yaml
+     ☐ Binary (perhaps messagepack ?)
+     ☐ Direct (pass-through, as-in, an image file)
+ ☐ Publish / Subscribe messages for push notifications
+     Something like https://code.google.com/p/pubsubhubbub/ was.. (its dead now)
+    ☐ Link header pointing to the hub ?
+    ☐ Ability to POST listeners
+    ☐ Ability to DELETE listeners
+    ☐ Ability to create a listener with web-sockets or something... ?
+ ☐ More on web-sockets; the ability to create a persistent connection
+ ☐ Simple HTTP streaming support to stream huge responses to the client
