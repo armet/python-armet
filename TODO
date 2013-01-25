@@ -1,4 +1,5 @@
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
+ ☐ Underscorize class names in our attempt to name ourselves
  ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
  ☐ POST
  ☐ PUT
@@ -94,14 +95,16 @@
      ☐ Text (plain/text)
      ☐ Form (multipart/form-data)
      ☐ Url (application/x-www-form-urlencoded)
-     ☐ Json (application/json)
+     ☐ Xml (application/xml)
+     ✔ Json (application/json) @done (13-01-25 11:24)
      ☐ Yaml
      ☐ Binary (perhaps messagepack ?)
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Encoders
      ☐ Text (plain/text)
-     ☐ Form (multipart/form-data)
-     ☐ Json (application/json)
+     ☐ Form (multipleltipart/form-data)
+     ✔ Json (application/json) @done (13-01-25 11:24)
+     ☐ Xml (application/xml)
      ☐ Yaml
      ☐ Binary (perhaps messagepack ?)
      ☐ Direct (pass-through, as-in, an image file)
