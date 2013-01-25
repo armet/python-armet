@@ -25,7 +25,7 @@ class QueryTestCase(TestCase):
         self.assertEqual(item.value, ['bar'])
 
     def test_relational_filter(self):
-        item = self.parse('bread__sticks=delicious')
+        item = self.parse('bread.sticks=delicious')
 
         self.assertEqual(item.path, ['bread', 'sticks'])
         self.assertEqual(item.operation, 'exact')
@@ -34,7 +34,7 @@ class QueryTestCase(TestCase):
         self.assertEqual(item.value, ['delicious'])
 
     def test_negation(self):
-        item = self.parse('cheese__not=cheddar')
+        item = self.parse('cheese.not=cheddar')
 
         self.assertEqual(item.path, ['cheese'])
         self.assertEqual(item.operation, 'exact')
@@ -43,7 +43,7 @@ class QueryTestCase(TestCase):
         self.assertEqual(item.value, ['cheddar'])
 
     def test_multiple_values(self):
-        item = self.parse('fruit=apples;oranges')
+        item = self.parse('fruit=apples,oranges')
 
         self.assertEqual(item.path, ['fruit'])
         self.assertEqual(item.operation, 'exact')
@@ -68,7 +68,7 @@ class QueryTestCase(TestCase):
         queries = [
             'foo:bogus=bar'
             'foo=bogus=bar'
-            'icontains__not=bar'
+            'icontains.not=bar'
             ':asc'
             ':desc=foo'
         ]
@@ -77,7 +77,7 @@ class QueryTestCase(TestCase):
 
     def test_operations(self):
         for operation in OPERATIONS:
-            item = self.parse('crazy__{}=true'.format(operation))
+            item = self.parse('crazy.{}=true'.format(operation))
             self.assertEqual(item.path, ['crazy'])
             self.assertEqual(item.operation, operation)
             self.assertFalse(item.negated)
@@ -87,8 +87,8 @@ class QueryTestCase(TestCase):
     def test_fusion(self):
         """Test something from everything combined
         """
-        q = '''the__rolling__stones__iregex__not:asc=sympathy;for;the;devil&\
-guns__n__roses__istartswith__not:desc=paradise;city&queen:asc'''
+        q = '''the.rolling.stones.iregex.not:asc=sympathy,for,the,devil&\
+guns.n.roses.istartswith.not:desc=paradise,city&queen:asc'''
 
         # Don't care about the other ones, as they're testing the &
         item = parse(q)[1]
@@ -102,11 +102,11 @@ guns__n__roses__istartswith__not:desc=paradise;city&queen:asc'''
         equality = {
             'amazing_q': Q(),
             'thing=foo': Q(thing__exact='foo'),
-            'youre__a__kitty=yes': Q(youre__a__kitty__exact='yes'),
-            'foo=bar;baz': Q(foo__exact='bar') | Q(foo__exact='baz'),
+            'youre.a.kitty=yes': Q(youre__a__kitty__exact='yes'),
+            'foo=bar,baz': Q(foo__exact='bar') | Q(foo__exact='baz'),
             'x=y&z=t': Q(x__exact='y') & Q(z__exact='t'),
             'sort:asc=bar': Q(sort__exact='bar'),
-            'some__iexact=people': Q(some__iexact='people'),
+            'some.iexact=people': Q(some__iexact='people'),
         }
         for name, qobject in equality.iteritems():
             # Q objects don't have an equality operator, so compare their vars
@@ -114,8 +114,8 @@ guns__n__roses__istartswith__not:desc=paradise;city&queen:asc'''
 
     def test_as_order(self):
         params = {
-            'thing__asf': None,
-            'asdf__asc': None,
+            'thing.asf': None,
+            'asdf.asc': None,
             'wrggr:desc': '-wrggr',
             'wjtra24g:asc': 'wjtra24g',
         }

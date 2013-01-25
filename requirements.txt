@@ -9,3 +9,4 @@ django-nose
 coverage
 yanc
 parsedatetime
+PyYAML

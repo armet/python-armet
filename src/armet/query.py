@@ -2,16 +2,15 @@
 """
 Defines the query parser for Armet
 """
-
-from __future__ import (print_function, unicode_literals, absolute_import,
-    division)
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 from django.db.models.sql.constants import LOOKUP_SEP
 from django.db.models import Q
 from . import exceptions
 import operator
 
 #! Some constants
-PATH_SEP = LOOKUP_SEP
+PATH_SEP = '.'
 OPERATION_DEFAULT = 'exact'
 OPERATION_NOT = 'not'
 # We only support a subset of django's query operations
@@ -22,7 +21,7 @@ OPERATIONS = (
 )
 PARAM_SEP = '&'
 KEY_VALUE_SEP = '='
-VALUE_SEP = ';'
+VALUE_SEP = ','
 SORT_SEP = ':'
 
 #! Sorting directions and their corresponding verbs in django

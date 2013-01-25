@@ -122,24 +122,16 @@ INSTALLED_APPS = (
     PROJECT_NAME,
 
     # Test runner
-    'django_nose'
+    'devserver'
 )
 
-# Use nose to run all tests
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-
-# Tell nose to measure coverage on the 'foo' and 'bar' apps
-NOSE_ARGS = [
-    '--with-coverage',
-    '--cover-html',
-    '--cover-package=flapjack.*,flapjack',
-]
+DEVSERVER_TRUNCATE_SQL = False
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'formatters': {
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -153,10 +145,6 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
         'armet': {
             'handlers': ['console'],
             'level': 'DEBUG',
