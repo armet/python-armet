@@ -28,13 +28,13 @@ Collected ABNF
                               [query-expression-negation]
                               ["=" query-expression-value]
 
-    query-expression-name = *pchar *( query-expression-separator *pchar )
+    query-expression-name = *pchar *( "." *pchar ) [ "@" *pchar ]
+                          / "@" *pchar
 
     query-expression-negation = ( query-expression-separator "not" )
                               / "!"
 
-    query-expression-operation = query-expression-separator
-                                 query-expression-operation-name
+    query-expression-operation = "." query-expression-operation-name
 
     query-expression-operation-name = "exact"
                                     / "iexact"
@@ -51,7 +51,5 @@ Collected ABNF
                                     / "endswith"
                                     / "iendswith"
                                     / "isnull"
-
-    query-expression-separator = "."
 
     query-expression-value = *pchar *( "," *pchar )
