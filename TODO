@@ -1,7 +1,7 @@
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
  ☐ Underscorize class names in our attempt to name ourselves
  ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
- ☐ POST
+ ✔ POST @done (13-01-25 12:59)
  ☐ PUT
  ☐ PATCH
  ✔ DELETE @done (13-01-18 22:55)
@@ -62,7 +62,7 @@
          Right now it will always be pk; there is a make_slug method but is
          broken because if you try and do /poll/3910 it will still only
          try the PK. `slug_attribute = "pk"` might work though its a long name.
- ☐ Transactional requests
+ ✔ Transactional requests @done (13-01-25 12:58)
      Begin, commit, and rollback methods (or similar) should (inside model.py)
      facilitate a database transaction
  ☐ Policies
@@ -73,6 +73,11 @@
      declarative way to specify that a resource should be throttled to 15 calls
      every 30 minutes per user or perhaps the call limit is determine by a
      user property to allow for use tiers.
+ ☐ Relation resolution
+     Specifies to use while creating / updating to speficiy what related resource
+     ✔ Reference through slugs @done (13-01-25 12:59)
+     ✔ Reference through URI @done (13-01-25 12:59)
+     ☐ Create inline
  ☐ Browser side Cacheing
      Basically I mean just faciltiating this through ETag, Last modified dates,
      etc.

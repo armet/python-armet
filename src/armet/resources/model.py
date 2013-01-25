@@ -108,3 +108,18 @@ class BaseModel(base.BaseResource):
     def destroy(self, queryset):
         # The object should be a queryset or a model; delete the model(s).
         queryset.delete()
+
+    def create(self, data):
+        # Proxy to the form to save the data.
+        self._form.save()
+
+        # Return the form object instance.
+        return self._form.instance
+
+    def update(self, obj, data):
+        # Proxy to the form to save the data.
+        self._form.instance.pk = obj.get().pk
+        self._form.save()
+
+        # Return the form object instance.
+        return self._form.instance
