@@ -406,11 +406,8 @@ class DeclarativeResource(type):
         # PascalCaseThis => pascal_case_this
         if 'name' not in attrs:
             import re
-            b = re.findall('[A-Z]?[a-z]+|[0-9]+/g', name)
-            name = ''
-            for names in b:
-                name += '{}_'.format(names.lower())
-            self.name = name.rstrip('_')
+            names = re.findall('[A-Z]?[a-z]+|[0-9]+/g', name)
+            self.name = '_'.join(names).lower()
 
         # Unless `filterable` was explicitly provided in a class object,
         # default `filterable` to an empty tuple.
