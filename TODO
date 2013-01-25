@@ -19,6 +19,7 @@
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
      ✔ '.' instead of'__' @done (13-01-18 22:57)
+     ☐ Allow bang '!' in addition to '.not' for negation
      ☐ Refactor as a state machine to allow for arbitrarily complex queries
            eg. /poll?question='/choice/1/choice_text' would grab every poll with
            the same text as the choice #1's choice_text -- another example is
@@ -79,7 +80,7 @@
      Basically I mean just faciltiating this through ETag, Last modified dates,
      etc.
  ☐ Through reference; referencing properties from the relationship between two resources
-     /team/5/user?(owner)=true   all owners of team 5
+     /team/5/user?@owner=true   all owners of team 5
  ☐ Set specifiers
      /team/1,2 will return both teams 1 and 2
      /team/10-20 will return teams 10 through 20
@@ -92,7 +93,7 @@
  ☐ URL segment filtering
      /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
      /apple:color=red/core  selects all cores of all apples that are red
-     /apple:color!asc selects all apple sorted asc by color
+     /apple:color:asc selects all apple sorted asc by color
  ☐ Decoders
      ☐ Text (plain/text)
      ☐ Form (multipart/form-data)
