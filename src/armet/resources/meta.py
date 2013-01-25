@@ -347,16 +347,6 @@ class DeclarativeResource(type):
                     path=path.split('__') if path is not None else None,
                     collection=collection)
 
-        if self.resource_uri is not None:
-            # Ensure resource URI can be added
-            if self.resource_uri in self._attributes:
-                raise ImproperlyConfigured(
-                    'resource_uri attribute in conflict with '
-                    'already defined attribute.')
-
-            # Add the resource URI attribute
-            self._set_attribute(self.resource_uri)
-
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care

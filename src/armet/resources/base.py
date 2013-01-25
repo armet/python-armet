@@ -8,6 +8,7 @@ import os
 from collections import Mapping
 import hashlib
 import logging
+from django.db import transaction
 import six
 import operator
 from six import string_types
@@ -182,10 +183,6 @@ class BaseResource(object):
     #! `filterable = None` on a resource or any of its parents.
     filterable = None
 
-    #! The name of the resource URI attribute on the resource.
-    #! Specify `None` to not have the URI be included.
-    resource_uri = 'resource_uri'
-
     #! Authentication protocol(s) to use to authenticate access to
     #! the resource.
     authentication = ('armet.authentication.Authentication',)
@@ -344,6 +341,7 @@ class BaseResource(object):
         return Exception("Something bad happened ...")
 
     @classmethod
+    @transaction.commit_manually
     @csrf_exempt
     def view(cls, request, *args, **kwargs):
         """
@@ -362,13 +360,25 @@ class BaseResource(object):
             obj = resource(request=request, **kwargs)
 
             # Initiate the dispatch cycle and return its result
-            return obj.dispatch()
+            response = obj.dispatch()
+
+            # Commit the database transaction
+            cls.commit()
+
+            # Return the dispatched response.
+            return response
 
         except exceptions.Error as ex:
+            # Rollback the database transaction.
+            cls.rollback()
+
             # Some known error was thrown before the dispatch cycle; dispatch.
             return ex.dispatch()
 
         except BaseException:
+            # Rollback the database transaction.
+            cls.rollback()
+
             # TODO: Notify system administrator of error
 
             # Log that an unknown exception occured to help those poor
@@ -377,6 +387,24 @@ class BaseResource(object):
 
             # Return an empty body indicative of a server failure.
             return http.Response(status=http.client.INTERNAL_SERVER_ERROR)
+
+    @classmethod
+    def commit(self):
+        """Commit the active transaction.
+
+        The default behavior is to tell django's database layer to commit
+        through `django.db.transaction.commit`.
+        """
+        transaction.commit()
+
+    @classmethod
+    def rollback(self):
+        """Rollback the active transaction.
+
+        The default behavior is to tell django's database layer to rollback
+        through `django.db.transaction.rollback`.
+        """
+        transaction.rollback()
 
     @classmethod
     def traverse(cls, request, kwargs):
@@ -508,14 +536,25 @@ class BaseResource(object):
             # self.authorize_resource()
 
             data = None
-            if self.request.body:
-                # Determine an approparite decoder and decode the request body.
-                data = self.decode(self.request.body)
+            if self.request.body is not None:
+                try:
+                    # Determine an approparite decoder and decode the
+                    # request body.
+                    data = self.decode(self.request.body)
 
-                # Run clean cycle over decoded body
-                data = self.clean(data)
+                except exceptions.UnsupportedMediaType:
+                    # Something happened while decode.
+                    if not self.request.body:
+                        if self.request.method not in (
+                                'GET', 'DELETE', 'HEAD', 'OPTIONS'):
+                            # There was a empty body in a request that cares
+                            raise
 
-                # TODO: Assert object-level authorization
+                else:
+                    # Run clean cycle over decoded body
+                    data = self.clean(data)
+
+                    # TODO: Assert object-level authorization
 
             # Delegate to the determined function and return its response.
             return function(data)
@@ -646,23 +685,6 @@ class BaseResource(object):
         # Return whatever we have
         return value
 
-    def prepare_resource_uri(self, obj, value):
-        """Set the resource URI on the object."""
-        try:
-            # Reverse the url to make the `resource_uri`.
-            return self.reverse(self.make_slug(obj), None,
-                self.parent, self.local)
-
-        except urlresolvers.NoReverseMatch:
-            if not self.local:
-                # Are we mis-used?
-                raise ImproperlyConfigured(
-                    'A non-publicly exposed resource must be '
-                    'declared local.')
-
-            # Nope; re-raise the proper error message.
-            raise
-
     def item_prepare(self, item):
         """Prepares an item for transmission."""
         # Initialize the object that will hold the item.
@@ -724,6 +746,18 @@ class BaseResource(object):
 
         # Return our primed object.
         return item
+
+    def relation_clean(self, value):
+        """Normalizes relation accessors."""
+        # TODO: Allow exploded objects here; would need to pass these
+        #   off to the creation method of the related class.
+        try:
+            # Attempt to resolve the relation reference.
+            return self.resolve(value)
+
+        except ValueError:
+            # Must be already resolved (or something weird)
+            return value
 
     def clean(self, data):
         """Cleans data from the request for processing."""
@@ -860,11 +894,19 @@ class BaseResource(object):
         # slice off the site prefix if one exists.
         # Will replace "/" with "/" if that's the prefix.
         stripped = url.replace(urlresolvers.get_script_prefix(), '/')
-        # Get the actual resource.
-        resolved = urlresolvers.resolve(stripped)
+
+        try:
+            # Get the actual resource.
+            resolved = urlresolvers.resolve(stripped)
+
+        except urlresolvers.Resolver404:
+            # Raise a normal exception here.
+            raise ValueError('No resolution found.')
+
         # Rip out the class and kwargs from it.
         klass = resolved.func.__self__
         kw = resolved.kwargs
+
         # Instantiate and read that class,
         # returning whatever object is at that resource.
         obj = klass(request=self.request, **kw)
@@ -1021,7 +1063,31 @@ class BaseResource(object):
         # If it's there, destroy it.
         self.destroy(items)
 
+        # Return the response
         return self.make_response(None, http.client.NO_CONTENT)
+
+    def put(self, data=None):
+        """Processes a `PUT` request.
+
+        @param[in] data
+            The body of the request; unused in a normal `PUT`.
+
+        @returns
+            The HTTPResponse object to return to the client.
+        """
+        if self.slug is None:
+            # We don't implement list PUT yet.
+            raise exceptions.NotImplemented()
+
+        else:
+            # Read in the current object.
+            obj = self.read()
+
+            # Delegate to the `update` function to actually update the object.
+            response = self.update(obj, data)
+
+        # Build and return the response object
+        return self.make_response(response, http.client.OK)
 
     def get(self, data=None):
         """Processes a `GET` request.
@@ -1250,15 +1316,31 @@ class BaseResource(object):
     def create(self, data):
         """Creates the object that is being requested; via POST or PUT.
 
+        @param[in] data
+            The data to create the object with.
+
         @returns
             The object that has been created; or, None, to indicate that no
             object was created.
         """
-        # Proxy to the form to save the data.
-        self._form.save()
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
 
-        # Return the form object instance.
-        return self._form.instance
+    def update(self, obj, data):
+        """Updates the object that is being requested; via PATCH or PUT.
+
+        @param[in] obj
+            The objects represented by the current request; the results of
+            invoking `self.read()`.
+
+        @param[in] data
+            The data to update the object with.
+
+        @returns
+            The object that has been updated.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
 
     def destroy(self, obj):
         """Destroy the passed object (or objects).
