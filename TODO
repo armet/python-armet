@@ -19,9 +19,7 @@
  ☐ Query parsing
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
-     ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
      ✔ '.' instead of'__' @done (13-01-18 22:57)
-     ☐ '!' instead of ':' for sorting
      ☐ Refactor as a state machine to allow for arbitrarily complex queries
            eg. /poll?question='/choice/1/choice_text' would grab every poll with
            the same text as the choice #1's choice_text -- another example is
