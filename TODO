@@ -1,4 +1,3 @@
- ☐ Integration with django-haystack to provide search indexes to facilitate filtering
  ✔ Underscorize class names in our attempt to name ourselves @done (13-01-25 13:24)
  ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
  ✔ POST @done (13-01-25 12:59)
@@ -119,3 +118,4 @@
     ☐ Ability to create a listener with web-sockets or something... ?
  ☐ More on web-sockets; the ability to create a persistent connection
  ☐ Simple HTTP streaming support to stream huge responses to the client
+ ☐ Integration with django-haystack to provide search indexes to facilitate filtering
