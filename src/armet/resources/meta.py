@@ -347,16 +347,6 @@ class DeclarativeResource(type):
                     path=path.split('__') if path is not None else None,
                     collection=collection)
 
-        if self.resource_uri is not None:
-            # Ensure resource URI can be added
-            if self.resource_uri in self._attributes:
-                raise ImproperlyConfigured(
-                    'resource_uri attribute in conflict with '
-                    'already defined attribute.')
-
-            # Add the resource URI attribute
-            self._set_attribute(self.resource_uri)
-
     def __init__(self, name, bases, attrs):
         if name == 'NewBase':
             # Six contrivance; we don't care
@@ -413,8 +403,14 @@ class DeclarativeResource(type):
         self._discover_attributes()
 
         # Ensure the resource has a name.
+        # PascalCaseThis => pascal_case_this
         if 'name' not in attrs:
-            self.name = name.lower()
+            import re
+            b = re.findall('[A-Z]?[a-z]+|[0-9]+/g', name)
+            name = ''
+            for names in b:
+                name += '{}_'.format(names.lower())
+            self.name = name.rstrip('_')
 
         # Unless `filterable` was explicitly provided in a class object,
         # default `filterable` to an empty tuple.

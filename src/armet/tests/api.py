@@ -32,7 +32,7 @@ class Poll(resources.Model):
     }
 
 
-class Booth(resources.Model):
+class BoothSomethignElseBlahBlah(resources.Model):
     model = models.Booth
 
 
