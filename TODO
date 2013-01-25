@@ -1,17 +1,17 @@
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
- ☐ Underscorize class names in our attempt to name ourselves
+ ✔ Underscorize class names in our attempt to name ourselves @done (13-01-25 13:24)
  ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
  ✔ POST @done (13-01-25 12:59)
- ☐ PUT
+ ✔ PUT @done (13-01-25 13:23)
  ☐ PATCH
  ✔ DELETE @done (13-01-18 22:55)
  ✔ OPTIONS @done (13-01-18 16:16)
- ☐ Header: Link
-     ☐ Automatic generation of link headers for related resources
+ ✔ Header: Link @done (13-01-25 13:24)
+     ✔ Automatic generation of link headers for related resources @done (13-01-25 13:24)
      ☐ Ability to add additional link headers through like a 'links' option
  ☐ Header: Link; rel="schema"
      This is going to require a small RFC to accompany it.
-     ☐ We can remove the resource_uri property now
+     ✔ We can remove the resource_uri property now @done (13-01-25 13:25)
  ☐ Headers: Range / Content-Range
      Pagination. This will have to firmly integrated into the base resources (
      perhaps in View) as it will need to make successive calls to dispatch to

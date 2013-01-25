@@ -183,10 +183,6 @@ class BaseResource(object):
     #! `filterable = None` on a resource or any of its parents.
     filterable = None
 
-    #! The name of the resource URI attribute on the resource.
-    #! Specify `None` to not have the URI be included.
-    resource_uri = 'resource_uri'
-
     #! Authentication protocol(s) to use to authenticate access to
     #! the resource.
     authentication = ('armet.authentication.Authentication',)
@@ -688,23 +684,6 @@ class BaseResource(object):
 
         # Return whatever we have
         return value
-
-    def prepare_resource_uri(self, obj, value):
-        """Set the resource URI on the object."""
-        try:
-            # Reverse the url to make the `resource_uri`.
-            return self.reverse(self.make_slug(obj), None,
-                self.parent, self.local)
-
-        except urlresolvers.NoReverseMatch:
-            if not self.local:
-                # Are we mis-used?
-                raise ImproperlyConfigured(
-                    'A non-publicly exposed resource must be '
-                    'declared local.')
-
-            # Nope; re-raise the proper error message.
-            raise
 
     def item_prepare(self, item):
         """Prepares an item for transmission."""
