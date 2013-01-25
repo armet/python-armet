@@ -10,6 +10,6 @@ from . import api
 urlpatterns = patterns('',
     url('^', include(api.Poll.urls)),
     url('^', include(api.Choice.urls)),
-    url('^', include(api.Booth.urls)),
+    url('^', include(api.BoothSomethignElseBlahBlah.urls)),
     url('^', include(api.Cushion.urls))
 )

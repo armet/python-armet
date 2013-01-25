@@ -14,7 +14,7 @@ PROJECT_ROOT = path.abspath(path.join(__file__))
 SITE_ROOT = path.abspath(path.join(PROJECT_ROOT, '..'))
 
 # Debugging settings
-DEBUG = False
+DEBUG = True
 
 # Debug templates with all the nice stack traces
 TEMPLATE_DEBUG = DEBUG
