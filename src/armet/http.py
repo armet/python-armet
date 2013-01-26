@@ -7,8 +7,8 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from django import http
 
-# Normalize `http.client` and `httplib`
-# TODO: We can remove this when the move to python 3 is done
+# Normalize `http.client` and `httplib`.
+# TODO: We can remove this when the move to python 3 is done.
 from six.moves import http_client as client
 
 try:
@@ -19,7 +19,7 @@ try:
     getattr(client, 'NETWORK_AUTHENTICATION_REQUIRED')
 
 except AttributeError:
-    # Don't have em; add them
+    # Don't have em; add them.
     client.PRECONDITION_REQUIRED = 428
     client.TOO_MANY_REQUESTS = 429
     client.REQUEST_HEADER_FIELDS_TOO_LARGE = 431
@@ -41,10 +41,10 @@ class Response(http.HttpResponse):
 
     @http.HttpResponse.content.setter
     def content(self, value):
-        # Delegate to django to actually set our content
+        # Delegate to django to actually set our content.
         super(Response, self)._set_content(value)
 
         if self.content:
             # Hop in and set our content-length automatically because it just
-            # feels right
+            # feels right.
             self['Content-Length'] = len(bytes(self.content))
