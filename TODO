@@ -11,6 +11,7 @@
  ☐ Header: Link; rel="schema"
      This is going to require a small RFC to accompany it.
      ✔ We can remove the resource_uri property now @done (13-01-25 13:25)
+     ✔ Schemas are served appropriately @done (13-01-25 16:26)
  ☐ Headers: Range / Content-Range
      Pagination. This will have to firmly integrated into the base resources (
      perhaps in View) as it will need to make successive calls to dispatch to
