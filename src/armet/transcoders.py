@@ -100,14 +100,3 @@ class Yaml:
         'text/yaml; charset=utf-8',
         'text/x-yaml; charset=utf-8',
     )
-
-
-# class JsonP:
-#     mimetypes = (
-#         # JSONP is just javascript so it should be afforded the javascript
-#         # mimetype.
-#         'application/javascript',
-#         'application/x-javascript',
-#         'text/x-javascript; charset=utf-8',
-#         'text/javascript; charset=utf-8',
-#     )
