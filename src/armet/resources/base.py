@@ -234,7 +234,7 @@ class BaseResource(object):
         """
 
     #! The base regex for the urls.
-    _url_base_regex = r'^{}{{}}/??(?:\.(?P<format>[^/]*?))?/?$'
+    _url_base_regex = r'^{}{{}}/??(?P<schema>\.schema)?(?:\.(?P<format>[^/]*?))?/?$'
 
     @utils.classproperty
     @utils.memoize
@@ -359,11 +359,24 @@ class BaseResource(object):
             # Instantiate the resource
             obj = resource(request=request, **kwargs)
 
-            # Initiate the dispatch cycle and return its result
-            response = obj.dispatch()
+            response = None
+            if kwargs.get('schema') is not None:
+                # Find the name of the determined encoder.
+                encoder = obj._determine_encoder()
+                for name, value in six.iteritems(obj.encoders):
+                    if value is encoder:
+                        break
 
-            # Commit the database transaction
-            cls.commit()
+                # Generate the schema for the current resource
+                response = http.Response(cls.schema(name),
+                    mimetype=encoder.mimetype)
+
+            else:
+                # Initiate the dispatch cycle and return its result
+                response = obj.dispatch()
+
+                # Commit the database transaction
+                cls.commit()
 
             # Return the dispatched response.
             return response
