@@ -121,3 +121,4 @@
  ☐ More on web-sockets; the ability to create a persistent connection
  ☐ Simple HTTP streaming support to stream huge responses to the client
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
+ ☐ Make as many requirements optional as possible (PyYAML, lxml, etc.).
