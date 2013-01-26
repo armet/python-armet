@@ -92,14 +92,14 @@ class Text:
     )
 
 
-# class Yaml:
-#     mimetypes = (
-#         # Not too sure on what the official one is as of yet.
-#         'text/yaml; charset=utf-8',
-#         'application/yaml',
-#         'application/x-yaml',
-#         'text/x-yaml; charset=utf-8',
-#     )
+class Yaml:
+    mimetypes = (
+        # Not too sure on what the official one is as of yet.
+        'text/yaml; charset=utf-8',
+        'application/yaml',
+        'application/x-yaml',
+        'text/x-yaml; charset=utf-8',
+    )
 
 
 # class JsonP:
