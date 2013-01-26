@@ -10,6 +10,7 @@ PyYAML                  # YAML encoding and decoding
 lxml                    # XML encoding and decoding
 python-magic            # For auto-detecting content-type and sending
                         #   files directly with the correct mime type
+python-digest           # For processing DIGEST authentication
 
 # Testing requirements
 django-extensions
