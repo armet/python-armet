@@ -4,56 +4,56 @@ Defines the query parser for Armet
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-from django.db.models.sql.constants import LOOKUP_SEP
-from django.db.models import Q
+# from django.db.models import Q
 import operator
-from constants import OPERATION_DEFAULT, SORT
+from .constants import OPERATION_DEFAULT, SORT, LOOKUP_SEP
 
 
-class QueryList(list):
-    """A simple list for Querys that allows for easy django qification.  Note
-    that QueryList assumes that it contains only Query objects
-    """
+# class QueryList(list):
+#     """A simple list for Querys that allows for easy django qification.  Note
+#     that QueryList assumes that it contains only Query objects
+#     """
 
-    def _single_q(self, query):
-        """Returns a q object for a single query object
-        """
-        # If the query is empty, then just make a no-op Q object
-        if not query.path or not query.value:
-            return Q()
+#     def _single_q(self, query):
+#         """Returns a q object for a single query object
+#         """
+#         # If the query is empty, then just make a no-op Q object
+#         if not query.path or not query.value:
+#             return Q()
 
-        key = query.django_query
+#         key = query.django_query
 
-        # Build query objects for all the values
-        qobjects = (Q(**{key: value}) for value in query.value)
+#         # Build query objects for all the values
+#         qobjects = (Q(**{key: value}) for value in query.value)
 
-        # Reduce them all to a single one via 'or'ing them
-        q = reduce(operator.or_, qobjects)
+#         # Reduce them all to a single one via 'or'ing them
+#         q = reduce(operator.or_, qobjects)
 
-        # Negate it if neccesary
-        return (~q) if query.negated else q
+#         # Negate it if neccesary
+#         return (~q) if query.negated else q
 
-    def as_q(self):
-        """get a Q object for all the Query objects stored within
-        """
-        # gather all the Q objects
-        qobjects = (self._single_q(query) for query in self)
+#     def as_q(self):
+#         """get a Q object for all the Query objects stored within
+#         """
+#         # gather all the Q objects
+#         qobjects = (self._single_q(query) for query in self)
 
-        # Reduce them to a single q object
-        return reduce(operator.and_, qobjects)
+#         # Reduce them to a single q object
+#         return reduce(operator.and_, qobjects)
 
-    def as_order(self):
-        """Returns a list of all the sorting directions
-        """
-        orders = []
-        for query in self:
-            if query.direction is not None:
-                orders.append(query.direction + query.django_path)
-        return orders
+#     def as_order(self):
+#         """Returns a list of all the sorting directions
+#         """
+#         orders = []
+#         for query in self:
+#             if query.direction is not None:
+#                 orders.append(query.direction + query.django_path)
+#         return orders
 
 
 class Query(object):
-    """Simple structure to wrangle query parameters"""
+    """The base class for storing parsed queries
+    """
 
     @property
     def django_query(self):
@@ -115,3 +115,25 @@ class Query(object):
         #! ANDed with any other queries, including other queries with the same
         #! name.
         self.value = kwargs.get('value', [])
+
+        #! The next query to be parsed in the chain.  Is none if there are none
+        #! next
+        self.next = kwargs.get('next', None)
+
+        #! The operation that will be used with the next query in the chain
+        self.verb = kwargs.get('verb', operator.and_)
+
+        #! A flag specifying if this is operating on a through table
+        self.through = kwargs.get('through', False)
+
+
+class GroupedQuery(Query):
+    """This is a query with specific left and right operands.  It is used with
+    grouped queries via parenthesis
+    """
+
+    def __init__(self, **kwargs):
+        super(GroupedQuery, self).__init__(**kwargs)
+
+        #! The left operand in this grouped query.
+        self.left = kwargs.get('left', None)
