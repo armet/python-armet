@@ -11,11 +11,20 @@ def read(filename):
 setup(
         name='django-armet',
         version=read('VERSION'),
-        description=read('description'),
+        description='Clean and modern framework in django for creating RESTful APIs.',
         long_description=read('README.md'),
         author='Concordus Applications',
         author_email='support@concordusapps.com',
         url='http://github.com/armet/django-armet',
         package_dir={'armet': 'src/armet'},
         packages=find_packages('src')
+        install_requires=(
+            'six',
+            'django',
+            'python-mimeparse',
+            'python-dateutil',
+            'parsedatetime',
+            'PyYAML',
+            'lxml',
+            'python-magic',),
     )

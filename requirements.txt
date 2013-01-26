@@ -1,12 +1,20 @@
-six
-django
-lxml
-python-mimeparse
-python-magic
-python-dateutil
+# General requirements
+six                     # Python 2 and 3 normalization layer
+django                  # Django web framework
+python-mimeparse        # For parsing accept and content-type headers
+python-dateutil         # For parsing standard ISO dates
+
+# Optional requirements
+parsedatetime           # Fuzzy date parsing
+PyYAML                  # YAML encoding and decoding
+lxml                    # XML encoding and decoding
+python-magic            # For auto-detecting content-type and sending
+                        #   files directly with the correct mime type
+
+# Testing requirements
 django-extensions
 django-nose
+xtraceback
 coverage
 yanc
-parsedatetime
-PyYAML
+django-armet
