@@ -106,7 +106,7 @@
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Encoders
      ☐ Text (plain/text)
-     ☐ Form (multipleltipart/form-data)
+     ☐ Form (multipart/form-data)
      ✔ Json (application/json) @done (13-01-25 11:24)
      ☐ Xml (application/xml)
      ☐ Yaml
