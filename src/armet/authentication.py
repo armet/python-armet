@@ -78,12 +78,12 @@ class Header(six.with_metaclass(abc.ABCMeta, Authentication)):
         header = request.META.get('HTTP_AUTHORIZATION')
         try:
             method, credentials = header.split(' ', 1)
-            if not self.can_authenticate(method, request):
+            if not self.can_authenticate(method.strip(), request):
                 # We are unable to (for whatever reason) make an informed
                 # authentication descision using these as criterion
                 return None
 
-            user = self.get_user(credentials, request)
+            user = self.get_user(credentials.strip(), request)
             if user is None or not self.is_active(user):
                 # No user was retrieved or the retrieved user was deemed
                 # to be inactive.
@@ -153,23 +153,15 @@ class Basic(Http):
     """Implementation of the Authentication protocol for BASIC authentication.
     """
 
-    def __init__(self, **kwargs):
-        """Initialize this and store any needed properties."""
-        super(Basic, self).__init__(**kwargs)
-
-        #! Password attribute to use to authn with.
-        self.password = utils.config_fallback(kwargs.get('password'),
-            'authentication.basic.password', 'password')
-
     def can_authenticate(self, method, *args):
         return method.lower() == 'basic'
 
     def get_user(self, credentials, *args):
-        username, password = credentials.strip().decode('base64').split(':', 1)
+        username, password = credentials.decode('base64').split(':', 1)
         return authenticate(**{
-                self.username: username,
-                self.password: password,
-            })
+            self.username: username,
+            'password': password,
+        })
 
     @property
     def Unauthenticated(self):
@@ -184,13 +176,17 @@ class Basic(Http):
 
 class Digest(Http):
     """Implementation of the Authentication protocol for DIGEST authentication.
+
+    FIXME: DIGEST Authentication requires a partial digest hash to be stored
+    that is the hash of the username, realm, and password. We need to figure
+    something out that will allow it to be stored per user per realm and
+    only stored if digest authentication is used.
+
+    @par Reference
+     - https://bitbucket.org/akoha/django-digest/src/tip/django_digest/
     """
 
-    def __init__(self, **kwargs):
-        """Initialize this and store any needed properties."""
-        super(Digest, self).__init__(**kwargs)
-
-    def get_user(self, credentials, request):
+    def get_user(self, credentials, request, *args):
         # Parse the credentials in the digest header.
         digest = python_digest.parse_digest_response(credentials)
 
@@ -199,9 +195,6 @@ class Digest(Http):
             return None
 
         # Validate the nonce.
-        # FIXME: The nonce should probably be per-user.
-        # TODO: I have no idea what DIGEST auth is.. maybe the nonce can
-        #   just be the password hash ?
         if not python_digest.validate_nonce(digest.nonce, settings.SECRET_KEY):
             return None
 
@@ -212,16 +205,20 @@ class Digest(Http):
         except User.DoesNotExist:
             return None
 
+        # TODO: Retrieve the partial digest for this user.
+        partial = None
+
         # Construct and validate the partial digest.
-        expected = python_digest.calculate_request_digest(digest.username,
-            request.method, self.realm, user.password, digest)
+        expected = python_digest.calculate_request_digest(
+            method=request.method, digest_response=digest,
+            partial_digest=partial)
         if expected != digest.response:
             return None
 
         # Apparently we are successfully authenticated.
         return user
 
-    def can_authenticate(self, method):
+    def can_authenticate(self, method, *args):
         return method.lower() == 'digest'
 
     @property
