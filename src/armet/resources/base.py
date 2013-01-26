@@ -137,14 +137,14 @@ class BaseResource(object):
     #! Mapping of encoders known by this resource.
     encoders = {
         'json': 'armet.encoders.Json',
-        'xml': 'armet.encoders.Xml',
+        # 'xml': 'armet.encoders.Xml',
         'text': 'armet.encoders.Text',
     }
 
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
-        'xml',
+        # 'xml',
         'text',
     )
 
@@ -155,14 +155,14 @@ class BaseResource(object):
     decoders = {
         'json': 'armet.decoders.Json',
         'form': 'armet.decoders.Form',
-        'xml': 'armet.decoders.Xml',
+        # 'xml': 'armet.decoders.Xml',
     }
 
     #! List of allowed decoders of the understood decoders.
     allowed_decoders = (
         'json',
         'form',
-        'xml',
+        # 'xml',
     )
 
     #! URL namespace to define the url configuration inside.

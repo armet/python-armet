@@ -403,8 +403,11 @@ class DeclarativeResource(type):
         self._discover_attributes()
 
         # Ensure the resource has a name.
+        # PascalCaseThis => pascal_case_this
         if 'name' not in attrs:
-            self.name = name.lower()
+            import re
+            names = re.findall('[A-Z]?[a-z]+|[0-9]+/g', name)
+            self.name = '_'.join(names).lower()
 
         # Unless `filterable` was explicitly provided in a class object,
         # default `filterable` to an empty tuple.
