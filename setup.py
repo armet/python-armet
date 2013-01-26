@@ -10,7 +10,7 @@ def read(filename):
 
 setup(
         name='django-armet',
-        version=read('VERSION'),
+        version='0.2.0-pre',
         description='Clean and modern framework in django for creating RESTful APIs.',
         long_description=read('README.md'),
         author='Concordus Applications',
