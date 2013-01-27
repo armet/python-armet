@@ -35,7 +35,9 @@ class BaseResource(object):
         the `__init__.py`).
     """
 
-    #! Name of the resource to use in URIs; defaults to `__name__.lower()`.
+    #! Name of the resource to use in URIs; defaults to the underscorized
+    #! version of the camel cased class name (eg. SomethingHere becomes
+    #! something_here).
     name = None
 
     #! Form class to serve as the recipient of data from the client.

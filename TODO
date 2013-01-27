@@ -122,3 +122,5 @@
  ☐ Simple HTTP streaming support to stream huge responses to the client
  ☐ Integration with django-haystack to provide search indexes to facilitate filtering
  ☐ Make as many requirements optional as possible (PyYAML, lxml, etc.).
+ ☐ Strip out a trailing `Resource` when constructing the name for a resource
+     Eg. SomeHereResource should become some_here
