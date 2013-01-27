@@ -18,4 +18,3 @@ django-nose
 xtraceback
 coverage
 yanc
-django-armet

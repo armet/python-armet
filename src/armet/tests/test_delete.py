@@ -44,7 +44,7 @@ class DeleteTest(test.TestCase):
         self.assertHttpStatus(response, http.client.NOT_FOUND)
 
     def test_delete_whole_resource(self):
-        urls = ('/choice/', '/poll/', '/booth/')
+        urls = ('/choice/', '/poll/', '/booth_somethign_else_blah_blah/')
         for url in urls:
             response = self.client.delete(url)
             self.assertHttpStatus(response, http.client.NO_CONTENT)

@@ -97,7 +97,7 @@
      /apple:color:asc selects all apple sorted asc by color
  ☐ Decoders
      ☐ Text (plain/text)
-     ☐ Form (multipart/form-data)
+     ✔ Form (multipart/form-data) @done (13-01-26 16:21)
      ☐ Url (application/x-www-form-urlencoded)
      ☐ Xml (application/xml)
      ✔ Json (application/json) @done (13-01-25 11:24)

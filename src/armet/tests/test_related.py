@@ -35,7 +35,7 @@ class RelatedTest(test.TestCase):
 
     def test_many_to_many(self):
         request = RequestFactory().get('/booth/1')
-        resource = api.Booth(request=request, slug=1)
+        resource = api.BoothSomethignElseBlahBlah(request=request, slug=1)
         data = resource.prepare(self.booth)
 
         self.assertIsInstance(data['polls'][0], six.string_types)
