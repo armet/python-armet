@@ -932,7 +932,7 @@ class BaseResource(object):
     def reverse(cls, slug=None, path=None, parent=None, local=False):
         """Reverses a URL for the resource or for the passed object.
 
-        @parent
+        @param[in] parent
             Describes where to reverse this resource from.
             Tuple of (<parent resource>, "attribute name on parent").
         """

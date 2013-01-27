@@ -3,36 +3,21 @@
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-import abc
-from collections import MutableSequence
 import six
+from collections import MutableSequence
 from django.conf.urls import patterns, url, include
 from armet import resources
-from armet.resources.meta import DeclarativeResource
-from armet import http
 
 
-class ApiBase(DeclarativeResource, abc.ABCMeta):
-    pass
-
-
-class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
-    """Implements an api registry used to wrangle apis.
+class Api(resources.Resource, MutableSequence):
+    """Implements an api registry used to make APIs visible.
     """
 
+    # TODO: Implement the remainder of the methods.
     http_allowed_methods = ('GET',)
 
+    # TODO: Implement the remainder of the operations.
     allowed_operations = ('read',)
-
-    resource_uri = None
-
-    include = {
-        'name': resources.attribute('name'),
-        'link': resources.attribute(),
-    }
-
-    def prepare_link(self, obj, value):
-        return obj.reverse()
 
     def __init__(self, name='api', *args, **kwargs):
         """
@@ -52,16 +37,6 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
 
         #! The internal registry of resources.
         self._registry = kwargs.get('registry', [])
-
-    # TODO: Remove this alias ?
-    def register(self, resource):
-        """Registers the passed resource class object in the registry."""
-        self.append(resource)
-
-    # TODO: Remove this alias ?
-    def unregister(self, resource):
-        """Remove the passed resource class object from the registry."""
-        self.remove(resource)
 
     def insert(self, index, resource):
         return self._registry.insert(index, resource)
@@ -84,8 +59,6 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
     def __contains__(self, resource):
         return resource in self._registry
 
-    _URL = 0
-
     @property
     def urls(self):
         """Returns a list of urls for all registered resources."""
@@ -99,12 +72,13 @@ class Api(six.with_metaclass(ApiBase, resources.BaseResource), MutableSequence):
                 kwargs={'resource': self.name, 'registry': self._registry}),
 
             # URL includes for the resources in the registry.
-            *[self.make_url(x) for x in self._registry]
+            *[self._make_url(x) for x in self._registry]
         )
 
-    def make_url(self, resource):
+    def _make_url(self, resource):
         """Takes a resource class object and returns a corresponding url."""
         return url(r'^{}/'.format(self.name), include(resource.urls))
 
     def read(self):
-        return self._registry
+        # There is no response; only links.
+        return None
