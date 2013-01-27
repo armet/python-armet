@@ -17,6 +17,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
 from django.views.decorators.csrf import csrf_exempt
 from . import attributes
+from . import link
 from .attributes import FileAttribute
 from .helpers import parent as parent_helper
 from .. import utils, http, exceptions, decoders, authorization, query
@@ -630,7 +631,16 @@ class BaseResource(object):
         # Declare who we are in the header.
         # TODO: The link headers should be an object so they are not
         #   constructed via strings here.
-        response['Link'] = '<{}>; rel=self'.format(self.url)
+        # response['Link'] = '<{}>; rel=self'.format(self.url)
+        links = []
+        for name in self._attributes:
+            # links.append("<{}>;rel=relation;title={}".format(name,name))
+            # theLink = link.Link()
+            links.append(link.Link(uri=name, title=name))
+            # links.append(name)
+
+        # import ipdb; ipdb.set_trace()
+        response['Links'] = ', '.join(map(str, links))
 
         # Return the built response.
         return response
