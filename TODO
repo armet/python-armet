@@ -5,17 +5,32 @@
  ☐ PATCH
  ✔ DELETE @done (13-01-18 22:55)
  ✔ OPTIONS @done (13-01-18 16:16)
- ✔ Header: Link @done (13-01-25 13:24)
+ ☐ Header: Link
      ✔ Automatic generation of link headers for related resources @done (13-01-25 13:24)
      ☐ Ability to add additional link headers through like a 'links' option
- ☐ Header: Link; rel="schema"
-     This is going to require a small RFC to accompany it.
+     ☐ Generation of links in relation to attribute proxies
+     ☐ Generation of links in relation to collection / item pages
+     ☐ Generation of links in relation to canonical URIs / self URIs
+ ☐ Header: Link; rel="describedBy"
      ✔ We can remove the resource_uri property now @done (13-01-25 13:25)
      ✔ Schemas are served appropriately @done (13-01-25 16:26)
+     ☐ Refactor schema generation to be more like encoders
+         Eg. a schema directory that has a json file, xml file, etc.
+     ☐ Ensure the following schemas exist:
+         ☐ JSON Schema
+         ☐ XML Schema Definition (XSD)
+         ☐ Rx (for YAML)
+     ☐ Ensure we are outputting the correct mimetypes for the schemas
+         ☐ JSON: application/json+schema
+         ☐ Rx: application/yaml
+         ☐ XSD: application/xml+schema
  ☐ Headers: Range / Content-Range
      Pagination. This will have to firmly integrated into the base resources (
      perhaps in View) as it will need to make successive calls to dispatch to
      get multiple ranges.
+     ✔ Refactor parsing to improve the regex to return an array of ranges @done (13-01-27 21:17)
+     ☐ Integrate into the view method to just call dispatch with range filters
+     ☐ Multipart/byte-range encoder to encode multiple ranges
  ☐ Query parsing
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
@@ -76,7 +91,9 @@
      Specifies to use while creating / updating to speficiy what related resource
      ✔ Reference through slugs @done (13-01-25 12:59)
      ✔ Reference through URI @done (13-01-25 12:59)
-     ☐ Create inline
+     ☐ Ability to create inline resources
+         Eg. when creating a choice you could create the poll object as a
+         nested resource.
  ☐ Browser side Cacheing
      Basically I mean just faciltiating this through ETag, Last modified dates,
      etc.
@@ -124,3 +141,13 @@
  ☐ Make as many requirements optional as possible (PyYAML, lxml, etc.).
  ☐ Strip out a trailing `Resource` when constructing the name for a resource
      Eg. SomeHereResource should become some_here
+ ☐ API Factory
+     ✔ GET @done (13-01-26 21:01)
+     ✔ Register / Unregister @done (13-01-26 21:02)
+     ☐ PUT
+         Basically, applying a PUT to an api factory would allow to completely
+         overwrite all resources defined in every endpoint.
+     ☐ PATCH
+         Same as PUT though it only edits / creates what is passed.
+     ☐ Autodiscover
+     ☐ Allow configuration of allowed methods through the resource __init__
