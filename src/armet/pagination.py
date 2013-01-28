@@ -14,6 +14,10 @@ def parse(specifiers):
     @param[in] specifiers
         Expected syntax is from the byte-range-specifier ABNF found in the
         [RFC 2616]; eg. 15-17,151,-16,26-278,15
+
+    @returns
+        Consecutive tuples that describe the requested range; eg. (1, 72) or
+        (1, 1) [read as 1 to 72 or 1 to 1].
     """
     specifiers = "".join(specifiers.split())
     for specifier in specifiers.split(','):
