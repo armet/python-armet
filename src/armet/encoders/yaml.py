@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Implements the encoder protocol for encoding an object into a JSON response.
+"""Implements the encoder protocol for encoding an object into a YAML response.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
@@ -40,14 +40,14 @@ class Encoder(transcoders.Yaml, Encoder):
 
         if isinstance(obj, six.integer_types):
             # Some kind of number.
-            return b'{}'.format(str(obj))
+            return bytes(obj)
 
         if isinstance(obj, (float, fractions.Fraction, decimal.Decimal)):
             # Some kind of something.
-            return b'{}'.format(str(obj))
+            return bytes(obj)
 
         if isinstance(obj, bool):
-            # Boolean
+            # Boolean.
             return b"true" if obj else b"false"
 
         # We have no idea what we are..
