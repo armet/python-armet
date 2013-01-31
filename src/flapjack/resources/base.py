@@ -196,8 +196,9 @@ class Base(six.with_metaclass(meta.Resource)):
 
                 if not isinstance(content, Mapping):
                     # Merge response headers with pagination headers
-                    for k, v in resource.page_headers.items():
-                        response[k] = v
+                    if hasattr(resource, 'page_headers'):
+                        for k, v in resource.page_headers.items():
+                            response[k] = v
             else:
                 response = HttpResponse()
             response.status_code = resource.status
