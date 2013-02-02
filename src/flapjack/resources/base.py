@@ -556,12 +556,12 @@ class Base(six.with_metaclass(meta.Resource)):
             return None
 
         try:
-            path = url.replace(urlresolvers.get_script_prefix(), '/')
+            path = path.replace(urlresolvers.get_script_prefix(), '/')
             
             # Attempt to resolve the path normally.
             resolution = resolve(path)
             resource = resolution.func.__self__(
-                    request=request,
+                    request=request, 
                     method=method,
                     identifier=resolution.kwargs['id'],
                     components=components
