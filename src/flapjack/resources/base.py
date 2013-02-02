@@ -4,6 +4,7 @@ from django.conf.urls import patterns, url
 from django.forms.models import model_to_dict
 from django.core.files.base import File
 from django.conf import settings
+from django.core import urlresolvers
 from django.core.urlresolvers import reverse, resolve
 import six
 from ..http import HttpResponse, constants
@@ -28,7 +29,7 @@ class Base(six.with_metaclass(meta.Resource)):
     http_list_allowed_methods = None
 
     #! List of allowed HTTP methods (on accessing a specific resource).
-    http_detail_allowed_methods = None
+    http_detail_allowed_methods = None 
 
     #! List of method names that we understand but do not neccesarily support.
     http_method_names = (
@@ -555,6 +556,8 @@ class Base(six.with_metaclass(meta.Resource)):
             return None
 
         try:
+            path = url.replace(urlresolvers.get_script_prefix(), '/')
+            
             # Attempt to resolve the path normally.
             resolution = resolve(path)
             resource = resolution.func.__self__(
