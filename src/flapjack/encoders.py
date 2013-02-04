@@ -6,6 +6,7 @@ import six
 import pickle
 import base64
 import mimetypes
+import magic
 import re
 from .http import HttpResponse
 from . import exceptions, transcoders, utils
@@ -49,7 +50,7 @@ class Json(transcoders.Json, Encoder):
 
     @classmethod
     def encode(cls, obj=None):
-        
+
         # test if file
         try:
 #            data = obj.read()
@@ -126,7 +127,7 @@ class Xml(transcoders.Xml, Encoder):
                    key = utils.fix_date(key)
                #render the item into xml under root
                    root.append( E.value( str(key) ))
-                   
+
     @classmethod
     def _encode_object_into_xml(cls,obj,root=None):
         e = E.object()
@@ -183,7 +184,7 @@ class Xml(transcoders.Xml, Encoder):
                 return cls.return_single_xml_object(obj)
         except:
                 return cls.return_single_xml_object(obj)
-            
+
 
 # I know this is the hackiest possible way to do it.
 # TODO: clean up this code
@@ -198,7 +199,8 @@ class Bin(transcoders.Bin, Encoder):
             response = super(Bin, cls).encode(obj.read())
             response['Content-Disposition'] = \
             'attachment; filename="{}"'.format(obj.name.split('/')[-1])
-            response['Content-Type'] = str(mimetypes.types_map[ re.search('\.[^.]*$',obj.name).group(0)])
+            # response['Content-Type'] = str(mimetypes.types_map[ re.search('\.[^.]*$',obj.name).group(0)])
+            response['Content-Type'] = magic.from_buffer(obj.read())
         except AttributeError:
             # pickle a python object
             response = super(Bin, cls).encode(pickle.dumps(obj,protocol=2))
@@ -216,12 +218,12 @@ class Text(transcoders.Text, Encoder):
 
                #write out key after the corrent number of indents.
                #indent by length of key plus a few spaces
-               
+
                #if item value is iterable
                    #recursion!  see step 1.
                #else
                    #output value.  Newline
-                   
+
            #else
                #if value is iterable
                    #increment indent
@@ -237,7 +239,7 @@ class Text(transcoders.Text, Encoder):
            try:
                obj[key]
                #write out key after the corrent number of indents
-               retval += indent + str(key) + ':  ' 
+               retval += indent + str(key) + ':  '
                #if value is iterable
                if isinstance(obj[key], Iterable) and not isinstance(obj[key],six.string_types):
                    #recursion!  See step 1.
