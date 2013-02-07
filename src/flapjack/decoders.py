@@ -80,7 +80,7 @@ class Json(transcoders.Json, Decoder):
             try:
                 obj[name] = iso8601.parse_date(value)
 
-            except (iso6801.ParseError, OverflowError, ValueError, TypeError):
+            except (iso8601.ParseError, OverflowError, ValueError, TypeError):
                 # Guess it wasn't a date
                 pass
 
