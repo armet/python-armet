@@ -4,6 +4,7 @@ import abc
 import json
 import datetime
 from dateutil.parser import parse
+import iso8601
 from . import exceptions, transcoders
 
 
@@ -77,7 +78,7 @@ class Json(transcoders.Json, Decoder):
                 continue
 
             try:
-                obj[name] = parse(value)
+                obj[name] = iso8601.parse_date(value)
 
             except (OverflowError, ValueError, TypeError):
                 # Guess it wasn't a date
