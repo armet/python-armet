@@ -1,0 +1,12 @@
+import yaml
+
+class Decoder():
+
+    def decode(self, request, attributes=None):
+        try:
+            # Attempt to decode as a YAML object
+            return yaml.safe_loads(request.body)
+
+        except ValueError:
+            # Something unexpected; no YAML could be decoded
+            raise Exception()
