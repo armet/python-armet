@@ -2,12 +2,14 @@
 *.pyc
 *.egg-info
 
-# Sphinx
-.build
+# Dot files
+.*
+!.editorconfig
+!.gitattributes
+!.gitignore
 
 # Database files
 *.sqlite
 
 # Coverage reports
 cover
-.coverage

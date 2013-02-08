@@ -37,9 +37,9 @@ class BadRequest(Error):
 class Unauthorized(Error):
     status = http.client.UNAUTHORIZED
 
-    def __init__(self, realm):
+    def __init__(self, challenge):
         super(Unauthorized, self).__init__(headers={
-            'WWW-Authenticate': 'Basic Realm="{}"'.format(realm)})
+            'WWW-Authenticate': challenge})
 
 
 class Forbidden(Error):

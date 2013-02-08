@@ -26,7 +26,10 @@ Collected ABNF
     query-expression-simple = query-expression-name
                               [query-expression-operation]
                               [query-expression-negation]
+                              [":" query-expression-sort-direction]
                               ["=" query-expression-value]
+
+    query-expression-sort-direction: "asc" / "desc"
 
     query-expression-name = *pchar *( "." *pchar ) [ "@" *pchar ]
                           / "@" *pchar

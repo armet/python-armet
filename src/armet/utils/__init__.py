@@ -60,6 +60,7 @@ def config_fallback(test, *args):
 
 def load(name):
     """Loads the python attribute represented by the fully qualified name."""
+    # FIXME: There has got to be a standard python utility for this.
     parts = name.split('.')
     module = ".".join(parts[:-1])
     m = __import__(module)

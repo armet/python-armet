@@ -1,22 +1,11 @@
 # Armet #
 > Clean and modern framework for creating RESTful APIs.
 
-## Dependencies ##
- - **python** `>= 2.7.x`
- - **django** `~= 1.4.x`
-
-## Features ##
- - Adheres to all 4 constraints of the REST doctrine:
-   - Identification of resources
-   - Manipulation of resources through these representations
-   - Self-descriptive messages
-   - Hypermedia as the engine of application state (aka HATEOAS)
-
 ## Contributing ##
 
 ### Setting up your environment ###
 The first thing you’re going to want to do, is build a virtual environment and install any base dependancies.
-You'll want `virtualenvwrapper` which can be installed via `pip install virtualenvwrapper` if you don't 
+You'll want `virtualenvwrapper` which can be installed via `pip install virtualenvwrapper` if you don't
 already have it.
 
 ```sh
@@ -35,7 +24,7 @@ pip install -r requirements.txt
 > That can be done via `sudo apt-get build-dep python-lxml` on debian-based distributions.
 
 ### Running the test suite ###
-Running the test suite is simple as we're using both the django test client for its 
+Running the test suite is simple as we're using both the django test client for its
 operations and nose for discovery.
 
 ```sh

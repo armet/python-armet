@@ -1,27 +1,41 @@
- ☐ Integration with django-haystack to provide search indexes to facilitate filtering
- ☐ Underscorize class names in our attempt to name ourselves
+ ✔ Underscorize class names in our attempt to name ourselves @done (13-01-25 13:24)
  ✔ Resolving arbitrary URLs @done (13-01-18 20:38)
- ☐ POST
- ☐ PUT
+ ✔ POST @done (13-01-25 12:59)
+ ✔ PUT @done (13-01-25 13:23)
  ☐ PATCH
  ✔ DELETE @done (13-01-18 22:55)
  ✔ OPTIONS @done (13-01-18 16:16)
  ☐ Header: Link
-     ☐ Automatic generation of link headers for related resources
+     ✔ Automatic generation of link headers for related resources @done (13-01-25 13:24)
      ☐ Ability to add additional link headers through like a 'links' option
- ☐ Header: Link; rel="schema"
-     This is going to require a small RFC to accompany it.
-     ☐ We can remove the resource_uri property now
+     ☐ Generation of links in relation to attribute proxies
+     ☐ Generation of links in relation to collection / item pages
+     ☐ Generation of links in relation to canonical URIs / self URIs
+ ☐ Header: Link; rel="describedBy"
+     ✔ We can remove the resource_uri property now @done (13-01-25 13:25)
+     ✔ Schemas are served appropriately @done (13-01-25 16:26)
+     ☐ Refactor schema generation to be more like encoders
+         Eg. a schema directory that has a json file, xml file, etc.
+     ☐ Ensure the following schemas exist:
+         ☐ JSON Schema
+         ☐ XML Schema Definition (XSD)
+         ☐ Rx (for YAML)
+     ☐ Ensure we are outputting the correct mimetypes for the schemas
+         ☐ JSON: application/json+schema
+         ☐ Rx: application/yaml
+         ☐ XSD: application/xml+schema
  ☐ Headers: Range / Content-Range
      Pagination. This will have to firmly integrated into the base resources (
      perhaps in View) as it will need to make successive calls to dispatch to
      get multiple ranges.
+     ✔ Refactor parsing to improve the regex to return an array of ranges @done (13-01-27 21:17)
+     ☐ Integrate into the view method to just call dispatch with range filters
+     ☐ Multipart/byte-range encoder to encode multiple ranges
  ☐ Query parsing
      We really need to get a specification describing this.
      ☐ OR changes: ?this=x;this=y;that=z  this is x OR this is y OR that is z
-     ☐ self reference: ?:=... The item itself is ... (only useful for properties or arrays)  (not sure about ?:)
      ✔ '.' instead of'__' @done (13-01-18 22:57)
-     ☐ '!' instead of ':' for sorting
+     ☐ Allow bang '!' in addition to '.not' for negation
      ☐ Refactor as a state machine to allow for arbitrarily complex queries
            eg. /poll?question='/choice/1/choice_text' would grab every poll with
            the same text as the choice #1's choice_text -- another example is
@@ -62,7 +76,7 @@
          Right now it will always be pk; there is a make_slug method but is
          broken because if you try and do /poll/3910 it will still only
          try the PK. `slug_attribute = "pk"` might work though its a long name.
- ☐ Transactional requests
+ ✔ Transactional requests @done (13-01-25 12:58)
      Begin, commit, and rollback methods (or similar) should (inside model.py)
      facilitate a database transaction
  ☐ Policies
@@ -73,11 +87,18 @@
      declarative way to specify that a resource should be throttled to 15 calls
      every 30 minutes per user or perhaps the call limit is determine by a
      user property to allow for use tiers.
+ ☐ Relation resolution
+     Specifies to use while creating / updating to speficiy what related resource
+     ✔ Reference through slugs @done (13-01-25 12:59)
+     ✔ Reference through URI @done (13-01-25 12:59)
+     ☐ Ability to create inline resources
+         Eg. when creating a choice you could create the poll object as a
+         nested resource.
  ☐ Browser side Cacheing
      Basically I mean just faciltiating this through ETag, Last modified dates,
      etc.
  ☐ Through reference; referencing properties from the relationship between two resources
-     /team/5/user?(owner)=true   all owners of team 5
+     /team/5/user?@owner=true   all owners of team 5
  ☐ Set specifiers
      /team/1,2 will return both teams 1 and 2
      /team/10-20 will return teams 10 through 20
@@ -90,10 +111,10 @@
  ☐ URL segment filtering
      /apple:<query>   query mirrors the query string format without sorting and includes implied booleans
      /apple:color=red/core  selects all cores of all apples that are red
-     /apple:color!asc selects all apple sorted asc by color
+     /apple:color:asc selects all apple sorted asc by color
  ☐ Decoders
      ☐ Text (plain/text)
-     ☐ Form (multipart/form-data)
+     ✔ Form (multipart/form-data) @done (13-01-26 16:21)
      ☐ Url (application/x-www-form-urlencoded)
      ☐ Xml (application/xml)
      ✔ Json (application/json) @done (13-01-25 11:24)
@@ -102,7 +123,7 @@
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Encoders
      ☐ Text (plain/text)
-     ☐ Form (multipleltipart/form-data)
+     ☐ Form (multipart/form-data)
      ✔ Json (application/json) @done (13-01-25 11:24)
      ☐ Xml (application/xml)
      ☐ Yaml
@@ -116,3 +137,17 @@
     ☐ Ability to create a listener with web-sockets or something... ?
  ☐ More on web-sockets; the ability to create a persistent connection
  ☐ Simple HTTP streaming support to stream huge responses to the client
+ ☐ Integration with django-haystack to provide search indexes to facilitate filtering
+ ☐ Make as many requirements optional as possible (PyYAML, lxml, etc.).
+ ☐ Strip out a trailing `Resource` when constructing the name for a resource
+     Eg. SomeHereResource should become some_here
+ ☐ API Factory
+     ✔ GET @done (13-01-26 21:01)
+     ✔ Register / Unregister @done (13-01-26 21:02)
+     ☐ PUT
+         Basically, applying a PUT to an api factory would allow to completely
+         overwrite all resources defined in every endpoint.
+     ☐ PATCH
+         Same as PUT though it only edits / creates what is passed.
+     ☐ Autodiscover
+     ☐ Allow configuration of allowed methods through the resource __init__
