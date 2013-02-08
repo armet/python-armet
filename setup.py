@@ -17,7 +17,7 @@ setup(
         author_email='support@concordusapps.com',
         url='http://github.com/armet/django-armet',
         package_dir={'armet': 'src/armet'},
-        packages=find_packages('src')
+        packages=find_packages('src'),
         # TODO: Grep this from the appropriate requirements files.
         install_requires=(
             'six',

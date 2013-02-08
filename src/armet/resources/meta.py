@@ -15,7 +15,7 @@ from django.db.models.fields.related import RelatedField
 from django.db.models.related import RelatedObject
 from .. import utils
 from .helpers import attribute as field_helper
-from . import attributes
+from . import attributes, link
 
 
 def _has(name, attrs, bases):
@@ -36,7 +36,7 @@ def _has(name, attrs, bases):
     return False
 
 
-def _collect(name, attrs, bases):
+def _collect_dict(name, attrs, bases):
     """Merges the hashes for all bases plus the current class."""
     value = {}
     if name in attrs and attrs[name] is not None:
@@ -45,6 +45,19 @@ def _collect(name, attrs, bases):
     for base in bases:
         if name in base.__dict__ and base.__dict__[name] is not None:
             value.update(**base.__dict__[name])
+
+    return value
+
+
+def _collect_list(name, attrs, bases):
+    """Merges the lists for all bases plus the current class."""
+    value = []
+    if name in attrs and attrs[name] is not None:
+        value.extend(attrs[name])
+
+    for base in bases:
+        if name in base.__dict__ and base.__dict__[name] is not None:
+            value.extend(base.__dict__[name])
 
     return value
 
@@ -378,8 +391,10 @@ class DeclarativeResource(type):
             attrs['include'] = self.include
 
         # Collect and merge all hashes for `include` and `relations`
-        self.include = _collect('include', attrs, bases)
-        self.relations = _collect('relations', attrs, bases)
+        self.include = _collect_dict('include', attrs, bases)
+        self.relations = _collect_dict('relations', attrs, bases)
+        self.list_links = _collect_list('list_links', attrs, bases)
+        self.detail_links = _collect_list('detail_links', attrs, bases)
 
         # Initialize our ordered attributes dictionary.
         self._attributes = collections.OrderedDict()
@@ -520,6 +535,12 @@ class DeclarativeResource(type):
         # object.
         self._resolver = urlresolvers.get_resolver(urlresolvers.get_urlconf())
         self._prefix = urlresolvers.get_script_prefix()
+
+        # Aggregate links from available sources for list and detail
+        # versions of the resource.
+        for name in self._attributes:
+            self.detail_links.append(link.Link(name, rel=link.rel.RELATED,
+                title=name))
 
         # Finish us up.
         super(DeclarativeResource, self).__init__(name, bases, attrs)

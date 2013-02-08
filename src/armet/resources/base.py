@@ -143,6 +143,7 @@ class BaseResource(object):
         # 'xml': 'armet.encoders.Xml',
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
+        'bin': 'armet.encoders.Bin',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -151,6 +152,7 @@ class BaseResource(object):
         # 'xml',
         'text',
         'yaml',
+        'bin',
     )
 
     #! Name of the default encoder of the list of understood encoders.
@@ -212,6 +214,18 @@ class BaseResource(object):
         "delete": ("delete",),
         "read":   ("read",)
     })
+
+    #! Hypermedia links to anywhere with some kind of relation type.
+    #! NOTE: You should not have to directly add hypermedia relations using
+    #!  this links array; this is meant for extensions or advanced usage. For
+    #!  normal usage use `relations` to add indirect links to other resources (
+    #!  which will result in an added link as well).
+
+    #! Links from the list view of the resource.
+    list_links = None
+
+    #! Links from the detail view of the resource.
+    detail_links = None
 
     #! Name used to index into the path cache.
     _cache_path_name = None
@@ -611,9 +625,39 @@ class BaseResource(object):
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
 
+    def make_links(self, data):
+        """Builds an iterable of links to serialize in the response."""
+        # Get the canonical link
+        links = []
+        links.append(link.Link(self.url, rel=link.rel.CANONICAL))
+
+        # Serialize link collection for the appropriate end point.
+        links.extend(self.detail_links if self.slug else self.list_links)
+
+        # Return the standard links.
+        return links
+
+        #     # Items need the collection links
+        #     additional.append(link.Link(self.reverse(
+        #         path=self.path, parent=self.parent, local=self.local),
+        #         rel=link.rel.COLLECTION))
+
+
+        # additional = []
+        # if self.slug is None:
+        #     # Store the item links for use in the link headers.
+        #     for item in data:
+        #         items.append(link.Link(self.reverse(
+        #             slug=self.make_slug(item), path=self.path,
+        #             parent=self.parent, local=self.local), rel=link.rel.ITEM))
+
     def make_response(self, data, status):
         """Builds a response object from the data and status code."""
+        # Initialize the response object.
         response = http.Response(status=status)
+
+        # Build the links iterable.
+        links = self.make_links(data)
 
         # Prepare the data for transmission.
         data = self.prepare(data)
@@ -628,19 +672,9 @@ class BaseResource(object):
         # Use hexdigest so it is actually readable.
         response['Content-MD5'] = hashlib.md5(response.content).hexdigest()
 
-        # Declare who we are in the header.
-        # TODO: The link headers should be an object so they are not
-        #   constructed via strings here.
-        # response['Link'] = '<{}>; rel=self'.format(self.url)
-        links = []
-        for name in self._attributes:
-            # links.append("<{}>;rel=relation;title={}".format(name,name))
-            # theLink = link.Link()
-            links.append(link.Link(uri=name, title=name))
-            # links.append(name)
-
-        # import ipdb; ipdb.set_trace()
-        response['Links'] = ', '.join(map(str, links))
+        if links:
+            # Only place on the response if we have any links.
+            response['Links'] = ','.join(map(str, links))
 
         # Return the built response.
         return response
