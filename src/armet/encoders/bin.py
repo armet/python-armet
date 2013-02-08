@@ -19,7 +19,10 @@ class Encoder(transcoders.MessagePack, Encoder):
 
         # Coerce this thing.  If we can't then just return and let Messagepack
         # freak out.  Theoretically this shouldn't happen
-        return utils.coerce_value(obj) or obj
+        coerced = utils.coerce_value(obj)
+        if coerced is not None:
+            return coerced
+        return obj
 
     def encode(self, obj=None):
         # Return the encoded text.

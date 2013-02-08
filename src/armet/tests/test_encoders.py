@@ -3,8 +3,12 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import itertools
 import json
+import msgpack
+import six
+import collections
 from django.utils import unittest
 from armet import encoders
+from datetime import datetime
 
 
 class JsonTestCase(unittest.TestCase):
@@ -66,3 +70,50 @@ class JsonTestCase(unittest.TestCase):
         content = json.loads(encoded)
 
         self.assertEqual(content, self.message)
+
+
+class MessagePackTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.msgpack = encoders.Bin()
+        self.message = {
+            'this': 'should',
+            'be': True,
+            'completely': None,
+            'replicatable': (
+                'using',
+                'loads',
+                {
+                    'float': 3.14,
+                },
+            ),
+        }
+
+    def stringify(self, thing):
+        """because of the python2 unicode_literals backport, we must
+        re-stringify all strings that come through msgpack.  This will be fixed
+        with python3
+        """
+        if isinstance(thing, six.string_types):
+            return str(thing)
+        if isinstance(thing, collections.Mapping):
+            fn = self.stringify
+            return {fn(key): fn(value) for key, value in thing.iteritems()}
+        if isinstance(thing, collections.Sequence):
+            return tuple(self.stringify(item) for item in thing)
+        return thing
+
+    def test_common(self):
+        encoded = self.msgpack.encode(self.message)
+        decoded = msgpack.loads(encoded)
+
+        # Stringify it for unicode_literals
+        stringified = self.stringify(self.message)
+
+        self.assertEqual(decoded, stringified)
+
+    def test_date(self):
+        date = datetime.now()
+        decoded = msgpack.loads(self.msgpack.encode(date))
+
+        self.assertEqual(decoded, date.isoformat())
