@@ -119,7 +119,7 @@
      ☐ Xml (application/xml)
      ✔ Json (application/json) @done (13-01-25 11:24)
      ☐ Yaml
-     ☐ Binary (perhaps messagepack ?)
+     ✔ Binary (messagepack) @done (13-02-08 12:25)
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Encoders
      ☐ Text (plain/text)
@@ -127,7 +127,7 @@
      ✔ Json (application/json) @done (13-01-25 11:24)
      ☐ Xml (application/xml)
      ☐ Yaml
-     ☐ Binary (perhaps messagepack ?)
+     ☐ Binary (messagepack)
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Publish / Subscribe messages for push notifications
      Something like https://code.google.com/p/pubsubhubbub/ was.. (its dead now)
