@@ -4,7 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
-from . import base
+from . import base, link
 from .. import exceptions, authorization, utils
 
 
@@ -79,6 +79,27 @@ class BaseModel(base.BaseResource):
         # TODO: This method should be declarative instead of functional to
         #   faciliate interacting with the slug elsewhere.
         return str(obj.pk)
+
+    def make_links(self, data):
+        """Builds an iterable of links to serialize in the response."""
+        # Get the initial links.
+        links = super(BaseModel, self).make_links(data)
+
+        if self.slug is None:
+            # Store the item links for use in the link headers.
+            for item in data:
+                links.append(link.Link(self.reverse(
+                    slug=self.make_slug(item), path=self.path,
+                    parent=self.parent, local=self.local), rel=link.rel.ITEM))
+
+        else:
+            # Items need the collection links
+            links.append(link.Link(self.reverse(
+                path=self.path, parent=self.parent, local=self.local),
+                rel=link.rel.COLLECTION))
+
+        # Return the augmented links.
+        return links
 
     def read(self):
         # Initially instantiate a queryset representing every object.
