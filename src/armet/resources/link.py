@@ -136,5 +136,5 @@ class Link:
         stream = cStringIO()
         stream.write("<{}>;rel={}".format(self.uri, self.rel))
         if self.title is not None:
-            stream.write(';title=', self.title)
+            stream.write(';title={}'.format(self.title))
         return stream.getvalue()
