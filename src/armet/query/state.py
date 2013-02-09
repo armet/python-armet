@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """The query parsing not-so-state machine
 """
-from cStringIO import StringIO
+# from cStringIO import StringIO
 from query import Query
 from collections import deque
 import operator
 import inspect
+from six.moves import cStringIO as StringIO
 
 
 OPERATIONS = {
@@ -31,10 +32,50 @@ class QueryList(list):
             querystring = iter(querystring)
         self.parse(querystring)
 
-    def segment(self, stringio):
-        stringio.seek(0)
-        print('got a segment: {}'.format(stringio.read()))
-        return Query()
+    def sortparse(self, segiter):
+        # Parse the sorting direction
+        pass
+
+    def segment(self, segment):
+        q = Query()
+
+        segment = iter(segment)
+        buf = StringIO()
+
+        for char in segment:
+
+            if char in '.:@':
+            # A path separator, push the current stack into the path
+            # The nest portion is the sorting direction
+                q.path.append(buf.getvalue())
+                buf.truncate(0)
+                if char == ':':
+                    # We're entering the sorting section.  Get everything to
+                    # the key value separator and
+                    q.direction = self.sort_parse(segment)
+
+                elif char == '.':
+                    # We're going for another part of the path
+                    continue
+
+                # A through table identifier
+                elif char == '@':
+                    raise NotImplemented('Through support pending')
+
+                continue
+            # We're entering the value separator
+            if char == '=':
+                break
+            # Something normal
+            buf.write(char)
+
+        # Values are not as complicated as the rest of the query set, so just
+        # slice em up
+        value = ''.join(segment)
+        if value:
+            q.value = value.split(',')
+
+        return q
 
     def group(self, stringiter):
 
@@ -75,8 +116,8 @@ class QueryList(list):
                     # The last one was odd, Throw something
                     raise ValueError('found a {} out of place'.format(char))
 
-                query = self.segment(string)
-                string = StringIO()
+                query = self.segment(string.getvalue())
+                string.truncate(0)
 
                 self.append(query)
 
@@ -101,7 +142,12 @@ class QueryList(list):
                     # But we're not nested.  Panic
                     raise ValueError('Encountered a ) before we should have')
 
-                self.append(self.segment(string))
+                self.append(self.segment(string.getvalue()))
+                return self
+
+            elif char == '#':
+                # We've reached the hash string, abort.
+                self.append(self.segment(string.getvalue()))
                 return self
 
             else:
@@ -110,11 +156,7 @@ class QueryList(list):
         # TODO: throw some nonsense here if the query string ended with a
         # & or ;, because that makes no sense
 
-        # if not string.tell():
-        #     # It ended with a & or ;
-        #     raise Exception('Queries cannot end with & or ;')
-
         if string.tell():
-            self.append(self.segment(string))
+            self.append(self.segment(string.getvalue()))
 
         return self

@@ -125,15 +125,3 @@ class Query(object):
 
         #! A flag specifying if this is operating on a through table
         self.through = kwargs.get('through', False)
-
-
-class GroupedQuery(Query):
-    """This is a query with specific left and right operands.  It is used with
-    grouped queries via parenthesis
-    """
-
-    def __init__(self, **kwargs):
-        super(GroupedQuery, self).__init__(**kwargs)
-
-        #! The left operand in this grouped query.
-        self.left = kwargs.get('left', None)
