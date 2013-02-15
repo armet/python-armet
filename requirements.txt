@@ -1,4 +1,3 @@
 # General requirements
 six                     # Python 2 and 3 normalization layer
-django                  # Django web framework
 python-mimeparse        # For parsing accept and content-type headers
