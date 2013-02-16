@@ -7,6 +7,8 @@ import operator
 from six.moves import cStringIO as StringIO
 from collections import Iterable
 from itertools import chain
+from armet.exceptions import BadRequest
+from django.db.models import Q
 from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
     EQUALS, EQUALS_NOT, PATH_SEP, THROUGH_SEP, GROUP_START, GROUP_END,
     EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP)
@@ -31,6 +33,9 @@ class QueryList(list):
         # Boolean telling us if this was negated
         self.negated = negated
 
+        # Operation for this query
+        self.verb = operator.and_
+
         # Make an iterator out of the query string so that we can pass it
         # to other functions and have it keep its state
         self.parse(iter(querystring))
@@ -54,7 +59,7 @@ class QueryList(list):
         for iteration, char in enumerate(segiter):
             if not len(keys):
                 # We've run out of possible sorting directions
-                raise ValueError('invalid sorting direction')
+                raise BadRequest('invalid sorting direction')
 
             # Use a reversed iterator here so that .remove doesn't throw the
             # internal state of the iterator out of whack.
@@ -124,7 +129,7 @@ class QueryList(list):
 
             # The last keyword can be an optional operation
             if q.path[-1] in OPERATIONS:
-                q.operation = OPERATIONS[q.path.pop(-1)]
+                q.verb = OPERATIONS[q.path.pop(-1)]
 
             # Make sure we still have keys that we can use
             if not q.path:
@@ -132,7 +137,7 @@ class QueryList(list):
                 raise IndexError
         except IndexError:
             # We ran out of path items after removing operations and negations
-            raise ValueError('No path specified for {}'.format(segment))
+            raise BadRequest('No path specified for {}'.format(segment))
 
         # Values are not as complicated as the rest of the query set, so just
         # slice em up
@@ -162,7 +167,7 @@ class QueryList(list):
             else:
                 string.write(char)
         print('QueryList.group exited the loop!?  unclosed parens?')
-        raise ValueError('Missing a closing )')
+        raise BadRequest('Missing a closing )')
 
     def parse(self, querystring):
         """Parse the query string
@@ -176,7 +181,7 @@ class QueryList(list):
             if char in (AND_OPERATOR, OR_OPERATOR):
                 if not string.tell():
                     # The last one was odd, Throw something
-                    raise ValueError('found a {} out of place'.format(char))
+                    raise BadRequest('found a {} out of place'.format(char))
 
                 query = self.segment(string.getvalue())
                 string.truncate(0)
@@ -198,7 +203,7 @@ class QueryList(list):
                 if string.tell():
                     # There are characters in the buffer, the last one wasn't
                     # the start of a string or &, ;
-                    raise Exception('Encountered a ( before we should have')
+                    raise BadRequest('Encountered a ( before we should have')
 
                 # Create a grouping query string from this
                 query = self.group(querystring)
@@ -211,7 +216,7 @@ class QueryList(list):
                 # We're done here!
                 if not self.subset:
                     # But we're not nested.  Panic
-                    raise ValueError('Encountered a ) before we should have')
+                    raise BadRequest('Encountered a ) before we should have')
 
                 self.append(self.segment(string.getvalue()))
                 return self
@@ -248,14 +253,7 @@ class QueryList(list):
         # Make a big list of sorting directions and return them
         return list(x for x in chain(parens, queries) if x is not None)
 
-    def _as_q_single(self):
-        """Generator that returns a single q object and operation per object
-        """
-        for item in self:
-            item.as_q()
-
     def as_q(self):
         """Returns a single q object that represents this QueryList
         """
-        q = reduce(lambda x, y: x.operation(x.as_q(), y.as_q()), self, Query())
-        return q
+        return reduce(lambda x, y: y.verb(x, y.as_q()), self, Q())

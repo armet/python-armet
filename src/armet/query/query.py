@@ -10,48 +10,6 @@ from itertools import izip
 from .constants import OPERATION_DEFAULT, SORT, LOOKUP_SEP
 
 
-# class QueryList(list):
-#     """A simple list for Querys that allows for easy django qification.  Note
-#     that QueryList assumes that it contains only Query objects
-#     """
-
-#     def _single_q(self, query):
-#         """Returns a q object for a single query object
-#         """
-#         # If the query is empty, then just make a no-op Q object
-#         if not query.path or not query.value:
-#             return Q()
-
-#         key = query.django_query
-
-#         # Build query objects for all the values
-#         qobjects = (Q(**{key: value}) for value in query.value)
-
-#         # Reduce them all to a single one via 'or'ing them
-#         q = reduce(operator.or_, qobjects)
-
-#         # Negate it if neccesary
-#         return (~q) if query.negated else q
-
-#     def as_q(self):
-#         """get a Q object for all the Query objects stored within
-#         """
-#         # gather all the Q objects
-#         qobjects = (self._single_q(query) for query in self)
-
-#         # Reduce them to a single q object
-#         return reduce(operator.and_, qobjects)
-
-#     def as_order(self):
-#         """Returns a list of all the sorting directions
-#         """
-#         orders = []
-#         for query in self:
-#             if query.django_direction is not None:
-#                 orders.append(query.django_direction + query.django_path)
-#         return orders
-
-
 class Query(object):
     """The base class for storing parsed queries
     """
