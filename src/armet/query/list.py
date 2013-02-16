@@ -166,7 +166,6 @@ class QueryList(list):
                 return query
             else:
                 string.write(char)
-        print('QueryList.group exited the loop!?  unclosed parens?')
         raise BadRequest('Missing a closing )')
 
     def parse(self, querystring):
@@ -192,7 +191,7 @@ class QueryList(list):
                 # then continue
                 query.verb = COMBINATIONS[char]
 
-            elif char == EQUALS_NOT:
+            elif char == EQUALS_NOT and not string.tell():
                 # This is a no-op catcher for the ! sign so that it doesn't
                 # fall throgh to the else clause.  The open paren handler will
                 # catch it next loop
