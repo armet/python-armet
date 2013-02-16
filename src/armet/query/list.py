@@ -250,8 +250,11 @@ class QueryList(list):
         parens = (x.as_order() for x in self if isinstance(x, Iterable))
         queries = (x.as_order() for x in self if not isinstance(x, Iterable))
 
+        # Unroll parens since they return a list
+        parens = chain(*parens)
+
         # Make a big list of sorting directions and return them
-        return list(x for x in chain(parens, queries) if x is not None)
+        return list(x for x in chain(parens, queries) if x)
 
     def as_q(self):
         """Returns a single q object that represents this QueryList

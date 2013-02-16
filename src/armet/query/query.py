@@ -118,4 +118,5 @@ class Query(object):
     def as_order(self):
         """Returns the sorting direction (the same as self.django_direction)
         """
-        return self.django_direction
+        if self.django_direction:
+            return self.django_direction + self.django_path
