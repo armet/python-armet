@@ -3,35 +3,18 @@
 """
 # from cStringIO import StringIO
 from query import Query
-from collections import deque
 import operator
-import inspect
 from six.moves import cStringIO as StringIO
-import itertools
-
+from collections import Iterable
+from itertools import chain
+from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
+    EQUALS, EQUALS_NOT, PATH_SEP, THROUGH_SEP, GROUP_START, GROUP_END,
+    EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP)
 
 COMBINATIONS = {
-    '&': operator.and_,
-    ';': operator.or_,
+    AND_OPERATOR: operator.and_,
+    OR_OPERATOR: operator.or_,
 }
-
-OPERATIONS = (
-    "exact",
-    "iexact",
-    "contains",
-    "icontains",
-    "regex",
-    "iregex",
-    "gt",
-    "gte",
-    "lt",
-    "lte",
-    "startswith",
-    "istartswith",
-    "endswith",
-    "iendswith",
-    "isnull",
-)
 
 
 class QueryList(list):
@@ -40,7 +23,7 @@ class QueryList(list):
         super(QueryList, self).__init__()
 
         # A reference to the original query string
-        self.querystring = deque(querystring)
+        self.querystring = querystring
 
         # Boolean telling us if we're nested
         self.subset = subset
@@ -50,35 +33,32 @@ class QueryList(list):
 
         # Make an iterator out of the query string so that we can pass it
         # to other functions and have it keep its state
-        if not inspect.isgenerator(querystring):
-            querystring = iter(querystring)
-        self.parse(querystring)
+        self.parse(iter(querystring))
 
     def equals_parse(self, q, segiter, *buf):
         # This will likely be expanded in the future for things like >= <= etc.
-        for char in itertools.chain(buf, segiter):
-            if char == '=':
+        for char in chain(buf, segiter):
+            if char == EQUALS:
                 # We're done parsing the equals sign. break
                 return
-            elif char == '!':
+            elif char == EQUALS_NOT:
                 # Encountered a negation, negify the q
                 q.negated ^= True
 
     def sort_parse(self, segiter):
         # Parse the sorting direction, then proxy to the equals if neccesary
         # Pop an item off the iterator and begin narrowing down the choices
-        choices = {
-            'asc': 'ascending',
-            'desc': 'descending',
-        }
-        keys = choices.keys()
+
+        keys = SORT.keys()
 
         for iteration, char in enumerate(segiter):
             if not len(keys):
                 # We've run out of possible sorting directions
                 raise ValueError('invalid sorting direction')
 
-            for key in keys:
+            # Use a reversed iterator here so that .remove doesn't throw the
+            # internal state of the iterator out of whack.
+            for key in reversed(keys):
                 if key[iteration] != char:
                     # This isn't a valid sorting direction, remove it
                     keys.remove(key)
@@ -86,8 +66,6 @@ class QueryList(list):
 
                 if len(key) == iteration + 1:
                     # Found the sorting direction
-                    print('Found sorting direction: {}'.format(choices[key]))
-                    # TODO: remove setter/getter logic from Query
                     return key
 
     def segment(self, segment):
@@ -98,9 +76,9 @@ class QueryList(list):
 
         for char in segiter:
 
-            if char == ':':
-                # We're entering the sorting section.  Get everything to
-                # the key value separator, which also eats the equals parse
+            if char == SORT_SEP:
+                # We're entering the sorting section.  Get the sorting
+                # direction
                 q.path.append(buf.getvalue())
                 q.direction = self.sort_parse(segiter)
 
@@ -110,7 +88,7 @@ class QueryList(list):
                 # Break and go to the value parser
                 break
 
-            elif char in '!=':
+            elif char in EQUALS_SET:
                 # Head to the equals parser
                 q.path.append(buf.getvalue())
                 self.equals_parse(q, segiter, char)
@@ -118,20 +96,18 @@ class QueryList(list):
                 # Break and go to the value parser
                 break
 
-            elif char in '.:@':
+            elif char in (PATH_SEP, THROUGH_SEP):
                 # A path separator, push the current stack into the path
                 # The nest portion is the sorting direction
                 q.path.append(buf.getvalue())
                 buf.truncate(0)
-                if char == ':':
-                    break
 
-                elif char == '.':
+                if char == PATH_SEP:
                     # We're going for another part of the path
                     continue
 
                 # A through table identifier
-                elif char == '@':
+                elif char == THROUGH_SEP:
                     raise NotImplemented('Through support pending')
 
                 continue
@@ -142,7 +118,7 @@ class QueryList(list):
         # Noramlize the path a bit
         try:
             # The keyword 'not' can be the last item in the chain to negify it
-            if q.path[-1] == 'not':
+            if q.path[-1] == OPERATION_NOT:
                 q.negated ^= True
                 q.path.pop(-1)
 
@@ -162,7 +138,7 @@ class QueryList(list):
         # slice em up
         value = ''.join(segiter)
         if value:
-            q.value = value.split(',')
+            q.value = value.split(VALUE_SEP)
 
         return q
 
@@ -170,9 +146,7 @@ class QueryList(list):
 
         string = StringIO()
         for char in stringiter:
-            if char == ')':
-                # We're done nesting ourselves, parse our findings
-                print('group parsed: {}'.format(string.getvalue()))
+            if char == GROUP_END:
                 # We're done nesting ourselves, return the cool thing we found
                 query = QueryList(string.getvalue(), True)
 
@@ -199,7 +173,7 @@ class QueryList(list):
         for char in querystring:
             # We want to stop reading the query and pass it off to someone
             # when we reach a &, ;, or (
-            if char in ('&', ';'):
+            if char in (AND_OPERATOR, OR_OPERATOR):
                 if not string.tell():
                     # The last one was odd, Throw something
                     raise ValueError('found a {} out of place'.format(char))
@@ -213,13 +187,13 @@ class QueryList(list):
                 # then continue
                 query.verb = COMBINATIONS[char]
 
-            elif char == '!':
+            elif char == EQUALS_NOT:
                 # This is a no-op catcher for the ! sign so that it doesn't
                 # fall throgh to the else clause.  The open paren handler will
                 # catch it next loop
                 pass
 
-            elif char == '(':
+            elif char == GROUP_START:
                 # TODO: freak out of there was no and or or marker before this
                 if string.tell():
                     # There are characters in the buffer, the last one wasn't
@@ -229,11 +203,11 @@ class QueryList(list):
                 # Create a grouping query string from this
                 query = self.group(querystring)
                 # Make note if this needs to be negated
-                query.negated = last == '!'
+                query.negated = last == EQUALS_NOT
 
                 self.append(query)
 
-            elif char == ')':
+            elif char == GROUP_END:
                 # We're done here!
                 if not self.subset:
                     # But we're not nested.  Panic
@@ -242,12 +216,13 @@ class QueryList(list):
                 self.append(self.segment(string.getvalue()))
                 return self
 
-            elif char == '#':
+            elif char == TERMINATOR:
                 # We've reached the hash string, abort.
                 self.append(self.segment(string.getvalue()))
                 return self
 
             else:
+                # This isn't a special character, just roll with it
                 string.write(char)
 
             # Save a one character buffer
@@ -260,3 +235,27 @@ class QueryList(list):
             self.append(self.segment(string.getvalue()))
 
         return self
+
+    def as_order(self):
+        """Returns the sorting direction. Everything inside parenthesis are
+        first.
+        """
+        # Separate everything into 2 queues because parens need to be evaluated
+        # first
+        parens = (x.as_order() for x in self if isinstance(x, Iterable))
+        queries = (x.as_order() for x in self if not isinstance(x, Iterable))
+
+        # Make a big list of sorting directions and return them
+        return list(x for x in chain(parens, queries) if x is not None)
+
+    def _as_q_single(self):
+        """Generator that returns a single q object and operation per object
+        """
+        for item in self:
+            item.as_q()
+
+    def as_q(self):
+        """Returns a single q object that represents this QueryList
+        """
+        q = reduce(lambda x, y: x.operation(x.as_q(), y.as_q()), self, Query())
+        return q

@@ -4,6 +4,8 @@
 
 # Path navigation separator.
 PATH_SEP = '.'
+# Through table separator.
+THROUGH_SEP = '@'
 # Django's lookup separator
 LOOKUP_SEP = '__'
 
@@ -17,15 +19,28 @@ OPERATIONS = (
     'iregex',
 )
 
-# Separators
-PARAM_SEP = '&'
-KEY_VALUE_SEP = '='
+# Equals items
+EQUALS = '='
+EQUALS_NOT = '!'
+
+# All the characters that begin a key value separator
+EQUALS_SET = EQUALS, EQUALS_NOT
+
+# Logical operators
+AND_OPERATOR = '&'
+OR_OPERATOR = ';'
+
+# ORable value separators
 VALUE_SEP = ','
+# The char separating a path from the sorting direction
 SORT_SEP = ':'
 
 # Groupers
 GROUP_START = '('
 GROUP_END = ')'
+
+# Query string terminator
+TERMINATOR = '#'
 
 # Through table definitions
 
@@ -33,5 +48,4 @@ GROUP_END = ')'
 SORT = {
     'asc': '',
     'desc': '-',
-    None: None,
 }
