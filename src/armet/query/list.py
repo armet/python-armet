@@ -259,4 +259,12 @@ class QueryList(list):
     def as_q(self):
         """Returns a single q object that represents this QueryList
         """
-        return reduce(lambda x, y: y.verb(x, y.as_q()), self, Q())
+        q = Q()
+        last = operator.and_
+
+        # This is a bit more complicated than reduce can handle
+        for item in self:
+            q = last(q, item.as_q())
+            last = item.verb
+
+        return (~q) if self.negated else q
