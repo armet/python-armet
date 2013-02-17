@@ -8,6 +8,18 @@ from django.db.models import Q
 import operator
 from itertools import izip
 from .constants import OPERATION_DEFAULT, SORT, LOOKUP_SEP
+from urllib import unquote
+
+
+class UrlDecodingList(list):
+    """A simple list that urldecodes items added to it
+    """
+
+    def __setitem__(self, key, value):
+        return super(UrlDecodingList, self).__setitem__(key, unquote(value))
+
+    def append(self, value):
+        return super(UrlDecodingList, self).append(unquote(value))
 
 
 class Query(object):
@@ -20,7 +32,7 @@ class Query(object):
         self._direction = None
 
         #! Attribute Path.  This does not include any operations or negation.
-        self.path = kwargs.get('path', [])
+        self.path = kwargs.get('path', UrlDecodingList())
 
         #! Operation.  This is the operation being done to the attribute.
         self.operation = kwargs.get('operation', OPERATION_DEFAULT)
@@ -38,7 +50,7 @@ class Query(object):
         #! [foo, bar] where foo and bar must be ORed, and the result
         #! ANDed with any other queries, including other queries with the same
         #! name.
-        self.value = kwargs.get('value', [])
+        self.value = kwargs.get('value', UrlDecodingList())
 
         #! The operation that will be used with the next query in the chain
         self.verb = kwargs.get('verb', operator.and_)
