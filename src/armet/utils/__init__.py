@@ -40,7 +40,7 @@ def config(path, default=None):
     """Retrieve a namespaced configuration option from django."""
     from django.conf import settings
     try:
-        segment = settings.FLAPJACK
+        segment = settings.ARMET
         for arg in path.split('.'):
             segment = segment[arg.upper()]
 
