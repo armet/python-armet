@@ -28,5 +28,6 @@ setup(
             'PyYAML',
             'lxml',
             'python-magic',
-            'msgpack-python'),
+            'msgpack-python',
+            'python-digest'),
     )
