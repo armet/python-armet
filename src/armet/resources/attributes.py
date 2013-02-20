@@ -313,6 +313,10 @@ class BooleanAttribute(Attribute):
     )
 
     def clean(self, value):
+        if isinstance(value, bool):
+            # Boolean; just return it
+            return value
+
         if value.strip().lower() in self.TRUE:
             # Some sort of truthy value.
             return True
