@@ -82,13 +82,16 @@ class ResourceOptions(object):
         #! something-here).
         self.name = options.get('name')
         if self.name is None:
-          # Generate a name for the resource if one is not provided.
-          # PascalCaseThis => pascal-case-this
-          names = re.findall(r'[A-Z]?[a-z]+|[0-9]+/g', name)
-          if len(names) > 1 and names[-1].lower() == 'resource':
-              # Strip off a trailing Resource as well.
-              names = names[:-1]
-          self.name = '-'.join(names).lower()
+            # Generate a name for the resource if one is not provided.
+            # PascalCaseThis => pascal-case-this
+            dashed = utils.dasherize(name).strip()
+            if dashed:
+                # Strip off a trailing Resource as well.
+                self.name = re.sub(r'-resource$', '', dashed)
+
+            else:
+                # Something went wrong; just use the class name
+                self.name = name
 
         #! Connectors to use to connect to the environment.
         #!
