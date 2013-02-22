@@ -5,11 +5,7 @@ from armet import utils
 from armet.resources import base, meta
 
 
-class ResourceBase(meta.ResourceBase):
-    pass
-
-
-class Resource(six.with_metaclass(ResourceBase, base.Resource)):
+class Resource(base.Resource):
     """Specializes the RESTFul resource protocol for flask.
 
     @note
