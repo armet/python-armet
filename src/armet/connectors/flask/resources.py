@@ -2,10 +2,10 @@
 from __future__ import print_function, unicode_literals, division
 import six
 from armet import utils
-from armet.resources import base
+from armet.resources import base, meta
 
 
-class ResourceBase(base.ResourceBase):
+class ResourceBase(meta.ResourceBase):
     pass
 
 
@@ -19,7 +19,7 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
 
     @classmethod
     def view(cls, *args, **kwargs):
-        return "Hello, FLASK!"
+        return cls().dispatch()
 
     @classmethod
     def mount(cls, app, url, name=None):
@@ -30,10 +30,10 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
         # Generate a name to use to mount this resource.
         if name is None:
             name = '{}.{}'.format(cls.__module__, cls.__name__)
-            name = '{}:{}:{}'.format('armet', name, cls.name)
+            name = '{}:{}:{}'.format('armet', name, cls.meta.name)
 
         # Mount this resource
-        rule = '{}{}'.format(url, cls.name)
+        rule = '{}{}'.format(url, cls.meta.name)
         app.add_url_rule(rule=rule, endpoint=name, view_func=cls.view)
         app.add_url_rule(rule='{}/<path:path>'.format(rule),
             endpoint='{}:path'.format(name), view_func=cls.view)

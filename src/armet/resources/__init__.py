@@ -3,4 +3,9 @@
 """
 from __future__ import print_function, unicode_literals, division
 import six
-from armet.resources.base import Resource
+from armet.resources import base, meta
+
+
+class Resource(six.with_metaclass(meta.ResourceBase, base.Resource)):
+    """Implements the RESTful resource protocol for abstract resources.
+    """
