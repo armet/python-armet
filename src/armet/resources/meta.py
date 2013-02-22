@@ -4,6 +4,7 @@ import six
 from importlib import import_module
 from armet import exceptions
 from armet.resources import options
+from armet.resources.attributes import Attribute
 
 
 class ResourceBase(type):
@@ -63,9 +64,22 @@ class ResourceBase(type):
             else:
                 new_bases.append(connector.Resource)
 
-        #! Construct the class object.
+        # Gather declared attributes from ourself and base classes.
+        # TODO: We'll likely need a hook here for ORMs
+        attributes = {}
+        for base in bases:
+            attributes.update(**base.attributes)
+
+        for name, attribute in six.iteritems(attrs):
+            if isinstance(attribute, Attribute):
+                attributes[name] = attribute
+
+        # Store the gathered attributes
+        attrs['attributes'] = attributes
+
+        # Construct the class object.
         self = super(ResourceBase, cls).__new__(cls, name, tuple(new_bases),
             attrs)
 
-        #! Return the constructed object.
+        # Return the constructed object.
         return self
