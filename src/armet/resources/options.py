@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import re
+import collections
+import six
+from armet.resources.attributes import Attribute
+from armet import utils
 
 
 def _detect_connector_http():
@@ -40,7 +44,27 @@ def _detect_connector_http():
 
 class ResourceOptions(object):
 
-    def __init__(self, options, name):
+    @classmethod
+    def _merge(cls, options, name, bases):
+        """Merges a named option collection."""
+        result = None
+        for base in bases:
+            if base is None:
+                continue
+
+            value = getattr(base, name, None)
+            if value is None:
+                continue
+
+            result = utils.extend(result, value)
+
+        value = options.get(name)
+        if value is not None:
+            result = utils.extend(result, value)
+
+        return result
+
+    def __init__(self, options, name, bases):
         """
         Initializes the options object and defaults configuration not
         specified.
@@ -99,7 +123,7 @@ class ResourceOptions(object):
         #! If connectors are not specified there is *some* auto-detection done
         #! to introspect your environment and determine the appropriate
         #! connectors. This *should* work for most.
-        self.connectors = options.get('options', {})
+        self.connectors = self._merge(options, 'connectors', bases)
 
         if not self.connectors.get('http'):
             # Attempt to detect the HTTP connector
@@ -117,3 +141,62 @@ class ResourceOptions(object):
                 # Shortname, prepend base.
                 self.connectors[connector_name] = 'armet.connectors.{}'.format(
                     connector)
+
+        #! Additional attributes to include in addition to those defined
+        #! directly in the resource. This is meant for defining fields
+        #! with names that conflict with names used in the resource as
+        #! methods. This could be used exclusively; it's a matter of
+        #! preference.
+        #!
+        #! Attributes may also be declared shorthand in a few different
+        #! ways. The next few code blocks are identical in function.
+        #!
+        #! @code
+        #! from armet import resources
+        #! from armet.resources import attributes
+        #! class Resource(resources.Resource):
+        #!     name = attributes.Attribute()
+        #!     created = attributes.Attribute('created')
+        #! @endcode
+        #!
+        #! @code
+        #! from armet import resources
+        #! from armet.resources import attributes
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         include = {
+        #!             'name': attributes.Attribute()
+        #!             'created': attributes.Attribute('created')
+        #!         }
+        #! @endcode
+        #!
+        #! @code
+        #! from armet import resources
+        #! from armet.resources import attributes
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         include = {
+        #!             'name': None,
+        #!             'created': 'created'
+        #!         }
+        #! @endcode
+        #!
+        #! @code
+        #! from armet import resources
+        #! from armet.resources import attributes
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         include = ('name',)
+        #!     created = attributes.Attribute('created')
+        #! @endcode
+        self.include = options.get('include', {})
+        if not isinstance(self.include, collections.Mapping):
+            if isinstance(self.include, collections.Iterable):
+                # This is a list, tuple, etc. but not a dictionary.
+                self.include = {name: Attribute() for name in self.include}
+
+        else:
+            # This is a dictionary; normalize it.
+            for key, value in six.iteritems(self.include):
+                if isinstance(value, six.string_types) or value is None:
+                    self.include[key] = Attribute(value)

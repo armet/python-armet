@@ -15,7 +15,12 @@ class Resource(base.Resource):
 
     @classmethod
     def view(cls, *args, **kwargs):
-        return cls().dispatch()
+        # Initiate the base view request cycle.
+        # TODO: response will likely be a tuple containing headers, etc.
+        response = super(Resource, cls).view(kwargs.get('path'))
+
+        # Facilitate the HTTP response and return it.
+        return response
 
     @classmethod
     def mount(cls, app, url, name=None):

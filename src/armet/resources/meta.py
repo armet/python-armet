@@ -46,13 +46,15 @@ class ResourceBase(type):
             metadata.update(**attrs['Meta'].__dict__)
 
         # Expand the options class with the gathered metadata.
-        meta = attrs['meta'] = cls.options(metadata, name)
+        meta = attrs['meta'] = cls.options(metadata, name,
+            [getattr(base, 'Meta', None) for base in bases])
 
         # Apply the HTTP connector.
         # Mangle the bases. Note that this does not actually change the bases
         # in posterity, it only changes the bases at class object creation.
         # The significance here is that class may derive and change their
         # connectors.
+        print(meta.connectors)
         connector = import_module('{}.resources'.format(
             meta.connectors['http']))
 
@@ -68,11 +70,15 @@ class ResourceBase(type):
         # TODO: We'll likely need a hook here for ORMs
         attributes = {}
         for base in bases:
-            attributes.update(**base.attributes)
+            if hasattr(base, 'attributes'):
+                attributes.update(**base.attributes)
 
-        for name, attribute in six.iteritems(attrs):
+        for index, attribute in six.iteritems(attrs):
             if isinstance(attribute, Attribute):
-                attributes[name] = attribute
+                attributes[index] = attribute
+
+        # Append include directives here
+        attributes.update(**meta.include)
 
         # Store the gathered attributes
         attrs['attributes'] = attributes
