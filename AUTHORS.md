@@ -14,9 +14,9 @@ The python implementation of **Armet** is currently maintained by:
 - Hardy Jones
 
 Additional contributors (in no particular order):
- - James Miles — [@flyingbluejay][]
- - Adam Voliva ([Concordus Applications][]) — [@avoliva][]
- - Taylor Stackpole ([Concordus Applications][]) — [@taystack][]
+- James Miles — [@flyingbluejay][]
+- Adam Voliva ([Concordus Applications][]) — [@avoliva][]
+- Taylor Stackpole ([Concordus Applications][]) — [@taystack][]
 
 [@flyingbluejay]: http://github.com/flyingbluejay
 [@avoliva]: http://github.com/avoliva
