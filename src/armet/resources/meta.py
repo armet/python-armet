@@ -54,7 +54,6 @@ class ResourceBase(type):
         # in posterity, it only changes the bases at class object creation.
         # The significance here is that class may derive and change their
         # connectors.
-        print(meta.connectors)
         connector = import_module('{}.resources'.format(
             meta.connectors['http']))
 
