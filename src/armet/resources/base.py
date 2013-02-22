@@ -22,7 +22,7 @@ class Resource(object):
             GET /api/resource/foo/bar/1/4 if resource is mounted on /api/ then
             path will be 'bar/1/4'
         """
-        pass
+        return "HELLO!!"
 
     @staticmethod
     def parse(path):

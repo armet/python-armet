@@ -32,10 +32,6 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
     @classmethod
     @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
-        """
-        Entry-point of the request cycle for django; Handles resource creation
-        and delegation.
-        """
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
         response = super(Resource, cls).view(kwargs['path'])
