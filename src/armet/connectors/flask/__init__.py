@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from flask import Flask
-from armet.exceptions import ImproperlyConfigured
 
 
-class route:
-    """Mounts a resource on the passed url and flask application.
+__all__ = [
+    b'route',
+]
 
-    @example
-        @route(app, '/')
-        class Resource(resources.Resource):
-            # ...
+
+def is_available(*capacities):
     """
+    Detects if the environment is available for use in
+    the (optionally) specified capacities.
+    """
+    try:
+        # Attempted import
+        import flask
 
-    def __init__(self, app, url='/'):
-        # Store properites for later access.
-        self.app = app
-        self.url = url
+        # TODO: Add additional checks to assert that flask is actually
+        #   in use and available.
 
-        # Perform some minimal sanity checking.
-        if not isinstance(app, Flask):
-            raise ImproperlyConfigured(
-              'Application must be a Flask application.')
+        # Detected connector.
+        return True
 
-    def __call__(self, resource):
-        # Hook up the resource at the mount point.
-        resource.mount(self.app, self.url)
+    except ImportError:
+        # Failed to import.
+        return False
 
-        # Return the resource
-        return resource
+
+if is_available('http'):
+    from .utils import route

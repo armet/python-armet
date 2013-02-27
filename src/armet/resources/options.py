@@ -3,66 +3,42 @@ from __future__ import print_function, unicode_literals, division
 import re
 import collections
 import six
+import pkgutil
+from importlib import import_module
+import os
 from armet.resources.attributes import Attribute
 from armet import utils
 
 
-def _detect_connector_http():
-    """Auto-detect HTTP connector."""
-    try:
-        # Attempted import
-        import django
+def _detect_connector(*capacities):
+    """Auto-detect available connectors."""
+    for module in utils.iter_modules(import_module('armet.connectors')):
+        if module.is_available(*capacities):
+            return module.__name__
 
-        # Now try and use it
-        from django.conf import settings
-        settings.DEBUG
 
-        # HTTP connector looks like its django
-        return 'django'
+def _merge(options, name, bases, default=None):
+    """Merges a named option collection."""
+    result = None
+    for base in bases:
+        if base is None:
+            continue
 
-    except:
-        # Failed to import django; or, we don't have a proper settings
-        # file.
-        pass
+        value = getattr(base, name, None)
+        if value is None:
+            continue
 
-    try:
-        # Attempted import
-        import flask
+        result = utils.extend(result, value)
 
-        # TODO: Add additional checks to assert that flask is actually
-        #   in use.
+    value = options.get(name)
+    if value is not None:
+        result = utils.extend(result, value)
 
-        # Detected connector.
-        return 'flask'
-
-    except ImportError:
-        pass
-
-    # Couldn't figure it out...
-    return None
+    return result or default
 
 
 class ResourceOptions(object):
 
-    @classmethod
-    def _merge(cls, options, name, bases):
-        """Merges a named option collection."""
-        result = None
-        for base in bases:
-            if base is None:
-                continue
-
-            value = getattr(base, name, None)
-            if value is None:
-                continue
-
-            result = utils.extend(result, value)
-
-        value = options.get(name)
-        if value is not None:
-            result = utils.extend(result, value)
-
-        return result
 
     def __init__(self, options, name, bases):
         """
@@ -126,24 +102,21 @@ class ResourceOptions(object):
         #! If connectors are not specified there is *some* auto-detection done
         #! to introspect your environment and determine the appropriate
         #! connectors. This *should* work for most.
-        self.connectors = self._merge(options, 'connectors', bases)
+        self.connectors = connectors = _merge(options, 'connectors', bases, {})
 
-        if not self.connectors.get('http'):
+        if not connectors.get('http'):
             # Attempt to detect the HTTP connector
-            self.connectors['http'] = _detect_connector_http()
+            connectors['http'] = _detect_connector('http')
 
-        if not self.connectors['http']:
-            raise ImproperlyConfigured(
-                'No HTTP connector was detected; available connectors are:'
-                'django and flask')
+        if not connectors['http']:
+            raise ImproperlyConfigured('No valid HTTP connector was detected.')
 
         # Pull out the connectors and convert them into module references.
-        for connector_name in self.connectors:
-            connector = self.connectors[connector_name]
+        for key in connectors:
+            connector = connectors[key]
             if '.' not in connector:
                 # Shortname, prepend base.
-                self.connectors[connector_name] = 'armet.connectors.{}'.format(
-                    connector)
+                connectors[key] = 'armet.connectors.{}'.format(connector)
 
         #! Additional attributes to include in addition to those defined
         #! directly in the resource. This is meant for defining fields
@@ -192,14 +165,13 @@ class ResourceOptions(object):
         #!         include = ('name',)
         #!     created = attributes.Attribute('created')
         #! @endcode
-        self.include = options.get('include', {})
-        if not isinstance(self.include, collections.Mapping):
-            if isinstance(self.include, collections.Iterable):
-                # This is a list, tuple, etc. but not a dictionary.
-                self.include = {name: Attribute() for name in self.include}
+        self.include = include = options.get('include', {})
+        if not isinstance(include, collections.Mapping):
+            # This is a list, tuple, etc. but not a dictionary.
+            self.include = {name: Attribute() for name in include}
 
         else:
             # This is a dictionary; normalize it.
-            for key, value in six.iteritems(self.include):
-                if isinstance(value, six.string_types) or value is None:
-                    self.include[key] = Attribute(value)
+            for key, value in six.iteritems(include):
+                if value is None or isinstance(value, six.string_types):
+                    include[key] = Attribute(value)

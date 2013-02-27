@@ -17,6 +17,7 @@ class Resource(base.Resource):
     def view(cls, *args, **kwargs):
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
+        import ipdb; ipdb.set_trace()
         response = super(Resource, cls).view(kwargs.get('path'))
 
         # Facilitate the HTTP response and return it.
@@ -36,5 +37,5 @@ class Resource(base.Resource):
         # Mount this resource
         rule = '{}{}'.format(url, cls.meta.name)
         app.add_url_rule(rule=rule, endpoint=name, view_func=cls.view)
-        app.add_url_rule(rule='{}/<path:path>'.format(rule),
+        app.add_url_rule(rule='{}<path:path>'.format(rule),
             endpoint='{}:path'.format(name), view_func=cls.view)

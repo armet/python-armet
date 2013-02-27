@@ -5,6 +5,8 @@ from __future__ import print_function, unicode_literals, division
 import six
 import re
 import collections
+import os
+import pkgutil
 
 
 class classproperty(object):
@@ -35,6 +37,11 @@ def extend(collection, value):
               collection = []
           collection.extend(value)
 
+      else:
+          if collection is None:
+              collection = []
+          collection.append(value)
+
       return collection
 
 
@@ -46,3 +53,11 @@ def dasherize(value):
     value = re.sub(r'^-', r'', value)
     value = value.lower()
     return value
+
+
+def iter_modules(package):
+    """Iterate through all modules of a packge."""
+    mname = package.__name__
+    modules = pkgutil.iter_modules([os.path.dirname(package.__file__)])
+    for imp, name, _ in modules:
+        yield imp.find_module(name).load_module('{}.{}'.format(mname, name))
