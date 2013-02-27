@@ -46,8 +46,8 @@ class ResourceBase(type):
             metadata.update(**attrs['Meta'].__dict__)
 
         # Expand the options class with the gathered metadata.
-        meta = attrs['meta'] = cls.options(metadata, name,
-            [getattr(base, 'Meta', None) for base in bases])
+        base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
+        meta = attrs['meta'] = cls.options(metadata, name, base_meta)
 
         # Apply the HTTP connector.
         # Mangle the bases. Note that this does not actually change the bases
@@ -64,6 +64,8 @@ class ResourceBase(type):
 
             else:
                 new_bases.append(connector.Resource)
+
+        new_bases = tuple(new_bases)
 
         # Gather declared attributes from ourself and base classes.
         # TODO: We'll likely need a hook here for ORMs
@@ -82,9 +84,5 @@ class ResourceBase(type):
         # Store the gathered attributes
         attrs['attributes'] = attributes
 
-        # Construct the class object.
-        self = super(ResourceBase, cls).__new__(cls, name, tuple(new_bases),
-            attrs)
-
-        # Return the constructed object.
-        return self
+        # Construct and return the constructed class object.
+        return super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
