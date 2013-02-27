@@ -1,0 +1,2 @@
+nose                    # Test runner
+yanc                    # A color output plugin for nose

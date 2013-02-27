@@ -1,0 +1,2 @@
+six                     # Python 2 and 3 normalization layer
+python-mimeparse        # For parsing accept and content-type headers
