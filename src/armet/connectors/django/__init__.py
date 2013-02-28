@@ -15,6 +15,14 @@ def is_available(*capacities):
         # Attempted import.
         import django
 
+    except ImportError:
+        # Failed to import django
+        return False
+
+    # Import the exception we might get
+    from django.core.exceptions import ImproperlyConfigured
+
+    try:
         # Now try and use it.
         from django.conf import settings
         settings.DEBUG
@@ -22,7 +30,6 @@ def is_available(*capacities):
         # Detected connector.
         return True
 
-    except ImportError:
-        # Failed to import django; or, we don't have a proper settings
-        # file.
+    except ImproperlyConfigured:
+        # We don't have an available settings file; django is actually in use.
         return False
