@@ -89,7 +89,7 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
             Request(request), kwargs.get('path'))
 
         # Construct an HTTP response and return it.
-        return HttpResponse(response)
+        return response.handle
 
     @classmethod
     def url(cls, url, method):
