@@ -4,11 +4,53 @@ import six
 from django.http import HttpResponse, HttpResponsePermanentRedirect
 from django.conf import urls
 from django.views.decorators import csrf
-from armet import utils
+from armet import utils, resources
 from armet.resources import base, meta, options
 
 
+class Request(resources.Request):
+    """Implements the RESTFul request abstraction for django.
+    """
+
+    def __init__(self, request):
+        self.handle = request
+
+    @property
+    def method(self):
+        override = self.header('X-Http-Method-Override')
+        return override.upper() if override else self.handle.method
+
+    def header(self, name):
+        name = name.replace('-', '_').upper()
+        if name != 'CONTENT_TYPE':
+            name = 'HTTP_{}'.format(name)
+        return self.handle.META.get(name)
+
+
+class Response(resources.Response):
+    """Implements the RESTFul response abstraction for django.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.handle = HttpResponse()
+        super(Response, self).__init__(*args, **kwargs)
+
+    @property
+    def status(self):
+        return self.handle.status_code
+
+    @status.setter
+    def status(self, value):
+        self.handle.status_code = value
+
+    def header(self, name, *args):
+        if len(args) == 1:
+            self.handle[name] = args[0]
+        return self.handle.get(name)
+
+
 class ResourceOptions(options.ResourceOptions):
+    response = Response
     def __init__(self, options, name, bases):
         super(ResourceOptions, self).__init__(options, name, bases)
         #! URL namespace to define the url configuration inside.
@@ -32,15 +74,18 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
     @classmethod
     @csrf.csrf_exempt
     def redirect(cls, request, *args, **kwargs):
-        request.path = super(Resource, cls).redirect(request.path)
-        return HttpResponsePermanentRedirect(request.get_full_path())
+        res = super(Resource, cls).redirect(Request(request), request.path)
+        request.path = res.handle['Location']
+        res.handle['Location'] = request.get_full_path()
+        return res.handle
 
     @classmethod
     @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
-        response = super(Resource, cls).view(kwargs.get('path'))
+        response = super(Resource, cls).view(Request(request),
+            kwargs.get('path'))
 
         # Construct an HTTP response and return it.
         return HttpResponse(response)
