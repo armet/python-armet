@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-from armet import utils
+from armet import utils, http
 from armet.resources import base, meta
+from flask import request, redirect
+from werkzeug.wsgi import get_current_url
 
 
 class Resource(base.Resource):
@@ -14,10 +16,15 @@ class Resource(base.Resource):
     """
 
     @classmethod
+    def redirect(cls, *args, **kwargs):
+        env = request.environ
+        env['PATH_INFO'] = super(Resource, cls).redirect(env['PATH_INFO'])
+        return redirect(get_current_url(env), http.client.MOVED_PERMANENTLY)
+
+    @classmethod
     def view(cls, *args, **kwargs):
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
-        import ipdb; ipdb.set_trace()
         response = super(Resource, cls).view(kwargs.get('path'))
 
         # Facilitate the HTTP response and return it.
@@ -34,8 +41,14 @@ class Resource(base.Resource):
             name = '{}.{}'.format(cls.__module__, cls.__name__)
             name = '{}:{}:{}'.format('armet', name, cls.meta.name)
 
-        # Mount this resource
+        # Determine the appropriate methods.
+        view = cls.view if cls.meta.trailing_slash else cls.redirect
+        redirect = cls.redirect if cls.meta.trailing_slash else cls.view
+
+        # Mount this resource.
+        add = app.add_url_rule
         rule = '{}{}'.format(url, cls.meta.name)
-        app.add_url_rule(rule=rule, endpoint=name, view_func=cls.view)
-        app.add_url_rule(rule='{}<path:path>'.format(rule),
-            endpoint='{}:path'.format(name), view_func=cls.view)
+        add(rule, name, redirect)
+        add('{}/'.format(rule), '{}:trail'.format(name), view)
+        add('{}<path:path>'.format(rule), '{}:path'.format(name), redirect)
+        add('{}<path:path>/'.format(rule), '{}:path:trail'.format(name), view)

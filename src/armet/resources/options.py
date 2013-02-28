@@ -175,3 +175,9 @@ class ResourceOptions(object):
             for key, value in six.iteritems(include):
                 if value is None or isinstance(value, six.string_types):
                     include[key] = Attribute(value)
+
+        #! Trailing slash handling.
+        #! The value indicates which URI is the canonical URI and the
+        #! alternative URI is then made to redirect (with a 301) to the
+        #! canonical URI.
+        self.trailing_slash = options.get('trailing_slash', True)
