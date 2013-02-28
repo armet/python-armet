@@ -17,6 +17,21 @@ class Resource(object):
     """
 
     @classmethod
+    def redirect(cls, path):
+        """Redirect to the canonical URI for this resource.
+
+        @note
+            This method does not know how to complete the operation and
+            leaves that to an implementation class in a connector. The result
+            is the URI to redirect to.
+        """
+        if cls.meta.trailing_slash:
+            path += '/'
+        else:
+            del path[-1]
+        return path
+
+    @classmethod
     def view(cls, path):
         """
         Entry-point of the request cycle; Handles resource creation
