@@ -21,7 +21,7 @@ class route:
         # Perform some minimal sanity checking.
         if not isinstance(app, Flask):
             raise ImproperlyConfigured(
-              'Application must be a Flask application.')
+                'Application must be a Flask application.')
 
     def __call__(self, resource):
         # Hook up the resource at the mount point.

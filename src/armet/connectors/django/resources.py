@@ -48,7 +48,9 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
     @classmethod
     def url(cls, url, method):
         """Builds the URL pattern for an single URL of this resource."""
-        return urls.url(url.format(cls.meta.name), method,
+        return urls.url(
+            url.format(cls.meta.name),
+            method,
             name=cls.meta.url_name,
             kwargs={'resource': cls.meta.name})
 
@@ -57,7 +59,8 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
         """Builds the URL configuration for this resource."""
         view = cls.view if cls.meta.trailing_slash else cls.redirect
         redirect = cls.redirect if cls.meta.trailing_slash else cls.view
-        return urls.patterns('',
+        return urls.patterns(
+            '',
             cls.url(r'^{}(?P<path>.*)/', view),
             cls.url(r'^{}(?P<path>.*)', redirect),
             cls.url(r'^{}/', view),
