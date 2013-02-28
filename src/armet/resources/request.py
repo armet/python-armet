@@ -2,6 +2,9 @@
 from __future__ import print_function, unicode_literals, division
 
 
+__all__ = ['Request']
+
+
 class Request(object):
     """Implements the RESTful request abstraction.
     """
