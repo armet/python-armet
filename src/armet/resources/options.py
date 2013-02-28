@@ -36,6 +36,53 @@ def _merge(options, name, bases, default=None):
     return result or default
 
 
+def _method_to_operation(method):
+    if method == 'GET':
+        return set(['read'])
+
+    if method == 'PUT':
+        return set(['update', 'create', 'delete'])
+
+    if method == 'POST':
+        return set(['create'])
+
+    if method == 'PATCH':
+        return set(['update', 'create'])
+
+    if method == 'DELETE':
+        return set(['destory'])
+
+
+def _methods_to_operations(methods):
+    operations = set()
+    for method in operations:
+        operations = operations.union(_method_to_operation(method))
+
+    return operations
+
+
+def _operation_to_method(operation):
+    if operation == 'read':
+        return set(['GET'])
+
+    if operation == 'update':
+        return set(['PUT', 'PATCH'])
+
+    if operation == 'create':
+        return set(['PUT', 'PATCH', 'POST'])
+
+    if operation == 'destroy':
+        return set(['PUT', 'DELETE'])
+
+
+def _operations_to_methods(operations):
+    methods = set(['HEAD', 'OPTIONS'])
+    for operation in operations:
+        methods = methods.union(_operation_to_method(operation))
+
+    return methods
+
+
 class ResourceOptions(object):
 
     def __init__(self, options, name, bases):
@@ -180,3 +227,112 @@ class ResourceOptions(object):
         #! alternative URI is then made to redirect (with a 301) to the
         #! canonical URI.
         self.trailing_slash = options.get('trailing_slash', True)
+
+        #! List of understood HTTP methods.
+        self.http_method_names = options.get('http_method_names', (
+            'HEAD',
+            'OPTIONS',
+            'GET',
+            'POST',
+            'PUT',
+            'PATCH',
+            'DELETE',
+            'CONNECT',
+            'TRACE',
+        ))
+
+        #! List of allowed HTTP methods.
+        #! If not provided and allowed_operations was provided instead
+        #! the operations are appropriately mapped; else, the default
+        #! configuration is provided.
+        self.http_allowed_methods = options.get('http_allowed_methods')
+        if self.http_allowed_methods is None:
+            if options.get('allowed_operations'):
+                self.http_allowed_methods = _operations_to_methods(options.get(
+                    'allowed_operations'))
+
+            else:
+                self.http_allowed_methods = (
+                    'HEAD',
+                    'OPTIONS',
+                    'GET',
+                    'POST',
+                    'PUT',
+                    'PATCH',
+                    'DELETE',
+                )
+
+        #! List of allowed operations.
+        #! Resource operations are meant to generalize and blur the
+        #! differences between "PATCH and PUT", "PUT = create / update",
+        #! etc.
+        #!
+        #! If not provided and http_allowed_methods was provided instead
+        #! the methods are appropriately mapped; else, the default
+        #! configuration is provided.
+        self.allowed_operations = options.get('allowed_operations')
+        if self.allowed_operations is None:
+            if options.get('http_allowed_methods'):
+                self.allowed_operations = _methods_to_operations(options.get(
+                    'http_allowed_methods'))
+
+            else:
+                self.allowed_operations = (
+                    'read',
+                    'create',
+                    'update',
+                    'destroy',
+                )
+
+        #! List of allowed HTTP methods against a whole
+        #! resource (eg /user); if undeclared or None, will be defaulted
+        #! to `http_allowed_methods`.
+        self.http_list_allowed_methods = options.get(
+            'http_list_allowed_methods')
+
+        if self.http_list_allowed_methods is None:
+            if options.get('list_allowed_operations'):
+                self.http_list_allowed_methods = _operations_to_methods(
+                    options.get('list_allowed_operations'))
+
+            else:
+                self.http_list_allowed_methods = self.http_allowed_methods
+
+        #! List of allowed HTTP methods against a single
+        #! resource (eg /user/1); if undeclared or None, will be defaulted
+        #! to `http_allowed_methods`.
+        self.http_detail_allowed_methods = options.get(
+            'http_detail_allowed_methods')
+
+        if self.http_detail_allowed_methods is None:
+            if options.get('detail_allowed_operations'):
+                self.http_detail_allowed_methods = _operations_to_methods(
+                    options.get('detail_allowed_operations'))
+
+            else:
+                self.http_detail_allowed_methods = self.http_allowed_methods
+
+        #! List of allowed operations against a whole resource.
+        #! If undeclared or None, will be defaulted to `allowed_operations`.
+        self.list_allowed_operations = options.get('list_allowed_operations')
+
+        if self.list_allowed_operations is None:
+            if options.get('http_list_allowed_methods'):
+                self.list_allowed_operations = _methods_to_operations(
+                    options.get('http_list_allowed_methods'))
+
+            else:
+                self.list_allowed_operations = self.allowed_operations
+
+        #! List of allowed operations against a single resource.
+        #! If undeclared or None, will be defaulted to `allowed_operations`.
+        self.detail_allowed_operations = options.get(
+            'detail_allowed_operations')
+
+        if self.detail_allowed_operations is None:
+            if options.get('http_detail_allowed_methods'):
+                self.detail_allowed_operations = _methods_to_operations(
+                    options.get('http_detail_allowed_methods'))
+
+            else:
+                self.detail_allowed_operations = self.allowed_operations
