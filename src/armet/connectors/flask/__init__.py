@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import importlib
 
 
 __all__ = [
@@ -14,7 +15,7 @@ def is_available(*capacities):
     """
     try:
         # Attempted import
-        import flask
+        importlib.import_module('flask')
 
         # TODO: Add additional checks to assert that flask is actually
         #   in use and available.

@@ -61,7 +61,7 @@ class Resource(object):
             # Return the response from the dispatch cycle.
             return response
 
-        except BaseException as ex:
+        except BaseException:
             # Something unexpected happenend.
             # TODO: Rollback
 

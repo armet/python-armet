@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import importlib
 
 
 __all__ = [
@@ -13,7 +14,7 @@ def is_available(*capacities):
     """
     try:
         # Attempted import.
-        import django
+        importlib.import_module('django')
 
     except ImportError:
         # Failed to import django
@@ -24,8 +25,8 @@ def is_available(*capacities):
 
     try:
         # Now try and use it.
-        from django.conf import settings
-        settings.DEBUG
+        conf = importlib.import_module('django.conf')
+        conf.settings.DEBUG
 
         # Detected connector.
         return True

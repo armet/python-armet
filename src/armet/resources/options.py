@@ -3,11 +3,10 @@ from __future__ import print_function, unicode_literals, division
 import re
 import collections
 import six
-import pkgutil
 from importlib import import_module
-import os
 from armet.resources.attributes import Attribute
 from armet import utils
+from armet.exceptions import ImproperlyConfigured
 
 
 def _detect_connector(*capacities):
@@ -38,7 +37,6 @@ def _merge(options, name, bases, default=None):
 
 
 class ResourceOptions(object):
-
 
     def __init__(self, options, name, bases):
         """
@@ -74,7 +72,8 @@ class ResourceOptions(object):
         #! This is a dictionary that maps hooks (keys) to the connector to use
         #! for the hook.
         #!
-        #! There is only 1 hook available currently, 'http', and it is required.
+        #! There is only 1 hook available currently, 'http', and it is
+        #! required.
         #!
         #! The available connectors are as follows:
         #!  - http:

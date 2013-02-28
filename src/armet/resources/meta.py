@@ -2,7 +2,6 @@
 from __future__ import print_function, unicode_literals, division
 import six
 from importlib import import_module
-from armet import exceptions
 from armet.resources import options
 from armet.resources.attributes import Attribute
 
