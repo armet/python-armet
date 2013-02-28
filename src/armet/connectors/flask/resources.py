@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-from armet import http, resources
+from armet import resources
 from armet.resources import base, options, meta
 from flask import request
 from flask.globals import current_app

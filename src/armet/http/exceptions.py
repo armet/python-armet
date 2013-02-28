@@ -23,7 +23,7 @@ class MethodNotAllowed(Base):
 
     def __init__(self, allowed):
         super(MethodNotAllowed, self).__init__(
-          headers={'Allowed': ', '.join(allowed)})
+            headers={'Allowed': ', '.join(allowed)})
 
 
 class NotImplemented(Base):

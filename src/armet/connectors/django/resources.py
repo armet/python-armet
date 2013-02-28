@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-from django.http import HttpResponse, HttpResponsePermanentRedirect
+from django.http import HttpResponse
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils, resources
@@ -51,6 +51,7 @@ class Response(resources.Response):
 
 class ResourceOptions(options.ResourceOptions):
     response = Response
+
     def __init__(self, options, name, bases):
         super(ResourceOptions, self).__init__(options, name, bases)
         #! URL namespace to define the url configuration inside.
@@ -84,8 +85,8 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
     def view(cls, request, *args, **kwargs):
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
-        response = super(Resource, cls).view(Request(request),
-            kwargs.get('path'))
+        response = super(Resource, cls).view(
+            Request(request), kwargs.get('path'))
 
         # Construct an HTTP response and return it.
         return HttpResponse(response)

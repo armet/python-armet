@@ -8,6 +8,13 @@ from armet.resources.request import Request
 from armet.resources.response import Response
 
 
+__all__ = [
+    'Request',
+    'Response',
+    'Resource'
+]
+
+
 class Resource(six.with_metaclass(meta.ResourceBase, base.Resource)):
     """Implements the RESTful resource protocol for abstract resources.
     """
