@@ -10,8 +10,8 @@ from itertools import chain
 from armet.exceptions import BadRequest
 from django.db.models import Q
 from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
-    EQUALS, EQUALS_NOT, PATH_SEP, THROUGH_SEP, GROUP_START, GROUP_END,
-    EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP)
+                        EQUALS, EQUALS_NOT, PATH_SEP, GROUP_START, GROUP_END,
+                        EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP)
 
 COMBINATIONS = {
     AND_OPERATOR: operator.and_,
@@ -101,20 +101,13 @@ class QueryList(list):
                 # Break and go to the value parser
                 break
 
-            elif char in (PATH_SEP, THROUGH_SEP):
+            elif char in PATH_SEP:
                 # A path separator, push the current stack into the path
                 # The nest portion is the sorting direction
                 q.path.append(buf.getvalue())
                 buf.truncate(0)
 
-                if char == PATH_SEP:
-                    # We're going for another part of the path
-                    continue
-
-                # A through table identifier
-                elif char == THROUGH_SEP:
-                    raise NotImplemented('Through support pending')
-
+                # We're going for another part of the path
                 continue
 
             # No exciting values

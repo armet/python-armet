@@ -4,8 +4,6 @@
 
 # Path navigation separator.
 PATH_SEP = '.'
-# Through table separator.
-THROUGH_SEP = '@'
 # Django's lookup separator
 LOOKUP_SEP = '__'
 
