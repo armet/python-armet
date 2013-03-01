@@ -95,12 +95,8 @@ class Query(object):
             self._direction = None
             return
 
-        # Make sure that the sorting direction is valid
-        # lowercase it and make sure that its valid
-        value = value.lower()
-
-        if value not in SORT.keys():
-            raise ValueError("Sorting direction must be asc or desc.")
+        # The direction is correct and it has already been verified by the
+        # query parser itself, no need for extra checking
 
         # Internally, declare ascending order as a '+' and descending order as
         # a '-' to optimize for django's ORM

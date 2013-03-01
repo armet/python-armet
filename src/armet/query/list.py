@@ -61,6 +61,9 @@ class QueryList(list):
         keys = SORT.keys()
 
         for iteration, char in enumerate(segiter):
+            # downcase the char to make this case insensitive
+            char = char.lower()
+
             if not len(keys):
                 # We've run out of possible sorting directions
                 raise BadRequest('invalid sorting direction')
@@ -89,7 +92,11 @@ class QueryList(list):
                 # We're entering the sorting section.  Get the sorting
                 # direction
                 q.path.append(buf.getvalue())
+                buf.truncate(0)
                 q.direction = self.sort_parse(segiter)
+
+                if len(q.path) == 1 and q.path[0] == '':
+                    raise BadRequest('No filtering parameters passed')
 
                 # Send to the equals parser
                 self.equals_parse(q, segiter)
@@ -100,6 +107,7 @@ class QueryList(list):
             elif char in EQUALS_SET:
                 # Head to the equals parser
                 q.path.append(buf.getvalue())
+                buf.truncate(0)
                 self.equals_parse(q, segiter, char)
 
                 # Break and go to the value parser
@@ -116,6 +124,10 @@ class QueryList(list):
 
             # No exciting values
             buf.write(char)
+
+        # Write any remaining stuff into the path
+        if buf.tell():
+            q.path.append(buf.getvalue())
 
         # Noramlize the path a bit
         try:
