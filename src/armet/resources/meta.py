@@ -536,12 +536,6 @@ class DeclarativeResource(type):
         self._resolver = urlresolvers.get_resolver(urlresolvers.get_urlconf())
         self._prefix = urlresolvers.get_script_prefix()
 
-        # Aggregate links from available sources for list and detail
-        # versions of the resource.
-        for name in self._attributes:
-            self.detail_links.append(link.Link(name, rel=link.rel.RELATED,
-                title=name))
-
         # Finish us up.
         super(DeclarativeResource, self).__init__(name, bases, attrs)
 

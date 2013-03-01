@@ -118,6 +118,10 @@ class BaseModel(base.BaseResource):
             # Order list as appropriate.
             queryset = queryset.order_by(*self.query.as_order())
 
+        # Perform authorization filtering.
+        queryset = self.authorization.filter(self.request.user, 'read', self,
+            queryset)
+
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
             # This significantly reduces the number of queries.

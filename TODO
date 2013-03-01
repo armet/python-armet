@@ -7,10 +7,10 @@
  ✔ OPTIONS @done (13-01-18 16:16)
  ☐ Header: Link
      ✔ Automatic generation of link headers for related resources @done (13-01-25 13:24)
-     ☐ Ability to add additional link headers through like a 'links' option
+     ✔ Ability to add additional link headers through like a 'links' option @done (13-02-08 10:32)
      ☐ Generation of links in relation to attribute proxies
-     ☐ Generation of links in relation to collection / item pages
-     ☐ Generation of links in relation to canonical URIs / self URIs
+     ✔ Generation of links in relation to collection / item pages @done (13-02-08 10:32)
+     ✔ Generation of links in relation to canonical URIs / self URIs @done (13-02-08 10:32)
  ☐ Header: Link; rel="describedBy"
      ✔ We can remove the resource_uri property now @done (13-01-25 13:25)
      ✔ Schemas are served appropriately @done (13-01-25 16:26)

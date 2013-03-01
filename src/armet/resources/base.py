@@ -206,12 +206,7 @@ class BaseResource(object):
     #! Authorization class for filtering.  Takes a dict of permissions for
     #! CRUD operations.  See the Authorization class for more information on
     #! the parameters this takes.
-    authorization = authorization.Resource({
-        "create": ("add",),
-        "update": ("change",),
-        "delete": ("delete",),
-        "read":   ("read",)
-    })
+    authorization = authorization.Authorization()
 
     #! Hypermedia links to anywhere with some kind of relation type.
     #! NOTE: You should not have to directly add hypermedia relations using
@@ -563,8 +558,6 @@ class BaseResource(object):
             # object for later use.
             self.encoder = self._determine_encoder()
 
-            # self.authorize_resource()
-
             data = None
             if self.request.body is not None:
                 try:
@@ -584,25 +577,12 @@ class BaseResource(object):
                     # Run clean cycle over decoded body
                     data = self.clean(data)
 
-                    # TODO: Assert object-level authorization
-
             # Delegate to the determined function and return its response.
             return function(data)
 
         except exceptions.Error as ex:
             # Known error occured; encode it and return the response.
             return ex.dispatch(self.encoder)
-
-    def authorize_resource(self):
-        """Attempts to assert authorization for access to this resource.
-        If unable to assert, it throws a forbidden.
-        """
-        # TODO: when adding authorization, remember to checked the cached
-        # resource
-        if not self.authorization.is_accessible(
-                self.request,
-                self.request.method):
-            raise exceptions.Forbidden()
 
     def authenticate(self):
         """Attempts to assert authentication."""
@@ -631,6 +611,12 @@ class BaseResource(object):
 
         # Serialize link collection for the appropriate end point.
         links.extend(self.detail_links if self.slug else self.list_links)
+
+        if self.slug is not None:
+            # Aggregate attribute links.
+            # TODO: Ensure attribute proxies are obeyed.
+            for name in self._attributes:
+                links.append(link.Link(name, rel=link.rel.RELATED, title=name))
 
         # Return the standard links.
         return links
@@ -1115,6 +1101,11 @@ class BaseResource(object):
         # Check if the resource exists.
         items = self.read()
 
+        # Ensure we're authorized to delete this.
+        if self.authorization.is_authorized(
+                self.request.user, 'destroy', self, items):
+            raise exceptions.Forbidden()
+
         if not items:
             # Requested a specific resource but no resource was returned.
             raise exceptions.NotFound()
@@ -1141,6 +1132,16 @@ class BaseResource(object):
         else:
             # Read in the current object.
             obj = self.read()
+
+            # Ensure we're authorized to delete this.
+            if self.authorization.is_authorized(
+                    self.request.user, 'update', self, obj):
+                raise exceptions.Forbidden()
+
+            # Ensure we're authorized to create this.
+            if self.authorization.is_authorized(
+                    self.request.user, 'update', self, self._form.instance):
+                raise exceptions.Forbidden()
 
             # Delegate to the `update` function to actually update the object.
             response = self.update(obj, data)
@@ -1198,6 +1199,11 @@ class BaseResource(object):
         """
         # Ensure we're allowed to create
         self._assert_operation('create')
+
+        # Ensure we're authorized to create this.
+        if self.authorization.is_authorized(
+                self.request.user, 'create', self, self._form.instance):
+            raise exceptions.Forbidden()
 
         if self.slug is None:
             # Set our initial status code
@@ -1349,16 +1355,15 @@ class BaseResource(object):
 
     def _assert_operation(self, operation):
         """Determine if the requested operation is allowed in this context."""
-        operations = self._allowed_operations
-        if operation not in operations:
-            # Operation not allowed in this context; build message
-            # to display in the body.
-            data = {}
-            data['allowed'] = operations
-            data['message'] = (
-                'Operation not allowed on `{}`; '
-                'see `allowed` for allowed operations.').format(operation)
+        # Check if the operation is accessible.
+        if not self.authorization.is_accessible(
+                self.request.user, operation, self):
+            # If a resource is not accessible then we return 404 as the
+            #   resource in its entirety is hidden from this user.
+            raise exceptions.NotFound()
 
+        # Check if the operation is allowed.
+        if operation not in self._allowed_operations:
             # Assert conditiion and bail.
             raise exceptions.Forbidden(data)
 

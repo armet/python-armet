@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 from armet import resources
 from armet.resources import attribute, relation
 from . import models
+import time
 
 
 class Choice(resources.Model):
@@ -22,6 +23,8 @@ class Choice(resources.Model):
 class Poll(resources.Model):
     model = models.Poll
 
+    allowed_origins = '*'
+
     include = {
         'choices': attribute('choice_set'),
         'answers': attribute('choice_set')
@@ -30,6 +33,10 @@ class Poll(resources.Model):
     relations = {
         'answers': relation(Choice, path='choice_text', embed=True)
     }
+
+    # def read(self, *args, **kwargs):
+        # time.sleep(50)
+        # return super(Poll, self).read(*args, **kwargs)
 
 
 class BoothSomethignElseBlahBlah(resources.Model):
