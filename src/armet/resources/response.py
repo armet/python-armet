@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import abc
+import six
 
 
 __all__ = ['Response']
 
 
-class Response(object):
+class Response(six.with_metaclass(abc.ABCMeta)):
     """Implements the RESTful response abstraction.
     """
 
@@ -13,16 +15,18 @@ class Response(object):
         if status is not None:
             self.status = status
 
-    @property
+    @abc.abstractproperty
     def status(self):
         """Gets the status code of the response."""
-        raise NotImplemented()
 
     @status.setter
     def status(self, value):
         """Sets the status code of the response."""
-        raise NotImplemented()
 
-    def header(self, name, *args):
-        """Sets a header with the passed name or gets the value of it."""
-        raise NotImplemented()
+    @abc.abstractmethod
+    def __getitem__(self, name):
+        """Sets a header with the passed name."""
+
+    @abc.abstractmethod
+    def __setitem__(self, name, value):
+        """Sets a header with the passed name."""

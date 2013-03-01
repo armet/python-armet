@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import abc
 import six
 from importlib import import_module
 from armet.resources import options
 from armet.resources.attributes import Attribute
 
 
-class ResourceBase(type):
+class ResourceBase(abc.ABCMeta):
 
     #! Options class to use to expand options.
     options = options.ResourceOptions
