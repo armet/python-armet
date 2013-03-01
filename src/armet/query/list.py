@@ -166,7 +166,7 @@ class QueryList(list):
 
                 # Read ahead to grab the verb
                 try:
-                    verb = stringiter.next()
+                    verb = next(stringiter)
                     query.verb = COMBINATIONS[verb]
                 except StopIteration:
                     # The iterator is actually over.  do nothing

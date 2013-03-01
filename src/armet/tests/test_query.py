@@ -13,6 +13,9 @@ class QueryTestCase(TestCase):
     """Testing the Query parser
     """
 
+    def setUp(self):
+        self.manager = Poll.objects
+
     def parse(self, querystring):
         """Simple convenience function to unwrap the array of parameters.
         """
@@ -42,13 +45,22 @@ class QueryTestCase(TestCase):
         self.assertEqual(item.value, ['delicious'])
 
     def test_negation(self):
-        item = self.parse('cheese.not=cheddar')
+        """Tests negating queries
+        """
+        q1 = QueryList('question.icontains.not=anagrams').as_q()
+        q2 = QueryList('question.icontains!=anagrams').as_q()
+        # This should follow the law of double negatives.
+        q3 = QueryList('question.icontains.not!=anagrams').as_q()
 
-        self.assertEqual(item.path, ['cheese'])
-        self.assertEqual(item.operation, 'exact')
-        self.assertTrue(item.negated)
-        self.assertFalse(item.direction)
-        self.assertEqual(item.value, ['cheddar'])
+        got1 = self.manager.filter(q1)
+        got2 = self.manager.filter(q2)
+        got3 = self.manager.filter(q3)
+
+        expected = self.manager.filter(~Q(question__icontains='anagrams'))
+
+        self.assertEqual(list(expected), list(got1))
+        self.assertEqual(list(expected), list(got2))
+        self.assertNotEqual(list(expected), list(got3))
 
     def test_multiple_values(self):
         item = self.parse('fruit=apples,oranges')
@@ -76,10 +88,12 @@ class QueryTestCase(TestCase):
         """Test some bogusy query strings.
         """
         queries = [
+            'icontains.not=foo',
             'foo:bogus=bar',
             'foo:asc&;bar:desc',
             ':asc',
             ':desc=foo',
+            'early)&ending:asc',
         ]
         for query in queries:
             print(query)
@@ -114,22 +128,22 @@ guns.n.roses.istartswith.not:desc=paradise,city&queen:asc'''
         # Q objects cannot be cleanly compared.  Additionally, the Q object
         # construction in armet generates a bunch of extra no-op Q objects
         # which django compiles away.  So these must be compared to the results
-        manager = Poll.objects
         equality = {
             'question': Q(),
             'id=3': Q(id=3),
             'choice.id=230': Q(choice__id=230),
             'id=7,9': Q(id=7) | Q(id=9),
+
             'question.icontains=laugh&choice.choice_text!=Yes':
-                Q(question__icontains='laugh') & ~Q(choice__choice_text='Yes'),
-            # 'question:asc=bar': Q(question='bar'),
+            Q(question__icontains='laugh') & ~Q(choice__choice_text='Yes'),
+
             'question.icontains=regardless':
-                Q(question__icontains='regardless'),
+            Q(question__icontains='regardless'),
         }
         for name, qobject in equality.iteritems():
-            found = list(manager.filter(qobject))
-            shouldbe = list(manager.filter(QueryList(name).as_q()))
-            self.assertEqual(found, shouldbe)
+            got = list(self.manager.filter(qobject))
+            expected = list(self.manager.filter(QueryList(name).as_q()))
+            self.assertEqual(got, expected)
 
     def test_as_order(self):
         params = {
@@ -142,3 +156,33 @@ guns.n.roses.istartswith.not:desc=paradise,city&queen:asc'''
         got = QueryList('&'.join(params.keys())).as_order()
         expected = [x for x in params.values() if x is not None]
         self.assertEqual(got, expected)
+
+    def test_or(self):
+        """Test ORing different queries together.
+        """
+        queries = [
+            'id=12,8',
+            'id=12;id=8',
+        ]
+        match = Q(id=12) | Q(id=8)
+
+        for query in queries:
+            got = list(self.manager.filter(QueryList(query).as_q()))
+            expected = list(self.manager.filter(match))
+            self.assertEqual(got, expected)
+
+    def test_group(self):
+        """Test grouping queries
+        """
+        query = 'question.icontains=anywhere;(question.icontains=world&'\
+                'choice.choice_text.icontains=file%20not%20found)'
+        got = Poll.objects.filter(QueryList(query).as_q())
+        expected = Poll.objects.filter(
+            Q(question__icontains='anywhere') |
+            (
+                Q(question__icontains='world') &
+                Q(choice__choice_text__icontains='file not found')
+            )
+        )
+
+        self.assertEqual(list(expected), list(got))
