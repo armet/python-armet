@@ -13,11 +13,13 @@ class Request(resources.Request):
     """
 
     @property
+    @utils.memoize_single
     def method(self):
         override = self.header('X-Http-Method-Override')
         return override.upper() if override else request.method
 
-    def header(self, name):
+    @utils.memoize
+    def __getitem__(self, name):
         return request.headers.get(name)
 
 
@@ -37,10 +39,11 @@ class Response(resources.Response):
     def status(self, value):
         self.handle.status_code = value
 
-    def header(self, name, *args):
-        if len(args) == 1:
-            self.handle.headers[name] = args[0]
+    def __getitem__(self, name):
         return self.handle.headers[name]
+
+    def __setitem__(self, name, value):
+        self.handle.headers[name] = value
 
 
 class ResourceOptions(options.ResourceOptions):

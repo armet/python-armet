@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import abc
 import re
 import logging
 from armet import http
@@ -44,7 +45,7 @@ class Resource(object):
         else:
             del path[-1]
 
-        response.header('Location', path)
+        response['Location'] = path
 
         # Return the response object.
         return response
@@ -84,7 +85,7 @@ class Resource(object):
             return response
 
         except exceptions.Base as ex:
-            # Something that we can handle and return properly happended.
+            # Something that we can handle and return properly happened.
             # TODO: Rollback
 
             # Instantiate a new response object.
@@ -98,7 +99,7 @@ class Resource(object):
 
             # Set all headers on the response object.
             for name in ex.headers:
-                response.header(name, ex.headers[name])
+                response[name] = ex.headers[name]
 
             # Return the response object.
             return response
@@ -165,6 +166,25 @@ class Resource(object):
 
         return self.meta.list_allowed_operations
 
+    def assert_operations(self, *args):
+        """Assets if the requested operations are allowed in this context."""
+        operations = self.allowed_operations
+        for operation in args:
+            if operation not in operations:
+                raise exceptions.Forbidden()
+
+    def make_response(self, content, status=http.client.OK):
+        """Constructs a response object from the passed content."""
+        # Initialize the response object.
+        response = self.meta.response(status=status)
+
+        # TODO: Prepare the data for transmission.
+        # TODO: Encode the data using a desired encoder.
+        # TODO: Generate appropriate headers.
+
+        # Return the built response.
+        return response
+
     def dispatch(self):
         """Entry-point of the dispatch cycle for this resource.
 
@@ -204,13 +224,43 @@ class Resource(object):
         # Delegate to the determined function to process the request.
         return function()
 
-    def get(self, data=None):
+    def get(self):
         """Processes a `GET` request.
-
-        @param[in] data
-            The body of the request; unused in a normal `GET`.
 
         @returns
             The response to return to the client.
         """
-        return "HELLO!"
+        # Ensure we're allowed to read the resource.
+        self.assert_operations('read')
+
+        # Delegate to `read` to retrieve the items.
+        items = self.read()
+
+        if self.slug is not None:
+            if not items:
+                # Requested a specific resource but nothing is returned.
+                raise exceptions.NotFound()
+
+            if not isinstance(items, six.string_types):
+                if isinstance(items, collections.Sequence):
+                    try:
+                        # Ensure that we only return a single object
+                        # if we're requested to.
+                        items = items[0]
+
+                    except TypeError:
+                        # Assume that `items` is already a single object.
+                        pass
+
+        # Build and return the response object
+        return self.make_response(items)
+
+    @abc.abstractmethod
+    def read(self):
+        """Retrieves data to be displayed; called via GET.
+
+        @returns
+            Either a single object or an iterable of objects to be encoded
+            and returned to the client.
+        """
+        # There is no default behavior.

@@ -16,11 +16,13 @@ class Request(resources.Request):
         self.handle = request
 
     @property
+    @utils.memoize_single
     def method(self):
-        override = self.header('X-Http-Method-Override')
+        override = self['X-Http-Method-Override']
         return override.upper() if override else self.handle.method
 
-    def header(self, name):
+    @utils.memoize
+    def __getitem__(self, name):
         name = name.replace('-', '_').upper()
         if name != 'CONTENT_TYPE':
             name = 'HTTP_{}'.format(name)
@@ -43,10 +45,11 @@ class Response(resources.Response):
     def status(self, value):
         self.handle.status_code = value
 
-    def header(self, name, *args):
-        if len(args) == 1:
-            self.handle[name] = args[0]
+    def __getitem__(self, name):
         return self.handle.get(name)
+
+    def __setitem__(self, name, value):
+        self.handle[name] = value
 
 
 class ResourceOptions(options.ResourceOptions):
@@ -91,24 +94,20 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
         # Construct an HTTP response and return it.
         return response.handle
 
-    @classmethod
-    def url(cls, url, method):
-        """Builds the URL pattern for an single URL of this resource."""
-        return urls.url(
-            url.format(cls.meta.name),
-            method,
-            name=cls.meta.url_name,
-            kwargs={'resource': cls.meta.name})
-
     @utils.classproperty
+    @utils.memoize_single
     def urls(cls):
         """Builds the URL configuration for this resource."""
         view = cls.view if cls.meta.trailing_slash else cls.redirect
         redirect = cls.redirect if cls.meta.trailing_slash else cls.view
+        url = lambda path, method: urls.url(
+            path.format(cls.meta.name),
+            method,
+            name=cls.meta.url_name,
+            kwargs={'resource': cls.meta.name})
         return urls.patterns(
             '',
-            cls.url(r'^{}(?P<path>.*)/', view),
-            cls.url(r'^{}(?P<path>.*)', redirect),
-            cls.url(r'^{}/', view),
-            cls.url(r'^{}', redirect),
-        )
+            url(r'^{}(?P<path>.*)/', view),
+            url(r'^{}(?P<path>.*)', redirect),
+            url(r'^{}/', view),
+            url(r'^{}', redirect))

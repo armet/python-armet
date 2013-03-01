@@ -14,6 +14,10 @@ class Base(BaseException):
         self.headers = headers or {}
 
 
+class Forbidden(Base):
+    status = client.FORBIDDEN
+
+
 class NotFound(Base):
     status = client.NOT_FOUND
 
