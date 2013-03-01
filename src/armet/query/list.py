@@ -49,6 +49,10 @@ class QueryList(list):
             elif char == EQUALS_NOT:
                 # Encountered a negation, negify the q
                 q.negated ^= True
+            else:
+                # Found an unknown character when trying to parse the equals
+                # sign.
+                raise BadRequest('Invalid comparison: {}'.format(char))
 
     def sort_parse(self, segiter):
         # Parse the sorting direction, then proxy to the equals if neccesary
@@ -122,7 +126,7 @@ class QueryList(list):
 
             # The last keyword can be an optional operation
             if q.path[-1] in OPERATIONS:
-                q.verb = OPERATIONS[q.path.pop(-1)]
+                q.operation = q.path.pop(-1)
 
             # Make sure we still have keys that we can use
             if not q.path:
@@ -166,7 +170,6 @@ class QueryList(list):
         """
 
         string = StringIO()
-        last = ''
         for char in querystring:
             # We want to stop reading the query and pass it off to someone
             # when we reach a &, ;, or (
@@ -184,13 +187,14 @@ class QueryList(list):
                 # then continue
                 query.verb = COMBINATIONS[char]
 
-            elif char == EQUALS_NOT and not string.tell():
-                # This is a no-op catcher for the ! sign so that it doesn't
-                # fall throgh to the else clause.  The open paren handler will
-                # catch it next loop
-                pass
-
             elif char == GROUP_START:
+                # See if the last thing was a negation
+                if string.getvalue() == EQUALS_NOT:
+                    string.truncate(0)
+                    negated = True
+                else:
+                    negated = False
+
                 # TODO: freak out of there was no and or or marker before this
                 if string.tell():
                     # There are characters in the buffer, the last one wasn't
@@ -200,7 +204,7 @@ class QueryList(list):
                 # Create a grouping query string from this
                 query = self.group(querystring)
                 # Make note if this needs to be negated
-                query.negated = last == EQUALS_NOT
+                query.negated = negated
 
                 self.append(query)
 
@@ -221,9 +225,6 @@ class QueryList(list):
             else:
                 # This isn't a special character, just roll with it
                 string.write(char)
-
-            # Save a one character buffer
-            last = char
 
         # TODO: throw some nonsense here if the query string ended with a
         # & or ;, because that makes no sense
