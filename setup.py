@@ -27,5 +27,7 @@ setup(
             'parsedatetime',
             'PyYAML',
             'lxml',
-            'python-magic',),
+            'python-magic',
+            'msgpack-python',
+            'python-digest'),
     )

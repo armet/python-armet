@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import collections
 import six
-import datetime
+import decimal
 
 
 def coerce_dict(obj):
@@ -64,6 +64,10 @@ def coerce_value(obj):
         # Since we can iterate but apparently can't encode -- make this
         # a list and send it back through the json encoder.
         return list(obj)
+
+    if isinstance(obj, decimal.Decimal):
+        # Also check to see if this is a decimal, and return a string version
+        return str(obj)
 
     try:
         # Attempt to invoke the object only if we're not a type.

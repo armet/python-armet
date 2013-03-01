@@ -20,7 +20,8 @@ from . import attributes
 from . import link
 from .attributes import FileAttribute
 from .helpers import parent as parent_helper
-from .. import utils, http, exceptions, decoders, authorization, query
+from .. import utils, http, exceptions, decoders, authorization
+from ..query import QueryList
 
 
 # Get an instance of the logger.
@@ -143,6 +144,7 @@ class BaseResource(object):
         # 'xml': 'armet.encoders.Xml',
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
+        'bin': 'armet.encoders.Bin',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -151,6 +153,7 @@ class BaseResource(object):
         # 'xml',
         'text',
         'yaml',
+        'bin',
     )
 
     #! Name of the default encoder of the list of understood encoders.
@@ -531,7 +534,7 @@ class BaseResource(object):
         self.encoder = None
 
         #! A list of query.Query objects representing the query parameters
-        self.query = query.parse(self.request.META['QUERY_STRING'])
+        self.query = QueryList(self.request.META['QUERY_STRING'])
 
         #! This is the form instance that is constructed during the clean
         #! and validation cycle.

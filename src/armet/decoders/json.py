@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Implements the decoder protocol for `multipart/form-data`.
+"""Implements the decoder protocol for `JSON` objets.
 """
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division

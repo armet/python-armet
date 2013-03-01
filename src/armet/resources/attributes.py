@@ -203,6 +203,12 @@ class Attribute(object):
                 # A readable descriptor at the very least.
                 return lambda o, x=obj.__get__: x(o)
 
+        else:
+            # Check for descriptors
+            descriptor = cls.__dict__.get(name)
+            if hasattr(descriptor, '__get__'):
+                return lambda o, x=descriptor.__get__: x(o)
+
         if issubclass(cls, collections.Mapping):
             # Some kind of mapping; use dictionary access.
             return lambda o, n=name: o[name]
@@ -313,6 +319,10 @@ class BooleanAttribute(Attribute):
     )
 
     def clean(self, value):
+        if isinstance(value, bool):
+            # Boolean; just return it
+            return value
+
         if value.strip().lower() in self.TRUE:
             # Some sort of truthy value.
             return True

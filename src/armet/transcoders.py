@@ -29,6 +29,15 @@ class Transcoder(object):
             return False
 
 
+class MessagePack:
+    mimetypes = (
+        # Messagepack data, see msgpack.org for more information.  This isn't
+        # a standardized format, but it is the most compressed format available
+        # here.
+        'application/x-msgpack',
+    )
+
+
 class Binary:
     mimetypes = (
         # Intended to literally mean 'binary' data; as in, a pass-through

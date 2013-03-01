@@ -116,18 +116,18 @@
      ☐ Text (plain/text)
      ✔ Form (multipart/form-data) @done (13-01-26 16:21)
      ☐ Url (application/x-www-form-urlencoded)
-     ☐ Xml (application/xml)
+     ✔ Xml (application/xml) @done (13-02-08 14:27)
      ✔ Json (application/json) @done (13-01-25 11:24)
-     ☐ Yaml
-     ☐ Binary (perhaps messagepack ?)
+     ✔ Yaml @done (13-02-08 14:28)
+     ✔ Binary (messagepack) @done (13-02-08 12:25)
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Encoders
      ☐ Text (plain/text)
      ☐ Form (multipart/form-data)
      ✔ Json (application/json) @done (13-01-25 11:24)
-     ☐ Xml (application/xml)
-     ☐ Yaml
-     ☐ Binary (perhaps messagepack ?)
+     ✔ Xml (application/xml) @done (13-02-08 13:38)
+     ✔ Yaml @done (13-02-08 13:38)
+     ☐ Binary (messagepack)
      ☐ Direct (pass-through, as-in, an image file)
  ☐ Publish / Subscribe messages for push notifications
      Something like https://code.google.com/p/pubsubhubbub/ was.. (its dead now)

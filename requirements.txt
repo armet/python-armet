@@ -8,6 +8,7 @@ python-dateutil         # For parsing standard ISO dates
 parsedatetime           # Fuzzy date parsing
 PyYAML                  # YAML encoding and decoding
 lxml                    # XML encoding and decoding
+msgpack-python          # Binary encoding and decoding via MessagePack
 python-magic            # For auto-detecting content-type and sending
                         #   files directly with the correct mime type
 python-digest           # For processing DIGEST authentication
