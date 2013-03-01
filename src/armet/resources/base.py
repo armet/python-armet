@@ -654,6 +654,7 @@ class BaseResource(object):
             # correct mimetype.
             response.content = self.encoder.encode(data)
             response['Content-Type'] = self.encoder.mimetype
+            response['Content-Length'] = len(bytes(response.content))
 
         # Make an MD5 digest of the content and add it to the response.
         # Use hexdigest so it is actually readable.

@@ -33,7 +33,7 @@ class Authorization(object):
         """
         return True
 
-    def authorize(self, user, operation, resource, obj):
+    def is_authorized(self, user, operation, resource, obj):
         """Determines authroization to a specific resource object.
 
         @param[in] user
@@ -47,23 +47,44 @@ class Authorization(object):
 
         @param[in] obj
             The specific instance of an object returned by a `read` from
-            the `resource`. This may also be an iterable of objects in which
-            this method will filter out those that the user is not authorized
-            for.
+            the `resource`.
 
         @note
             This method may be called twice: once on the object
-            being accessed (for 'read', 'update', and 'destroy'); as well as,
+            being accessed (for 'update', and 'destroy'); as well as,
             on the updated object (for 'create' and 'update').
 
         @returns
-            Returns the object or objects the user is authorized to access;
-            or None, to indicate no authorization.
+            Returns true to indicate authorization or false to indicate
+            otherwise.
         """
-        return obj
+        return True
+
+    def filter(self, user, operation, resource, iterable):
+        """
+        Filters an iterable to return only the objects the user
+        is authorized to access.
+
+        @param[in] user
+            The user in question that is being checked.
+
+        @param[in] operation
+            The operation in question that is being performed (eg. 'read').
+
+        @param[in] resource
+            The resource instance that is being authorized.
+
+        @param[in] iterable
+            The iterable of objects to be checked.
+
+        @returns
+            Returns an iterable containing the remaining objects.
+        """
+        return iterable
 
 
-class ModelAuthorization(authorization.Authorization):
+
+class ModelAuthorization(Authorization):
     """
     Implements the authorization protocol to use a django-based permission
     system linked with its ORM.
@@ -78,7 +99,7 @@ class ModelAuthorization(authorization.Authorization):
         self.permissions = permissions
         if permissions is None:
             self.permissions = {
-                'read':   ('read',)
+                'read':   ('read',),
                 'create': ('add',),
                 'update': ('change',),
                 'destroy': ('delete',),

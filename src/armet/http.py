@@ -39,12 +39,12 @@ class Response(http.HttpResponse):
             # have a body.
             del self['Content-Type']
 
-    @http.HttpResponse.content.setter
-    def content(self, value):
-        # Delegate to django to actually set our content.
-        super(Response, self)._set_content(value)
+    # @http.HttpResponse.content.setter
+    # def content(self, value):
+    #     # Delegate to django to actually set our content.
+    #     super(Response, self).content = value
 
-        if self.content:
-            # Hop in and set our content-length automatically because it just
-            # feels right.
-            self['Content-Length'] = len(bytes(self.content))
+    #     if self.content:
+    #         # Hop in and set our content-length automatically because it just
+    #         # feels right.
+    #         self['Content-Length'] = len(bytes(self.content))

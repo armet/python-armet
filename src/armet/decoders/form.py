@@ -4,8 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from StringIO import StringIO
-from django.http import MultiPartParser
-from django.http.multipartparser import MultiPartParserError
+from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from .. import transcoders
 from . import Decoder, DecoderError
 from django.core.files.uploadhandler import load_handler
