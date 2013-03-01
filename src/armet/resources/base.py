@@ -264,3 +264,45 @@ class Resource(object):
             and returned to the client.
         """
         # There is no default behavior.
+
+    def create(self, data):
+        """Creates the object that is being requested; via POST or PUT.
+
+        @param[in] data
+            The data to create the object with.
+
+        @returns
+            The object that has been created; or, None, to indicate that no
+            object was created.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
+
+    def update(self, obj, data):
+        """Updates the object that is being requested; via PATCH or PUT.
+
+        @param[in] obj
+            The objects represented by the current request; the results of
+            invoking `self.read()`.
+
+        @param[in] data
+            The data to update the object with.
+
+        @returns
+            The object that has been updated.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
+
+    def destroy(self, obj):
+        """Destroy the passed object (or objects).
+
+        @param[in] obj
+            The objects represented by the current request; the results of
+            invoking `self.read()`.
+
+        @returns
+            Nothing.
+        """
+        # There is no default behavior.
+        raise exceptions.NotImplemented()
