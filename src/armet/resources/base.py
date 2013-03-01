@@ -20,7 +20,8 @@ from . import attributes
 from . import link
 from .attributes import FileAttribute
 from .helpers import parent as parent_helper
-from .. import utils, http, exceptions, decoders, authorization, query
+from .. import utils, http, exceptions, decoders, authorization
+from ..query import QueryList
 
 
 # Get an instance of the logger.
@@ -538,7 +539,7 @@ class BaseResource(object):
         self.encoder = None
 
         #! A list of query.Query objects representing the query parameters
-        self.query = query.parse(self.request.META['QUERY_STRING'])
+        self.query = QueryList(self.request.META['QUERY_STRING'])
 
         #! This is the form instance that is constructed during the clean
         #! and validation cycle.
