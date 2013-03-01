@@ -55,9 +55,6 @@ class Query(object):
         #! The operation that will be used with the next query in the chain
         self.verb = kwargs.get('verb', operator.and_)
 
-        #! A flag specifying if this is operating on a through table
-        self.through = kwargs.get('through', False)
-
     @property
     def django_query(self):
         """A simple property that returns the string used in a django query for
