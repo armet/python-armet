@@ -129,7 +129,7 @@ class ModelAuthorization(Authorization):
     def filter(self, user, operation, resource, iterable):
         try:
             # Filter out the iterable.
-            return iterable.for_perms(user, self.permissions[operation])
+            return iterable.for_perms(self.permissions[operation], user)
 
         except KeyError:
             # Permission lookup failed. There are no specific permissions

@@ -167,7 +167,8 @@ class Basic(Http):
     def Unauthenticated(self):
         if self.challenge:
             # Issue the proper challenge response.
-            raise exceptions.Unauthorized('Basic Realm="{}"'.format(realm))
+            raise exceptions.Unauthorized('Basic Realm="{}"'.format(
+                self.realm))
 
         else:
             # Requested to not issue the challenge; give it up the chain.
