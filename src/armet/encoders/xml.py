@@ -20,7 +20,9 @@ class Encoder(transcoders.Xml, Encoder):
         root = ElementTree.Element('xml')
 
         # this will need to be redone still .... for now it works
-        if not isinstance(obj, str):
+        # if it's not a dict it's a string and just returned 
+        # to the api as a plain string
+        if isinstance(obj, dict):
             for key, value in obj.items():
 
                 # if integer
