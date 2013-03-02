@@ -17,9 +17,7 @@ python-digest           # For processing DIGEST authentication
 django-extensions
 django-nose
 xtraceback
+
+
 coverage
 yanc
-
-
-# Added by Adam March 1 2013
-django-shield

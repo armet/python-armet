@@ -119,7 +119,7 @@ class BaseModel(base.BaseResource):
             queryset = queryset.order_by(*self.query.as_order())
 
         # Perform authorization filtering.
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         queryset = self.authorization.filter(self.request.user, 'read', self,
             queryset)
 

@@ -141,7 +141,7 @@ class BaseResource(object):
     #! Mapping of encoders known by this resource.
     encoders = {
         'json': 'armet.encoders.Json',
-        # 'xml': 'armet.encoders.Xml',
+        'xml': 'armet.encoders.Xml',
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
         'bin': 'armet.encoders.Bin',
@@ -150,7 +150,7 @@ class BaseResource(object):
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
-        # 'xml',
+        'xml',
         'text',
         'yaml',
         'bin',
