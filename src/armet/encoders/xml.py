@@ -17,23 +17,28 @@ class Encoder(transcoders.Xml, Encoder):
     def test(self, obj):
         xml = None
         root = ElementTree.Element('xml')
-        for key, value in obj.items():
-            if isinstance(value, int):
-                ElementTree.SubElement(root, key,
-                    type='integer').text = bytes(str(value))
-            elif isinstance(value, dict):
-                text = self.dict_to_string(ElementTree.Element(key), value)
-                ElementTree.SubElement(root, key).text = text
-            elif isinstance(value, datetime.time) or isinstance(value, datetime.date):
-                ElementTree.SubElement(root, key).text = value.isoformat()
-            elif isinstance(value, list):
-                node = ElementTree.SubElement(root, key)
-                print(node)
-                for item in value:
-                    ElementTree.SubElement(node, key).text = item
-            else:
-                ElementTree.SubElement(root, key).text = bytes(str(value))
-        xml = ElementTree.tostring(root)
+        if not isinstance(obj, str):
+            for key, value in obj.items():
+                if isinstance(value, int):
+                    ElementTree.SubElement(root, key,
+                        type='integer').text = bytes(str(value))
+                elif isinstance(value, dict):
+                    text = self.dict_to_string(ElementTree.Element(key), value)
+                    ElementTree.SubElement(root, key).text = text
+                elif isinstance(value, datetime.time) or isinstance(value, datetime.date):
+                    ElementTree.SubElement(root, key).text = value.isoformat()
+                elif isinstance(value, list):
+                    node = ElementTree.SubElement(root, key)
+                    print(node)
+                    for item in value:
+                        ElementTree.SubElement(node, key).text = item
+                else:
+                    ElementTree.SubElement(root, key).text = bytes(str(value))
+
+            xml = ElementTree.tostring(root)
+        # else:
+        #     xml = ElementTree.
+            
         xml = xml.replace('&lt;', '<')
         xml = xml.replace('&gt;', '>')
         return xml
@@ -41,10 +46,13 @@ class Encoder(transcoders.Xml, Encoder):
     def encode(self, obj=None):
         xml_dict = self._encode_value(obj)
         val = ''  # ...
-        if (isinstance(xml_dict, list)):
+        if isinstance(xml_dict, list):
             for item in xml_dict:
                 val += self.test(item)
+        elif isinstance(xml_dict, str):
+            val = xml_dict
         else:
+            print(type(xml_dict))
             val = self.test(xml_dict)
         return val
 
@@ -82,6 +90,7 @@ class Encoder(transcoders.Xml, Encoder):
             return b"true" if obj else b"false"
 
         # We have no idea what we are..
+        print('LOLOLOL')
         return self._encode_value(utils.coerce_value(obj))
 
     def dict_to_string(self, element, obj):
