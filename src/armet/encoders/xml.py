@@ -8,23 +8,28 @@ from . import Encoder
 class Encoder(transcoders.Xml, Encoder):
 
     def encode(self, obj):
-        print(type(obj))
+        xml = None
         root = ElementTree.Element('xml')
-        for key, value in obj.items():
-            if isinstance(value, int):
-                ElementTree.SubElement(root, key,
-                    type='integer').text = str(value)
-            elif isinstance(value, dict):
-                text = self.tostring(ElementTree.Element(key), value)
-                ElementTree.SubElement(root, key).text = text
-            else:
-                ElementTree.SubElement(root, key).text = str(value)
-        xml = ElementTree.tostring(root)
-        xml = xml.replace('&lt;', '<')
-        xml = xml.replace('&gt;', '>')
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if isinstance(value, int):
+                    ElementTree.SubElement(root, key,
+                        type='integer').text = str(value)
+                elif isinstance(value, dict):
+                    text = self.dict_to_string(ElementTree.Element(key), value)
+                    ElementTree.SubElement(root, key).text = text
+                else:
+                    ElementTree.SubElement(root, key).text = str(value)
+            xml = ElementTree.tostring(root)
+            xml = xml.replace('&lt;', '<')
+            xml = xml.replace('&gt;', '>')
+        elif isinstance(obj, unicode):
+            xml = ElementTree.Element('xml').text = obj
+        else:
+            print(type(obj))
         return xml
 
-    def tostring(self, element, obj):
+    def dict_to_string(self, element, obj):
         container = []
         for key, value in obj.items():
             if isinstance(value, int):
@@ -32,7 +37,7 @@ class Encoder(transcoders.Xml, Encoder):
                     type='integer').text = str(value)
             elif isinstance(value, dict):
                 ElementTree.SubElement(element,
-                    key).text = self.tostring(key, value)
+                    key).text = self.dict_to_string(key, value)
             else:
                 ElementTree.SubElement(element, key).text = value
                 container.append('<{0}>{1}</{0}>'.format(key, value))
