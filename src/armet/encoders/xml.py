@@ -14,31 +14,42 @@ from . import Encoder, utils
 
 class Encoder(transcoders.Xml, Encoder):
 
-    def test(self, obj):
+    def dict_to_xml(self, obj):
         xml = None
+        # the root element. I guess xml will be fine.
         root = ElementTree.Element('xml')
+
+        # this will need to be redone still .... for now it works
         if not isinstance(obj, str):
             for key, value in obj.items():
+
+                # if integer
                 if isinstance(value, int):
                     ElementTree.SubElement(root, key,
                         type='integer').text = bytes(str(value))
+
+                # if a list, loop through grab each item
+                elif isinstance(value, list):
+                    node = ElementTree.SubElement(root, key)
+                    for item in value:
+                        ElementTree.SubElement(node, key).text = item
+
+                # if a dict, convert to string
                 elif isinstance(value, dict):
                     text = self.dict_to_string(ElementTree.Element(key), value)
                     ElementTree.SubElement(root, key).text = text
+
+                # date format
                 elif isinstance(value, datetime.time) or isinstance(value, datetime.date):
                     ElementTree.SubElement(root, key).text = value.isoformat()
-                elif isinstance(value, list):
-                    node = ElementTree.SubElement(root, key)
-                    print(node)
-                    for item in value:
-                        ElementTree.SubElement(node, key).text = item
+
+                # ...
                 else:
                     ElementTree.SubElement(root, key).text = bytes(str(value))
 
             xml = ElementTree.tostring(root)
-        # else:
-        #     xml = ElementTree.
-            
+
+        # remote html crap
         xml = xml.replace('&lt;', '<')
         xml = xml.replace('&gt;', '>')
         return xml
@@ -46,14 +57,19 @@ class Encoder(transcoders.Xml, Encoder):
     def encode(self, obj=None):
         xml_dict = self._encode_value(obj)
         val = ''  # ...
+        # this covers the list view (e.g. /api/polls.xml)
         if isinstance(xml_dict, list):
             for item in xml_dict:
-                val += self.test(item)
-        elif isinstance(xml_dict, str):
-            val = xml_dict
+                val += self.dict_to_xml(item)
+
+        # if dict, convert to xml
+        elif isinstance(xml_dict, dict):
+            val = self.dict_to_xml(xml_dict)
+
+        # just send back the damn object...
         else:
-            print(type(xml_dict))
-            val = self.test(xml_dict)
+            val = obj
+
         return val
 
     def _encode_value(self, obj):
@@ -90,7 +106,6 @@ class Encoder(transcoders.Xml, Encoder):
             return b"true" if obj else b"false"
 
         # We have no idea what we are..
-        print('LOLOLOL')
         return self._encode_value(utils.coerce_value(obj))
 
     def dict_to_string(self, element, obj):
