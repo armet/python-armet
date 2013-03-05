@@ -4,6 +4,7 @@
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
+import collections
 from . import base, link
 from .. import exceptions, authorization, utils
 
@@ -86,6 +87,8 @@ class BaseModel(base.BaseResource):
         links = super(BaseModel, self).make_links(data)
 
         if self.slug is None:
+            if not isinstance(data, collections.Iterable):
+                data = [data]
             # Store the item links for use in the link headers.
             for item in data:
                 links.append(link.Link(self.reverse(
