@@ -7,7 +7,6 @@ from StringIO import StringIO
 from django.http.multipartparser import MultiPartParser, MultiPartParserError
 from .. import transcoders
 from . import Decoder, DecoderError
-from django.core.files.uploadhandler import load_handler
 
 
 class Decoder(transcoders.Form, Decoder):
@@ -29,6 +28,10 @@ class Decoder(transcoders.Form, Decoder):
 
         # Flatten the data dictionary if possible.
         obj = dict(data)
+
+        # Merge files dictionary with the data dictionary.
+        obj.update(dict(files))
+
         for key in obj:
             if attributes and key in attributes and attributes[key].collection:
                 # Field declared to be an array; don't bother.
@@ -37,9 +40,6 @@ class Decoder(transcoders.Form, Decoder):
             if len(obj[key]) == 1:
                 # Field probably supposed to be scalar.
                 obj[key] = obj[key][0]
-
-        # Merge files dictionary with the data dictionary.
-        obj.update(dict(files))
 
         # Return the decoded object.
         return obj
