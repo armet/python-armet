@@ -8,8 +8,5 @@ from . import api
 
 
 urlpatterns = patterns('',
-    url('^api/', include(api.Poll.urls)),
-    url('^', include(api.Choice.urls)),
-    url('^', include(api.BoothSomethignElseBlahBlah.urls)),
-    url('^', include(api.Cushion.urls))
+    url('^', include(api.Poll.urls)),
 )

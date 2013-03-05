@@ -7,7 +7,7 @@ from os import path
 
 
 # Project directories
-PROJECT_NAME = 'armet.tests'
+PROJECT_NAME = 'polls'
 PROJECT_ROOT = path.abspath(path.join(__file__))
 
 # Root directories
@@ -104,6 +104,7 @@ WSGI_APPLICATION = '{}.wsgi.application'.format(PROJECT_NAME)
 
 # Installed applications
 INSTALLED_APPS = (
+    'shield',
     # Django core
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -117,7 +118,6 @@ INSTALLED_APPS = (
 
     # Extensions
     'django_nose',
-    'shield',
 
     # Project
     PROJECT_NAME,
@@ -140,8 +140,8 @@ NOSE_ARGS = [
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = (
-    'emailusernames.backends.EmailAuthBackend',
     'shield.backends.Backend',
+    'django.contrib.auth.backends.ModelBackend',
 )
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for

@@ -1,0 +1,1108 @@
+[
+  {
+    "pk": 8,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "choice",
+      "name": "choice",
+      "app_label": "tests"
+    }
+  },
+  {
+    "pk": 4,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "contenttype",
+      "name": "content type",
+      "app_label": "contenttypes"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "group",
+      "name": "group",
+      "app_label": "auth"
+    }
+  },
+  {
+    "pk": 6,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "logentry",
+      "name": "log entry",
+      "app_label": "admin"
+    }
+  },
+  {
+    "pk": 1,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "permission",
+      "name": "permission",
+      "app_label": "auth"
+    }
+  },
+  {
+    "pk": 7,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "poll",
+      "name": "poll",
+      "app_label": "tests"
+    }
+  },
+  {
+    "pk": 5,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "session",
+      "name": "session",
+      "app_label": "sessions"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "contenttypes.contenttype",
+    "fields": {
+      "model": "user",
+      "name": "user",
+      "app_label": "auth"
+    }
+  },
+  {
+    "pk": 1,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:45.520Z",
+      "question": "Grab the book nearest to you, turn to page 18, and find line 4."
+    }
+  },
+  {
+    "pk": 2,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:45.872Z",
+      "question": "Stretch your left arm out as far as you can, What can you touch?"
+    }
+  },
+  {
+    "pk": 3,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.016Z",
+      "question": "Before you started this survey, what were you doing?"
+    }
+  },
+  {
+    "pk": 4,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.171Z",
+      "question": "What is the last thing you watched on TV?"
+    }
+  },
+  {
+    "pk": 5,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.326Z",
+      "question": "Without looking, guess what time it is"
+    }
+  },
+  {
+    "pk": 6,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.470Z",
+      "question": "Now look at the clock. What is the actual time?"
+    }
+  },
+  {
+    "pk": 7,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.625Z",
+      "question": "With the exception of the computer, what can you hear?"
+    }
+  },
+  {
+    "pk": 8,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.780Z",
+      "question": "When did you last step outside? What were you doing?"
+    }
+  },
+  {
+    "pk": 9,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:46.958Z",
+      "question": "Did you dream last night?"
+    }
+  },
+  {
+    "pk": 10,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.103Z",
+      "question": "Do you remember your dreams?"
+    }
+  },
+  {
+    "pk": 11,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.257Z",
+      "question": "When did you last laugh?"
+    }
+  },
+  {
+    "pk": 12,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.401Z",
+      "question": "Do you remember why / at what?"
+    }
+  },
+  {
+    "pk": 13,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.545Z",
+      "question": "What is on the walls of the room you are in?"
+    }
+  },
+  {
+    "pk": 14,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.689Z",
+      "question": "Seen anything weird lately?"
+    }
+  },
+  {
+    "pk": 15,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.833Z",
+      "question": "What do you think of this quiz?"
+    }
+  },
+  {
+    "pk": 16,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:47.977Z",
+      "question": "What is the last film you saw?"
+    }
+  },
+  {
+    "pk": 17,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.121Z",
+      "question": "If you could live anywhere in the world, where would you live?"
+    }
+  },
+  {
+    "pk": 18,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.276Z",
+      "question": "If you became a multi-millionaire overnight, what would you buy?"
+    }
+  },
+  {
+    "pk": 19,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.442Z",
+      "question": "Tell me something about you that most people don't know."
+    }
+  },
+  {
+    "pk": 20,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.586Z",
+      "question": "If you could change one thing about the world, regardless of guilt or politics, what would you do?"
+    }
+  },
+  {
+    "pk": 21,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.741Z",
+      "question": "Do you like to dance?"
+    }
+  },
+  {
+    "pk": 22,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:48.897Z",
+      "question": "Would you ever consider living abroad?"
+    }
+  },
+  {
+    "pk": 23,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:49.316Z",
+      "question": "Does your name make any interesting anagrams?"
+    }
+  },
+  {
+    "pk": 24,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:49.460Z",
+      "question": "Who made the last incoming call on your phone?"
+    }
+  },
+  {
+    "pk": 25,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:49.615Z",
+      "question": "What is the last thing you downloaded onto your computer?"
+    }
+  },
+  {
+    "pk": 26,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:49.770Z",
+      "question": "Last time you swam in a pool?"
+    }
+  },
+  {
+    "pk": 27,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:49.925Z",
+      "question": "Type of music you like most?"
+    }
+  },
+  {
+    "pk": 28,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.080Z",
+      "question": "Type of music you dislike most?"
+    }
+  },
+  {
+    "pk": 29,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.246Z",
+      "question": "Are you listening to music right now?"
+    }
+  },
+  {
+    "pk": 30,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.412Z",
+      "question": "What color is your bedroom carpet?"
+    }
+  },
+  {
+    "pk": 31,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.578Z",
+      "question": "If you could change something about your home, without worry about expense or mess, what would you do?"
+    }
+  },
+  {
+    "pk": 32,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.733Z",
+      "question": "What was the last thing you bought?"
+    }
+  },
+  {
+    "pk": 33,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:50.877Z",
+      "question": "Have you ever ridden on a motorbike?"
+    }
+  },
+  {
+    "pk": 34,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.034Z",
+      "question": "Would you go bungee jumping or sky diving?"
+    }
+  },
+  {
+    "pk": 35,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.189Z",
+      "question": "Do you have a garden?"
+    }
+  },
+  {
+    "pk": 36,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.343Z",
+      "question": "Do you really know all the words to your national anthem?"
+    }
+  },
+  {
+    "pk": 37,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.521Z",
+      "question": "What is the first thing you think of when you wake up in the morning?"
+    }
+  },
+  {
+    "pk": 38,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.664Z",
+      "question": "If you could eat lunch with one famous person, who would it be?"
+    }
+  },
+  {
+    "pk": 39,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:51.853Z",
+      "question": "Who sent the last text message you received?"
+    }
+  },
+  {
+    "pk": 40,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.008Z",
+      "question": "Which store would you choose to max out your credit card?"
+    }
+  },
+  {
+    "pk": 41,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.163Z",
+      "question": "What time is bed time?"
+    }
+  },
+  {
+    "pk": 42,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.307Z",
+      "question": "Have you ever been in a beauty pageant?"
+    }
+  },
+  {
+    "pk": 43,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.462Z",
+      "question": "How many tattoos do you have?"
+    }
+  },
+  {
+    "pk": 44,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.606Z",
+      "question": "If you don't have any, have you ever thought of getting one?"
+    }
+  },
+  {
+    "pk": 45,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.762Z",
+      "question": "What did you do for your last birthday?"
+    }
+  },
+  {
+    "pk": 46,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:52.906Z",
+      "question": "Do you carry a donor card?"
+    }
+  },
+  {
+    "pk": 47,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.072Z",
+      "question": "Who was the last person you ate dinner with?"
+    }
+  },
+  {
+    "pk": 48,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.216Z",
+      "question": "Is the glass half empty or half full?"
+    }
+  },
+  {
+    "pk": 49,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.371Z",
+      "question": "What's the farthest-away place you've been?"
+    }
+  },
+  {
+    "pk": 50,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.526Z",
+      "question": "When's the last time you ate a homegrown tomato?"
+    }
+  },
+  {
+    "pk": 51,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.681Z",
+      "question": "Have you ever won a trophy?"
+    }
+  },
+  {
+    "pk": 52,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.825Z",
+      "question": "Are you a good cook?"
+    }
+  },
+  {
+    "pk": 53,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:53.980Z",
+      "question": "Do you know how to pump your own gas?"
+    }
+  },
+  {
+    "pk": 54,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.134Z",
+      "question": "If you could meet any one person (from history or currently alive), who would it be?"
+    }
+  },
+  {
+    "pk": 55,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.323Z",
+      "question": "Have you ever had to wear a uniform to school?"
+    }
+  },
+  {
+    "pk": 56,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.467Z",
+      "question": "Do you touch-type?"
+    }
+  },
+  {
+    "pk": 57,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.622Z",
+      "question": "What's under your bed?"
+    }
+  },
+  {
+    "pk": 58,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.778Z",
+      "question": "Do you believe in love at first sight?"
+    }
+  },
+  {
+    "pk": 59,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:54.934Z",
+      "question": "Think fast, what do you like right now?"
+    }
+  },
+  {
+    "pk": 60,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.089Z",
+      "question": "Where were you on Valentine's day?"
+    }
+  },
+  {
+    "pk": 61,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.254Z",
+      "question": "What time do you get up?"
+    }
+  },
+  {
+    "pk": 62,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.410Z",
+      "question": "What was the name of your first pet?"
+    }
+  },
+  {
+    "pk": 63,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.565Z",
+      "question": "Who is the second to last person to call you?"
+    }
+  },
+  {
+    "pk": 64,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.731Z",
+      "question": "Is there anything going on this weekend?"
+    }
+  },
+  {
+    "pk": 65,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:55.885Z",
+      "question": "How are you feeling right now?"
+    }
+  },
+  {
+    "pk": 66,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.029Z",
+      "question": "What do you think about the most?"
+    }
+  },
+  {
+    "pk": 67,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.184Z",
+      "question": "What time do you get up in the morning?"
+    }
+  },
+  {
+    "pk": 68,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.339Z",
+      "question": "If you had A Big Win in the Lottery, how long would you wait to tell people?"
+    }
+  },
+  {
+    "pk": 69,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.495Z",
+      "question": "Who would you tell first?"
+    }
+  },
+  {
+    "pk": 70,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.662Z",
+      "question": "What is the last movie that you saw at the cinema?"
+    }
+  },
+  {
+    "pk": 71,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:56.828Z",
+      "question": "Do you sing in the shower?"
+    }
+  },
+  {
+    "pk": 72,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.027Z",
+      "question": "Which store would you choose to max out your credit card?"
+    }
+  },
+  {
+    "pk": 73,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.182Z",
+      "question": "What do you do most when you are bored?"
+    }
+  },
+  {
+    "pk": 74,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.337Z",
+      "question": "What do you do for a living?"
+    }
+  },
+  {
+    "pk": 75,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.503Z",
+      "question": "Do you love your job?"
+    }
+  },
+  {
+    "pk": 76,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.647Z",
+      "question": "What did you want to be when you grew up?"
+    }
+  },
+  {
+    "pk": 77,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.791Z",
+      "question": "If you could have any job, what would you want to do/be?"
+    }
+  },
+  {
+    "pk": 78,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:57.957Z",
+      "question": "Which came first the chicken or the egg?"
+    }
+  },
+  {
+    "pk": 79,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.101Z",
+      "question": "How many keys on your key ring?"
+    }
+  },
+  {
+    "pk": 80,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.245Z",
+      "question": "Where would you retire to?"
+    }
+  },
+  {
+    "pk": 81,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.401Z",
+      "question": "What kind of car do you drive?"
+    }
+  },
+  {
+    "pk": 82,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.556Z",
+      "question": "What are your best physical features?"
+    }
+  },
+  {
+    "pk": 83,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.711Z",
+      "question": "What are your best characteristics?"
+    }
+  },
+  {
+    "pk": 84,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:58.866Z",
+      "question": "If you could go anywhere in the world on vacation where would you go?"
+    }
+  },
+  {
+    "pk": 85,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.033Z",
+      "question": "What kind of books do you like to read?"
+    }
+  },
+  {
+    "pk": 86,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.176Z",
+      "question": "Where would you want to retire to?"
+    }
+  },
+  {
+    "pk": 87,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.365Z",
+      "question": "What is your favorite time of the day?"
+    }
+  },
+  {
+    "pk": 88,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.520Z",
+      "question": "Where did you grow up?"
+    }
+  },
+  {
+    "pk": 89,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.675Z",
+      "question": "How far away from your birthplace do you live now?"
+    }
+  },
+  {
+    "pk": 90,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.831Z",
+      "question": "What are you reading now?"
+    }
+  },
+  {
+    "pk": 91,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:20:59.986Z",
+      "question": "Are you a morning person or a night owl?"
+    }
+  },
+  {
+    "pk": 92,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.153Z",
+      "question": "Can you touch your nose with your tongue?"
+    }
+  },
+  {
+    "pk": 93,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.308Z",
+      "question": "Can you close your eyes and raise your eyebrows?"
+    }
+  },
+  {
+    "pk": 94,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.463Z",
+      "question": "Do you have pets?"
+    }
+  },
+  {
+    "pk": 95,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.618Z",
+      "question": "How many rings before you answer the phone?"
+    }
+  },
+  {
+    "pk": 96,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.773Z",
+      "question": "What is your best childhood memory?"
+    }
+  },
+  {
+    "pk": 97,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:00.928Z",
+      "question": "What are some of the different jobs that you have had in your life?"
+    }
+  },
+  {
+    "pk": 98,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:01.094Z",
+      "question": "Any new and exciting things that you would like to share?"
+    }
+  },
+  {
+    "pk": 99,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:01.249Z",
+      "question": "What is most important in life?"
+    }
+  },
+  {
+    "pk": 100,
+    "model": "polls.poll",
+    "fields": {
+      "pub_date": "2012-12-11T16:21:01.393Z",
+      "question": "What Inspires You?"
+    }
+  },
+  {
+    "pk": 16,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_logentry",
+      "name": "Can add log entry",
+      "content_type": 6
+    }
+  },
+  {
+    "pk": 17,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_logentry",
+      "name": "Can change log entry",
+      "content_type": 6
+    }
+  },
+  {
+    "pk": 18,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_logentry",
+      "name": "Can delete log entry",
+      "content_type": 6
+    }
+  },
+  {
+    "pk": 4,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_group",
+      "name": "Can add group",
+      "content_type": 2
+    }
+  },
+  {
+    "pk": 5,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_group",
+      "name": "Can change group",
+      "content_type": 2
+    }
+  },
+  {
+    "pk": 6,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_group",
+      "name": "Can delete group",
+      "content_type": 2
+    }
+  },
+  {
+    "pk": 1,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_permission",
+      "name": "Can add permission",
+      "content_type": 1
+    }
+  },
+  {
+    "pk": 2,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_permission",
+      "name": "Can change permission",
+      "content_type": 1
+    }
+  },
+  {
+    "pk": 3,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_permission",
+      "name": "Can delete permission",
+      "content_type": 1
+    }
+  },
+  {
+    "pk": 7,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_user",
+      "name": "Can add user",
+      "content_type": 3
+    }
+  },
+  {
+    "pk": 8,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_user",
+      "name": "Can change user",
+      "content_type": 3
+    }
+  },
+  {
+    "pk": 9,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_user",
+      "name": "Can delete user",
+      "content_type": 3
+    }
+  },
+  {
+    "pk": 10,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_contenttype",
+      "name": "Can add content type",
+      "content_type": 4
+    }
+  },
+  {
+    "pk": 11,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_contenttype",
+      "name": "Can change content type",
+      "content_type": 4
+    }
+  },
+  {
+    "pk": 12,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_contenttype",
+      "name": "Can delete content type",
+      "content_type": 4
+    }
+  },
+  {
+    "pk": 13,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_session",
+      "name": "Can add session",
+      "content_type": 5
+    }
+  },
+  {
+    "pk": 14,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_session",
+      "name": "Can change session",
+      "content_type": 5
+    }
+  },
+  {
+    "pk": 15,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_session",
+      "name": "Can delete session",
+      "content_type": 5
+    }
+  },
+  {
+    "pk": 22,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_choice",
+      "name": "Can add choice",
+      "content_type": 8
+    }
+  },
+  {
+    "pk": 23,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_choice",
+      "name": "Can change choice",
+      "content_type": 8
+    }
+  },
+  {
+    "pk": 24,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_choice",
+      "name": "Can delete choice",
+      "content_type": 8
+    }
+  },
+  {
+    "pk": 19,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "add_poll",
+      "name": "Can add poll",
+      "content_type": 7
+    }
+  },
+  {
+    "pk": 20,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "change_poll",
+      "name": "Can change poll",
+      "content_type": 7
+    }
+  },
+  {
+    "pk": 21,
+    "model": "auth.permission",
+    "fields": {
+      "codename": "delete_poll",
+      "name": "Can delete poll",
+      "content_type": 7
+    }
+  },
+  {
+    "pk": 1,
+    "model": "auth.user",
+    "fields": {
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "is_active": true,
+      "is_superuser": true,
+      "is_staff": true,
+      "last_login": "2012-12-11T16:18:53.094Z",
+      "groups": [],
+      "user_permissions": [],
+      "password": "pbkdf2_sha256$10000$2hHVkS5UL5eP$NnxOJZO/Mu6WpVqDTHb63gKoVAZmCCEyNs7EvGXsDWU=",
+      "email": "admin@example.com",
+      "date_joined": "2012-12-11T16:18:53.094Z"
+    }
+  }
+]
