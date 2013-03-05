@@ -674,7 +674,7 @@ class BaseResource(object):
             return None
 
         prepare = self.item_prepare
-        if not (isinstance(data, string_types) or isinstance(data, Mapping)):
+        if not isinstance(data, (string_types, Mapping)):
             try:
                 # Attempt to prepare each item of the iterable (as long as
                 # we're not a string or some sort of mapping).
