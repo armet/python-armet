@@ -141,7 +141,7 @@ class BaseResource(object):
     #! Mapping of encoders known by this resource.
     encoders = {
         'json': 'armet.encoders.Json',
-        # 'xml': 'armet.encoders.Xml',
+        'xml': 'armet.encoders.Xml',
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
         'bin': 'armet.encoders.Bin',
@@ -150,7 +150,7 @@ class BaseResource(object):
     #! List of allowed encoders of the understood encoders.
     allowed_encoders = (
         'json',
-        # 'xml',
+        'xml',
         'text',
         'yaml',
         'bin',
@@ -1106,7 +1106,7 @@ class BaseResource(object):
         items = self.read()
 
         # Ensure we're authorized to delete this.
-        if self.authorization.is_authorized(
+        if not self.authorization.is_authorized(
                 self.request.user, 'destroy', self, items):
             raise exceptions.Forbidden()
 
@@ -1138,12 +1138,12 @@ class BaseResource(object):
             obj = self.read()
 
             # Ensure we're authorized to delete this.
-            if self.authorization.is_authorized(
+            if not self.authorization.is_authorized(
                     self.request.user, 'update', self, obj):
                 raise exceptions.Forbidden()
 
             # Ensure we're authorized to create this.
-            if self.authorization.is_authorized(
+            if not self.authorization.is_authorized(
                     self.request.user, 'update', self, self._form.instance):
                 raise exceptions.Forbidden()
 
@@ -1205,7 +1205,7 @@ class BaseResource(object):
         self._assert_operation('create')
 
         # Ensure we're authorized to create this.
-        if self.authorization.is_authorized(
+        if not self.authorization.is_authorized(
                 self.request.user, 'create', self, self._form.instance):
             raise exceptions.Forbidden()
 

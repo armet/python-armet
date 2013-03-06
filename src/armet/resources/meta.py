@@ -106,25 +106,27 @@ def _is_field_collection(field):
         # None cannot be a valid value; definitely not an collection.
         return False
 
+
 def _is_field_related(field):
-    return (isinstance(field, RelatedObject)
-        or  isinstance(field, RelatedField))
+    return isinstance(field, (RelatedObject, RelatedField))
+
 
 def _method_to_operation(method):
     if method == 'GET':
-        return set(['read',])
+        return set(['read'])
 
     if method == 'PUT':
-        return set(['update', 'create', 'delete',])
+        return set(['update', 'create', 'delete'])
 
     if method == 'POST':
-        return set(['create',])
+        return set(['create'])
 
     if method == 'PATCH':
-        return set(['update', 'create',])
+        return set(['update', 'create'])
 
     if method == 'DELETE':
-        return set(['destory',])
+        return set(['destory'])
+
 
 def _methods_to_operations(methods):
     operations = set()
@@ -133,25 +135,28 @@ def _methods_to_operations(methods):
 
     return operations
 
+
 def _operation_to_method(operation):
     if operation == 'read':
-        return set(['GET',])
+        return set(['GET'])
 
     if operation == 'update':
-        return set(['PUT', 'PATCH',])
+        return set(['PUT', 'PATCH'])
 
     if operation == 'create':
-        return set(['PUT', 'PATCH', 'POST',])
+        return set(['PUT', 'PATCH', 'POST'])
 
     if operation == 'destroy':
-        return set(['PUT', 'DELETE',])
+        return set(['PUT', 'DELETE'])
+
 
 def _operations_to_methods(operations):
-    methods = set(['HEAD', 'OPTIONS',])
+    methods = set(['HEAD', 'OPTIONS'])
     for operation in operations:
         methods = methods.union(_operation_to_method(operation))
 
     return methods
+
 
 def _get_field_class(field):
     """Determines what class object to instantiate for the specified field."""
@@ -162,6 +167,17 @@ def _get_field_class(field):
     if _is_field_related(field):
         # This is actually a related field or object.
         return attributes.Attribute
+
+    try:
+        # Attempt to handle file streams
+        test = StringIO()
+        if field.to_python(test).getvalue() == '':
+            # Looks like we're capable of dealing with file streams
+            return attributes.FileAttribute
+
+    except (forms.ValidationError, AttributeError, TypeError, ValueError):
+        # File streams cannot be handled
+        pass
 
     try:
         # Attempt to handle numbers
@@ -208,17 +224,6 @@ def _get_field_class(field):
         pass
 
     try:
-        # Attempt to handle file streams
-        test = StringIO()
-        if field.to_python(test).getvalue() == '':
-            # Looks like we're capable of dealing with file streams
-            return attributes.FileAttribute
-
-    except (forms.ValidationError, AttributeError, TypeError, ValueError):
-        # File streams cannot be handled
-        pass
-
-    try:
         # Attempt to handle booleans
         test = True
         if field.to_python(test) is True:
@@ -254,7 +259,8 @@ class DeclarativeResource(type):
         # Attempt to get the related name for the indiciated attribute.
         pass
 
-    def _set_attribute(self,
+    def _set_attribute(
+            self,
             name,
             path=None,
             collection=None,
@@ -307,7 +313,7 @@ class DeclarativeResource(type):
                 collection = False
 
         try:
-            # Attempt to get the prepare_FOO function for the attribute by name.
+            # Attempt to get the prepare_FOO function for the attribute by name
             prepare = getattr(self, 'prepare_{}'.format(name))
 
         except AttributeError:
@@ -324,7 +330,8 @@ class DeclarativeResource(type):
                     related_name=self._get_related_name(parts[0]))
 
         # Instantiate the attribute object and set it on the resource class.
-        self._attributes[name] = cls(self,
+        self._attributes[name] = cls(
+            self,
             visible=_is_field_visible(self, name),
             filterable=_is_field_filterable(self, name),
             collection=collection,
@@ -356,7 +363,8 @@ class DeclarativeResource(type):
             # Iterate through additional attribute names and set them.
             for name in self.include:
                 path, collection = self.include[name]
-                self._set_attribute(name,
+                self._set_attribute(
+                    name,
                     path=path.split('__') if path is not None else None,
                     collection=collection)
 
@@ -403,9 +411,9 @@ class DeclarativeResource(type):
             # Ensure this is a valid form; attempt to instantiate one.
             self.form()
 
-            # If the form has a `declared_attributes` attribute then that is what
-            # would normally be at `base_attributes`; else `base_attributes` is the
-            # list of explicitly defined attributes.
+            # If the form has a `declared_attributes` attribute then that is
+            # whatwould normally be at `base_attributes`; else
+            # `base_attributes` is the list of explicitly defined attributes.
             self.form_fields = self.form.base_fields
             if hasattr(self.form, 'declared_fields'):
                 self.form_fields = self.form.declared_fields
@@ -505,8 +513,13 @@ class DeclarativeResource(type):
         _config(self, 'encoders', 'encoders', attrs, bases)
         _config(self, 'default_encoder', 'default.encoder', attrs, bases)
         _config(self, 'decoders', 'decoders', attrs, bases)
-        _config(self, 'authentication', 'resource.authentication',
-            attrs, bases)
+        _config(
+            self,
+            'authentication',
+            'resource.authentication',
+            attrs,
+            bases
+        )
 
         # Ensure properties are inflated the way they need to be.
         for_all = utils.for_all
@@ -563,8 +576,11 @@ class DeclarativeModel(DeclarativeResource):
 
         # Meld with a Model Field
         # TODO: Remove `b` prefix upon python3
-        attribute = type(b'Model{}'.format(attribute.__name__),
-            (attributes.ModelAttribute, attribute), {})
+        attribute = type(
+            b'Model{}'.format(attribute.__name__),
+            (attributes.ModelAttribute, attribute),
+            {}
+        )
 
         # Return what we got
         return attribute
@@ -618,7 +634,7 @@ class DeclarativeModel(DeclarativeResource):
                 # Touch up if we're a reverse relation as things are stored
                 # a bit differently.
                 if isinstance(attribute, RelatedObject):
-                    accessor =  attribute.get_accessor_name()
+                    accessor = attribute.get_accessor_name()
 
                 # Store these in our dictionary.
                 self.model_fields[accessor] = attribute
