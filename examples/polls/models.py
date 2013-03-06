@@ -12,6 +12,6 @@ class Poll(models.Model):
     question = models.CharField(max_length=1024)
     pub_date = models.DateTimeField()
 
-    @shield.rule('read')
-    def can_read(cls, user):
+    @shield.rule('read', 'add', 'change', 'delete',)
+    def can(cls, user):
         return Q(pk=user.pk)
