@@ -1179,7 +1179,7 @@ class BaseResource(object):
                     # requested to return such.
                     items = items[0]
 
-                except TypeError:
+                except (TypeError, KeyError):
                     # Whatever; assume we're just one I guess.
                     pass
 

@@ -19,7 +19,7 @@ def _find_relation(resource, path):
     Take the related name and the path and attempt to figure out who
     we're related to.
     """
-    if path[-1] in resource._resources:
+    if hasattr(resource, '_resources') and path[-1] in resource._resources:
         # There really is a resource out there.
         return resource._resources[path[-1]]
 
