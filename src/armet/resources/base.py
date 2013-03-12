@@ -649,6 +649,7 @@ class BaseResource(object):
         # Prepare the data for transmission.
         data = self.prepare(data)
 
+
         if data is not None:
             # Some kind of data was provided; encode and provide the
             # correct mimetype.
@@ -855,7 +856,7 @@ class BaseResource(object):
 
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
-            self._form = self.form(data=items, files=files)
+            self._form = self.form(instance=self.get(), data=items, files=files)
 
             # Ensure the form is valid and if not; throw a 400
             if not self._form.is_valid():
@@ -1205,7 +1206,7 @@ class BaseResource(object):
         self._assert_operation('create')
 
         # Ensure we're authorized to create this.
-        if not self.authorization.is_authorized(
+        if self._form and not self.authorization.is_authorized(
                 self.request.user, 'create', self, self._form.instance):
             raise exceptions.Forbidden()
 
