@@ -9,7 +9,12 @@ from django.conf.urls import patterns, url, include
 from armet import resources
 
 
-class Api(resources.Resource, MutableSequence):
+class DeclarativeApi(resources.DeclarativeResource, abc.ABCMeta):
+    pass
+
+
+class Api(six.with_metaclass(DeclarativeApi, resources.Resource),
+        MutableSequence):
     """Implements an api registry used to make APIs visible.
     """
 
