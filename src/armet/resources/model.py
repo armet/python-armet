@@ -151,7 +151,7 @@ class BaseModel(base.BaseResource):
 
     def update(self, obj, data):
         # Proxy to the form to save the data.
-        self._form.instance.pk = obj.get().pk
+        self._form.instance.pk = obj.pk
         self._form.save()
 
         # Return the form object instance.
