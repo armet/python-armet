@@ -856,7 +856,8 @@ class BaseResource(object):
 
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
-            self._form = self.form(instance=self.get(), data=items, files=files)
+            self._form = self.form(instance=self.read(),
+                data=items, files=files)
 
             # Ensure the form is valid and if not; throw a 400
             if not self._form.is_valid():

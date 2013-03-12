@@ -131,6 +131,10 @@ class BaseModel(base.BaseResource):
             # This significantly reduces the number of queries.
             queryset = queryset.prefetch_related(*self._prefetch_related_cache)
 
+        # Attempt to directly get it if we can
+        if self.slug is not None:
+            queryset = queryset.get()
+
         # Return the queryset if we still have it.
         return queryset
 
