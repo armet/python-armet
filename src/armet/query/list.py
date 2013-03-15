@@ -9,7 +9,7 @@ from collections import Iterable
 from itertools import chain
 from armet.exceptions import BadRequest
 from django.db.models import Q
-from ..attributes import BooleanAttribute
+from armet.resources.attributes import BooleanAttribute
 from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
                         EQUALS, EQUALS_NOT, PATH_SEP, GROUP_START, GROUP_END,
                         EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP,
