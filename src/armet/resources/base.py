@@ -146,6 +146,7 @@ class BaseResource(object):
         'yaml': 'armet.encoders.Yaml',
         'bin': 'armet.encoders.Bin',
         'direct': 'armet.encoders.Direct',
+        'file': 'armet.encoders.File',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -156,6 +157,7 @@ class BaseResource(object):
         'yaml',
         'bin',
         'direct',
+        'file',
     )
 
     #! Name of the default encoder of the list of understood encoders.
