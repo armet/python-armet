@@ -122,9 +122,9 @@ class BaseModel(base.BaseResource):
             queryset = queryset.order_by(*self.query.as_order())
 
         # Perform authorization filtering.
-        # import ipdb; ipdb.set_trace()
-        queryset = self.authorization.filter(self.request.user, 'read', self,
-            queryset)
+        if self.slug is None:
+            queryset = self.authorization.filter(self.request.user,
+                'read', self, queryset)
 
         if self.prefetch:
             # Prefetch all related attributes and store in a cache.
