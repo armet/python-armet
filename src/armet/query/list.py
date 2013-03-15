@@ -158,7 +158,7 @@ class QueryList(list):
 
             # Boolean clean values that for the 'isnull' operation
             if q.operation in OPERATIONS_BOOLEAN:
-                boolean = BooleanAttribute()
+                boolean = BooleanAttribute(None)
                 values = [boolean.clean(x) for x in values]
             q.value = values
 
