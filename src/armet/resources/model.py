@@ -133,7 +133,11 @@ class BaseModel(base.BaseResource):
 
         # Attempt to directly get it if we can
         if self.slug is not None:
-            queryset = queryset.get()
+            try:
+                queryset = queryset.get()
+
+            except self.model.DoesNotExist:
+                return None
 
         # Return the queryset if we still have it.
         return queryset
