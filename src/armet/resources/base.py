@@ -145,6 +145,8 @@ class BaseResource(object):
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
         'bin': 'armet.encoders.Bin',
+        'direct': 'armet.encoders.Direct',
+        'file': 'armet.encoders.File',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -154,6 +156,8 @@ class BaseResource(object):
         'text',
         'yaml',
         'bin',
+        'direct',
+        'file',
     )
 
     #! Name of the default encoder of the list of understood encoders.
@@ -652,8 +656,13 @@ class BaseResource(object):
         if data is not None:
             # Some kind of data was provided; encode and provide the
             # correct mimetype.
-            response.content = self.encoder.encode(data)
-            response['Content-Type'] = self.encoder.mimetype
+            encoded = self.encoder.encode(data)
+            if isinstance(encoded, http.Response):
+                response = encoded
+                response.status_code = status
+            else:
+                response.content = encoded
+                response['Content-Type'] = self.encoder.mimetype
             response['Content-Length'] = len(bytes(response.content))
 
         # Make an MD5 digest of the content and add it to the response.
@@ -855,7 +864,12 @@ class BaseResource(object):
 
         if self.form is not None:
             # Instantiate form using provided data (if form exists).
-            self._form = self.form(data=items, files=files)
+            if self.slug is not None:
+                self._form = self.form(instance=self.read(),
+                    data=items, files=files)
+
+            else:
+                self._form = self.form(data=items, files=files)
 
             # Ensure the form is valid and if not; throw a 400
             if not self._form.is_valid():
@@ -1179,7 +1193,7 @@ class BaseResource(object):
                     # requested to return such.
                     items = items[0]
 
-                except TypeError:
+                except (TypeError, KeyError):
                     # Whatever; assume we're just one I guess.
                     pass
 
@@ -1205,7 +1219,7 @@ class BaseResource(object):
         self._assert_operation('create')
 
         # Ensure we're authorized to create this.
-        if not self.authorization.is_authorized(
+        if self._form and not self.authorization.is_authorized(
                 self.request.user, 'create', self, self._form.instance):
             raise exceptions.Forbidden()
 

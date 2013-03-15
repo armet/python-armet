@@ -356,7 +356,7 @@ class DeclarativeResource(type):
                 # the django forms protocol it is -always- editable --
                 # regardless of whatever the black/white lists on the
                 # form state.
-                self._set_attribute(name, editable=True)
+                self._set_attribute(name, path=[name], editable=True)
 
         # Append any 'extra' attributes listed in the `include` directive.
         if self.include is not None:

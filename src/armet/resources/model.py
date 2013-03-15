@@ -122,14 +122,22 @@ class BaseModel(base.BaseResource):
             queryset = queryset.order_by(*self.query.as_order())
 
         # Perform authorization filtering.
-        # import ipdb; ipdb.set_trace()
-        queryset = self.authorization.filter(self.request.user, 'read', self,
-            queryset)
+        if self.slug is None:
+            queryset = self.authorization.filter(self.request.user,
+                'read', self, queryset)
 
-        if self.prefetch:
+        if self.prefetch and hasattr(self, '_prefetch_related_cache'):
             # Prefetch all related attributes and store in a cache.
             # This significantly reduces the number of queries.
             queryset = queryset.prefetch_related(*self._prefetch_related_cache)
+
+        # Attempt to directly get it if we can
+        if self.slug is not None:
+            try:
+                queryset = queryset.get()
+
+            except self.model.DoesNotExist:
+                return None
 
         # Return the queryset if we still have it.
         return queryset
@@ -147,7 +155,7 @@ class BaseModel(base.BaseResource):
 
     def update(self, obj, data):
         # Proxy to the form to save the data.
-        self._form.instance.pk = obj.get().pk
+        self._form.instance.pk = obj.pk
         self._form.save()
 
         # Return the form object instance.

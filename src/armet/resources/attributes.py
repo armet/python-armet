@@ -19,7 +19,7 @@ def _find_relation(resource, path):
     Take the related name and the path and attempt to figure out who
     we're related to.
     """
-    if path[-1] in resource._resources:
+    if hasattr(resource, '_resources') and path[-1] in resource._resources:
         # There really is a resource out there.
         return resource._resources[path[-1]]
 
@@ -209,6 +209,9 @@ class Attribute(object):
             if hasattr(descriptor, '__get__'):
                 return lambda o, x=descriptor.__get__: x(o)
 
+            # If the name exists in dir() but does not exist in
+            # __dict__ it is likely a descriptor
+
         if issubclass(cls, collections.Mapping):
             # Some kind of mapping; use dictionary access.
             return lambda o, n=name: o[name]
@@ -240,6 +243,30 @@ class Attribute(object):
 
 
 class ModelAttribute(object):
+
+    def _build_accessor(self, cls, name):
+        # Look for a related manager
+        obj = getattr(cls, name, None)
+        if obj is not None:
+            if hasattr(obj, 'related_manager_cls'):
+                # Relation where it is a {1,*}-*
+                return lambda o, x=obj.__get__: x(o).all()
+
+        # Look for field descriptors
+        try:
+            field = cls._meta.get_field_by_name(name)[0]
+            attr = field.attr_class
+
+        except:
+            # Field does not exit.
+            pass
+
+        else:
+            # Field exists and has a field attribute descriptor
+            return lambda o, f=field, a=attr, n=name: a(o, f, o.__dict__[n])
+
+        # Let us build a normal accessor
+        return super(ModelAttribute, self)._build_accessor(cls, name)
 
     @classmethod
     def _get_related_name(cls, resource, path):
@@ -284,17 +311,6 @@ class ModelAttribute(object):
             pass
 
         # No related name that we can find; return nothing.
-
-    def _build_accessor(self, cls, name):
-        obj = getattr(cls, name, None)
-        if obj is not None:
-            if hasattr(obj, 'related_manager_cls'):
-                # Relation where it is a {1,*}-*
-                return lambda o, x=obj.__get__: x(o).all()
-
-        # No alternative; let the base take it.
-        return super(ModelAttribute, self)._build_accessor(cls, name)
-
 
 class BooleanAttribute(Attribute):
 
