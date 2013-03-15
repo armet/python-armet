@@ -126,7 +126,7 @@ class BaseModel(base.BaseResource):
             queryset = self.authorization.filter(self.request.user,
                 'read', self, queryset)
 
-        if self.prefetch:
+        if self.prefetch and hasattr(self, '_prefetch_related_cache'):
             # Prefetch all related attributes and store in a cache.
             # This significantly reduces the number of queries.
             queryset = queryset.prefetch_related(*self._prefetch_related_cache)
