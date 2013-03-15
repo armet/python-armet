@@ -9,9 +9,11 @@ from collections import Iterable
 from itertools import chain
 from armet.exceptions import BadRequest
 from django.db.models import Q
+from ..attributes import BooleanAttribute
 from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
                         EQUALS, EQUALS_NOT, PATH_SEP, GROUP_START, GROUP_END,
-                        EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP)
+                        EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP,
+                        OPERATIONS_BOOLEAN)
 
 COMBINATIONS = {
     AND_OPERATOR: operator.and_,
@@ -152,7 +154,13 @@ class QueryList(list):
         # slice em up
         value = ''.join(segiter)
         if value:
-            q.value = value.split(VALUE_SEP)
+            values = value.split(VALUE_SEP)
+
+            # Boolean clean values that for the 'isnull' operation
+            if q.operation in OPERATIONS_BOOLEAN:
+                boolean = BooleanAttribute()
+                values = [boolean.clean(x) for x in values]
+            q.value = values
 
         return q
 
