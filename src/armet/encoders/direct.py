@@ -17,7 +17,7 @@ class Encoder(transcoders.Direct, Encoder):
         try:
             response.content = obj.read()
             # response['Content-Disposition'] = 'attachment; filename="{}"'.format(obj.name.split('/')[-1])
-            response['Content-Type'] = magic.from_buffer(response.content)
+            response['Content-Type'] = magic.from_buffer(response.content, mime=True)
         except AttributeError:
             response.content = obj.read()
             response['Content-Disposition'] = 'attachment'
