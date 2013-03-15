@@ -46,6 +46,14 @@ class Binary:
     )
 
 
+class Direct:
+    mimetypes = (
+        # Intended to literally mean 'binary' data; as in, a pass-through
+        # encoding.
+        'application/octect-stream',
+    )
+
+
 class Form:
     mimetypes = (
         # Multipart form data; as defined by HTML5.

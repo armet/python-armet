@@ -145,6 +145,7 @@ class BaseResource(object):
         'text': 'armet.encoders.Text',
         'yaml': 'armet.encoders.Yaml',
         'bin': 'armet.encoders.Bin',
+        'direct': 'armet.encoders.Direct',
     }
 
     #! List of allowed encoders of the understood encoders.
@@ -154,6 +155,7 @@ class BaseResource(object):
         'text',
         'yaml',
         'bin',
+        'direct',
     )
 
     #! Name of the default encoder of the list of understood encoders.
@@ -649,12 +651,16 @@ class BaseResource(object):
         # Prepare the data for transmission.
         data = self.prepare(data)
 
-
         if data is not None:
             # Some kind of data was provided; encode and provide the
             # correct mimetype.
-            response.content = self.encoder.encode(data)
-            response['Content-Type'] = self.encoder.mimetype
+            encoded = self.encoder.encode(data)
+            if isinstance(encoded, http.Response):
+                response = encoded
+                response.status_code = status
+            else:
+                response.content = encoded
+                response['Content-Type'] = self.encoder.mimetype
             response['Content-Length'] = len(bytes(response.content))
 
         # Make an MD5 digest of the content and add it to the response.
