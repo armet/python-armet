@@ -77,6 +77,10 @@ class BooleanAttribute(Attribute):
     )
 
     def clean(self, value):
+        if value is None:
+            # Value is nothing; return it.
+            return value
+
         if value is True or value is False:
             # Value is a python boolean; just return it.
             return value
