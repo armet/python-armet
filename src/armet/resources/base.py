@@ -22,6 +22,7 @@ from .attributes import FileAttribute
 from .helpers import parent as parent_helper
 from .. import utils, http, exceptions, decoders, authorization
 from ..query import QueryList
+from armet.pagination import paginate
 
 
 # Get an instance of the logger.
@@ -1201,6 +1202,9 @@ class BaseResource(object):
             if items is None:
                 # Ensure we at least have an empty list
                 items = []
+
+            # Paginate the resulting list
+            items = paginate(items, self.request.META)
 
         # Build and return the response object
         return self.make_response(items, http.client.OK)

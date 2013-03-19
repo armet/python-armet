@@ -4,7 +4,6 @@ Implementation of a pagination interface using a combination of the HTTP/1.1
 range header and set specifiers.
 """
 
-
 DEFAULT_RANGEWORD = 'items'
 DEFAULT_PAGELENGTH = 20
 
@@ -57,21 +56,29 @@ def parse(specifiers):
 
 
 def paginate(iterable, headers):
-    """Paginate an iterable during a request
+    """Paginate an iterable during a request.
     """
+    # TODO: support dynamic rangewords and page lengths
+
     # parse the pagination request header and get back the range requested
     if 'HTTP_RANGE' in headers:
-        start, length = self.parse(headers['HTTP_RANGE'])
+        ranges = parse(headers['HTTP_RANGE'])
     else:
         # No range header, just set some defaults
-        start = 0
-        length = self.length
+        ranges = ((0, DEFAULT_PAGELENGTH))
+
+    # TODO: support multi-part range requests
+    if len(ranges) > 1:
+        raise NotImplemented('multipart/byteranges')
+
+    start, length = ranges[0]
+
     response_headers = {
         'Content-Range': '{}-{}/{}'.format(
             start,
             start + length,
             len(iterable)),
-        'Accept-Ranges': self.word
+        'Accept-Ranges': DEFAULT_RANGEWORD
     }
     iterable = iterable[start:start + length + 1]
     return iterable, response_headers
