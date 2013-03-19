@@ -33,20 +33,26 @@ class Resource(object):
         # Instantiate a new response object.
         response = cls.meta.response()
 
-        if request.method in ('GET', 'HEAD',):
-            # A SAFE request is allowed to redirect using a 301
-            response.status = http.client.MOVED_PERMANENTLY
+        if cls.meta.legacy_redirect:
+            if request.method in ('GET', 'HEAD',):
+                # A SAFE request is allowed to redirect using a 301
+                response.status = http.client.MOVED_PERMANENTLY
+
+            else:
+                # All other requests must use a 307
+                response.status = http.client.TEMPORARY_REDIRECT
 
         else:
-            # All other requests must use a 307
-            response.status = http.client.TEMPORARY_REDIRECT
+            # Modern redirects are allowed. Let's have some fun.
+            # Hopefully you're client supports this.
+            # The RFC explicitly discourages UserAgent sniffing.
+            response.status = http.client.PERMANENT_REDIRECT
 
-        # Calculate the path to redirect to.
+        # Calculate the path to redirect to and set it on the response.
         if cls.meta.trailing_slash:
             path += '/'
         else:
             del path[-1]
-
         response['Location'] = path
 
         # Return the response object.

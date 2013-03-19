@@ -336,3 +336,15 @@ class ResourceOptions(object):
 
             else:
                 self.detail_allowed_operations = self.allowed_operations
+
+        #! Whether to use legacy redirects or not to inform the
+        #! client the resource is available elsewhere. Legacy redirects
+        #! require a combination of 301 and 307 in which 307 is not cacheable.
+        #! Modern redirecting uses 308 and is in effect 307 with cacheing.
+        #! Unfortunately unknown 3xx codes are treated as
+        #! a 300 (Multiple choices) in which the user is supposed to chose
+        #! the alternate link so the client is not supposed to auto follow
+        #! redirects. Ensure all supported clients understand 308 before
+        #! turning off legacy redirecting.
+        #! As of 19 March 2013 only Firefox supports it as of a year ago.
+        self.legacy_redirect = options.get('legacy_redirect', True)
