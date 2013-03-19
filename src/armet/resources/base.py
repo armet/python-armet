@@ -606,6 +606,9 @@ class BaseResource(object):
                 self.request.user = user
                 break
 
+            # We're able to authentiate but failed to do so.
+            raise auth.Unauthenticated
+
         else:
             # A user was declared unauthenticated with some confidence.
             raise auth.Unauthenticated
@@ -697,6 +700,10 @@ class BaseResource(object):
         return prepare(data)
 
     def generic_prepare(self, obj, name, value):
+        if value is None:
+            # If there is no value; don't bother preparing it.
+            return None
+
         relation = self._attributes[name].relation
         if relation is not None:
             # Instantiate a reference to the resource
