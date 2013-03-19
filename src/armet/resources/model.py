@@ -104,6 +104,13 @@ class BaseModel(base.BaseResource):
         # Return the augmented links.
         return links
 
+    def clean(self, data):
+        data = super(BaseModel, self).clean(data)
+        if self.slug is not None:
+            # Augment the form instance with the pk if we have one
+            self._form.instance.pk = self.slug
+        return data
+
     def read(self):
         # Initially instantiate a queryset representing every object.
         queryset = self.model.objects.all()

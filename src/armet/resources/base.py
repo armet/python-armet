@@ -15,6 +15,7 @@ from six import string_types
 from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
+from django.contrib.auth.models import AnonymousUser
 from django.views.decorators.csrf import csrf_exempt
 from . import attributes
 from . import link
@@ -602,10 +603,17 @@ class BaseResource(object):
                 # authn protocol.
                 continue
 
-            if user.is_authenticated() or auth.allow_anonymous:
+            if user.is_authenticated() and auth.is_active(user):
                 # A user object has been successfully retrieved.
                 self.request.user = user
                 break
+
+            if auth.allow_anonymous:
+                self.request.user = AnonymousUser()
+                break
+
+            # We're able to authentiate but failed to do so.
+            raise auth.Unauthenticated
 
         else:
             # A user was declared unauthenticated with some confidence.
@@ -698,6 +706,10 @@ class BaseResource(object):
         return prepare(data)
 
     def generic_prepare(self, obj, name, value):
+        if value is None:
+            # If there is no value; don't bother preparing it.
+            return None
+
         relation = self._attributes[name].relation
         if relation is not None:
             # Instantiate a reference to the resource
@@ -795,16 +807,17 @@ class BaseResource(object):
 
     def item_clean(self, item):
         """Performs the micro-clean cycle over an item using its attribute."""
+        data = {}
         for name in item:
-            # Attempt to get a field from the item name
+            # Attempt to get a field from the item name.
             field = self._attributes.get(name)
 
-            if field is not None:
-                # Invoke the micro-clean cycle on the field for this value
-                item[name] = field.clean(item[name])
+            if field.editable and field is not None:
+                # Invoke the micro-clean cycle on the field for this value.
+                data[name] = field.clean(item[name])
 
         # Return our primed object.
-        return item
+        return data
 
     def relation_clean(self, value):
         """Normalizes relation accessors."""
@@ -1152,14 +1165,9 @@ class BaseResource(object):
             # Read in the current object.
             obj = self.read()
 
-            # Ensure we're authorized to delete this.
+            # Ensure we're authorized to update this.
             if not self.authorization.is_authorized(
                     self.request.user, 'update', self, obj):
-                raise exceptions.Forbidden()
-
-            # Ensure we're authorized to create this.
-            if not self.authorization.is_authorized(
-                    self.request.user, 'update', self, self._form.instance):
                 raise exceptions.Forbidden()
 
             # Delegate to the `update` function to actually update the object.
