@@ -8,6 +8,7 @@ from six.moves import http_client as client
 
 try:
     # Attempt to get additional status codes (added in python 3.2)
+    getattr(client, 'PERMANENT_REDIRECT')
     getattr(client, 'PRECONDITION_REQUIRED')
     getattr(client, 'TOO_MANY_REQUESTS')
     getattr(client, 'REQUEST_HEADER_FIELDS_TOO_LARGE')
@@ -15,6 +16,7 @@ try:
 
 except AttributeError:
     # Don't have em; add them.
+    client.PERMANENT_REDIRECT = 308
     client.PRECONDITION_REQUIRED = 428
     client.TOO_MANY_REQUESTS = 429
     client.REQUEST_HEADER_FIELDS_TOO_LARGE = 431
