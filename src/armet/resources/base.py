@@ -806,16 +806,17 @@ class BaseResource(object):
 
     def item_clean(self, item):
         """Performs the micro-clean cycle over an item using its attribute."""
+        data = {}
         for name in item:
-            # Attempt to get a field from the item name
+            # Attempt to get a field from the item name.
             field = self._attributes.get(name)
 
-            if field is not None:
-                # Invoke the micro-clean cycle on the field for this value
-                item[name] = field.clean(item[name])
+            if field.editable and field is not None:
+                # Invoke the micro-clean cycle on the field for this value.
+                data[name] = field.clean(item[name])
 
         # Return our primed object.
-        return item
+        return data
 
     def relation_clean(self, value):
         """Normalizes relation accessors."""
