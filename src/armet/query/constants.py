@@ -16,6 +16,10 @@ OPERATIONS = (
     'startswith', 'istartswith', 'endswith', 'iendswith', 'isnull', 'regex',
     'iregex',
 )
+# Operations that require boolean type coersion
+OPERATIONS_BOOLEAN = ('isnull',)
+# Operations that require regex type coersion
+OPERATIONS_REGEX = ('regex', 'iregex')
 
 # Equals items
 EQUALS = '='
