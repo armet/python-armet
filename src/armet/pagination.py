@@ -79,12 +79,13 @@ def paginate(iterable, headers):
 
     start, length = ranges[0]
 
+    # make sure the length is not higher than the total number allowed
+    max_length = len(iterable)
+    end = min(start + length, max_length)
+
     response_headers = {
-        'Content-Range': '{}-{}/{}'.format(
-            start,
-            start + length,
-            len(iterable)),
-        'Accept-Ranges': DEFAULT_RANGEWORD
+        'Content-Range': '{}-{}/{}'.format(start, end, max_length),
+        'Accept-Ranges': DEFAULT_RANGEWORD,
     }
     iterable = iterable[start:start + length + 1]
     return iterable, response_headers
