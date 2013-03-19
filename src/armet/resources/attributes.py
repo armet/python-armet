@@ -335,6 +335,9 @@ class BooleanAttribute(Attribute):
     )
 
     def clean(self, value):
+        if value is None:
+            return None
+
         if isinstance(value, bool):
             # Boolean; just return it
             return value
