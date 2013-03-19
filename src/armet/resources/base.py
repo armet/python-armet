@@ -1164,14 +1164,9 @@ class BaseResource(object):
             # Read in the current object.
             obj = self.read()
 
-            # Ensure we're authorized to delete this.
+            # Ensure we're authorized to update this.
             if not self.authorization.is_authorized(
                     self.request.user, 'update', self, obj):
-                raise exceptions.Forbidden()
-
-            # Ensure we're authorized to create this.
-            if not self.authorization.is_authorized(
-                    self.request.user, 'update', self, self._form.instance):
                 raise exceptions.Forbidden()
 
             # Delegate to the `update` function to actually update the object.
