@@ -12,10 +12,6 @@ class Authorization(object):
     authorized.
     """
 
-    #! A map of connectors that are required to use this authorization
-    #! interface.
-    # require = None
-
     def is_accessible(self, user, operation, resource):
         """
         Determines the accessibility to a resource endpoint for a particular
