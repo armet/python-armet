@@ -15,6 +15,7 @@ from six import string_types
 from django.conf.urls import patterns, url
 from django.core.exceptions import ImproperlyConfigured
 from django.core import urlresolvers
+from django.contrib.auth.models import AnonymousUser
 from django.views.decorators.csrf import csrf_exempt
 from . import attributes
 from . import link
@@ -601,9 +602,13 @@ class BaseResource(object):
                 # authn protocol.
                 continue
 
-            if user.is_authenticated() or auth.allow_anonymous:
+            if user.is_authenticated() and auth.is_active(user):
                 # A user object has been successfully retrieved.
                 self.request.user = user
+                break
+
+            if auth.allow_anonymous:
+                self.request.user = AnonymousUser()
                 break
 
             # We're able to authentiate but failed to do so.
