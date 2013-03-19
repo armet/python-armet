@@ -1212,10 +1212,13 @@ class BaseResource(object):
                 items = []
 
             # Paginate the resulting list
-            items = paginate(items, self.request.META)
+            items, headers = paginate(items, self.request.META)
 
         # Build and return the response object
-        return self.make_response(items, http.client.OK)
+        response = self.make_response(items, http.client.OK)
+        for key, value in six.iteritems(headers):
+            response[key] = value
+        return response
 
     def post(self, data):
         """Processes a `POST` request.

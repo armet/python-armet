@@ -60,16 +60,22 @@ def paginate(iterable, headers):
     """
     # TODO: support dynamic rangewords and page lengths
 
-    # parse the pagination request header and get back the range requested
-    if 'HTTP_RANGE' in headers:
-        ranges = parse(headers['HTTP_RANGE'])
+    # Get the header
+    header = headers.get('HTTP_RANGE')
+
+    # do some validation
+    prefix = DEFAULT_RANGEWORD + '='
+    if not header or not header.find(prefix) == 0:
+        # This is not using a range keyword that we understand
+        ranges = ((0, DEFAULT_PAGELENGTH),)
     else:
-        # No range header, just set some defaults
-        ranges = ((0, DEFAULT_PAGELENGTH))
+        # Chop the prefix off the header and parse it
+        ranges = parse(header[len(prefix):])
 
     # TODO: support multi-part range requests
+    ranges = list(ranges)
     if len(ranges) > 1:
-        raise NotImplemented('multipart/byteranges')
+        raise NotImplementedError('multipart/byteranges')
 
     start, length = ranges[0]
 
