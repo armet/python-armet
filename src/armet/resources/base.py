@@ -23,6 +23,7 @@ from .attributes import FileAttribute
 from .helpers import parent as parent_helper
 from .. import utils, http, exceptions, decoders, authorization
 from ..query import QueryList
+from armet.pagination import paginate
 
 
 # Get an instance of the logger.
@@ -1210,8 +1211,14 @@ class BaseResource(object):
                 # Ensure we at least have an empty list
                 items = []
 
+            # Paginate the resulting list
+            items, headers = paginate(items, self.request.META)
+
         # Build and return the response object
-        return self.make_response(items, http.client.OK)
+        response = self.make_response(items, http.client.OK)
+        for key, value in six.iteritems(headers):
+            response[key] = value
+        return response
 
     def post(self, data):
         """Processes a `POST` request.
