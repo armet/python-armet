@@ -811,7 +811,7 @@ class BaseResource(object):
             # Attempt to get a field from the item name.
             field = self._attributes.get(name)
 
-            if field.editable and field is not None:
+            if field is not None and field.editable:
                 # Invoke the micro-clean cycle on the field for this value.
                 data[name] = field.clean(item[name])
 
