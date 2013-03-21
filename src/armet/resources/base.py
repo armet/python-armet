@@ -1216,8 +1216,9 @@ class BaseResource(object):
 
         # Build and return the response object
         response = self.make_response(items, http.client.OK)
-        for key, value in six.iteritems(headers):
-            response[key] = value
+        if self.slug is None:
+            for key, value in six.iteritems(headers):
+                response[key] = value
         return response
 
     def post(self, data):
