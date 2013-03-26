@@ -1399,7 +1399,7 @@ class BaseResource(object):
         # Check if the operation is allowed.
         if operation not in self._allowed_operations:
             # Assert conditiion and bail.
-            raise exceptions.Forbidden(data)
+            raise exceptions.Forbidden(operation)
 
     def read(self):
         """Retrieves data to be displayed; called via GET.
