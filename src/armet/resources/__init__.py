@@ -4,13 +4,9 @@
 from __future__ import print_function, unicode_literals, division
 import six
 from armet.resources import base, meta
-from armet.resources.request import Request
-from armet.resources.response import Response
 
 
 __all__ = [
-    'Request',
-    'Response',
     'Resource'
 ]
 

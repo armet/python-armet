@@ -346,5 +346,5 @@ class ResourceOptions(object):
         #! the alternate link so the client is not supposed to auto follow
         #! redirects. Ensure all supported clients understand 308 before
         #! turning off legacy redirecting.
-        #! As of 19 March 2013 only Firefox supports it as of a year ago.
+        #! As of 19 March 2013 only Firefox supports it since a year ago.
         self.legacy_redirect = options.get('legacy_redirect', True)
