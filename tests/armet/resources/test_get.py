@@ -17,3 +17,24 @@ class GetTestCase(test.TestCase):
 
         location = response.get('location')
         self.assertEquals(location, 'http://localhost:5000/api/poll/')
+
+    def test_http_whole_forbidden(self):
+        response, _ = self.client.request(
+            '/api/http-whole-forbidden/', 'POST')
+
+        self.assertEquals(response.status, http.client.METHOD_NOT_ALLOWED)
+
+    def test_http_forbidden(self):
+        response, _ = self.client.request('/api/http-forbidden/12/', 'DELETE')
+
+        self.assertEquals(response.status, http.client.METHOD_NOT_ALLOWED)
+
+    def test_whole_forbidden(self):
+        response, _ = self.client.request('/api/whole-forbidden/', 'POST')
+
+        self.assertEquals(response.status, http.client.METHOD_NOT_ALLOWED)
+
+    def test_forbidden(self):
+        response, _ = self.client.request('/api/forbidden/12/', 'DELETE')
+
+        self.assertEquals(response.status, http.client.METHOD_NOT_ALLOWED)
