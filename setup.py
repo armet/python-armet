@@ -12,13 +12,14 @@ setup(
     package_dir={'armet': 'src/armet'},
     packages=find_packages('src'),
     install_requires=(
-        'six', # Python 2 and 3 normalization layer
-        'python-mimeparse' # For parsing accept and content-type headers
+        'six',  # Python 2 and 3 normalization layer
+        'python-mimeparse'  # For parsing accept and content-type headers
     ),
     extras_require={
         'test': (
             'nose',
-            'yanc'
+            'yanc',
+            'httplib2'
         )
     }
 )
