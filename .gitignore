@@ -4,5 +4,6 @@
 
 # Dotfiles
 .*
+!.travis.yml
 !.editorconfig
 !.git*
