@@ -6,7 +6,8 @@ from . import api
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     # Examples:
     url(r'^api/', include(api.PollResource.urls)),
     url(r'^api/', include(api.HttpWholeForbiddenResource.urls)),

@@ -2,7 +2,8 @@
 from __future__ import print_function, unicode_literals, division
 import httplib2
 import unittest
-import socket, errno
+import socket
+import errno
 
 
 def is_available(host='localhost', port=5000):
