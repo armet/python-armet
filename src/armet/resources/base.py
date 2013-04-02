@@ -127,7 +127,7 @@ class Resource(object):
     _parse_pattern = re.compile(
         r'^(?:\:(?P<query>[^/]+?))?'
         r'(?:\:)?'
-        r'(?:/(?P<slug>[^/]+?))?'
+        r'(?:/??(?P<slug>[^/]+?))?'
         r'(?:/(?P<path>.+?))??'
         r'(?:\.(?P<extension>[^/]+?))??$')
 
@@ -249,21 +249,20 @@ class Resource(object):
                 # Requested a specific resource but nothing is returned.
                 raise exceptions.NotFound()
 
-            if not isinstance(items, six.string_types):
-                if isinstance(items, collections.Sequence):
-                    try:
-                        # Ensure that we only return a single object
-                        # if we're requested to.
-                        items = items[0]
+            if (not isinstance(items, six.string_types) and
+                    isinstance(items, collections.Sequence)):
+                try:
+                    # Ensure that we only return a single object
+                    # if we're requested to.
+                    items = items[0]
 
-                    except TypeError:
-                        # Assume that `items` is already a single object.
-                        pass
+                except (TypeError, AttributeError):
+                    # Assume that `items` is already a single object.
+                    pass
 
         # Build and return the response object
         return self.make_response(items)
 
-    @abc.abstractmethod
     def read(self):
         """Retrieves data to be displayed; called via GET.
 
@@ -272,6 +271,7 @@ class Resource(object):
             and returned to the client.
         """
         # There is no default behavior.
+        raise exceptions.NotImplemented()
 
     def create(self, data):
         """Creates the object that is being requested; via POST or PUT.
