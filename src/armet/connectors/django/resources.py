@@ -4,7 +4,7 @@ import six
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
-from armet.resources import base, meta, options
+from armet.resources.resource import base, meta, options
 from .http import Request, Response
 
 
