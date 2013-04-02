@@ -1,4 +1,4 @@
-# python-armet
+# python-armet [![Build Status](https://travis-ci.org/armet/python-armet.png)](https://travis-ci.org/armet/python-armet)
 > Clean and modern framework for creating RESTful APIs.
 
 ## Running the Tests
