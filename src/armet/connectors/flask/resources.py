@@ -27,8 +27,8 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
     def redirect(cls, *args, **kwargs):
         env = request.environ
         res = super(Resource, cls).redirect(Request(), env['PATH_INFO'])
-        env['PATH_INFO'] = res.header('Location')
-        res.header('Location', get_current_url(env))
+        env['PATH_INFO'] = res['Location']
+        res['Location'] = get_current_url(env)
         return res.handle
 
     @classmethod

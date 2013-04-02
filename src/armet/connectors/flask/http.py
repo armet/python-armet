@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from armet import resources, utils
+from armet.http.request import Request
+from armet.http.response import Response
 from flask import request
 from flask.globals import current_app
 
 
-class Request(resources.Request):
+class Request(Request):
     """Implements the RESTFul request abstraction for flask.
     """
 
     @property
     @utils.memoize_single
     def method(self):
-        override = self.header('X-Http-Method-Override')
+        override = self['X-Http-Method-Override']
         return override.upper() if override else request.method
 
     @utils.memoize
@@ -20,7 +22,7 @@ class Request(resources.Request):
         return request.headers.get(name)
 
 
-class Response(resources.Response):
+class Response(Response):
     """Implements the RESTFul response abstraction for flask.
     """
 
