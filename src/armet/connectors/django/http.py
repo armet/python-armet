@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from django.http import HttpResponse
-from armet import utils, http
+from armet import utils
+from armet.http import request, response
 
 
-class Request(http.Request):
+class Request(request.Request):
     """Implements the RESTFul request abstraction for django.
     """
 
@@ -25,7 +26,7 @@ class Request(http.Request):
         return self.handle.META.get(name)
 
 
-class Response(http.Response):
+class Response(response.Response):
     """Implements the RESTFul response abstraction for django.
     """
 

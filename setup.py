@@ -19,7 +19,9 @@ setup(
         'test': (
             'nose',
             'yanc',
-            'httplib2'
+            'httplib2',
+            'flask',
+            'django'
         )
     }
 )

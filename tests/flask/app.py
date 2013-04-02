@@ -9,6 +9,11 @@ app = Flask(__name__)
 @armet.route(app, '/api/')
 class PollResource(resources.Resource):
 
+    class Meta:
+        connectors = {
+            'http': 'flask'
+        }
+
     def read(self):
         return "Hello!"
 
