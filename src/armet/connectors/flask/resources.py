@@ -58,8 +58,8 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
         # Mount this resource.
         methods = cls.meta.http_method_names
         add = lambda *args: app.add_url_rule(*args, methods=methods)
-        rule = '{}{}'.format(url, cls.meta.name)
+        rule = '{}{}/'.format(url, cls.meta.name)
+        add('{}'.format(rule), '{}:trail'.format(name), view)
         add(rule, name, redirect)
-        add('{}/'.format(rule), '{}:trail'.format(name), view)
-        add('{}<path:path>'.format(rule), '{}:path'.format(name), redirect)
         add('{}<path:path>/'.format(rule), '{}:path:trail'.format(name), view)
+        add('{}<path:path>'.format(rule), '{}:path'.format(name), redirect)
