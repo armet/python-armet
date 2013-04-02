@@ -21,7 +21,8 @@ setup(
             'yanc',
             'httplib2',
             'flask',
-            'django'
+            'django',
+            'wsgi_intercept'
         )
     }
 )
