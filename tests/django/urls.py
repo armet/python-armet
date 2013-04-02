@@ -9,6 +9,10 @@ from . import api
 urlpatterns = patterns('',
     # Examples:
     url(r'^api/', include(api.PollResource.urls)),
+    url(r'^api/', include(api.HttpWholeForbiddenResource.urls)),
+    url(r'^api/', include(api.HttpForbiddenResource.urls)),
+    url(r'^api/', include(api.WholeForbiddenResource.urls)),
+    url(r'^api/', include(api.ForbiddenResource.urls)),
 
     # url(r'^$', 'app.views.home', name='home'),
     # url(r'^app/', include('app.foo.urls')),
