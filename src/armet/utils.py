@@ -7,6 +7,7 @@ import re
 import collections
 import os
 import pkgutil
+import importlib
 import functools
 
 
@@ -58,10 +59,10 @@ def dasherize(value):
 
 def iter_modules(package):
     """Iterate through all modules of a packge."""
-    mname = package.__name__
-    modules = pkgutil.iter_modules([os.path.dirname(package.__file__)])
-    for imp, name, _ in modules:
-        yield imp.find_module(name).load_module('{}.{}'.format(mname, name))
+    prefix = package.__name__
+    path = os.path.dirname(package.__file__)
+    for _, name, _ in pkgutil.iter_modules([path]):
+        yield importlib.import_module('{}.{}'.format(prefix, name))
 
 
 def memoize_single(function):
