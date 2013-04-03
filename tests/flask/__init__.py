@@ -1,14 +1,24 @@
 # -*- coding: utf-8 -*-
-from .app import app
+import six
+import unittest
 import wsgi_intercept
+from wsgi_intercept.httplib2_intercept import install
 
 
 def setup():
-    from wsgi_intercept.httplib2_intercept import install
+    if six.PY3:
+        # Neither flask nor werkzeug support python 3.x.
+        raise unittest.SkipTest('No support for python 3.x')
+
+    # Install the WSGI interception layer.
     install()
 
-    wsgi_intercept.add_wsgi_intercept('localhost', 5000, lambda: app)
+    # Set the WSGI application to intercept to.
+    from .app import application
+    wsgi_intercept.add_wsgi_intercept('localhost', 5000, lambda: application)
 
 
 def teardown():
-    wsgi_intercept.remove_wsgi_intercept('localhost', 5000)
+    # Uninstall the WSGI interception layer.
+    pass
+    # wsgi_intercept.remove_wsgi_intercept('localhost', 5000)
