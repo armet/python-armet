@@ -21,7 +21,7 @@ frameworks and envrionments using connectors.
 
 ### Connectors
 
- - **[django](https://www.djangoproject.com/)** — python `>= 2.6`
+ - **[django](https://www.djangoproject.com/)** — python `>= 2.6`, python `>= 3.2`
  - **[flask](http://flask.pocoo.org/)** — python `>= 2.6, < 3.0`
 
 ## Installation
