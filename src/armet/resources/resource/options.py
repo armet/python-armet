@@ -85,13 +85,13 @@ def _operations_to_methods(operations):
 
 class ResourceOptions(object):
 
-    def __init__(self, options, name, bases):
+    def __init__(self, meta, name, bases):
         """
         Initializes the options object and defaults configuration not
         specified.
 
-        @param[in] options
-            Dictionary of the merged options attributes.
+        @param[in] meta
+            Dictionary of the merged meta attributes.
 
         @param[in] name
             Name of the resource class this is being instantiataed for.
@@ -101,7 +101,7 @@ class ResourceOptions(object):
         #! something-here). The defaulted version also strips a trailing
         #! Resource from the name (eg. SomethingHereResource still becomes
         #! something-here).
-        self.name = options.get('name')
+        self.name = meta.get('name')
         if self.name is None:
             # Generate a name for the resource if one is not provided.
             # PascalCaseThis => pascal-case-this
@@ -148,7 +148,7 @@ class ResourceOptions(object):
         #! If connectors are not specified there is *some* auto-detection done
         #! to introspect your environment and determine the appropriate
         #! connectors. This *should* work for most.
-        self.connectors = connectors = _merge(options, 'connectors', bases, {})
+        self.connectors = connectors = _merge(meta, 'connectors', bases, {})
 
         if not connectors.get('http'):
             # Attempt to detect the HTTP connector
@@ -211,7 +211,7 @@ class ResourceOptions(object):
         #!         include = ('name',)
         #!     created = attributes.Attribute('created')
         #! @endcode
-        self.include = include = options.get('include', {})
+        self.include = include = meta.get('include', {})
         if not isinstance(include, collections.Mapping):
             # This is a list, tuple, etc. but not a dictionary.
             self.include = {name: Attribute() for name in include}
@@ -226,10 +226,10 @@ class ResourceOptions(object):
         #! The value indicates which URI is the canonical URI and the
         #! alternative URI is then made to redirect (with a 301) to the
         #! canonical URI.
-        self.trailing_slash = options.get('trailing_slash', True)
+        self.trailing_slash = meta.get('trailing_slash', True)
 
         #! List of understood HTTP methods.
-        self.http_method_names = options.get('http_method_names', (
+        self.http_method_names = meta.get('http_method_names', (
             'HEAD',
             'OPTIONS',
             'GET',
@@ -245,10 +245,10 @@ class ResourceOptions(object):
         #! If not provided and allowed_operations was provided instead
         #! the operations are appropriately mapped; else, the default
         #! configuration is provided.
-        self.http_allowed_methods = options.get('http_allowed_methods')
+        self.http_allowed_methods = meta.get('http_allowed_methods')
         if self.http_allowed_methods is None:
-            if options.get('allowed_operations'):
-                self.http_allowed_methods = _operations_to_methods(options.get(
+            if meta.get('allowed_operations'):
+                self.http_allowed_methods = _operations_to_methods(meta.get(
                     'allowed_operations'))
 
             else:
@@ -270,10 +270,10 @@ class ResourceOptions(object):
         #! If not provided and http_allowed_methods was provided instead
         #! the methods are appropriately mapped; else, the default
         #! configuration is provided.
-        self.allowed_operations = options.get('allowed_operations')
+        self.allowed_operations = meta.get('allowed_operations')
         if self.allowed_operations is None:
-            if options.get('http_allowed_methods'):
-                self.allowed_operations = _methods_to_operations(options.get(
+            if meta.get('http_allowed_methods'):
+                self.allowed_operations = _methods_to_operations(meta.get(
                     'http_allowed_methods'))
 
             else:
@@ -287,13 +287,13 @@ class ResourceOptions(object):
         #! List of allowed HTTP methods against a whole
         #! resource (eg /user); if undeclared or None, will be defaulted
         #! to `http_allowed_methods`.
-        self.http_list_allowed_methods = options.get(
+        self.http_list_allowed_methods = meta.get(
             'http_list_allowed_methods')
 
         if self.http_list_allowed_methods is None:
-            if options.get('list_allowed_operations'):
+            if meta.get('list_allowed_operations'):
                 self.http_list_allowed_methods = _operations_to_methods(
-                    options.get('list_allowed_operations'))
+                    meta.get('list_allowed_operations'))
 
             else:
                 self.http_list_allowed_methods = self.http_allowed_methods
@@ -301,38 +301,38 @@ class ResourceOptions(object):
         #! List of allowed HTTP methods against a single
         #! resource (eg /user/1); if undeclared or None, will be defaulted
         #! to `http_allowed_methods`.
-        self.http_detail_allowed_methods = options.get(
+        self.http_detail_allowed_methods = meta.get(
             'http_detail_allowed_methods')
 
         if self.http_detail_allowed_methods is None:
-            if options.get('detail_allowed_operations'):
+            if meta.get('detail_allowed_operations'):
                 self.http_detail_allowed_methods = _operations_to_methods(
-                    options.get('detail_allowed_operations'))
+                    meta.get('detail_allowed_operations'))
 
             else:
                 self.http_detail_allowed_methods = self.http_allowed_methods
 
         #! List of allowed operations against a whole resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.list_allowed_operations = options.get('list_allowed_operations')
+        self.list_allowed_operations = meta.get('list_allowed_operations')
 
         if self.list_allowed_operations is None:
-            if options.get('http_list_allowed_methods'):
+            if meta.get('http_list_allowed_methods'):
                 self.list_allowed_operations = _methods_to_operations(
-                    options.get('http_list_allowed_methods'))
+                    meta.get('http_list_allowed_methods'))
 
             else:
                 self.list_allowed_operations = self.allowed_operations
 
         #! List of allowed operations against a single resource.
         #! If undeclared or None, will be defaulted to `allowed_operations`.
-        self.detail_allowed_operations = options.get(
+        self.detail_allowed_operations = meta.get(
             'detail_allowed_operations')
 
         if self.detail_allowed_operations is None:
-            if options.get('http_detail_allowed_methods'):
+            if meta.get('http_detail_allowed_methods'):
                 self.detail_allowed_operations = _methods_to_operations(
-                    options.get('http_detail_allowed_methods'))
+                    meta.get('http_detail_allowed_methods'))
 
             else:
                 self.detail_allowed_operations = self.allowed_operations
@@ -347,4 +347,4 @@ class ResourceOptions(object):
         #! redirects. Ensure all supported clients understand 308 before
         #! turning off legacy redirecting.
         #! As of 19 March 2013 only Firefox supports it since a year ago.
-        self.legacy_redirect = options.get('legacy_redirect', True)
+        self.legacy_redirect = meta.get('legacy_redirect', True)
