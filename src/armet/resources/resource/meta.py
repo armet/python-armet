@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import abc
 import six
 from importlib import import_module
 from armet.resources.attributes import Attribute
 from . import options
 
 
-class ResourceBase(abc.ABCMeta):
+class ResourceBase(type):
 
     #! Options class to use to expand options.
     options = options.ResourceOptions
 
-    @staticmethod
-    def _is_resource(name, bases):
+    @classmethod
+    def _is_resource(cls, name, bases):
         if name == 'NewBase':
             # This is a six contrivance; not a real class.
             return False
@@ -23,7 +22,7 @@ class ResourceBase(abc.ABCMeta):
                 # This is a six contrivance; move along.
                 continue
 
-            if isinstance(base, ResourceBase):
+            if isinstance(base, cls):
                 # This is some sort of derived resource; good.
                 return True
 
