@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from .decorators import *
-from .functional import *
-from .string import *
-from .package import *
+from .decorators import *  # flake8: noqa
+from .functional import *  # flake8: noqa
+from .string import *  # flake8: noqa
+from .package import *  # flake8: noqa

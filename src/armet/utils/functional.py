@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-import re
 import collections
-import os
-import pkgutil
-import importlib
-import functools
 
 
 def cons(collection, value):

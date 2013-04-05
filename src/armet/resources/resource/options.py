@@ -3,7 +3,6 @@ from __future__ import print_function, unicode_literals, division
 import re
 import collections
 import six
-import types
 from importlib import import_module
 from armet.resources.attributes import Attribute
 from armet import utils

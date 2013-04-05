@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import six
-from armet.resources.resource import base, options, meta
 from flask import request
 from werkzeug.wsgi import get_current_url
 from .http import Request, Response

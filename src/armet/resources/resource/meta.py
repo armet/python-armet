@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-import itertools
-from importlib import import_module
 from armet import utils
 from armet.resources.attributes import Attribute
 from . import options
@@ -19,6 +17,7 @@ CONNECTORS = {
         'options': ('{}.resources', 'ModelResourceOptions',)
     }
 }
+
 
 class ResourceBase(type):
 

@@ -13,6 +13,7 @@ def import_module(name):
     except ImportError:
         return None
 
+
 def iter_modules(package):
     """Iterate through all modules of a packge."""
     prefix = package.__name__
