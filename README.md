@@ -80,7 +80,7 @@ frameworks and envrionments using connectors.
    pip install ".[test]"
    ```
 
-## Running the Tests
+## Running the test suite
 1. Open a shell and type in the proceeding commands.
 
 2. Change into the **armet** root directory.
