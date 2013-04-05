@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import unittest
+import json
 from armet import encoders
 
 
@@ -45,6 +46,7 @@ class JsonEncoderTestCase(unittest.TestCase):
         self.assertEqual(value, '[1,[2,4,5],3]')
 
     def test_dict(self):
-        value = self.encode({'x': 1, 'y': 2})
+        message = {'x': 1, 'y': 2}
+        value = self.encode(message)
 
-        self.assertEqual(value, '{"y":2,"x":1}')
+        self.assertEqual(json.loads(value), message)
