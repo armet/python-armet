@@ -89,7 +89,7 @@ frameworks and envrionments using connectors.
 ### Setting up your environment
 1. Follow steps 1 and 2 of the [manual installation instructions][].
 
-[manual installation instructions]: (#Manual)
+[manual installation instructions]: #manual
 
 2. Initialize a virtual environment to develop in. 
    This is done so as to ensure every contributor is working with
@@ -114,7 +114,7 @@ frameworks and envrionments using connectors.
    ```
 
 ### Running the test suite
-1. [Set up your environment](#Setting-up-your-environment).
+1. [Set up your environment](#setting-up-your-environment).
 
 2. Run the unit tests.
 
