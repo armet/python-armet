@@ -29,4 +29,4 @@ def is_available(*capacities):
 
 
 if is_available('http'):
-    from .utils import route
+    from .utils import route  # flake8: noqa
