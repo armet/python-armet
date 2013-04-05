@@ -50,7 +50,7 @@ class Response(Response):
 
     @content.setter
     def content(self, value):
-        self.handle.data = value
+        self.handle.data = value if value is not None else ''
 
     def __getitem__(self, name):
         return self.handle.headers[name]

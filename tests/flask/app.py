@@ -14,6 +14,9 @@ class SimpleResource(resources.Resource):
     class Meta:
         connectors = {'http': 'flask'}
 
+    def read(self):
+        return None
+
 
 @armet.route(application, '/api/')
 class HttpWholeForbiddenResource(resources.Resource):

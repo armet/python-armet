@@ -11,6 +11,7 @@ urlpatterns = patterns(
     '',
     # Examples:
     url(r'^api/', include(api.PollResource.urls)),
+    url(r'^api/', include(api.SimpleResource.urls)),
     url(r'^api/', include(api.HttpWholeForbiddenResource.urls)),
     url(r'^api/', include(api.HttpForbiddenResource.urls)),
     url(r'^api/', include(api.WholeForbiddenResource.urls)),
