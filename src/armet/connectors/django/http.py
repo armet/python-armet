@@ -3,6 +3,34 @@ from __future__ import print_function, unicode_literals, division
 from django.http import HttpResponse
 from armet import utils
 from armet.http import request, response
+import string
+
+
+# For almost all headers, django prefixes the header with `HTTP_`.  This is a
+# list of headers that are an exception to that rule.
+SPECIAL_HEADERS = ('CONTENT_TYPE', 'CONTENT_LENGTH')
+
+
+def from_django(name):
+    """De-djangoifies the name of a header."""
+
+    # Strip off the HTTP prefix
+    prefix = 'HTTP_'
+    if name.startswith(prefix):
+        name = name.lstrip(prefix)
+
+    # Go from 'CONTENT_TYPE' to 'Content-Type'
+    name = name.lower().replace('_', '-')
+    return string.capwords(name, '-')
+
+
+def to_django(name):
+    """Djangoifies the name of a header."""
+    name = name.replace('-', '_').upper()
+
+    if name not in SPECIAL_HEADERS:
+        return 'HTTP_{}'.format(name)
+    return name
 
 
 class Request(request.Request):
@@ -18,12 +46,20 @@ class Request(request.Request):
         override = self['X-Http-Method-Override']
         return override.upper() if override else self.handle.method
 
-    @utils.memoize
     def __getitem__(self, name):
-        name = name.replace('-', '_').upper()
-        if name != 'CONTENT_TYPE':
-            name = 'HTTP_{}'.format(name)
-        return self.handle.META.get(name)
+        return self.handle.META.get(to_django(name))
+
+    def __iter__(self):
+        """Iterate over all the headers in the request."""
+        for name in self.handle.META:
+
+            # META items beginning with 'HTTP_' are always headers.
+            if name.startswith('HTTP_') or name in SPECIAL_HEADERS:
+                yield from_django(name)
+
+    def __len__(self):
+        """Return the number of headers that are available."""
+        return sum(1 for x in self)
 
 
 class Response(response.Response):
