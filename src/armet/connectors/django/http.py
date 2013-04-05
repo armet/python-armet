@@ -80,11 +80,11 @@ class Response(response.Response):
 
     @property
     def content(self):
-        return self.handle.content
+        return self.handle.content if self.handle.content else ''
 
     @content.setter
     def content(self, value):
-        self.handle.content = value
+        self.handle.content = value if value is not None else ''
 
     def __getitem__(self, name):
         return self.handle.get(name)

@@ -8,6 +8,9 @@ class SimpleResource(resources.Resource):
     class Meta:
         connectors = {'http': 'django'}
 
+    def read(self):
+        return None
+
 
 class PollResource(resources.ModelResource):
 
