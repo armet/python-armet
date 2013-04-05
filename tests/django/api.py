@@ -3,6 +3,12 @@ from armet import resources
 from . import models
 
 
+class SimpleResource(resources.Resource):
+
+    class Meta:
+        connectors = {'http': 'django'}
+
+
 class PollResource(resources.ModelResource):
 
     class Meta:
