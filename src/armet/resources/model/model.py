@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import six
-import collections
-import re
 import logging
-from armet import http
-from armet.http import exceptions
 from ..resource import base
 
 

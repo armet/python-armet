@@ -44,7 +44,8 @@ setup(
     package_dir={'armet': 'src/armet'},
     packages=find_packages('src'),
     dependency_links=(
-        'git+git://github.com/concordusapps/wsgi-intercept.git#egg=wsgi_intercept-0.6.0',
+        'git+git://github.com/concordusapps/wsgi-intercept.git'
+        '#egg=wsgi_intercept-0.6.0',
     ),
     install_requires=(
         # Python 2 and 3 normalization layer

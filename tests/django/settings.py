@@ -151,7 +151,7 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         },
-        'console':{
+        'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
@@ -159,7 +159,7 @@ LOGGING = {
     },
     'loggers': {
         'armet': {
-            'handlers': ['console',],
+            'handlers': ['console'],
             'level': 'DEBUG',
         },
         'django.request': {

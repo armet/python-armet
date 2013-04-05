@@ -26,6 +26,7 @@ def setup():
     from django.core import management
     management.call_command('syncdb', verbosity=1, interactive=False)
 
+
 def teardown():
     # Uninstall the WSGI interception layer.
     wsgi_intercept.remove_wsgi_intercept('localhost', 5000)
