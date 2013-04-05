@@ -9,10 +9,3 @@ from . import options
 class ModelResourceBase(meta.ResourceBase):
 
     options = options.ModelResourceOptions
-
-    def __new__(cls, name, bases, attrs):
-        # Construct the initial object.
-        self = super(ModelResourceBase, cls).__new__(cls, name, bases, attrs)
-        if not cls._is_resource(name, bases):
-            # This is not an actual resource.
-            return self

@@ -7,21 +7,16 @@ from werkzeug.wsgi import get_current_url
 from .http import Request, Response
 
 
-class ResourceOptions(options.ResourceOptions):
-    response = Response
-
-
-class ResourceBase(meta.ResourceBase):
-    options = ResourceOptions
-
-
-class Resource(six.with_metaclass(ResourceBase, base.Resource)):
+class Resource(object):
     """Specializes the RESTFul resource protocol for flask.
 
     @note
         This is not what you derive from to create resources. Import
         Resource from `armet.resources` and derive from that.
     """
+
+    #! Class to use to construct a response object.
+    response = Response
 
     @classmethod
     def redirect(cls, *args, **kwargs):

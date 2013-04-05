@@ -30,7 +30,7 @@ class Resource(object):
             is the URI to redirect to.
         """
         # Instantiate a new response object.
-        response = cls.meta.response()
+        response = cls.response()
 
         if cls.meta.legacy_redirect:
             if request.method in ('GET', 'HEAD',):
@@ -96,7 +96,7 @@ class Resource(object):
             # TODO: Rollback
 
             # Instantiate a new response object.
-            response = cls.meta.response(status=ex.status)
+            response = cls.response(status=ex.status)
 
             # Set the content if we have some.
             # TODO: We need encoders.
@@ -183,7 +183,10 @@ class Resource(object):
     def make_response(self, content, status=http.client.OK):
         """Constructs a response object from the passed content."""
         # Initialize the response object.
-        response = self.meta.response(status=status)
+        response = self.response(status=status)
+
+        # DEBUG: Place the data directly in the resposne.
+        response.content = content
 
         # TODO: Prepare the data for transmission.
         # TODO: Encode the data using a desired encoder.
