@@ -17,9 +17,15 @@ class Request(Request):
         override = self['X-Http-Method-Override']
         return override.upper() if override else request.method
 
-    @utils.memoize
     def __getitem__(self, name):
         return request.headers.get(name)
+
+    def __iter__(self):
+        for key, _ in request.headers:
+            yield key
+
+    def __len__(self):
+        return len(request.headers)
 
 
 class Response(Response):

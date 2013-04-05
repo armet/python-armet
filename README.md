@@ -65,6 +65,10 @@ frameworks and envrionments using connectors.
 
 2. Change into the **armet** root directory.
 
+   ```sh
+   cd /path/to/python-armet
+   ```
+
 3. Install the project and all its dependencies using `pip`.
 
    ```sh
@@ -80,13 +84,26 @@ frameworks and envrionments using connectors.
    pip install ".[test]"
    ```
 
-## Running the Tests
-1. Open a shell and type in the proceeding commands.
+## Contributing
 
-2. Change into the **armet** root directory.
+### Setting up your environment
+1. Follow steps 1 and 2 of the [manual installation instructions][].
 
+[manual installation instructions]: #manual
+
+2. Initialize a virtual environment to develop in. 
+   This is done so as to ensure every contributor is working with
+   close-to-identicial versions of packages.
+   
    ```sh
-   cd /path/to/python-armet
+   mkvirtualenv armet
+   ```
+
+   The `mkvirtualenv` command is available from `virtualenvwrapper` which
+   can be installed as follows:
+   
+   ```sh
+   sudo pip install virtualenvwrapper 
    ```
 
 3. Install **armet** in development mode with testing enabled.
@@ -96,7 +113,10 @@ frameworks and envrionments using connectors.
    pip install -e ".[test]"
    ```
 
-4. Run the unit tests.
+### Running the test suite
+1. [Set up your environment](#setting-up-your-environment).
+
+2. Run the unit tests.
 
    ```sh
    nosetests
