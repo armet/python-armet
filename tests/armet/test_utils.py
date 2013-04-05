@@ -8,25 +8,25 @@ class ExtendTestCase(unittest.TestCase):
 
     def test_mapping(self):
         value = {'x': 10, 'y': 20}
-        value = utils.extend(value, {'z': 15})
+        value = utils.cons(value, {'z': 15})
 
         self.assertEquals(value, {'x': 10, 'y': 20, 'z': 15})
 
     def test_list(self):
         value = [10, 20]
-        value = utils.extend(value, [15])
+        value = utils.cons(value, [15])
 
         self.assertEquals(value, [10, 20, 15])
 
     def test_scalar(self):
         value = [10, 20]
-        value = utils.extend(value, 15)
+        value = utils.cons(value, 15)
 
         self.assertEquals(value, [10, 20, 15])
 
     def test_string(self):
         value = ['10', 20]
-        value = utils.extend(value, '15')
+        value = utils.cons(value, '15')
 
         self.assertEquals(value, ['10', 20, '15'])
 

@@ -12,6 +12,9 @@ class ModelResourceOptions(options.ResourceOptions):
         # Initalize base resource options.
         super(ModelResourceOptions, self).__init__(meta, name, bases)
 
-        if not self.connectors.get('model'):
-            # Attempt to detect the model connector.
-            self.connectors['model'] = options._detect_connector('model')
+        #! Reference to the declarative model defined by
+        #! the Object Relational Mapper (ORM).
+        self.model = meta.get('model')
+        if self.model is None:
+            raise ImproperlyConfigured(
+                'Model resources must be bound to a model.')

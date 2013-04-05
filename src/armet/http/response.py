@@ -23,6 +23,14 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     def status(self, value):
         """Sets the status code of the response."""
 
+    @abc.abstractproperty
+    def content(self):
+        """Gets the content of the response."""
+
+    @content.setter
+    def content(self, value):
+        """Sets the content of the response."""
+
     @abc.abstractmethod
     def __getitem__(self, name):
         """Sets a header with the passed name."""

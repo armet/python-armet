@@ -42,6 +42,14 @@ class Response(response.Response):
     def status(self, value):
         self.handle.status_code = value
 
+    @property
+    def content(self):
+        return self.handle.content
+
+    @content.setter
+    def content(self, value):
+        self.handle.content = value
+
     def __getitem__(self, name):
         return self.handle.get(name)
 

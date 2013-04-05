@@ -6,6 +6,7 @@ from . import api
 # from django.contrib import admin
 # admin.autodiscover()
 
+
 urlpatterns = patterns(
     '',
     # Examples:

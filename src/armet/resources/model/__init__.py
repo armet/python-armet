@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 import six
 from . import model, meta
+from armet.utils.metaclass import make
 
 
 __all__ = [
@@ -10,6 +11,6 @@ __all__ = [
 
 
 class ModelResource(six.with_metaclass(
-        meta.ModelResourceBase, model.ModelResource)):
+        make(meta.ModelResourceBase), model.ModelResource)):
     """Implements the RESTful resource protocol for model resources.
     """

@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals, division
 import re
 import collections
 import six
+import types
 from importlib import import_module
 from armet.resources.attributes import Attribute
 from armet import utils
@@ -27,11 +28,11 @@ def _merge(options, name, bases, default=None):
         if value is None:
             continue
 
-        result = utils.extend(result, value)
+        result = utils.cons(result, value)
 
     value = options.get(name)
     if value is not None:
-        result = utils.extend(result, value)
+        result = utils.cons(result, value)
 
     return result or default
 
@@ -160,9 +161,10 @@ class ResourceOptions(object):
         # Pull out the connectors and convert them into module references.
         for key in connectors:
             connector = connectors[key]
-            if '.' not in connector:
-                # Shortname, prepend base.
-                connectors[key] = 'armet.connectors.{}'.format(connector)
+            if isinstance(connector, six.string_types):
+                if '.' not in connector:
+                    # Shortname, prepend base.
+                    connectors[key] = 'armet.connectors.{}'.format(connector)
 
         #! Additional attributes to include in addition to those defined
         #! directly in the resource. This is meant for defining fields

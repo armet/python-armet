@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 from armet import resources
+from . import models
 
 
-class PollResource(resources.Resource):
+class PollResource(resources.ModelResource):
 
     class Meta:
-        connectors = {'http': 'django'}
-
-    def read(self):
-        return "Hello!"
+        connectors = {'http': 'django', 'model': 'django'}
+        model = models.Poll
 
 
 class HttpWholeForbiddenResource(resources.Resource):

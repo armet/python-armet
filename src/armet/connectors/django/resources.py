@@ -8,28 +8,25 @@ from armet.resources.resource import base, meta, options
 from .http import Request, Response
 
 
-class ResourceOptions(options.ResourceOptions):
-    response = Response
+class ResourceOptions(object):
 
-    def __init__(self, options, name, bases):
-        super(ResourceOptions, self).__init__(options, name, bases)
+    def __init__(self, meta, name, bases):
         #! URL namespace to define the url configuration inside.
-        self.url_name = options.get('url_name')
+        self.url_name = meta.get('url_name')
         if not self.url_name:
             self.url_name = 'api_view'
 
 
-class ResourceBase(meta.ResourceBase):
-    options = ResourceOptions
-
-
-class Resource(six.with_metaclass(ResourceBase, base.Resource)):
-    """Specializes the RESTFul resource protocol for django.
+class Resource(object):
+    """Specializes the RESTFul abstract resource protocol for django.
 
     @note
         This is not what you derive from to create resources. Import
         Resource from `armet.resources` and derive from that.
     """
+
+    #! Class to use to construct a response object.
+    response = Response
 
     @classmethod
     @csrf.csrf_exempt
@@ -67,3 +64,18 @@ class Resource(six.with_metaclass(ResourceBase, base.Resource)):
             url(r'^{}(?P<path>.*)', redirect),
             url(r'^{}/', view),
             url(r'^{}', redirect))
+
+
+class ModelResource(object):
+    """Specializes the RESTFul model resource protocol for django.
+
+    @note
+        This is not what you derive from to create resources. Import
+        ModelResource from `armet.resources` and derive from that.
+    """
+
+    def read(self):
+        # Serialize a simple queryset containing all models for now.
+        from django.core import serializers
+        queryset = self.meta.model.objects.all()
+        return serializers.serialize('json', queryset)
