@@ -111,7 +111,8 @@ class ResourceBase(type):
         # Mix all the connector types together.
         connectors.append(self)
         connectors = tuple(connectors)
-        combined = type(b'armet.connector:{}'.format(name), connectors, {})
+        name = 'armet.connector:{}'.format(name)
+        combined = type(str(name), connectors, {})
 
         # Return the constructed instance.
         return combined
