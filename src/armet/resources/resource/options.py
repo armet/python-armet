@@ -227,7 +227,7 @@ class ResourceOptions(object):
         #! The value indicates which URI is the canonical URI and the
         #! alternative URI is then made to redirect (with a 301) to the
         #! canonical URI.
-        self.trailing_slash = meta.get('trailing_slash', True)
+        self.trailing_slash = meta.get('trailing_slash', False)
 
         #! List of understood HTTP methods.
         self.http_method_names = meta.get('http_method_names', (
@@ -349,3 +349,56 @@ class ResourceOptions(object):
         #! turning off legacy redirecting.
         #! As of 19 March 2013 only Firefox supports it since a year ago.
         self.legacy_redirect = meta.get('legacy_redirect', True)
+
+        #! Mapping of encoders known by this resource.
+        #! Values may either be a string reference to the encoder type
+        #! or an encoder class object.
+        self.encoders = encoders = meta.get('encoders')
+        if not encoders:
+            self.encoders = {
+                'json': 'armet.encoders.Json'
+            }
+
+        # Check to ensure at least one encoder is defined.
+        if len(self.encoders) == 0:
+            raise ImproperlyConfigured(
+                'At least one available encoder must be defined.')
+
+        # Expand the encoder name references.
+        for name, encoder in six.iteritems(self.encoders):
+            if isinstance(encoders, six.string_types):
+                segments = name.split('.')
+                module = '.'.join(segments[:-1])
+                module = import_module(module)
+                self.encoders[name] = getattr(module, segments[-1])
+
+        #! List of allowed encoders of the understood encoders.
+        self.allowed_encoders = meta.get('allowed_encoders')
+        if not self.allowed_encoders:
+            self.allowed_encoders = tuple(*self.encoders.keys())
+
+        # Check to ensure at least one encoder is allowed.
+        if len(self.allowed_encoders) == 0:
+            raise ImproperlyConfigured(
+                'There must be at least one allowed encoder.')
+
+        # Check to ensure that all allowed encoders are understood encoders.
+        for name in self.allowed_encoders:
+            if name not in self.encoders:
+                raise ImproperlyConfigured(
+                    'The allowed encoder, {}, is not one of the '
+                    'understood encoders'.format(name))
+
+        #! Name of the default encoder of the list of understood encoders.
+        self.default_encoder = meta.get('default_encoder')
+        if not self.default_encoder:
+            if 'json' in self.allowed_encoders:
+                self.default_encoder = 'json'
+
+            else:
+                self.default_encoder = self.allowed_encoders[0]
+
+        if self.default_encoder not in self.allowed_encoders:
+            raise ImproperlyConfigured(
+                'The chosen default encoder, {}, is not one of the '
+                'allowed encoders'.format(self.default_encoder))
