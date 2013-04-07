@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from armet import utils
 from armet.http.request import Request
 from armet.http.response import Response
 from flask import request
@@ -41,6 +40,7 @@ class Request(Request):
 
     def __contains__(self, name):
         return name in request.headers
+
 
 class Response(Response):
     """Implements the RESTFul response abstraction for flask.
