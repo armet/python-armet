@@ -6,16 +6,25 @@ encode objects to a format suitable for transmission.
 from __future__ import print_function, unicode_literals, division
 import abc
 import six
+import mimeparse
 from armet import transcoders
 
 
 class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
 
-    def __init__(self, response):
+    def __init__(self, accept, response):
         """
+        @params[in] accept
+            The accept header specifiying the media type.
+
         @params[in] response
             The http response class used to instantiate response objects.
         """
+        # Parse out any parameters
+        mime_type = mimeparse.best_match(self.mimetypes, accept)
+        self.params = mimeparse.parse_mime_type(mime_type)[2]
+
+        #! The response class to use.
         self.response = response
 
     def can_encode(self, obj=None):

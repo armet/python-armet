@@ -39,7 +39,101 @@ class Attribute(object):
         #! The path reference of where to find this attribute on an
         #! item (eg. 'name' references the name key if the read method returns
         #! a dictionary.)
+        #!
+        #! The path may be dot-separated to indicate simple traversal.
+        #! Eg. user.name could be obj['user'].name
         self.path = path
+
+        if self.path:
+            # Explode the path into segments.
+            self._segments = path.split('.')
+
+            # Initialize the accessors array.
+            self._accessors = []
+
+    def _make_accessor(self, path, cls, value):
+        # Attempt to get an unbound class property
+        # that may be a descriptor.
+        obj = getattr(cls, path, None)
+        if obj is not None:
+            if hasattr(obj, '__call__'):
+                # The descriptor is callable.
+                return lambda o, x=obj.__call__: x(o)
+
+            if hasattr(obj, '__get__'):
+                # This is a data descriptor.
+                return lambda o, x=obj.__get__: x(o)
+
+        else:
+            # Check for another kind of descriptor.
+            descriptor = cls.__dict__.get(name)
+            if descriptor and hasattr(descriptor, '__get__'):
+                return lambda o, x=descriptor.__get__: x(o)
+
+        if issubclass(cls, collections.Mapping):
+            return lambda o, n=name: o.get(name)
+
+        if issubclass(cls, collections.Sequence):
+            name = int(name)
+            if name == 0:
+                # Sequence access is 1-indexed.
+                def accessor(obj):
+                    raise TypeError()
+
+            else:
+                name = name - 1 if name > 0 else name
+                def accessor(obj, index=index):
+                    if isinstance(obj, six.string_types) and len(obj) == 1:
+                        # We cannot index into a 'character'.
+                        raise TypeError()
+
+                    # Return the element.
+                    return obj[index]
+
+            # Return the built accessor.
+            return accessor
+
+        # No alternative; let's pretend this will work (which it will
+        # most of the time).
+        return lambda o, n=name: o.__dict__[n]
+
+    def get(self, value):
+        """Retrieves the value of this attribute from the passed object."""
+        if not self.path:
+            # If we do not have a path; we cannot automatically
+            # resolve our value; return nothing.
+            return None
+
+        for accessor in self._accessors:
+            # Iterate and resolve the attribute path.
+            value = accessor(value)
+
+        if value is not None and self._segments:
+            # Value isn't none and we still have additional segments left
+            # to resolve into accessors.
+            for index, segment in enumerate(self._segments):
+                if value is None:
+                    # We no longer have a value to use to attempt
+                    # to resolve additional segments; bail for now.
+                    break
+
+                # Build the accessor corresponding to this path
+                # segment.
+                accessor = self._make_accessor(
+                    segment, value.__class__, value)
+
+                # Append the accessor.
+                self._accessors.append(accessor)
+
+                # Utilize the accessor now.
+                value = accessor(value)
+
+            # Remove any path segments that have been resolved
+            # into accessors.
+            del self.path[:index]
+
+        # Return what has been accessed.
+        return value
 
     def prepare(self, value):
         """Prepares the value for serialization."""

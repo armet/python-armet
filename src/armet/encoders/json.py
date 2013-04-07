@@ -16,9 +16,12 @@ class _TypeCoerableJSONEncoder(json.JSONEncoder):
         return super(_TypeCoerableJSONEncoder, self).default(obj)
 
 
-class Encoder(Encoder, transcoders.Json):
+class Encoder(transcoders.Json, Encoder):
 
-    def __init__(self, pretty_print=False):
+    def __init__(self, *args, **kwargs):
+        # Let the base class figure out things.
+        super(Encoder, self).__init__(*args, **kwargs)
+
         #! The configuration options that are passed to the
         #! JSON encoder.
         self.options = {
@@ -27,7 +30,8 @@ class Encoder(Encoder, transcoders.Json):
             'cls': _TypeCoerableJSONEncoder
         }
 
-        if pretty_print:
+        pprint = self.params.get('pretty_print', '')
+        if pprint == '1' or pprint.lower() == 'true':
             # We are pretty printing; turn on indents and
             # add spaces around separators
             self.options['indent'] = 2

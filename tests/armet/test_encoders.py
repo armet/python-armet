@@ -8,7 +8,8 @@ from armet import encoders
 class JsonEncoderTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.encoder = encoders.JsonEncoder()
+        mime_type = 'application/json'
+        self.encoder = encoders.JsonEncoder(mime_type, None)
         self.encode = self.encoder.encode
 
     def test_none(self):
