@@ -216,7 +216,7 @@ class Resource(object):
             return None
 
         if (not isinstance(data, six.string_types) and
-                not isinstance(data, six.Mapping)):
+                not isinstance(data, collections.Mapping)):
             try:
                 # Attempt to prepare each item of the iterable (as long as
                 # we're not a string or some sort of mapping).
@@ -253,7 +253,7 @@ class Resource(object):
 
             # Run the attribute through the prepare cycle.
             value = attribute.prepare(value)
-            value = self._prepare[name](self, item, value)
+            value = self.preparers[name](self, item, value)
 
             # Set the value on the object.
             obj[name] = value

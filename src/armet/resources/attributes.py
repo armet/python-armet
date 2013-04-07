@@ -2,6 +2,7 @@
 """Defines attributes available on a resource object.s
 """
 from __future__ import print_function, unicode_literals, division
+import collections
 
 
 class Attribute(object):
@@ -66,22 +67,22 @@ class Attribute(object):
 
         else:
             # Check for another kind of descriptor.
-            descriptor = cls.__dict__.get(name)
+            descriptor = cls.__dict__.get(path)
             if descriptor and hasattr(descriptor, '__get__'):
                 return lambda o, x=descriptor.__get__: x(o)
 
         if issubclass(cls, collections.Mapping):
-            return lambda o, n=name: o.get(name)
+            return lambda o, n=path: o.get(n)
 
         if issubclass(cls, collections.Sequence):
-            name = int(name)
-            if name == 0:
+            path = int(path)
+            if path == 0:
                 # Sequence access is 1-indexed.
                 def accessor(obj):
                     raise TypeError()
 
             else:
-                name = name - 1 if name > 0 else name
+                path = path - 1 if path > 0 else path
                 def accessor(obj, index=index):
                     if isinstance(obj, six.string_types) and len(obj) == 1:
                         # We cannot index into a 'character'.
@@ -95,7 +96,7 @@ class Attribute(object):
 
         # No alternative; let's pretend this will work (which it will
         # most of the time).
-        return lambda o, n=name: o.__dict__[n]
+        return lambda o, n=path: o.__dict__[n]
 
     def get(self, value):
         """Retrieves the value of this attribute from the passed object."""
@@ -130,7 +131,7 @@ class Attribute(object):
 
             # Remove any path segments that have been resolved
             # into accessors.
-            del self.path[:index]
+            self.path = self.path[index:]
 
         # Return what has been accessed.
         return value

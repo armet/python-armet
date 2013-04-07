@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from armet import resources
+from armet.resources import attributes
 from . import models
 
 
@@ -17,6 +18,8 @@ class PollResource(resources.ModelResource):
     class Meta:
         connectors = {'http': 'django', 'model': 'django'}
         model = models.Poll
+
+    question = attributes.Attribute('question')
 
 
 class HttpWholeForbiddenResource(resources.Resource):

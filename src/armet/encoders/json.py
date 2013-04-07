@@ -12,6 +12,11 @@ from .base import Encoder
 class _TypeCoerableJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
+        if isinstance(obj, collections.Iterable):
+            # This is an iterable but not recognizable as such
+            # by the JSON encoder.
+            return list(obj)
+
         # Raise up our hands; we cannot encode this.
         return super(_TypeCoerableJSONEncoder, self).default(obj)
 
