@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals, division
 import collections
+import six
 
 
 class Attribute(object):
@@ -83,7 +84,8 @@ class Attribute(object):
 
             else:
                 path = path - 1 if path > 0 else path
-                def accessor(obj, index=index):
+
+                def accessor(obj, index=path):
                     if isinstance(obj, six.string_types) and len(obj) == 1:
                         # We cannot index into a 'character'.
                         raise TypeError()

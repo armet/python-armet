@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from django.http import HttpResponse
-from armet import utils
 from armet.http import request, response
 import string
 import re
