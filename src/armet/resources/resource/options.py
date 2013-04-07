@@ -356,7 +356,7 @@ class ResourceOptions(object):
         self.encoders = encoders = meta.get('encoders')
         if not encoders:
             self.encoders = {
-                'json': 'armet.encoders.Json'
+                'json': 'armet.encoders.JsonEncoder'
             }
 
         # Check to ensure at least one encoder is defined.
@@ -366,8 +366,8 @@ class ResourceOptions(object):
 
         # Expand the encoder name references.
         for name, encoder in six.iteritems(self.encoders):
-            if isinstance(encoders, six.string_types):
-                segments = name.split('.')
+            if isinstance(encoder, six.string_types):
+                segments = encoder.split('.')
                 module = '.'.join(segments[:-1])
                 module = import_module(module)
                 self.encoders[name] = getattr(module, segments[-1])

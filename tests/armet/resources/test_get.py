@@ -5,4 +5,5 @@ from armet import http, test
 
 class GetTestCase(test.TestCase):
 
-    pass
+    def test_list(self):
+        response, content = self.client.request('/api/poll')

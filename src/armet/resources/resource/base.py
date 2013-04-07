@@ -190,20 +190,132 @@ class Resource(object):
             if operation not in operations:
                 raise exceptions.Forbidden()
 
-    def make_response(self, content, status=http.client.OK):
-        """Constructs a response object from the passed content."""
+    def make_response(self, data, status=http.client.OK):
+        """Constructs a response object from the passed data."""
         # Initialize the response object.
         response = self.response(status=status)
 
-        # DEBUG: Place the data directly in the resposne.
-        response.content = content
+        # Prepare the data for transmission.
+        data = self.prepare(data)
 
-        # TODO: Prepare the data for transmission.
-        # TODO: Encode the data using a desired encoder.
+        # Encode the data using a desired encoder.
+        data = self.encode(data)
+
+        # Write the encoded and prepared data to the response.
+        response.content = data
+
         # TODO: Generate appropriate headers.
 
         # Return the built response.
         return response
+
+    def prepare(self, data):
+        """Prepares the data for encoding."""
+        if data is None:
+            # No data; return nothing.
+            return None
+
+        if (not isinstance(data, six.string_types) and
+                not isinstance(data, six.Mapping)):
+            try:
+                # Attempt to prepare each item of the iterable (as long as
+                # we're not a string or some sort of mapping).
+                return (self.item_prepare(x) for x in data)
+
+            except TypeError:
+                # Not an iterable.
+                pass
+
+        # Prepare just the singular value and return.
+        return self.item_prepare(data)
+
+    def item_prepare(self, item):
+        """Prepares a single item for encoding."""
+        # Initialize the object that hold the resultant item.
+        obj = {}
+
+        # Iterate through the attributes and build the object
+        # from the item.
+        for name, attribute in six.iteritems(self.attributes):
+            if not attribute.include:
+                # Attribute is not to be included in the
+                # resource body.
+                continue
+
+            try:
+                # Apply the attribute; request the value of the
+                # attribute from the item.
+                value = attribute.get(item)
+
+            except (TypeError, ValueError, KeyError, AttributeError):
+                # Nothing found; set it to null.
+                value = None
+
+            # Run the attribute through the prepare cycle.
+            value = attribute.prepare(value)
+            value = self._prepare[name](self, item, value)
+
+            # Set the value on the object.
+            obj[name] = value
+
+        # Return the resultant object.
+        return obj
+
+    def encode(self, data):
+        """Encodes the data using a selected encoder."""
+        # Determine the appropriate encoder to use by reading
+        # the request object.
+        accept = self.request.get('Accept')
+        encoder = None
+        if not accept:
+            # Default the accept header to */*
+            accept = '*/*'
+
+        if self.extension:
+            # An explicit format was specified as an extension
+            name = self.extension.lower()
+            match = None
+            if name in self.meta.allowed_encoders:
+                match = self.meta.encoders[name]
+            if match is not None and match.can_transcode(accept):
+                # An encoder of the same name was discovered and
+                # it matches the requested format.
+                encoder = match
+
+        elif accept.strip() != '*/*':
+            # No specific format specified in the URL; iterate through
+            # encoders until one matches the specification defined
+            # in the Accept header.
+            for name in self.meta.allowed_encoders:
+                match = self.meta.encoders[name]
+                if match.can_transcode(accept):
+                    # An encoder has matched to the format.
+                    encoder = match
+                    break
+
+        else:
+            # Resort to the default encoder.
+            encoder = self.meta.encoders[self.meta.default_encoder]
+
+        if encoder:
+            try:
+                # Attempt to encode the data using the determined encoder.
+                return encoder(accept, self.response).encode(data)
+
+            except ValueError:
+                # Failed to encode the data.
+                pass
+
+        # Either failed to determine an encoder or failed to encode
+        # the data; construct a list of available and valid encoders.
+        available = {}
+        for name in self.meta.allowed_encoders:
+            encoder = self.meta.encoders[name]
+            if encoder(accept, self.response).can_encode(data):
+                available[name] = encoder.mimetype
+
+        # Raise a Not Acceptable exception.
+        raise exceptions.NotAcceptable(available)
 
     def dispatch(self):
         """Entry-point of the dispatch cycle for this resource.

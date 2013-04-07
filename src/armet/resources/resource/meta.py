@@ -86,6 +86,14 @@ class ResourceBase(type):
         # Construct the class object.
         self = super(ResourceBase, cls).__new__(cls, name, bases, attrs)
 
+        # Cache access to the attribute preparation cycle.
+        attrs['preparers'] = preparers = {}
+        for name in attributes:
+            prepare = getattr(self, 'prepare_{}'.format(name), None)
+            if not prepare:
+                prepare = lambda s, o, v: v
+            preparers[name] = prepare
+
         # Iterate through the available connectors.
         iterator = six.iteritems(meta.connectors)
         connectors = []
