@@ -8,6 +8,13 @@ from armet import resources
 application = Flask(__name__)
 
 
+# Configure the flask application appropriately.
+# NOTE: Flask does automatic removal of trailing slashes. If a user wishes
+#   to use armet with `trailing_slash` set to `False` then the following
+#   option must be turned off.
+application.url_map.strict_slashes = False
+
+
 @armet.route(application, '/api/')
 class SimpleResource(resources.Resource):
 

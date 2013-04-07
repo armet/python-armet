@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import re
 from flask import request
-from werkzeug.wsgi import get_current_url
 from .http import Request, Response
 
 
@@ -17,18 +17,13 @@ class Resource(object):
     response = Response
 
     @classmethod
-    def redirect(cls, *args, **kwargs):
-        env = request.environ
-        res = super(Resource, cls).redirect(Request(), env['PATH_INFO'])
-        env['PATH_INFO'] = res['Location']
-        res['Location'] = get_current_url(env)
-        return res.handle
-
-    @classmethod
     def view(cls, *args, **kwargs):
         # Initiate the base view request cycle.
         # TODO: response will likely be a tuple containing headers, etc.
-        response = super(Resource, cls).view(Request(), kwargs.get('path'))
+        path = re.sub(r'^/(.+)$', r'\1', kwargs.get('path', ''))
+        if request.path.endswith('/'):
+            path += '/'
+        response = super(Resource, cls).view(Request(), path)
 
         # Facilitate the HTTP response and return it.
         return response.handle
@@ -44,15 +39,9 @@ class Resource(object):
             name = '{}.{}'.format(cls.__module__, cls.__name__)
             name = '{}:{}:{}'.format('armet', name, cls.meta.name)
 
-        # Determine the appropriate methods.
-        view = cls.view if cls.meta.trailing_slash else cls.redirect
-        redirect = cls.redirect if cls.meta.trailing_slash else cls.view
-
         # Mount this resource.
         methods = cls.meta.http_method_names
-        add = lambda *args: app.add_url_rule(*args, methods=methods)
-        rule = '{}{}/'.format(url, cls.meta.name)
-        add('{}'.format(rule), '{}:trail'.format(name), view)
-        add(rule, name, redirect)
-        add('{}<path:path>/'.format(rule), '{}:path:trail'.format(name), view)
-        add('{}<path:path>'.format(rule), '{}:path'.format(name), redirect)
+        rule = '{}{}'.format(url, cls.meta.name)
+        app.add_url_rule(rule, name, cls.view, methods=methods)
+        app.add_url_rule(
+            rule + '/<path:path>', name + ':path', cls.view, methods=methods)
