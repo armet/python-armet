@@ -57,7 +57,4 @@ class ModelResource(object):
     """
 
     def read(self):
-        # Serialize a simple queryset containing all models for now.
-        from django.core import serializers
-        queryset = self.meta.model.objects.all()
-        return serializers.serialize('json', queryset)
+        return self.meta.model.objects.all()

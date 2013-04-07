@@ -51,3 +51,8 @@ class JsonEncoderTestCase(unittest.TestCase):
         value = self.encode(message)
 
         self.assertEqual(json.loads(value), message)
+
+    def test_generator(self):
+        value = self.encode(x for x in range(10))
+
+        self.assertEqual(value, '[0,1,2,3,4,5,6,7,8,9]')
