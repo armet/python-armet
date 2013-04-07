@@ -5,6 +5,7 @@ from armet.http.request import Request
 from armet.http.response import Response
 from flask import request
 from flask.globals import current_app
+from werkzeug.wsgi import get_current_url
 
 
 class Request(Request):
@@ -12,10 +13,21 @@ class Request(Request):
     """
 
     @property
-    @utils.memoize_single
     def method(self):
-        override = self['X-Http-Method-Override']
+        override = self.get('X-Http-Method-Override')
         return override.upper() if override else request.method
+
+    @property
+    def url(self):
+        return get_current_url(request.environ)
+
+    @property
+    def path(self):
+        return request.environ['PATH_INFO']
+
+    @path.setter
+    def path(self, value):
+        request.environ['PATH_INFO'] = value
 
     def __getitem__(self, name):
         return request.headers.get(name)
@@ -27,6 +39,8 @@ class Request(Request):
     def __len__(self):
         return len(request.headers)
 
+    def __contains__(self, name):
+        return name in request.headers
 
 class Response(Response):
     """Implements the RESTFul response abstraction for flask.
@@ -57,3 +71,15 @@ class Response(Response):
 
     def __setitem__(self, name, value):
         self.handle.headers[name] = value
+
+    def __delitem__(self, name):
+        del self.handle.headers[name]
+
+    def __contains__(self, name):
+        return name in self.handle.headers
+
+    def __iter__(self):
+        return iter(self.handle.headers)
+
+    def __len__(self):
+        return len(self.handle.headers)

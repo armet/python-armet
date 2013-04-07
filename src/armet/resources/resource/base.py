@@ -21,7 +21,7 @@ class Resource(object):
     """
 
     @classmethod
-    def redirect(cls, request, path):
+    def redirect(cls, request):
         """Redirect to the canonical URI for this resource.
 
         @note
@@ -48,11 +48,7 @@ class Resource(object):
             response.status = http.client.PERMANENT_REDIRECT
 
         # Calculate the path to redirect to and set it on the response.
-        if cls.meta.trailing_slash:
-            path += '/'
-        else:
-            del path[-1]
-        response['Location'] = path
+        response['Location'] = request.url
 
         # Return the response object.
         return response
@@ -72,6 +68,17 @@ class Resource(object):
             Dictionary of request headers normalized to have underscores and
             be uppercased.
         """
+        # Determine if we need to redirect.
+        if cls.meta.trailing_slash and not path.endswith('/'):
+            # We should redirect if the path doesn't end in '/'.
+            request.path += '/'
+            return cls.redirect(request)
+
+        elif not cls.meta.trailing_slash and path.endswith('/'):
+            # We should redirect if the path does end in '/'.
+            request.path = re.sub(r'/$', '', request.path)
+            return cls.redirect(request)
+
         try:
             # Parse any arguments out of the path.
             arguments = cls.parse(path)
@@ -124,16 +131,19 @@ class Resource(object):
 
     #! Precompiled regular expression used to parse out the path.
     _parse_pattern = re.compile(
-        r'^(?:\:(?P<query>[^/]+?))?'
-        r'(?:\:)?'
-        r'(?:/??(?P<slug>[^/]+?))?'
+        r'^(?:\((?P<query>[^/]*?)\))?'
+        r'(?:(?P<slug>[^/]+?))?'
         r'(?:/(?P<path>.+?))??'
         r'(?:\.(?P<extension>[^/]+?))??$')
 
     @classmethod
     def parse(cls, path):
         """Parses out parameters and separates them out of the path."""
-        return re.match(cls._parse_pattern, path or '').groupdict()
+        # Strip the trailing slash, if any.
+        path = re.sub(r'/$', r'', path or '')
+
+        # Apply the compiled regex.
+        return re.match(cls._parse_pattern, path).groupdict()
 
     @classmethod
     def traverse(cls, arguments):

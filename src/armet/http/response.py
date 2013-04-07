@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
+import collections
 import abc
-import six
 
 
 __all__ = ['Response']
 
 
-class Response(six.with_metaclass(abc.ABCMeta)):
+class Response(collections.MutableMapping):
     """Implements the RESTful response abstraction.
     """
 
@@ -38,3 +38,18 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def __setitem__(self, name, value):
         """Sets a header with the passed name."""
+
+    @abc.abstractmethod
+    def __delitem__(self, name):
+        """Removes a header with the passed name."""
+
+    @abc.abstractmethod
+    def __len__(self, name):
+        """Retrieves the number of headers in this response."""
+
+    @abc.abstractmethod
+    def __iter__(self):
+        """Returns an iterable for all headers in this response."""
+
+    def __contains__(self, name):
+        """Tests if the passed header exists in the response object."""

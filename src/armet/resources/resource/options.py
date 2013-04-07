@@ -227,7 +227,7 @@ class ResourceOptions(object):
         #! The value indicates which URI is the canonical URI and the
         #! alternative URI is then made to redirect (with a 301) to the
         #! canonical URI.
-        self.trailing_slash = meta.get('trailing_slash', False)
+        self.trailing_slash = meta.get('trailing_slash', True)
 
         #! List of understood HTTP methods.
         self.http_method_names = meta.get('http_method_names', (
@@ -375,7 +375,7 @@ class ResourceOptions(object):
         #! List of allowed encoders of the understood encoders.
         self.allowed_encoders = meta.get('allowed_encoders')
         if not self.allowed_encoders:
-            self.allowed_encoders = tuple(*self.encoders.keys())
+            self.allowed_encoders = tuple(self.encoders.keys())
 
         # Check to ensure at least one encoder is allowed.
         if len(self.allowed_encoders) == 0:
