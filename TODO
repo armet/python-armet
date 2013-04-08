@@ -1,0 +1,58 @@
+ ✔ prepare cycle @done (13-04-07 21:12)
+     ✔ item_prepare @done (13-04-07 21:12)
+     ✔ prepare_FOO @done (13-04-07 21:12)
+ ☐ encode
+     ✔ base @done (13-04-07 21:12)
+     ☐ json
+     ☐ xml
+     ☐ yaml
+     ☐ message pack (.pack)
+     ☐ stream (.stream)
+     ☐ form
+     ☐ url
+     ☐ text/plain
+     ☐ if the default encoder is not one of the available encoders; make it be the first of such
+ ☐ slug handling
+     ☐ pk
+     ☐ custom
+ ☐ filtering
+     ☐ basic
+     ☐ and
+     ☐ or
+     ☐ grouping
+     ☐ not
+     ☐ relational
+ ☐ relations
+ ☐ traversal
+     ☐ simple: /poll/1/question
+     ☐ relation: /poll/1/choice
+     ☐ proxy: /poll/1/pub-date/year
+     ☐ pagination: /poll/1-5,-1
+     ☐ pluck: /poll/choice
+     ☐ attribute select: /poll/question,choice
+     ☐ resource select: /poll,choice
+     ☐ query: /poll(is-closed)
+     ☐ sorting: /poll:? — /poll:rand — /poll(question:+) — /poll(question:descending)
+ ☐ sorting ?:rand / ?question:asc
+ ☐ links
+     ☐ self
+     ☐ canonical
+     ☐ item
+     ☐ collection
+     ☐ related
+     ☐ "attributes" (find a rel type)
+     ☐ schema
+ ☐ schema
+     ☐ JSON Schema
+     ☐ XSD (xml)
+     ☐ RX (yaml)
+ ☐ clean
+     ☐ item_clean
+     ☐ clean_FOO
+     ☐ validation errors
+ ☐ DELETE
+ ☐ PATCH
+ ☐ PUT
+ ☐ POST
+ ☐ HEAD
+ ☐ OPTIONS
