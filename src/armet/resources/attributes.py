@@ -133,7 +133,7 @@ class Attribute(object):
 
             # Remove any path segments that have been resolved
             # into accessors.
-            self.path = self.path[index:]
+            del self._segments[:index + 1]
 
         # Return what has been accessed.
         return value
