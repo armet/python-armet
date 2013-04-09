@@ -2,7 +2,6 @@
 import six
 import unittest
 import wsgi_intercept
-import os
 from wsgi_intercept.httplib2_intercept import install
 
 
@@ -16,7 +15,7 @@ def setup():
 
     # Initialize the database access layer.
     from ..utils import django
-    django.initialize('flask_django')
+    django.initialize('django')
 
     # Set the WSGI application to intercept to.
     from .app import application
