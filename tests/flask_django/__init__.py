@@ -3,7 +3,6 @@ import six
 import unittest
 import wsgi_intercept
 import os
-import errno
 from wsgi_intercept.httplib2_intercept import install
 
 
@@ -16,29 +15,17 @@ def setup():
     install()
 
     # Ensure the settings are pointed to correctly.
-    from django.conf import settings, Settings
-    settings._wrapped = Settings('tests.flask_django.settings')
-    settings._configure_logging()
+    module = 'tests.{}.settings'.format('flask_django')
+    os.environ["DJANGO_SETTINGS_MODULE"] = module
 
     # Set the WSGI application to intercept to.
     from .app import application
     wsgi_intercept.add_wsgi_intercept('localhost', 5000, lambda: application)
 
     # Initialize the database tables.
-    # TODO: Figure out a way to use the ':memory:' database
-    #   for this.
-    try:
-        # Destroy the existing database.
-        os.remove(os.path.join(os.path.dirname(__file__), 'db.sqlite3'))
-
-    except OSError as ex:
-        if ex.errno == errno.ENOENT:
-            # Database file didn't exist.
-            pass
-
-    # Initialize the database tables.
-    from django.core import management
-    management.call_command('syncdb', verbosity=1, interactive=False)
+    from django.db import connections, DEFAULT_DB_ALIAS
+    connection = connections[DEFAULT_DB_ALIAS]
+    connection.creation.create_test_db()
 
     # Install the test fixture.
     from django.core.management import call_command

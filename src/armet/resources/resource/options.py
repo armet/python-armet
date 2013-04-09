@@ -4,7 +4,7 @@ import re
 import collections
 import six
 from importlib import import_module
-from armet.resources.attributes import Attribute
+from armet.resources.attributes import Attribute, IntegerAttribute
 from armet import utils
 from armet.exceptions import ImproperlyConfigured
 
@@ -402,3 +402,19 @@ class ResourceOptions(object):
             raise ImproperlyConfigured(
                 'The chosen default encoder, {}, is not one of the '
                 'allowed encoders'.format(self.default_encoder))
+
+        #! Attribute to use for the slug or url segment
+        #! that identifies the resource. The slug attribute is
+        #! a special attribute; there are a couple of requirements.
+        #! One is that it must be a unique reference. A /url/slug must
+        #! return at most one item. Second is that as it is a special
+        #! attribute that is not part of the body there is not
+        #! a `prepare_slug` method; however, there is a `slug_prepare` method
+        #! that accomplishes the same purpose. This is to allow for a
+        #! normal attribute that is named slug.
+        self.slug = meta.get('slug')
+        if self.slug is None:
+            # The slug defaults to `id`; which on most model engines
+            # is the primary key. This is as good as a default as any I
+            # suppose.
+            self.slug = IntegerAttribute('id')
