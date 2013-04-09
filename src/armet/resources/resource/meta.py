@@ -87,22 +87,33 @@ class ResourceBase(type):
         # Store the gathered attributes
         attrs['attributes'] = attributes
 
+        # Remove connector layer from base classes.
+        new_bases = []
+        for base in bases:
+            if base.__name__.startswith('armet.connector:'):
+                # This is a connector wrapper; unwrap it.
+                new_bases.append(base.__bases__[-1])
+            else:
+                # Not a connector wrapped object; just append it.
+                new_bases.append(base)
+        new_bases = tuple(new_bases)
+
         # Construct the class object.
-        self = super(ResourceBase, cls).__new__(cls, name, bases, attrs)
+        self = super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
 
         # Cache access to the attribute preparation cycle.
         self.preparers = preparers = {}
-        for name in attributes:
-            prepare = getattr(self, 'prepare_{}'.format(name), None)
+        for key in attributes:
+            prepare = getattr(self, 'prepare_{}'.format(key), None)
             if not prepare:
                 prepare = lambda s, o, v: v
-            preparers[name] = prepare
+            preparers[key] = prepare
 
         # Filter the available connectors according to the
         # metaclass restriction set.
-        for name in list(meta.connectors.keys()):
-            if name not in cls.connectors:
-                del meta.connectors[name]
+        for key in list(meta.connectors.keys()):
+            if key not in cls.connectors:
+                del meta.connectors[key]
 
         # Iterate through the available connectors.
         iterator = six.iteritems(meta.connectors)

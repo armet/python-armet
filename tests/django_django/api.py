@@ -21,10 +21,17 @@ class SimpleResource(resources.Resource):
         return None
 
 
-class PollResource(resources.ModelResource):
+class WrongResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Poll
+        connectors = {'http': 'flask'}
+
+
+class PollResource(WrongResource):
 
     class Meta(Meta):
-        model = models.Poll
+        pass
 
     id = attributes.Attribute('id')
     question = attributes.Attribute('question')
