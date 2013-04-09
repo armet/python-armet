@@ -9,7 +9,7 @@ class GetTestCase(test.TestCase):
     def test_list(self):
         response, content = self.client.request('/api/poll/')
 
-        content = json.loads(content)
+        content = json.loads(content.decode('utf-8'))
 
         self.assertIsInstance(content, list)
         self.assertEqual(len(content), 100)
