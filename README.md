@@ -20,18 +20,21 @@ behind the interface.
 web server framework and therefore can run in most
 frameworks and envrionments using connectors.
 
-There are two kinds of connectors: `http` and `model`. The `http` connector is in charge of 
-facilitating the request / response cycle. The `model` connector is in charge of facilitating
-the database access layer for RESTful resources that are bound to a declarative model. For
-the most part these connectors can be mixed and changed at a per-resource level (eg. one 
-resource may use `django` for its http connector and `sqlalchemy` for its model and another
-may still use `django` for its http connector but reuse it for its model one as well).
+There are two kinds of connectors: `http` and `model`. The `http` connector
+is in charge of facilitating the request / response cycle. The `model`
+connector is in charge of facilitating the database access layer for RESTful
+resources that are bound to a declarative model. For the most part these
+connectors can be mixed and changed at a per-resource level (eg. one resource
+may use `django` for its http connector and `sqlalchemy` for its model
+and another may still use `django` for its http connector but reuse it for
+its model one as well).
 
 ### Request / response (http)
 
 #### [django](https://www.djangoproject.com/)
-> The Web framework for perfectionists (with deadlines). 
-Django makes it easier to build better Web apps more quickly and with less code.
+> The Web framework for perfectionists (with deadlines).
+> Django makes it easier to build better Web apps more quickly and
+> with less code.
 
 ```python
 # api.py
@@ -42,7 +45,7 @@ class Resource(resources.Resource):
             'http': 'django',
             # ... [additional connectors]
         }
-    
+
 # urls.py
 # ... [appending to the generated urls.py file from django-admin.py startproject]
 from . import api
@@ -52,7 +55,8 @@ urlpatterns += patterns('',
 ```
 
 #### [flask](http://flask.pocoo.org/)
-> Flask is a microframework for Python based on Werkzeug, Jinja 2 and good intentions.
+> Flask is a microframework for Python based on Werkzeug,
+> Jinja 2 and good intentions.
 
 ```python
 # Initialize the flask application.
@@ -77,7 +81,7 @@ class Resource(resources.Resource):
 ### Database access (model)
 
 #### [django](https://www.djangoproject.com/)
-> The Web framework for perfectionists (with deadlines). 
+> The Web framework for perfectionists (with deadlines).
 Django makes it easier to build better Web apps more quickly and with less code.
 
 ## Installation
@@ -147,19 +151,19 @@ Django makes it easier to build better Web apps more quickly and with less code.
 
 [manual installation instructions]: #manual
 
-2. Initialize a virtual environment to develop in. 
+2. Initialize a virtual environment to develop in.
    This is done so as to ensure every contributor is working with
    close-to-identicial versions of packages.
-   
+
    ```sh
    mkvirtualenv armet
    ```
 
    The `mkvirtualenv` command is available from `virtualenvwrapper` which
    can be installed as follows:
-   
+
    ```sh
-   sudo pip install virtualenvwrapper 
+   sudo pip install virtualenvwrapper
    ```
 
 3. Install **armet** in development mode with testing enabled.
