@@ -13,7 +13,7 @@
      ☐ text/plain
      ☐ if the default encoder is not one of the available encoders; make it be the first of such
  ☐ slug handling
-     ☐ pk
+     ✔ pk @done (13-04-09 00:31)
      ☐ custom
  ☐ filtering
      ☐ basic
