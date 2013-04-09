@@ -2,7 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 from armet import resources
 from armet.resources import attributes
-from . import models
+from ..django import models
 
 
 class Meta:
