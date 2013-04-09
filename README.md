@@ -11,18 +11,74 @@ behind the interface.
 
 ## Prerequisites
 
+ - **[six](https://pypi.python.org/pypi/six)** — Python 2 and 3 compatibility utilities.
+ - **[mimeparse](https://pypi.python.org/pypi/python-mimeparse/0.1.4)** — Provides functions for parsing mime-type names and matching them against a list of media-ranges.
+
+## Connectors
+
 **Armet** exists as an abstraction layer above your
 web server framework and therefore can run in most
 frameworks and envrionments using connectors.
 
-### Base
+There are two kinds of connectors: `http` and `model`. The `http` connector is in charge of 
+facilitating the request / response cycle. The `model` connector is in charge of facilitating
+the database access layer for RESTful resources that are bound to a declarative model. For
+the most part these connectors can be mixed and changed at a per-resource level (eg. one 
+resource may use `django` for its http connector and `sqlalchemy` for its model and another
+may still use `django` for its http connector but reuse it for its model one as well).
 
- - **[six](https://pypi.python.org/pypi/six)** — Python 2 and 3 compatibility utilities
+### Request / response (http)
 
-### Connectors
+#### [django](https://www.djangoproject.com/)
+> The Web framework for perfectionists (with deadlines). 
+Django makes it easier to build better Web apps more quickly and with less code.
 
- - **[django](https://www.djangoproject.com/)** — python `>= 2.6`, python `>= 3.2`
- - **[flask](http://flask.pocoo.org/)** — python `>= 2.6, < 3.0`
+```python
+# api.py
+from armet import resources
+class Resource(resources.Resource):
+    class Meta:
+        connectors = {
+            'http': 'django',
+            # ... [additional connectors]
+        }
+    
+# urls.py
+# ... [appending to the generated urls.py file from django-admin.py startproject]
+from . import api
+urlpatterns += patterns('',
+    url(r'^api/', include(api.Resource.urls)),
+)
+```
+
+#### [flask](http://flask.pocoo.org/)
+> Flask is a microframework for Python based on Werkzeug, Jinja 2 and good intentions.
+
+```python
+# Initialize the flask application.
+# See http://flask.pocoo.org/ for more information.
+from flask import Flask
+app = Flask(__name__)
+
+import armet
+from armet import resources
+
+@armet.route(app, '/api/')
+class Resource(resources.Resource):
+    class Meta:
+        connectors = {
+            'http': 'flask',
+            # ... [additional connectors]
+        }
+
+# ... [remainder of code to start the application]
+```
+
+### Database access (model)
+
+#### [django](https://www.djangoproject.com/)
+> The Web framework for perfectionists (with deadlines). 
+Django makes it easier to build better Web apps more quickly and with less code.
 
 ## Installation
 
