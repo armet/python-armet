@@ -7,3 +7,5 @@ from . import options
 class ModelResourceBase(meta.ResourceBase):
 
     options = options.ModelResourceOptions
+
+    connectors = ['http', 'model']

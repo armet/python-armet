@@ -24,6 +24,9 @@ class ResourceBase(type):
     #! Options class to use to expand options.
     options = options.ResourceOptions
 
+    #! Connectors to instantiate and mixin to the inheritance.
+    connectors = ['http']
+
     @classmethod
     def _is_resource(cls, name, bases):
         if name == 'NewBase':
@@ -54,13 +57,14 @@ class ResourceBase(type):
 
         # Gather the attributes of all options classes.
         metadata = {}
+        values = lambda x: {n: getattr(x, n) for n in dir(x)}
         for base in bases:
             meta = getattr(base, 'Meta', None)
             if meta:
-                metadata.update(**meta.__dict__)
+                metadata.update(**values(meta))
 
         if attrs.get('Meta'):
-            metadata.update(**attrs['Meta'].__dict__)
+            metadata.update(**values(attrs['Meta']))
 
         # Expand the options class with the gathered metadata.
         base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
@@ -93,6 +97,12 @@ class ResourceBase(type):
             if not prepare:
                 prepare = lambda s, o, v: v
             preparers[name] = prepare
+
+        # Filter the available connectors according to the
+        # metaclass restriction set.
+        for name in list(meta.connectors.keys()):
+            if name not in cls.connectors:
+                del meta.connectors[name]
 
         # Iterate through the available connectors.
         iterator = six.iteritems(meta.connectors)

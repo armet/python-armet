@@ -247,7 +247,7 @@ class Resource(object):
                 # attribute from the item.
                 value = attribute.get(item)
 
-            except (TypeError, ValueError, KeyError, AttributeError):
+            except (TypeError, ValueError, KeyError, AttributeError) as ex:
                 # Nothing found; set it to null.
                 value = None
 
