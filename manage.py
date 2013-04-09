@@ -4,27 +4,16 @@ from __future__ import print_function, unicode_literals, division
 import argparse
 import os
 import sys
+import contextlib
 
 
-class RedirectOutput:
-
-    def __init__(self, stdout=None):
-        self.stdout = self._stdout = stdout
-
-    def __enter__(self):
-        if self._stdout is None:
-            self.stdout = open(os.devnull, 'w')
-
-        self.old_stdout = sys.stdout
-        self.old_stdout.flush()
-        sys.stdout = self.stdout
-
-    def __exit__(self, *args, **kwargs):
-        self.stdout.flush()
-        sys.stdout = self.old_stdout
-
-        if self._stdout is None:
-            self.stdout.close()
+@contextlib.contextmanager
+def redirect_output():
+    stdout = sys.stdout
+    sys.stdout = open(os.devnull, 'wb')
+    yield None  # Executing the inner block.
+    sys.stdout.close()
+    sys.stdout = stdout
 
 
 def run(connector):
@@ -33,15 +22,16 @@ def run(connector):
         module = 'tests.{}.settings'.format(connector)
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", module)
 
-        # Initialize the database tables.
-        with RedirectOutput():
-            from django.db import connections, DEFAULT_DB_ALIAS
-            connection = connections[DEFAULT_DB_ALIAS]
-            connection.creation.create_test_db()
-
-        # Install the test fixture.
+        # Initialize the database tables and install the test fixtures.
         from django.core.management import call_command
-        call_command('loaddata', 'test', verbosity=0, skip_validation=True)
+        with redirect_output():
+            call_command('syncdb', skip_validation=True, interactive=False)
+            call_command('loaddata', 'test', skip_validation=True)
+
+    # Let the world know.
+    print('Armet version 0.3.0-pre')
+    print('Development server is running at http://127.0.0.1:5000/')
+    print('Quit the server with CONTROL-C.')
 
     if connector.startswith('django'):
         # Run the development server.
@@ -71,5 +61,10 @@ if __name__ == '__main__':
     if connector == 'django':
         connector = 'django_django'
 
-    # Run the appropriate command.
-    globals()[arguments.command](connector)
+    try:
+        # Run the appropriate command.
+        globals()[arguments.command](connector)
+
+    except KeyboardInterrupt:
+        # Closing the connection.
+        pass

@@ -9,19 +9,9 @@ def setup():
     # Install the WSGI interception layer on top of httplib2.
     install()
 
-    # Ensure the settings are pointed to correctly.
-    # Ensure the settings are pointed to correctly.
-    module = 'tests.{}.settings'.format('django_django')
-    os.environ["DJANGO_SETTINGS_MODULE"] = module
-
-    # Initialize the database tables.
-    from django.db import connections, DEFAULT_DB_ALIAS
-    connection = connections[DEFAULT_DB_ALIAS]
-    connection.creation.create_test_db()
-
-    # Install the test fixture.
-    from django.core.management import call_command
-    call_command('loaddata', 'test', verbosity=0, skip_validation=True)
+    # Initialize the database access layer.
+    from ..utils import django
+    django.initialize('django_django')
 
     # Set the WSGI application to intercept to.
     from django.core.wsgi import get_wsgi_application
