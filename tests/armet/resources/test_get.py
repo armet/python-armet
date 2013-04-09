@@ -13,7 +13,8 @@ class GetTestCase(test.TestCase):
 
         self.assertIsInstance(content, list)
         self.assertEqual(len(content), 100)
-        self.assertEqual(content[0]['question'],
-            'Are you an innie or an outie?')
-        self.assertEqual(content[-1]['question'],
+        self.assertEqual(
+            content[0]['question'], 'Are you an innie or an outie?')
+        self.assertEqual(
+            content[-1]['question'],
             'What one question would you add to this survey?')

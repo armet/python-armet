@@ -48,7 +48,6 @@ def run(connector):
 
 if __name__ == '__main__':
     # Extend our python path with armet.
-    import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
     # Initialize and add arguments to the argument parser.

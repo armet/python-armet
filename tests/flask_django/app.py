@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 from flask import Flask
-import armet
-from armet import resources
 
 
 # Instantiate the flask application.
