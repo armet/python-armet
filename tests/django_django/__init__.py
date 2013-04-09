@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import wsgi_intercept
-import os
 from wsgi_intercept.httplib2_intercept import install
 
 
