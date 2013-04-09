@@ -140,7 +140,7 @@ class Attribute(object):
 
     def prepare(self, value):
         """Prepares the value for serialization."""
-        return value
+        return str(value)
 
     def clean(self, value):
         """Cleans the value in preparation for deserialization."""
@@ -193,3 +193,16 @@ class BooleanAttribute(Attribute):
         # Neither true or false matches; return a boolifyed version of
         # whatever we have.
         return bool(value)
+
+
+class IntegerAttribute(Attribute):
+    """Represents an integer; serialzied as a python integer.
+    """
+
+    def clean(self, value):
+        if isinstance(value, six.string_types):
+            # Strip the string of whitespace
+            value = value.strip()
+
+        # Coerce whatever we have as an int.
+        return int(value)

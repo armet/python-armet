@@ -164,8 +164,16 @@ class Resource(object):
             If this is being accessed as a list of resources however the slug
             is None.
         """
+        # Store the given request object.
         self.request = request
+
+        # Update our instance dictionary with the arugments from `parse`.
         self.__dict__.update(**kwargs)
+
+        if self.slug:
+            # Clean the incoming slug value from the URI, if any.
+            self.slug = self.meta.slug.clean(self.slug)
+            self.slug = self.slug_clean(self.slug)
 
     @property
     def http_allowed_methods(self):
@@ -260,6 +268,14 @@ class Resource(object):
 
         # Return the resultant object.
         return obj
+
+    def slug_prepare(self, obj, value):
+        """Prepares the slug for constructing a URI."""
+        return value
+
+    def slug_clean(self, value):
+        """Cleans the incoming slug into an expected represention."""
+        return value
 
     def encode(self, data):
         """Encodes the data using a selected encoder."""

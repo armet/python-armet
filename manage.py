@@ -39,6 +39,10 @@ def run(connector):
             connection = connections[DEFAULT_DB_ALIAS]
             connection.creation.create_test_db()
 
+        # Install the test fixture.
+        from django.core.management import call_command
+        call_command('loaddata', 'test', verbosity=0, skip_validation=True)
+
     if connector.startswith('django'):
         # Run the development server.
         from django.core.servers import basehttp

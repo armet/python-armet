@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import wsgi_intercept
+import os
 from wsgi_intercept.httplib2_intercept import install
 
 
@@ -9,9 +10,9 @@ def setup():
     install()
 
     # Ensure the settings are pointed to correctly.
-    from django.conf import settings, Settings
-    settings._wrapped = Settings('tests.django_django.settings')
-    settings._configure_logging()
+    # Ensure the settings are pointed to correctly.
+    module = 'tests.{}.settings'.format('django_django')
+    os.environ["DJANGO_SETTINGS_MODULE"] = module
 
     # Initialize the database tables.
     from django.db import connections, DEFAULT_DB_ALIAS

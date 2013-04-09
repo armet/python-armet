@@ -4,6 +4,7 @@ import re
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
+from armet.http import exceptions
 from .http import Request, Response
 
 
@@ -57,4 +58,19 @@ class ModelResource(object):
     """
 
     def read(self):
-        return self.meta.model.objects.all()
+        # Initialize the queryset to the model manager.
+        queryset = self.meta.model.objects
+
+        if self.slug is not None:
+            name = self.meta.slug.path.replace('.', '__')
+            try:
+                # Attempt to filter out and retrieve the specific
+                # item referenced by the slug.
+                return queryset.get(**{name: self.slug})
+
+            except:
+                # We found nothing; return Not Found - 404.
+                raise exceptions.NotFound()
+
+        # Return the entire queryset.
+        return queryset.all()
