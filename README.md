@@ -31,7 +31,7 @@ its model one as well).
 
 ### Request / response (http)
 
-#### [django](https://www.djangoproject.com/)
+#### [Django](https://www.djangoproject.com/)
 > The Web framework for perfectionists (with deadlines).
 > Django makes it easier to build better Web apps more quickly and
 > with less code.
@@ -54,7 +54,7 @@ urlpatterns += patterns('',
 )
 ```
 
-#### [flask](http://flask.pocoo.org/)
+#### [Flask](http://flask.pocoo.org/)
 > Flask is a microframework for Python based on Werkzeug,
 > Jinja 2 and good intentions.
 
@@ -80,7 +80,7 @@ class Resource(resources.Resource):
 
 ### Database access (model)
 
-#### [django](https://www.djangoproject.com/)
+#### [Django](https://www.djangoproject.com/)
 > The Web framework for perfectionists (with deadlines).
 Django makes it easier to build better Web apps more quickly and with less code.
 
