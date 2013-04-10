@@ -23,6 +23,10 @@ test_dependencies = (
 
     # The Web framework for perfectionists with deadlines.
     'django',
+
+    # Django Extensions is a collection of custom extensions for the
+    # Django Framework.
+    'django-extensions',
 )
 
 
