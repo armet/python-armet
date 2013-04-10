@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 from flask import Flask
+from ..django import models
+import armet
+from armet import resources
+from armet.resources import attributes
 
 
 # Instantiate the flask application.
@@ -13,16 +17,61 @@ application = Flask(__name__)
 application.url_map.strict_slashes = False
 
 
-# Mount our resources manually.
-# We could do @armet.route(application, '/api/')
-# We should propbably test that method.
-from tests.flask_django import api
-api.PollResource.mount(application, '/api/')
-api.SimpleResource.mount(application, '/api/')
-api.HttpWholeForbiddenResource.mount(application, '/api/')
-api.HttpForbiddenResource.mount(application, '/api/')
-api.WholeForbiddenResource.mount(application, '/api/')
-api.ForbiddenResource.mount(application, '/api/')
+class Meta:
+    connectors = {
+        'http': 'flask',
+        'model': 'django'
+    }
+
+
+@armet.route(application, '/api/')
+class SimpleResource(resources.Resource):
+
+    class Meta(Meta):
+        pass
+
+    def read(self):
+        return None
+
+
+@armet.route(application, '/api/')
+class PollResource(resources.ModelResource):
+
+    class Meta(Meta):
+        model = models.Poll
+
+    id = attributes.Attribute('id')
+    question = attributes.Attribute('question')
+
+
+@armet.route(application, '/api/')
+class HttpWholeForbiddenResource(resources.Resource):
+
+    class Meta(Meta):
+        http_allowed_methods = ('GET', 'DELETE',)
+
+
+@armet.route(application, '/api/')
+class HttpForbiddenResource(resources.Resource):
+
+    class Meta(Meta):
+        http_list_allowed_methods = ('DELETE',)
+        http_detail_allowed_methods = ('GET',)
+
+
+@armet.route(application, '/api/')
+class WholeForbiddenResource(resources.Resource):
+
+    class Meta(Meta):
+        allowed_operations = ('read', 'destroy',)
+
+
+@armet.route(application, '/api/')
+class ForbiddenResource(resources.Resource):
+
+    class Meta(Meta):
+        list_allowed_operations = ('destroy',)
+        detail_allowed_operations = ('read',)
 
 
 def main():
