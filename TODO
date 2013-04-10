@@ -27,12 +27,13 @@
      ☐ simple: /poll/1/question
      ☐ relation: /poll/1/choice
      ☐ proxy: /poll/1/pub-date/year
-     ☐ pagination: /poll/1-5,-1
-     ☐ pluck: /poll/choice
-     ☐ attribute select: /poll/question,choice
+     ☐ pagination: /poll/1-5,-1 — /poll/4
+     ☐ pluck: /poll/choice — /poll/1-5/choice
+     ☐ attribute select: /poll/question,choice — /poll/1/question,choice
      ☐ resource select: /poll,choice
-     ☐ query: /poll(is-closed)
-     ☐ sorting: /poll:? — /poll:rand — /poll(question:+) — /poll(question:descending)
+     ☐ query: /poll(is-closed=true)
+     ☐ sorting: /poll:? — /poll(question:+) — /poll(question:descending)
+     ☐ chain: /poll(is-closed=true)/choice/1-2/vote
  ☐ sorting ?:rand / ?question:asc
  ☐ links
      ☐ self
