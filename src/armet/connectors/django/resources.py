@@ -17,7 +17,7 @@ class ResourceOptions(object):
 
 
 class Resource(object):
-    """Specializes the RESTFul abstract resource protocol for django.
+    """Specializes the RESTFul abstract resource protocol for Django.
 
     @note
         This is not what you derive from to create resources. Import
@@ -49,7 +49,7 @@ class Resource(object):
 
 
 class ModelResource(object):
-    """Specializes the RESTFul model resource protocol for django.
+    """Specializes the RESTFul model resource protocol for Django.
 
     @note
         This is not what you derive from to create resources. Import
