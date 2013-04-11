@@ -204,5 +204,10 @@ class IntegerAttribute(Attribute):
             # Strip the string of whitespace
             value = value.strip()
 
-        # Coerce whatever we have as an int.
-        return int(value)
+        try:
+            # Attempt to coerce whatever we have as an int.
+            return int(value)
+
+        except ValueError:
+            # Failed to do so.
+            return None

@@ -32,7 +32,7 @@ class Resource(object):
     @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
         # Initiate the base view request cycle.
-        path = re.sub(r'^/(.+)$', r'\1', kwargs.get('path', ''))
+        path = kwargs.get('path', '')
         response = super(Resource, cls).view(Request(request), path)
 
         # Construct an HTTP response and return it.

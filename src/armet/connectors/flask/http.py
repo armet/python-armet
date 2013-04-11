@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from armet.http.request import Request
-from armet.http.response import Response
+from armet import http
 from flask import request
 from flask.globals import current_app
 from werkzeug.wsgi import get_current_url
 
 
-class Request(Request):
+class Request(http.Request):
     """Implements the RESTFul request abstraction for flask.
     """
 
     @property
     def method(self):
-        override = self.get('X-Http-Method-Override')
-        return override.upper() if override else request.method
+        return request.method
+
+    @method.setter
+    def method(self, value):
+        request.environ['REQUEST_METHOD'] = value.upper()
 
     @property
     def url(self):
@@ -42,7 +44,7 @@ class Request(Request):
         return name in request.headers
 
 
-class Response(Response):
+class Response(http.Response):
     """Implements the RESTFul response abstraction for flask.
     """
 

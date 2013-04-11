@@ -57,3 +57,11 @@
  ☐ POST
  ☐ HEAD
  ☐ OPTIONS
+ ☐ connectors
+     ☐ cyclone (http)
+     ☐ bottle (http)
+     ☐ pyramid (http)
+     ☐ tornado (http)
+     ☐ web2py (http & model)
+     ☐ sqlalchemy (model) + elixir (model)
+     ☐ mongoengine (model)

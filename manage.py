@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals, division
 import argparse
 import os
 import sys
+import importlib
 
 
 #! Hostname at which to run the servers at.
@@ -12,6 +13,10 @@ HOST = 'localhost'
 
 #! Port at which to run the servers at.
 PORT = 5000
+
+
+#! HTTP connectors that are supported.
+SUPPORTED_HTTP = ('django', 'flask', 'bottle')
 
 
 def initialize(name):
@@ -27,10 +32,19 @@ def initialize(name):
         from django.core.management import call_command
         call_command('syncdb', verbosity=False, interactive=False)
 
+    else:
+        # No idea what you're trying to do here.
+        name = name.split('_')[1]
+        raise ValueError('{} is an unknown model connector'.format(name))
 
 def run(name):
     # Initialize the data access layer.
     initialize(name)
+
+    # Ensure this is one of the supported generater
+    connector = name.split('_')[0]
+    if connector not in SUPPORTED_HTTP:
+        raise ValueError('{} is an unknown http connector'.format(connector))
 
     # Let the world know.
     print('Armet version 0.3.0-pre\n'
@@ -38,7 +52,7 @@ def run(name):
           'Quit the server with CONTROL-C.')
 
     # Initialize the request / response layer.
-    if name.startswith('django'):
+    if connector == 'django':
         # Ensure the settings are pointed to correctly.
         os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.{}.settings'.format(name)
 
@@ -46,10 +60,16 @@ def run(name):
         from django.core.servers import basehttp
         basehttp.run(HOST, PORT, basehttp.get_internal_wsgi_application())
 
-    elif name.startswith('flask'):
+    elif connector == 'flask':
         # Run the development server.
-        from tests.flask_django import app
-        app.application.run(HOST, PORT)
+        module = importlib.import_module('tests.{}.app'.format(name))
+        module.application.run(HOST, PORT)
+
+    elif connector == 'bottle':
+        # Run the development server.
+        from bottle import run
+        module = importlib.import_module('tests.{}.app'.format(name))
+        run(module.application, host=HOST, port=PORT, debug=True)
 
 
 def shell(name):

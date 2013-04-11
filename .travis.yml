@@ -14,3 +14,4 @@ script:
   - nosetests tests/armet
   - nosetests tests/django_django
   - nosetests tests/flask_django
+  - nosetests tests/bottle_django

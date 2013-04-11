@@ -185,3 +185,10 @@ Django makes it easier to build better Web apps more quickly and with less code.
 **Armet** is maintained with all tests passing at all times. If you find
 a failure, please [report it](https://github.com/armet/python-armet/issues/new)
 along with the version.
+
+## License
+Unless otherwise noted, all files contained within this project are liensed
+under the MIT opensource license. See the included file LICENSE or visit
+[opensource.org][] for more information.
+
+[opensource.org]: http://opensource.org/licenses/MIT

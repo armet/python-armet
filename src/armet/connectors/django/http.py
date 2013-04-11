@@ -32,8 +32,11 @@ class Request(request.Request):
 
     @property
     def method(self):
-        override = self.get('X-Http-Method-Override')
-        return override.upper() if override else self.handle.method
+        return self.handle.method
+
+    @method.setter
+    def method(self, value):
+        self.handle.method = value.upper()
 
     @property
     def url(self):

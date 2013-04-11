@@ -18,6 +18,14 @@ class AccessTestCase(test.TestCase):
         location = response.get('location')
         self.assertEqual(location, 'http://localhost:5000/api/simple/')
 
+    def test_override(self):
+        response, _ = self.client.request('/api/simple/', 'CONNECT',
+            headers={
+                'X-HTTP-Method-Override': 'GET'
+            })
+
+        self.assertEqual(response.status, http.client.OK)
+
     def test_http_whole_forbidden(self):
         response, _ = self.client.request(
             '/api/http-whole-forbidden/', 'POST')
