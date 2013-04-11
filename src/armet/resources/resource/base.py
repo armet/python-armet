@@ -68,6 +68,12 @@ class Resource(object):
             Dictionary of request headers normalized to have underscores and
             be uppercased.
         """
+        # Determine the HTTP method; apply the override header
+        # if present.
+        override = request.get('X-Http-Method-Override')
+        if override:
+            request.method = override.upper()
+
         # Determine if we need to redirect.
         if cls.meta.trailing_slash and not path.endswith('/'):
             # We should redirect if the path doesn't end in '/'.
@@ -131,10 +137,12 @@ class Resource(object):
 
     #! Precompiled regular expression used to parse out the path.
     _parse_pattern = re.compile(
-        r'^(?:\((?P<query>[^/]*?)\))?'
-        r'(?:(?P<slug>[^/]+?))?'
+        r'^'
+        r'(?:\:(?P<directives>[^/\(\)]*))?'
+        r'(?:\((?P<query>[^/]*)\))?'
+        r'(?:/(?P<slug>[^/]+?))?'
         r'(?:/(?P<path>.+?))??'
-        r'(?:\.(?P<extension>[^/]+?))??$')
+        r'(?:\.(?P<extensions>[^/]+?))??$')
 
     @classmethod
     def parse(cls, path):
@@ -143,7 +151,25 @@ class Resource(object):
         path = re.sub(r'/$', r'', path or '')
 
         # Apply the compiled regex.
-        return re.match(cls._parse_pattern, path).groupdict()
+        # import ipdb; ipdb.set_trace()
+        arguments = re.match(cls._parse_pattern, path).groupdict()
+
+        # Explode the list arguments; they should be represented as
+        # empty arrays and not None.
+        if arguments['extensions']:
+            arguments['extensions'] = arguments['extensions'].split('.')
+
+        else:
+            arguments['extensions'] = []
+
+        if arguments['directives']:
+            arguments['directives'] = arguments['directives'].split(':')
+
+        else:
+            arguments['directives'] = []
+
+        # Return the arguments
+        return arguments
 
     @classmethod
     def traverse(cls, arguments):
@@ -200,19 +226,26 @@ class Resource(object):
 
     def make_response(self, data, status=http.client.OK):
         """Constructs a response object from the passed data."""
-        # Initialize the response object.
-        response = self.response(status=status)
-
         # Prepare the data for transmission.
         data = self.prepare(data)
 
         # Encode the data using a desired encoder.
-        data = self.encode(data)
+        encoder, data = self.encode(data)
 
-        # Write the encoded and prepared data to the response.
-        response.content = data
+        if isinstance(data, self.response):
+            # Set the response object to use.
+            response = data
 
-        # TODO: Generate appropriate headers.
+        else:
+            # Initialize the response object.
+            response = self.response(status=status)
+
+            # Set the appropriate headers.
+            response['Content-Type'] = encoder.mimetype
+            response['Content-Length'] = len(bytes(data))
+
+            # Write the encoded and prepared data to the response.
+            response.content = data
 
         # Return the built response.
         return response
@@ -287,11 +320,10 @@ class Resource(object):
             # Default the accept header to */*
             accept = '*/*'
 
-        if self.extension:
-            # An explicit format was specified as an extension
-            name = self.extension.lower()
-            match = None
-            if name in self.meta.allowed_encoders:
+        allowed = self.meta.allowed_encoders
+        if self.extensions and self.extensions[-1] in allowed:
+            name = self.extensions[-1].lower()
+            if name in allowed:
                 match = self.meta.encoders[name]
             if match is not None and match.can_transcode(accept):
                 # An encoder of the same name was discovered and
@@ -302,7 +334,7 @@ class Resource(object):
             # No specific format specified in the URL; iterate through
             # encoders until one matches the specification defined
             # in the Accept header.
-            for name in self.meta.allowed_encoders:
+            for name in allowed:
                 match = self.meta.encoders[name]
                 if match.can_transcode(accept):
                     # An encoder has matched to the format.
@@ -316,7 +348,7 @@ class Resource(object):
         if encoder:
             try:
                 # Attempt to encode the data using the determined encoder.
-                return encoder(accept, self.response).encode(data)
+                return encoder, encoder(accept, self.response).encode(data)
 
             except ValueError:
                 # Failed to encode the data.

@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import importlib
-
-
-__all__ = [
-]
 
 
 def is_available(*capacities):
@@ -14,7 +9,7 @@ def is_available(*capacities):
     """
     try:
         # Attempted import.
-        importlib.import_module('django')
+        import django  # flake8: noqa
 
     except ImportError:
         # Failed to import django
@@ -25,7 +20,7 @@ def is_available(*capacities):
 
     try:
         # Now try and use it.
-        conf = importlib.import_module('django.conf')
+        from django import conf
         conf.settings.DEBUG
 
         # Detected connector.

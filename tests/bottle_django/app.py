@@ -1,25 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from __future__ import absolute_import
-from flask import Flask
-from ..django import models
-import armet
-from armet import resources
+from armet import resources, route
 from armet.resources import attributes
+from ..django import models
+import bottle
 
+# Instantiate the bottle application.
+bottle.default_app.push()
 
-# Instantiate the flask application.
-application = Flask(__name__)
-
-
+# Configure armet globally to use the appropriate connectors.
 class Meta:
-    connectors = {
-        'http': 'flask',
-        'model': 'django'
-    }
+    connectors = {'http': 'bottle', 'model': 'django'}
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class SimpleResource(resources.Resource):
 
     class Meta(Meta):
@@ -29,7 +24,7 @@ class SimpleResource(resources.Resource):
         return None
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class PollResource(resources.ModelResource):
 
     class Meta(Meta):
@@ -39,14 +34,14 @@ class PollResource(resources.ModelResource):
     question = attributes.Attribute('question')
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class HttpWholeForbiddenResource(resources.Resource):
 
     class Meta(Meta):
         http_allowed_methods = ('GET', 'DELETE',)
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class HttpForbiddenResource(resources.Resource):
 
     class Meta(Meta):
@@ -54,14 +49,14 @@ class HttpForbiddenResource(resources.Resource):
         http_detail_allowed_methods = ('GET',)
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class WholeForbiddenResource(resources.Resource):
 
     class Meta(Meta):
         allowed_operations = ('read', 'destroy',)
 
 
-@armet.route(application, '/api/')
+@route('/api/')
 class ForbiddenResource(resources.Resource):
 
     class Meta(Meta):
@@ -69,10 +64,5 @@ class ForbiddenResource(resources.Resource):
         detail_allowed_operations = ('read',)
 
 
-def main():
-    # Run the application server.
-    application.run(host='127.0.0.1', port=5000)
-
-
-if __name__ == '__main__':
-    main()
+# Retrieve and store the configured bottle application.
+application = bottle.default_app.pop()

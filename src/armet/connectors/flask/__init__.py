@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import importlib
-
-
-__all__ = [
-    b'route',
-]
 
 
 def is_available(*capacities):
@@ -15,7 +9,7 @@ def is_available(*capacities):
     """
     try:
         # Attempted import
-        importlib.import_module('flask')
+        import flask  # flake8: noqa
 
         # TODO: Add additional checks to assert that flask is actually
         #   in use and available.
@@ -26,7 +20,3 @@ def is_available(*capacities):
     except ImportError:
         # Failed to import.
         return False
-
-
-if is_available('http'):
-    from .utils import route  # flake8: noqa

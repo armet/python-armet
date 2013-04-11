@@ -21,3 +21,7 @@ except AttributeError:
     client.TOO_MANY_REQUESTS = 429
     client.REQUEST_HEADER_FIELDS_TOO_LARGE = 431
     client.NETWORK_AUTHENTICATION_REQUIRED = 511
+
+# Import request and response classes into the root level of the package.
+from .request import Request
+from .response import Response

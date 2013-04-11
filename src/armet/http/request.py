@@ -40,7 +40,8 @@ class Request(collections.Mapping):
 
     @abc.abstractproperty
     def method(self):
-        """Retrieves the method of the request.
+        """Retrieves the method of the request."""
 
-        This must account for X-Http-Method-Override header, if set.
-        """
+    @method.setter
+    def method(self, value):
+        """Set the method of the request."""
