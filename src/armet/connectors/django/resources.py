@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import re
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils

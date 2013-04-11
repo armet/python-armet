@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import six
-import unittest
 import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
 

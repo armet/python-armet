@@ -9,6 +9,7 @@ import bottle
 # Instantiate the bottle application.
 bottle.default_app.push()
 
+
 # Configure armet globally to use the appropriate connectors.
 class Meta:
     connectors = {'http': 'bottle', 'model': 'django'}

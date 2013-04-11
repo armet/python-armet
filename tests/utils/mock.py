@@ -4,7 +4,6 @@ from __future__ import absolute_import
 import mock
 import contextlib
 import importlib
-import functools
 
 
 class Wrapper:

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import re
 from flask import request
 from werkzeug.routing import BaseConverter
 from .http import Request, Response

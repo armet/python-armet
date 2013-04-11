@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-from armet import http, test
+from armet import test
 from tests.utils.mock import spy
 
 
