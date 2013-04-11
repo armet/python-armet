@@ -97,6 +97,10 @@ class Resource(resources.Resource):
 > The Web framework for perfectionists (with deadlines).
 Django makes it easier to build better Web apps more quickly and with less code.
 
+#### [SQLAlchemy](http://www.sqlalchemy.org/)
+> SQLAlchemy is the Python SQL toolkit and Object Relational Mapper that 
+gives application developers the full power and flexibility of SQL.
+
 ## Installation
 
 ### Automated
