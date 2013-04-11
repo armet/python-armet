@@ -14,7 +14,7 @@ test_dependencies = (
     'nose',
 
     # Run various test configurations against a single package of tests.
-    'nose-interface',
+    'nose-interface == 0.1.0',
 
     # Colorized output for the test runner.
     'yanc',
