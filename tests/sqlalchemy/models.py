@@ -12,3 +12,9 @@ class Poll(Base):
     __tablename__ = 'polls'
     id = Column(Integer, primary_key=True)
     question = Column(String)
+
+
+# Instantiate the engine used to access said models.
+# TODO: This should be configurable by a cfg file or other.
+from sqlalchemy import create_engine
+engine = create_engine('sqlite:///db.sqlite3')

@@ -62,10 +62,6 @@ class Attribute(object):
                 # The descriptor is callable.
                 return lambda o, x=obj.__call__: x(o)
 
-            if hasattr(obj, '__get__'):
-                # This is a data descriptor.
-                return lambda o, x=obj.__get__: x(o)
-
         else:
             # Check for another kind of descriptor.
             descriptor = cls.__dict__.get(path)
