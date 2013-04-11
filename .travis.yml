@@ -15,3 +15,6 @@ script:
   - nosetests django_django
   - nosetests flask_django
   - nosetests bottle_django
+  - nosetests django_sqlalchemy
+  - nosetests flask_sqlalchemy
+  - nosetests bottle_sqlalchemy

@@ -34,6 +34,10 @@ test_dependencies = (
 
     # Bottle is a fast and simple micro-framework for small web applications.
     'bottle',
+
+    # SQLAlchemy is the Python SQL toolkit and Object Relational Mapper
+    # that gives application developers the full power and flexibility of SQL.
+    'sqlalchemy',
 )
 
 
