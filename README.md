@@ -60,7 +60,6 @@ urlpatterns += patterns('',
 
 ```python
 # Initialize the flask application.
-# See http://flask.pocoo.org/ for more information.
 from flask import Flask
 app = Flask(__name__)
 
@@ -74,8 +73,22 @@ class Resource(resources.Resource):
             'http': 'flask',
             # ... [additional connectors]
         }
+```
 
-# ... [remainder of code to start the application]
+#### [Bottle](http://bottlepy.org/docs/dev/)
+> Bottle is a fast, simple and lightweight 
+> WSGI micro web-framework for Python.
+
+```python
+from armet import resources, route
+
+@route('/api/')
+class Resource(resources.Resource):
+    class Meta:
+        connectors = {
+            'http': 'bottle',
+            # ... [additional connectors]
+        }
 ```
 
 ### Database access (model)
