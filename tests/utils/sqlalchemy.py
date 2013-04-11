@@ -9,7 +9,8 @@ import json
 def _model_from_table(base, name):
     """Retreives the model class from the table name."""
     for _, cls in six.iteritems(base._decl_class_registry):
-        if issubclass(cls, base) and cls.__table__.name == name:
+        if (isinstance(cls, type) and issubclass(cls, base) and
+                cls.__table__.name == name):
             return cls
 
 
@@ -17,7 +18,7 @@ def load(filename, base, engine):
     """Loads the passed fixture into the database."""
     with open(filename, 'rb') as stream:
         # Read the binary data into text
-        content = stream.read()
+        content = stream.read().decode('utf-8')
 
     # Decode the data as JSON
     data = json.loads(content)
