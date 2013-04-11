@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from __future__ import absolute_import
-import mock
 import contextlib
 import importlib
+import sys
+
+
+if sys.version_info[0] == 2 or sys.version_info[1] < 3:
+    # Mock is only provided in >= python 3.3
+    import mock
+
+else:
+    from unittest import mock
 
 
 class Wrapper:
