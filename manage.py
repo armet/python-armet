@@ -37,6 +37,7 @@ def initialize(name):
         name = name.split('_')[1]
         raise ValueError('{} is an unknown model connector'.format(name))
 
+
 def run(name):
     # Initialize the data access layer.
     initialize(name)

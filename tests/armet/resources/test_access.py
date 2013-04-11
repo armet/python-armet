@@ -19,8 +19,8 @@ class AccessTestCase(test.TestCase):
         self.assertEqual(location, 'http://localhost:5000/api/simple/')
 
     def test_override(self):
-        response, _ = self.client.request('/api/simple/', 'CONNECT',
-            headers={
+        response, _ = self.client.request(
+            '/api/simple/', 'CONNECT', headers={
                 'X-HTTP-Method-Override': 'GET'
             })
 

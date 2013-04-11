@@ -23,5 +23,5 @@ except AttributeError:
     client.NETWORK_AUTHENTICATION_REQUIRED = 511
 
 # Import request and response classes into the root level of the package.
-from .request import Request
-from .response import Response
+from .request import Request  # flake8: noqa
+from .response import Response  # flake8: noqa
