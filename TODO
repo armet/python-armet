@@ -59,7 +59,7 @@
  ☐ OPTIONS
  ☐ connectors
      ☐ cyclone (http)
-     ☐ bottle (http)
+     ✔ bottle (http) @done (13-04-11 04:35)
      ☐ pyramid (http)
      ☐ tornado (http)
      ☐ web2py (http & model)
