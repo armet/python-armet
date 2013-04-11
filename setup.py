@@ -69,7 +69,7 @@ setup(
     dependency_links=(
         'git+git://github.com/concordusapps/wsgi-intercept.git'
             '#egg=wsgi_intercept-0.6.0',
-        'git://github.com/concordusapps/nose-interface.git'
+        'git+git://github.com/concordusapps/nose-interface.git'
             '#egg=nose-interface-0.1.0'
     ),
     install_requires=(
