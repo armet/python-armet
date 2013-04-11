@@ -11,7 +11,7 @@ install:
 
 # Run tests
 script:
-  - nosetests tests/armet
-  - nosetests tests/django_django
-  - nosetests tests/flask_django
-  - nosetests tests/bottle_django
+  - nosetests armet
+  - nosetests django_django
+  - nosetests flask_django
+  - nosetests bottle_django
