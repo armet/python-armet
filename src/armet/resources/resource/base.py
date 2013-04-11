@@ -242,7 +242,7 @@ class Resource(object):
 
             # Set the appropriate headers.
             response['Content-Type'] = encoder.mimetype
-            response['Content-Length'] = len(bytes(data))
+            response['Content-Length'] = len(data.encode('utf-8'))
 
             # Write the encoded and prepared data to the response.
             response.content = data
