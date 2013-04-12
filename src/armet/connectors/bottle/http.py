@@ -38,6 +38,10 @@ class Request(http.Request):
         parts['path'] = value
         bottle.request.environ[key] = UrlSplitResult(**parts)
 
+    @property
+    def query(self):
+        return bottle.request.query_string
+
     def __getitem__(self, name):
         return bottle.request.headers.get(name)
 

@@ -2,6 +2,7 @@
 from __future__ import print_function, unicode_literals, division
 from armet.exceptions import ImproperlyConfigured
 from armet.http import exceptions
+# from armet.resources.query import Query
 
 
 class ModelResourceOptions(object):
@@ -33,6 +34,9 @@ class ModelResource(object):
         # Instantiate a session using our session object.
         self.session = self.meta.session()
 
+    # def filter(self, iterable, query):
+    #     return iterable
+
     def read(self):
         # Initialize the queryset to the model manager.
         # queryset = self.meta.model.objects
@@ -54,6 +58,17 @@ class ModelResource(object):
 
             # We found nothing; return Not Found - 404.
             raise exceptions.NotFound()
+
+        # else:
+        #     # The slug is not none; the resource is being accessed
+        #     # as a resource (eg. GET /poll).
+
+        #     if self.request.query:
+        #         # The request has a query (eg. GET /poll?...).
+        #         # Send it off to the query string parser and then
+        #         # off to the filterer to construct the appropriate expression
+        #         # and filter our queryable.
+        #         queryset = self.filter(queryset, Query(self.requset.query))
 
         # Return the entire queryset.
         return queryset.all()

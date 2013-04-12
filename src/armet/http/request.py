@@ -45,3 +45,7 @@ class Request(collections.Mapping):
     @method.setter
     def method(self, value):
         """Set the method of the request."""
+
+    @abc.abstractproperty
+    def query(self):
+        """Retreives the value of the query string."""
