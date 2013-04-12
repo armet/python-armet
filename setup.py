@@ -16,8 +16,8 @@ test_dependencies = (
     # Run various test configurations against a single package of tests.
     'nose-interface == 0.1.0',
 
-    # Colorized output for the test runner.
-    'yanc',
+    # Run various test packages as subprocesses for isolation.
+    'nose-subprocess == 0.2.0',
 
     # Installs a WSGI application in place of a real URI for testing.
     'wsgi_intercept == 0.6.0',
@@ -28,8 +28,8 @@ test_dependencies = (
     # The Web framework for perfectionists with deadlines.
     'django',
 
-    # Django Extensions is a collection of custom extensions for the
-    # Django Framework.
+    # Provides various utilities for managing django. Currently shell_plus
+    # is in use inside `manage.py`.
     'django-extensions',
 
     # Bottle is a fast and simple micro-framework for small web applications.
@@ -74,7 +74,9 @@ setup(
         'git+git://github.com/concordusapps/wsgi-intercept.git'
             '#egg=wsgi_intercept-0.6.0',
         'git+git://github.com/concordusapps/nose-interface.git'
-            '#egg=nose-interface-0.1.0'
+            '#egg=nose-interface-0.1.0',
+        'git+git://github.com/concordusapps/nose-subprocess.git'
+            '#egg=nose-subprocess-0.1.1'
     ),
     install_requires=(
         # Python 2 and 3 normalization layer
