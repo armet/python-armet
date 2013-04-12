@@ -54,4 +54,4 @@ class Encoder(transcoders.Json, Encoder):
             obj = [obj]
 
         # Encode and return the resultant text.
-        return json.dumps(obj, **self.options)
+        return super(Encoder, self).encode(json.dumps(obj, **self.options))
