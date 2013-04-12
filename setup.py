@@ -76,7 +76,7 @@ setup(
         'git+git://github.com/concordusapps/nose-interface.git'
             '#egg=nose-interface-0.1.0',
         'git+git://github.com/concordusapps/nose-subprocess.git'
-            '#egg=nose-subprocess-0.1.1'
+            '#egg=nose-subprocess-0.2.0'
     ),
     install_requires=(
         # Python 2 and 3 normalization layer
