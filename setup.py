@@ -17,7 +17,7 @@ test_dependencies = (
     'nose-interface == 0.1.0',
 
     # Run various test packages as subprocesses for isolation.
-    'nose-subprocess == 0.1.0',
+    'nose-subprocess == 0.2.0',
 
     # Installs a WSGI application in place of a real URI for testing.
     'wsgi_intercept == 0.6.0',
@@ -76,7 +76,7 @@ setup(
         'git+git://github.com/concordusapps/nose-interface.git'
             '#egg=nose-interface-0.1.0',
         'git+git://github.com/concordusapps/nose-subprocess.git'
-            '#egg=nose-subprocess-0.1.0'
+            '#egg=nose-subprocess-0.1.1'
     ),
     install_requires=(
         # Python 2 and 3 normalization layer
