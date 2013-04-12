@@ -21,7 +21,7 @@ class Resource(object):
     """
 
     @classmethod
-    def redirect(cls, request, path):
+    def redirect(cls, request):
         """Redirect to the canonical URI for this resource.
 
         @note
@@ -48,11 +48,7 @@ class Resource(object):
             response.status = http.client.PERMANENT_REDIRECT
 
         # Calculate the path to redirect to and set it on the response.
-        if cls.meta.trailing_slash:
-            path += '/'
-        else:
-            del path[-1]
-        response['Location'] = path
+        response['Location'] = request.url
 
         # Return the response object.
         return response
@@ -72,6 +68,23 @@ class Resource(object):
             Dictionary of request headers normalized to have underscores and
             be uppercased.
         """
+        # Determine the HTTP method; apply the override header
+        # if present.
+        override = request.get('X-Http-Method-Override')
+        if override:
+            request.method = override.upper()
+
+        # Determine if we need to redirect.
+        if cls.meta.trailing_slash and not path.endswith('/'):
+            # We should redirect if the path doesn't end in '/'.
+            request.path += '/'
+            return cls.redirect(request)
+
+        elif not cls.meta.trailing_slash and path.endswith('/'):
+            # We should redirect if the path does end in '/'.
+            request.path = re.sub(r'/$', '', request.path)
+            return cls.redirect(request)
+
         try:
             # Parse any arguments out of the path.
             arguments = cls.parse(path)
@@ -124,16 +137,39 @@ class Resource(object):
 
     #! Precompiled regular expression used to parse out the path.
     _parse_pattern = re.compile(
-        r'^(?:\:(?P<query>[^/]+?))?'
-        r'(?:\:)?'
-        r'(?:/??(?P<slug>[^/]+?))?'
+        r'^'
+        r'(?:\:(?P<directives>[^/\(\)]*))?'
+        r'(?:\((?P<query>[^/]*)\))?'
+        r'(?:/(?P<slug>[^/]+?))?'
         r'(?:/(?P<path>.+?))??'
-        r'(?:\.(?P<extension>[^/]+?))??$')
+        r'(?:\.(?P<extensions>[^/]+?))??$')
 
     @classmethod
     def parse(cls, path):
         """Parses out parameters and separates them out of the path."""
-        return re.match(cls._parse_pattern, path or '').groupdict()
+        # Strip the trailing slash, if any.
+        path = re.sub(r'/$', r'', path or '')
+
+        # Apply the compiled regex.
+        # import ipdb; ipdb.set_trace()
+        arguments = re.match(cls._parse_pattern, path).groupdict()
+
+        # Explode the list arguments; they should be represented as
+        # empty arrays and not None.
+        if arguments['extensions']:
+            arguments['extensions'] = arguments['extensions'].split('.')
+
+        else:
+            arguments['extensions'] = []
+
+        if arguments['directives']:
+            arguments['directives'] = arguments['directives'].split(':')
+
+        else:
+            arguments['directives'] = []
+
+        # Return the arguments
+        return arguments
 
     @classmethod
     def traverse(cls, arguments):
@@ -154,8 +190,16 @@ class Resource(object):
             If this is being accessed as a list of resources however the slug
             is None.
         """
+        # Store the given request object.
         self.request = request
+
+        # Update our instance dictionary with the arugments from `parse`.
         self.__dict__.update(**kwargs)
+
+        if self.slug:
+            # Clean the incoming slug value from the URI, if any.
+            self.slug = self.meta.slug.clean(self.slug)
+            self.slug = self.slug_clean(self.slug)
 
     @property
     def http_allowed_methods(self):
@@ -180,20 +224,146 @@ class Resource(object):
             if operation not in operations:
                 raise exceptions.Forbidden()
 
-    def make_response(self, content, status=http.client.OK):
-        """Constructs a response object from the passed content."""
-        # Initialize the response object.
-        response = self.response(status=status)
+    def make_response(self, data, status=http.client.OK):
+        """Constructs a response object from the passed data."""
+        # Prepare the data for transmission.
+        data = self.prepare(data)
 
-        # DEBUG: Place the data directly in the resposne.
-        response.content = content
+        # Encode the data using a desired encoder.
+        encoder, data = self.encode(data)
 
-        # TODO: Prepare the data for transmission.
-        # TODO: Encode the data using a desired encoder.
-        # TODO: Generate appropriate headers.
+        if isinstance(data, self.response):
+            # Set the response object to use.
+            response = data
+
+        else:
+            # Initialize the response object.
+            response = self.response(status=status)
+
+            # Set the appropriate headers.
+            response['Content-Type'] = encoder.mimetype
+            response['Content-Length'] = len(data.encode('utf-8'))
+
+            # Write the encoded and prepared data to the response.
+            response.content = data
 
         # Return the built response.
         return response
+
+    def prepare(self, data):
+        """Prepares the data for encoding."""
+        if data is None:
+            # No data; return nothing.
+            return None
+
+        if (not isinstance(data, six.string_types) and
+                not isinstance(data, collections.Mapping)):
+            try:
+                # Attempt to prepare each item of the iterable (as long as
+                # we're not a string or some sort of mapping).
+                return (self.item_prepare(x) for x in data)
+
+            except TypeError:
+                # Not an iterable.
+                pass
+
+        # Prepare just the singular value and return.
+        return self.item_prepare(data)
+
+    def item_prepare(self, item):
+        """Prepares a single item for encoding."""
+        # Initialize the object that hold the resultant item.
+        obj = {}
+
+        # Iterate through the attributes and build the object
+        # from the item.
+        for name, attribute in six.iteritems(self.attributes):
+            if not attribute.include:
+                # Attribute is not to be included in the
+                # resource body.
+                continue
+
+            try:
+                # Apply the attribute; request the value of the
+                # attribute from the item.
+                value = attribute.get(item)
+
+            except (TypeError, ValueError, KeyError, AttributeError):
+                # Nothing found; set it to null.
+                value = None
+
+            # Run the attribute through the prepare cycle.
+            value = attribute.prepare(value)
+            value = self.preparers[name](self, item, value)
+
+            # Set the value on the object.
+            obj[name] = value
+
+        # Return the resultant object.
+        return obj
+
+    def slug_prepare(self, obj, value):
+        """Prepares the slug for constructing a URI."""
+        return value
+
+    def slug_clean(self, value):
+        """Cleans the incoming slug into an expected represention."""
+        return value
+
+    def encode(self, data):
+        """Encodes the data using a selected encoder."""
+        # Determine the appropriate encoder to use by reading
+        # the request object.
+        accept = self.request.get('Accept')
+        encoder = None
+        if not accept:
+            # Default the accept header to */*
+            accept = '*/*'
+
+        allowed = self.meta.allowed_encoders
+        if self.extensions and self.extensions[-1] in allowed:
+            name = self.extensions[-1].lower()
+            if name in allowed:
+                match = self.meta.encoders[name]
+            if match is not None and match.can_transcode(accept):
+                # An encoder of the same name was discovered and
+                # it matches the requested format.
+                encoder = match
+
+        elif accept.strip() != '*/*':
+            # No specific format specified in the URL; iterate through
+            # encoders until one matches the specification defined
+            # in the Accept header.
+            for name in allowed:
+                match = self.meta.encoders[name]
+                if match.can_transcode(accept):
+                    # An encoder has matched to the format.
+                    encoder = match
+                    break
+
+        else:
+            # Resort to the default encoder.
+            encoder = self.meta.encoders[self.meta.default_encoder]
+
+        if encoder:
+            try:
+                # Attempt to encode the data using the determined encoder.
+                return encoder, encoder(accept, self.response).encode(data)
+
+            except ValueError:
+                # Failed to encode the data.
+                pass
+
+        # Either failed to determine an encoder or failed to encode
+        # the data; construct a list of available and valid encoders.
+        available = {}
+        for name in self.meta.allowed_encoders:
+            encoder = self.meta.encoders[name]
+            if encoder(accept, self.response).can_encode(data):
+                available[name] = encoder.mimetype
+
+        # Raise a Not Acceptable exception.
+        raise exceptions.NotAcceptable(available)
 
     def dispatch(self):
         """Entry-point of the dispatch cycle for this resource.

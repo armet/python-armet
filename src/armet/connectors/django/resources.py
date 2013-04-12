@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals, division
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
+from armet.http import exceptions
 from .http import Request, Response
 
 
@@ -16,7 +17,7 @@ class ResourceOptions(object):
 
 
 class Resource(object):
-    """Specializes the RESTFul abstract resource protocol for django.
+    """Specializes the RESTFul abstract resource protocol for Django.
 
     @note
         This is not what you derive from to create resources. Import
@@ -28,44 +29,27 @@ class Resource(object):
 
     @classmethod
     @csrf.csrf_exempt
-    def redirect(cls, request, *args, **kwargs):
-        res = super(Resource, cls).redirect(Request(request), request.path)
-        request.path = res.handle['Location']
-        res.handle['Location'] = request.get_full_path()
-        return res.handle
-
-    @classmethod
-    @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
         # Initiate the base view request cycle.
-        # TODO: response will likely be a tuple containing headers, etc.
-        response = super(Resource, cls).view(
-            Request(request), kwargs.get('path'))
+        path = kwargs.get('path', '')
+        response = super(Resource, cls).view(Request(request), path)
 
         # Construct an HTTP response and return it.
         return response.handle
 
     @utils.classproperty
-    @utils.memoize_single
     def urls(cls):
         """Builds the URL configuration for this resource."""
-        view = cls.view if cls.meta.trailing_slash else cls.redirect
-        redirect = cls.redirect if cls.meta.trailing_slash else cls.view
-        url = lambda path, method: urls.url(
-            path.format(cls.meta.name),
-            method,
+        url = urls.url(
+            r'^{}(?P<path>.*)'.format(cls.meta.name),
+            cls.view,
             name=cls.meta.url_name,
             kwargs={'resource': cls.meta.name})
-        return urls.patterns(
-            '',
-            url(r'^{}(?P<path>.*)/', view),
-            url(r'^{}(?P<path>.*)', redirect),
-            url(r'^{}/', view),
-            url(r'^{}', redirect))
+        return urls.patterns('', url)
 
 
 class ModelResource(object):
-    """Specializes the RESTFul model resource protocol for django.
+    """Specializes the RESTFul model resource protocol for Django.
 
     @note
         This is not what you derive from to create resources. Import
@@ -73,7 +57,19 @@ class ModelResource(object):
     """
 
     def read(self):
-        # Serialize a simple queryset containing all models for now.
-        from django.core import serializers
-        queryset = self.meta.model.objects.all()
-        return serializers.serialize('json', queryset)
+        # Initialize the queryset to the model manager.
+        queryset = self.meta.model.objects
+
+        if self.slug is not None:
+            name = self.meta.slug.path.replace('.', '__')
+            try:
+                # Attempt to filter out and retrieve the specific
+                # item referenced by the slug.
+                return queryset.get(**{name: self.slug})
+
+            except:
+                # We found nothing; return Not Found - 404.
+                raise exceptions.NotFound()
+
+        # Return the entire queryset.
+        return queryset.all()

@@ -10,4 +10,11 @@ install:
   - 'pip install -e ".[test]" --use-mirrors'
 
 # Run tests
-script: nosetests
+script:
+  - nosetests armet
+  - nosetests django_django
+  - nosetests flask_django
+  - nosetests bottle_django
+  - nosetests django_sqlalchemy
+  - nosetests flask_sqlalchemy
+  - nosetests bottle_sqlalchemy

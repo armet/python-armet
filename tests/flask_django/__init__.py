@@ -13,6 +13,10 @@ def setup():
     # Install the WSGI interception layer.
     install()
 
+    # Initialize the database access layer.
+    from ..utils import django
+    django.initialize('django')
+
     # Set the WSGI application to intercept to.
     from .app import application
     wsgi_intercept.add_wsgi_intercept('localhost', 5000, lambda: application)
@@ -20,5 +24,4 @@ def setup():
 
 def teardown():
     # Uninstall the WSGI interception layer.
-    pass
-    # wsgi_intercept.remove_wsgi_intercept('localhost', 5000)
+    wsgi_intercept.remove_wsgi_intercept('localhost', 5000)

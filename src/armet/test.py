@@ -30,9 +30,9 @@ class Client:
         self.connection = httplib2.Http()
         self.connection.follow_redirects = False
 
-    def request(self, path='/', method='GET'):
+    def request(self, path='/', method='GET', headers=None):
         url = 'http://{}:{}{}'.format(self.host, self.port, path)
-        return self.connection.request(url, method)
+        return self.connection.request(url, method, headers=headers)
 
 
 class TestCase(unittest.TestCase):

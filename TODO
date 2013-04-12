@@ -1,0 +1,67 @@
+ ✔ prepare cycle @done (13-04-07 21:12)
+     ✔ item_prepare @done (13-04-07 21:12)
+     ✔ prepare_FOO @done (13-04-07 21:12)
+ ☐ encode
+     ✔ base @done (13-04-07 21:12)
+     ☐ json
+     ☐ xml
+     ☐ yaml
+     ☐ message pack (.pack)
+     ☐ stream (.stream)
+     ☐ form
+     ☐ url
+     ☐ text/plain
+     ☐ if the default encoder is not one of the available encoders; make it be the first of such
+ ☐ slug handling
+     ✔ pk @done (13-04-09 00:31)
+     ☐ custom
+ ☐ filtering
+     ☐ basic
+     ☐ and
+     ☐ or
+     ☐ grouping
+     ☐ not
+     ☐ relational
+ ☐ relations
+ ☐ traversal
+     ☐ simple: /poll/1/question
+     ☐ relation: /poll/1/choice
+     ☐ proxy: /poll/1/pub-date/year
+     ☐ pagination: /poll/1-5,-1 — /poll/4
+     ☐ pluck: /poll/choice — /poll/1-5/choice
+     ☐ attribute select: /poll/question,choice — /poll/1/question,choice
+     ☐ resource select: /poll,choice
+     ☐ query: /poll(is-closed=true)
+     ☐ sorting: /poll:? — /poll(question:+) — /poll(question:descending)
+     ☐ chain: /poll(is-closed=true)/choice/1-2/vote
+ ☐ sorting ?:rand / ?question:asc
+ ☐ links
+     ☐ self
+     ☐ canonical
+     ☐ item
+     ☐ collection
+     ☐ related
+     ☐ "attributes" (find a rel type)
+     ☐ schema
+ ☐ schema
+     ☐ JSON Schema
+     ☐ XSD (xml)
+     ☐ RX (yaml)
+ ☐ clean
+     ☐ item_clean
+     ☐ clean_FOO
+     ☐ validation errors
+ ☐ DELETE
+ ☐ PATCH
+ ☐ PUT
+ ☐ POST
+ ☐ HEAD
+ ☐ OPTIONS
+ ☐ connectors
+     ☐ cyclone (http)
+     ✔ bottle (http) @done (13-04-11 04:35)
+     ☐ pyramid (http)
+     ☐ tornado (http)
+     ☐ web2py (http & model)
+     ✔ sqlalchemy (model) @done (13-04-11 14:47)
+     ☐ mongoengine (model)

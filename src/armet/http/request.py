@@ -7,18 +7,9 @@ import collections
 __all__ = ['Request']
 
 
-#
 class Request(collections.Mapping):
     """Implements the RESTful request abstraction.
     """
-
-    def __hash__(self):
-        """This class inherits from collections.Mapping, which means it gains
-        all the properties of a dict, including the inability to hash it.
-        Memoization involves stuffing the class instance inside of a dictionary
-        along with the method's return values. This means that instances of
-        this class need to be hashable in order to exist inside a dict."""
-        return id(self)
 
     @abc.abstractmethod
     def __getitem__(self, name):
@@ -32,16 +23,25 @@ class Request(collections.Mapping):
     def __iter__(self):
         """Returns an iterable for all headers in this request."""
 
+    def __contains__(self, name):
+        """Tests if the passed header exists in the request object."""
+
+    @abc.abstractproperty
+    def url(self):
+        """Returns the complete URL of the request."""
+
+    @abc.abstractproperty
+    def path(self):
+        """Retrieves the path (after the mount point) of the request."""
+
+    @path.setter
+    def path(self, value):
+        """Sets the path value of the request."""
+
     @abc.abstractproperty
     def method(self):
-        """Retrieves the method of the request.
+        """Retrieves the method of the request."""
 
-        This must account for X-Http-Method-Override header, if set.
-        """
-
-    def __contains__(self, name):
-        try:
-            self[name]
-        except KeyError:
-            return False
-        return True
+    @method.setter
+    def method(self, value):
+        """Set the method of the request."""

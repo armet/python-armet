@@ -24,6 +24,9 @@ class ResourceBase(type):
     #! Options class to use to expand options.
     options = options.ResourceOptions
 
+    #! Connectors to instantiate and mixin to the inheritance.
+    connectors = ['http']
+
     @classmethod
     def _is_resource(cls, name, bases):
         if name == 'NewBase':
@@ -54,13 +57,14 @@ class ResourceBase(type):
 
         # Gather the attributes of all options classes.
         metadata = {}
+        values = lambda x: {n: getattr(x, n) for n in dir(x)}
         for base in bases:
             meta = getattr(base, 'Meta', None)
             if meta:
-                metadata.update(**meta.__dict__)
+                metadata.update(**values(meta))
 
         if attrs.get('Meta'):
-            metadata.update(**attrs['Meta'].__dict__)
+            metadata.update(**values(attrs['Meta']))
 
         # Expand the options class with the gathered metadata.
         base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
@@ -83,8 +87,33 @@ class ResourceBase(type):
         # Store the gathered attributes
         attrs['attributes'] = attributes
 
+        # Remove connector layer from base classes.
+        new_bases = []
+        for base in bases:
+            if base.__name__.startswith('armet.connector:'):
+                # This is a connector wrapper; unwrap it.
+                new_bases.append(base.__bases__[-1])
+            else:
+                # Not a connector wrapped object; just append it.
+                new_bases.append(base)
+        new_bases = tuple(new_bases)
+
         # Construct the class object.
-        self = super(ResourceBase, cls).__new__(cls, name, bases, attrs)
+        self = super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
+
+        # Cache access to the attribute preparation cycle.
+        self.preparers = preparers = {}
+        for key in attributes:
+            prepare = getattr(self, 'prepare_{}'.format(key), None)
+            if not prepare:
+                prepare = lambda s, o, v: v
+            preparers[key] = prepare
+
+        # Filter the available connectors according to the
+        # metaclass restriction set.
+        for key in list(meta.connectors.keys()):
+            if key not in cls.connectors:
+                del meta.connectors[key]
 
         # Iterate through the available connectors.
         iterator = six.iteritems(meta.connectors)

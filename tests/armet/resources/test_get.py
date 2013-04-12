@@ -1,40 +1,43 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from armet import http, test
+import json
 
 
 class GetTestCase(test.TestCase):
 
-    def test_access(self):
-        response, _ = self.client.request('/api/poll/')
+    def test_list(self):
+        response, content = self.client.request('/api/poll/')
 
-        self.assertEqual(response.status, http.client.OK)
+        content = json.loads(content.decode('utf-8'))
 
-    def test_redirect(self):
-        response, _ = self.client.request('/api/poll')
+        self.assertIsInstance(content, list)
+        self.assertEqual(len(content), 100)
+        self.assertEqual(
+            content[0]['question'], 'Are you an innie or an outie?')
+        self.assertEqual(
+            content[-1]['question'],
+            'What one question would you add to this survey?')
 
-        self.assertEqual(response.status, http.client.MOVED_PERMANENTLY)
+    def test_single(self):
+        response, content = self.client.request('/api/poll/1/')
 
-        location = response.get('location')
-        self.assertEqual(location, 'http://localhost:5000/api/poll/')
+        content = json.loads(content.decode('utf-8'))
 
-    def test_http_whole_forbidden(self):
-        response, _ = self.client.request(
-            '/api/http-whole-forbidden/', 'POST')
+        self.assertIsInstance(content, dict)
+        self.assertEqual(
+            content['question'], 'Are you an innie or an outie?')
 
-        self.assertEqual(response.status, http.client.METHOD_NOT_ALLOWED)
+        response, content = self.client.request('/api/poll/100/')
 
-    def test_http_forbidden(self):
-        response, _ = self.client.request('/api/http-forbidden/12/', 'DELETE')
+        content = json.loads(content.decode('utf-8'))
 
-        self.assertEqual(response.status, http.client.METHOD_NOT_ALLOWED)
+        self.assertIsInstance(content, dict)
+        self.assertEqual(
+            content['question'],
+            'What one question would you add to this survey?')
 
-    def test_whole_forbidden(self):
-        response, _ = self.client.request('/api/whole-forbidden/', 'POST')
+    def test_not_found(self):
+        response, _ = self.client.request('/api/poll/101/')
 
-        self.assertEqual(response.status, http.client.METHOD_NOT_ALLOWED)
-
-    def test_forbidden(self):
-        response, _ = self.client.request('/api/forbidden/12/', 'DELETE')
-
-        self.assertEqual(response.status, http.client.METHOD_NOT_ALLOWED)
+        self.assertEqual(response.status, http.client.NOT_FOUND)

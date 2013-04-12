@@ -1,21 +1,34 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from armet import utils
-from armet.http.request import Request
-from armet.http.response import Response
+from armet import http
 from flask import request
 from flask.globals import current_app
+from werkzeug.wsgi import get_current_url
 
 
-class Request(Request):
+class Request(http.Request):
     """Implements the RESTFul request abstraction for flask.
     """
 
     @property
-    @utils.memoize_single
     def method(self):
-        override = self['X-Http-Method-Override']
-        return override.upper() if override else request.method
+        return request.method
+
+    @method.setter
+    def method(self, value):
+        request.environ['REQUEST_METHOD'] = value.upper()
+
+    @property
+    def url(self):
+        return get_current_url(request.environ)
+
+    @property
+    def path(self):
+        return request.environ['PATH_INFO']
+
+    @path.setter
+    def path(self, value):
+        request.environ['PATH_INFO'] = value
 
     def __getitem__(self, name):
         return request.headers.get(name)
@@ -27,8 +40,11 @@ class Request(Request):
     def __len__(self):
         return len(request.headers)
 
+    def __contains__(self, name):
+        return name in request.headers
 
-class Response(Response):
+
+class Response(http.Response):
     """Implements the RESTFul response abstraction for flask.
     """
 
@@ -50,10 +66,22 @@ class Response(Response):
 
     @content.setter
     def content(self, value):
-        self.handle.data = value
+        self.handle.data = value if value is not None else ''
 
     def __getitem__(self, name):
         return self.handle.headers[name]
 
     def __setitem__(self, name, value):
         self.handle.headers[name] = value
+
+    def __delitem__(self, name):
+        del self.handle.headers[name]
+
+    def __contains__(self, name):
+        return name in self.handle.headers
+
+    def __iter__(self):
+        return iter(self.handle.headers)
+
+    def __len__(self):
+        return len(self.handle.headers)

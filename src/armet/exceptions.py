@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-"""General-purpose exception classes.
-"""
 from __future__ import print_function, unicode_literals, division
 
 
