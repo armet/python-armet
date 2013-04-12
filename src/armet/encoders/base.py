@@ -41,8 +41,7 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             # The object was of an unsupported type.
             return False
 
-    @abc.abstractmethod
-    def encode(self, obj=None):
+    def encode(self, data=None):
         """
         Transforms the object into an acceptable format for transmission.
 
@@ -54,3 +53,16 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             To indicate this encoder does not support the encoding of the
             specified object.
         """
+
+        # Initialize the response object.
+        response = self.response()
+
+        if data is not None:
+            # Set the appropriate headers.
+            response['Content-Type'] = self.mimetype
+            response['Content-Length'] = len(data.encode('utf-8'))
+
+            # Write the encoded and prepared data to the response.
+            response.content = data
+
+        return response
