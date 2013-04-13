@@ -17,14 +17,7 @@ class ResourceOptions(object):
 
 
 class Resource(object):
-    """Specializes the RESTFul abstract resource protocol for Django.
 
-    @note
-        This is not what you derive from to create resources. Import
-        Resource from `armet.resources` and derive from that.
-    """
-
-    #! Class to use to construct a response object.
     response = Response
 
     @classmethod
@@ -49,12 +42,6 @@ class Resource(object):
 
 
 class ModelResource(object):
-    """Specializes the RESTFul model resource protocol for Django.
-
-    @note
-        This is not what you derive from to create resources. Import
-        ModelResource from `armet.resources` and derive from that.
-    """
 
     def read(self):
         # Initialize the queryset to the model manager.

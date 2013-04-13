@@ -15,14 +15,7 @@ class RegexConverter(BaseConverter):
 
 
 class Resource(object):
-    """Specializes the RESTFul resource protocol for flask.
 
-    @note
-        This is not what you derive from to create resources. Import
-        Resource from `armet.resources` and derive from that.
-    """
-
-    #! Class to use to construct a response object.
     response = Response
 
     @classmethod
@@ -41,10 +34,6 @@ class Resource(object):
 
     @classmethod
     def mount(cls, app, url):
-        """
-        Mounts the resource in the Flask container at the specified
-        mount point.
-        """
         # Generate a name to use to mount this resource.
         name = '{}.{}'.format(cls.__module__, cls.__name__)
         name = '{}:{}:{}'.format('armet', name, cls.meta.name)
