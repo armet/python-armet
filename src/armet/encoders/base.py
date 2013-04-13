@@ -47,13 +47,12 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
 
         @returns
             An http response object that can be directly returned to the
-            client or just the content.
+            client.
 
         @throws ValueError
             To indicate this encoder does not support the encoding of the
             specified object.
         """
-
         # Initialize the response object.
         response = self.response()
 
@@ -63,6 +62,7 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             response['Content-Length'] = len(data.encode('utf-8'))
 
             # Write the encoded and prepared data to the response.
-            response.content = data
+            response.write(data)
 
+        # Return the constructed response.
         return response

@@ -23,13 +23,8 @@ class Response(collections.MutableMapping):
     def status(self, value):
         """Sets the status code of the response."""
 
-    @abc.abstractproperty
-    def content(self):
-        """Gets the content of the response."""
-
-    @content.setter
-    def content(self, value):
-        """Sets the content of the response."""
+    def write(self, chunk):
+        """Writes the chunk to the response."""
 
     @abc.abstractmethod
     def __getitem__(self, name):

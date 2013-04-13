@@ -38,6 +38,13 @@ test_dependencies = (
     # SQLAlchemy is the Python SQL toolkit and Object Relational Mapper
     # that gives application developers the full power and flexibility of SQL.
     'sqlalchemy',
+
+    # Twisted is an event-driven networking engine written in Python.
+    'twisted',
+
+    # Cyclone is a web server framework for Python that implements
+    # the Tornado API as a Twisted protocol.
+    'cyclone',
 )
 
 
