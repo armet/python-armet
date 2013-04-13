@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from armet import http
-from armet.http import request, response
 
 
-class Request(request.Request):
-    """Implements the request abstraction for cyclone.
-    """
+class Request(http.Request):
 
     def __init__(self, handler, *args, **kwargs):
         self.handler = handler
@@ -49,9 +46,7 @@ class Request(request.Request):
         return item in self.request.headers
 
 
-class Response(response.Response):
-    """Implements the response abstraction for cyclone.
-    """
+class Response(http.Response):
 
     def __init__(self, resource, *args, **kwargs):
         self.resource = resource
