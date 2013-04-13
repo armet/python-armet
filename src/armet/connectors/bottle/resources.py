@@ -6,14 +6,7 @@ import bottle
 
 
 class Resource(object):
-    """Specializes the RESTFul resource protocol for bottle.
 
-    @note
-        This is not what you derive from to create resources. Import
-        Resource from `armet.resources` and derive from that.
-    """
-
-    #! Class to use to construct a response object.
     response = Response
 
     @classmethod
@@ -27,10 +20,6 @@ class Resource(object):
 
     @classmethod
     def mount(cls, *args):
-        """
-        Mounts the resource in the bottle application at the specified
-        mount point.
-        """
         # If the first argument is a string; then application was
         # not passed; use the default app, else use the first
         # argument as the application.
