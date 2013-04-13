@@ -1,6 +1,9 @@
  ✔ prepare cycle @done (13-04-07 21:12)
      ✔ item_prepare @done (13-04-07 21:12)
      ✔ prepare_FOO @done (13-04-07 21:12)
+ ☐ Request / Response
+     ☐ Separate `.headers` dictionary
+     ☐ `.write()` and `.read()`
  ☐ encode
      ✔ base @done (13-04-07 21:12)
      ☐ json
