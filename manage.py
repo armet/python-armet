@@ -16,7 +16,7 @@ PORT = 5000
 
 
 #! HTTP connectors that are supported.
-SUPPORTED_HTTP = ('django', 'flask', 'bottle')
+SUPPORTED_HTTP = ('django', 'flask', 'bottle', 'cyclone')
 
 
 def initialize(name):
@@ -31,6 +31,10 @@ def initialize(name):
         # Initialize the database tables and install the test fixtures.
         from django.core.management import call_command
         call_command('syncdb', verbosity=False, interactive=False)
+
+    elif name.endswith('sqlalchemy'):
+        from tests.utils.sqlalchemy import initialize
+        initialize()
 
     else:
         # No idea what you're trying to do here.
@@ -71,6 +75,15 @@ def run(name):
         from bottle import run
         module = importlib.import_module('tests.{}.app'.format(name))
         run(module.application, host=HOST, port=PORT, debug=True)
+
+    elif connector == 'cyclone':
+        # Start the reactor and run the development server
+        from twisted.internet import reactor
+        from twisted.python import log
+        module = importlib.import_module('tests.{}.app'.format(name))
+        log.startLogging(sys.stdout)
+        reactor.listenTCP(PORT, module.application, interface=HOST)
+        reactor.run()
 
 
 def shell(name):

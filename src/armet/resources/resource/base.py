@@ -124,16 +124,18 @@ class Resource(object):
             # Return the response object.
             return response
 
-        except BaseException:
-            # Something unexpected happenend.
-            # TODO: Rollback
+        # except BaseException as ex:
+        #     # Something unexpected happenend.
+        #     # TODO: Rollback
 
-            # Log error message to the logger.
-            logger.exception('Internal server error')
+        #     import ipdb; ipdb.set_trace()
 
-            # Return nothing and indicate a server failure.
-            # TODO: Pass back the status code (500).
-            return None
+        #     # Log error message to the logger.
+        #     logger.exception('Internal server error')
+
+        #     # Return nothing and indicate a server failure.
+        #     # TODO: Pass back the status code (500).
+        #     return None
 
     #! Precompiled regular expression used to parse out the path.
     _parse_pattern = re.compile(
@@ -230,22 +232,10 @@ class Resource(object):
         data = self.prepare(data)
 
         # Encode the data using a desired encoder.
-        encoder, data = self.encode(data)
+        response = self.encode(data)
 
-        if isinstance(data, self.response):
-            # Set the response object to use.
-            response = data
-
-        else:
-            # Initialize the response object.
-            response = self.response(status=status)
-
-            # Set the appropriate headers.
-            response['Content-Type'] = encoder.mimetype
-            response['Content-Length'] = len(data.encode('utf-8'))
-
-            # Write the encoded and prepared data to the response.
-            response.content = data
+        # Make sure that the status code is set properly
+        response.status = status
 
         # Return the built response.
         return response
@@ -256,16 +246,10 @@ class Resource(object):
             # No data; return nothing.
             return None
 
-        if (not isinstance(data, six.string_types) and
-                not isinstance(data, collections.Mapping)):
-            try:
-                # Attempt to prepare each item of the iterable (as long as
-                # we're not a string or some sort of mapping).
-                return (self.item_prepare(x) for x in data)
-
-            except TypeError:
-                # Not an iterable.
-                pass
+        if self.slug is not None:
+            # Attempt to prepare each item of the iterable (as long as
+            # we're not a string or some sort of mapping).
+            return (self.item_prepare(x) for x in data)
 
         # Prepare just the singular value and return.
         return self.item_prepare(data)
@@ -348,7 +332,7 @@ class Resource(object):
         if encoder:
             try:
                 # Attempt to encode the data using the determined encoder.
-                return encoder, encoder(accept, self.response).encode(data)
+                return encoder(accept, self.response).encode(data)
 
             except ValueError:
                 # Failed to encode the data.

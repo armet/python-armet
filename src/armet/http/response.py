@@ -44,7 +44,7 @@ class Response(collections.MutableMapping):
         """Removes a header with the passed name."""
 
     @abc.abstractmethod
-    def __len__(self, name):
+    def __len__(self):
         """Retrieves the number of headers in this response."""
 
     @abc.abstractmethod
