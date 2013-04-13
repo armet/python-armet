@@ -48,14 +48,8 @@ class Request(http.Request):
 
 class Response(http.Response):
 
-    def __init__(self, resource, *args, **kwargs):
-        self.resource = resource
-        self.handler = resource.request.handler
-
-        # Initialize caches for the status code and the body of the response
-        self._status = http.client.OK
-        self._content = ''
-
+    def __init__(self, handler, *args, **kwargs):
+        self.handler = handler
         super(Response, self).__init__(*args, **kwargs)
 
     def __setitem__(self, name, value):
@@ -82,16 +76,11 @@ class Response(http.Response):
 
     @property
     def status(self):
-        return self._status
+        return self.handler.get_status()
 
     @status.setter
     def status(self, value):
-        self._status = value
+        self.handler.set_status(value)
 
-    @property
-    def content(self):
-        return self._content
-
-    @content.setter
-    def content(self, value):
-        self._content = value
+    def write(self, chunk):
+        self.handler.write(chunk)

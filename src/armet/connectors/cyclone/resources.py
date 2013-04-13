@@ -13,29 +13,10 @@ class Handler(web.RequestHandler):
     def __init__(self, resource, *args, **kwargs):
         # This must be set before we super, becuase that begins routing
         self.resource = resource
-
         return super(Handler, self).__init__(*args, **kwargs)
 
-    def route_request(self, method, *args, **kwargs):
-        print('cyclone route request for '.format(method))
-        print(args)
-        print(kwargs)
-
-        # Construct the view
-        request = Request(self)
-        response = self.resource.view(request, request.path)
-
-        # Assert that a custom status code does not need to be thrown and write
-        # the response.
-        if response.status != http.client.OK:
-            self.set_status(response.status, response.content)
-        else:
-            # The error was a 200.  Just report everything AOK.
-            self.write(response.content)
-
-        # # Make sure that we finish any asynchronous calls
-        # if not self._auto_finish:
-        #     self.finish()
+    def route_request(self, path):
+        self.resource.view(Request(self), path)
 
     def _execute_handler(self, r, args, kwargs):
         """We're overloading a private method here in oder to intercept the
@@ -69,18 +50,15 @@ class Resource(object):
 
     #! Class to use to construct a response object
     def response(self, *args, **kwargs):
-        return Response(self, *args, **kwargs)
+        return Response(self.request.handler, *args, **kwargs)
 
     @classmethod
-    def mount(cls, url, application=None, domain='.*'):
+    def mount(cls, url, application=None, host='.*'):
         """Mounts this resource in the specified application, or in the global
         bottle style application.
         """
         # assemble the routes that we're going to add to the handler
-        # TODO: fix this regex.  It sucks.
-        routes = [
-            (r'{}/{}/(.*)'.format(url, cls.meta.name), cls.handler)
-        ]
+        routes = ((r'{}/{}(.*)'.format(url, cls.meta.name), cls.handler),)
 
         if application is None:
             # No application specified, add this to the bottle style handlers.
@@ -88,9 +66,10 @@ class Resource(object):
             # routes are mounted... But then again, if that's what you're doing
             # then you're already in unknown territory.
             bottle._handlers.append(routes)
+
         else:
             # Add the handler
-            application.add_handlers(domain, routes)
+            application.add_handlers(host, routes)
 
     @classmethod
     def handler(cls, *args, **kwargs):
