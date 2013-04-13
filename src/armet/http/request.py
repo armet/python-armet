@@ -13,7 +13,12 @@ class Request(collections.Mapping):
 
     @abc.abstractmethod
     def __getitem__(self, name):
-        """Retrieves a header with the passed name."""
+        """Retrieves a header with the passed name.
+
+        @param[in] name
+            The name of the header to retrieve. Headers are retrieved
+            case-insensitive.
+        """
 
     @abc.abstractmethod
     def __len__(self, name):
@@ -32,7 +37,7 @@ class Request(collections.Mapping):
 
     @abc.abstractproperty
     def path(self):
-        """Retrieves the path (after the mount point) of the request."""
+        """Retrieves the complete path of the request."""
 
     @path.setter
     def path(self, value):
