@@ -7,8 +7,6 @@ from werkzeug.wsgi import get_current_url
 
 
 class Request(http.Request):
-    """Implements the RESTFul request abstraction for flask.
-    """
 
     @property
     def method(self):
@@ -45,8 +43,6 @@ class Request(http.Request):
 
 
 class Response(http.Response):
-    """Implements the RESTFul response abstraction for flask.
-    """
 
     def __init__(self, *args, **kwargs):
         self.handle = current_app.response_class()

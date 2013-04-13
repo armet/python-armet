@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from django.http import HttpResponse
-from armet.http import request, response
+from armet import http
 import string
 import re
 
@@ -23,9 +23,7 @@ def to_django(name):
     return name if name in SPECIAL_HEADERS else 'HTTP_{}'.format(name)
 
 
-class Request(request.Request):
-    """Implements the RESTFul request abstraction for django.
-    """
+class Request(http.Request):
 
     def __init__(self, request):
         self.handle = request
@@ -65,9 +63,7 @@ class Request(request.Request):
         return to_django(name) in self.handle.META
 
 
-class Response(response.Response):
-    """Implements the RESTFul response abstraction for django.
-    """
+class Response(http.Response):
 
     def __init__(self, *args, **kwargs):
         self.handle = HttpResponse()
