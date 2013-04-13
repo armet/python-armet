@@ -44,7 +44,7 @@ class Encoder(transcoders.Json, Encoder):
     def encode(self, obj=None):
         # If we have nothing; encode as an empty object.
         if obj is None:
-            return '{}'
+            obj = {}
 
         # Ensure it is atleast wrapped in an array.
         if isinstance(obj, six.string_types):
