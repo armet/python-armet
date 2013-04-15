@@ -787,7 +787,7 @@ class BaseResource(object):
 
             except KeyError:
                 # Field not found.. okay.
-                raise exceptions.NotFound()
+                value = None
 
             # Set value on object after preparing it
             obj[name] = attribute.prepare(self, item, value)
