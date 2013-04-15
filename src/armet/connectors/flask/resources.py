@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from flask import request
+import flask
 from werkzeug.routing import BaseConverter
-from .http import Request, Response
+from . import http
 
 
 class RegexConverter(BaseConverter):
@@ -16,24 +16,26 @@ class RegexConverter(BaseConverter):
 
 class Resource(object):
 
-    response = Response
-
     @classmethod
     def view(cls, *args, **kwargs):
         # Initiate the base view request cycle.
         path = kwargs.get('path', '')
-        if request.path.endswith('/'):
+        if flask.request.path.endswith('/'):
             # The trailing slash is stripped for fun by werkzeug.
             path += '/'
 
-        # Let the base resource deal with us.
-        response = super(Resource, cls).view(Request(), path)
+        # Construct request and response wrappers.
+        request = http.Request(path)
+        response = http.Response()
 
-        # Facilitate the HTTP response and return it.
+        # Pass control off to the resource handler.
+        super(Resource, cls).view(request, response)
+
+        # Return the response handle.
         return response.handle
 
     @classmethod
-    def mount(cls, app, url):
+    def mount(cls, url, app):
         # Generate a name to use to mount this resource.
         name = '{}.{}'.format(cls.__module__, cls.__name__)
         name = '{}:{}:{}'.format('armet', name, cls.meta.name)

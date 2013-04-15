@@ -4,41 +4,32 @@ from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
 from armet.http import exceptions
-from .http import Request, Response
-
-
-class ResourceOptions(object):
-
-    def __init__(self, meta, name, bases):
-        #! URL namespace to define the url configuration inside.
-        self.url_name = meta.get('url_name')
-        if not self.url_name:
-            self.url_name = 'api_view'
+from . import http
 
 
 class Resource(object):
 
-    response = Response
-
     @classmethod
     @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
-        # Initiate the base view request cycle.
-        path = kwargs.get('path', '')
-        response = super(Resource, cls).view(Request(request), path)
+        # Construct request and response wrappers.
+        request = http.Request(request, kwargs.get('path', ''))
+        response = http.Response()
 
-        # Construct an HTTP response and return it.
+        # Pass control off to the resource handler.
+        super(Resource, cls).view(request, response)
+
+        # Return the response handle.
         return response.handle
 
     @utils.classproperty
     def urls(cls):
         """Builds the URL configuration for this resource."""
-        url = urls.url(
+        return urls.patterns('', urls.url(
             r'^{}(?P<path>.*)'.format(cls.meta.name),
             cls.view,
-            name=cls.meta.url_name,
-            kwargs={'resource': cls.meta.name})
-        return urls.patterns('', url)
+            name='armet-api-{}'.format(cls.meta.name),
+            kwargs={'resource': cls.meta.name}))
 
 
 class ModelResource(object):

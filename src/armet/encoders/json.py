@@ -53,5 +53,5 @@ class Encoder(transcoders.Json, Encoder):
         elif not isinstance(obj, collections.Iterable):
             obj = [obj]
 
-        # Encode and return the resultant text.
-        return super(Encoder, self).encode(json.dumps(obj, **self.options))
+        # Encode the resultant text.
+        super(Encoder, self).encode(json.dumps(obj, **self.options))

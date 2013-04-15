@@ -25,8 +25,9 @@ def to_django(name):
 
 class Request(http.Request):
 
-    def __init__(self, request):
+    def __init__(self, request, *args, **kwargs):
         self.handle = request
+        super(Request, self).__init__(*args, **kwargs)
 
     @property
     def method(self):
@@ -39,14 +40,6 @@ class Request(http.Request):
     @property
     def url(self):
         return self.handle.get_full_path()
-
-    @property
-    def path(self):
-        return self.handle.path
-
-    @path.setter
-    def path(self, value):
-        self.handle.path = value
 
     def __getitem__(self, name):
         return self.handle.META[to_django(name)]
@@ -77,13 +70,9 @@ class Response(http.Response):
     def status(self, value):
         self.handle.status_code = value
 
-    @property
-    def content(self):
-        return self.handle.content if self.handle.content else ''
-
-    @content.setter
-    def content(self, value):
-        self.handle.content = value if value is not None else ''
+    def write(self, value):
+        if value is not None:
+            self.handle.content += value
 
     def __getitem__(self, name):
         return self.handle[name]

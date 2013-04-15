@@ -68,7 +68,7 @@ def run(name):
     elif connector == 'flask':
         # Run the development server.
         module = importlib.import_module('tests.{}.app'.format(name))
-        module.application.run(HOST, PORT)
+        module.application.run(HOST, PORT, debug=True)
 
     elif connector == 'bottle':
         # Run the development server.
