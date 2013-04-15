@@ -52,12 +52,6 @@ class Resource(object):
             The HTTP response object; contains accessors for modifying
             the information that will be sent to the client.
         """
-        # Determine the HTTP method; apply the override header
-        # if present.
-        override = request.get('X-Http-Method-Override')
-        if override:
-            request.method = override.upper()
-
         # Determine if we need to redirect.
         test = cls.meta.trailing_slash
         url = request.url
