@@ -21,17 +21,8 @@ class Resource(object):
     """
 
     @classmethod
-    def redirect(cls, request):
-        """Redirect to the canonical URI for this resource.
-
-        @note
-            This method does not know how to complete the operation and
-            leaves that to an implementation class in a connector. The result
-            is the URI to redirect to.
-        """
-        # Instantiate a new response object.
-        response = cls.response()
-
+    def redirect(cls, request, response):
+        """Redirect to the canonical URI for this resource."""
         if cls.meta.legacy_redirect:
             if request.method in ('GET', 'HEAD',):
                 # A SAFE request is allowed to redirect using a 301
@@ -47,26 +38,19 @@ class Resource(object):
             # The RFC explicitly discourages UserAgent sniffing.
             response.status = http.client.PERMANENT_REDIRECT
 
-        # Calculate the path to redirect to and set it on the response.
-        response['Location'] = request.url
-
-        # Return the response object.
-        return response
-
     @classmethod
-    def view(cls, request, path):
+    def view(cls, request, response):
         """
-        Entry-point of the request cycle; Handles resource creation
+        Entry-point of the request / response cycle; Handles resource creation
         and delegation.
 
-        @param[in] path
-            The path accessor for the resource (eg. for a request like
-            GET /api/resource/foo/bar/1/4 if resource is mounted on /api/ then
-            path will be '/bar/1/4/'
+        @param[in] requset
+            The HTTP request object; containing accessors for information
+            about the request.
 
-        @param[in] headers
-            Dictionary of request headers normalized to have underscores and
-            be uppercased.
+        @param[in] response
+            The HTTP response object; contains accessors for modifying
+            the information that will be sent to the client.
         """
         # Determine the HTTP method; apply the override header
         # if present.
@@ -75,67 +59,56 @@ class Resource(object):
             request.method = override.upper()
 
         # Determine if we need to redirect.
-        if cls.meta.trailing_slash and not path.endswith('/'):
+        if cls.meta.trailing_slash and not request.url.endswith('/'):
             # We should redirect if the path doesn't end in '/'.
-            request.path += '/'
-            return cls.redirect(request)
+            response['Location'] = request.url + '/'
+            return cls.redirect(request, response)
 
-        elif not cls.meta.trailing_slash and path.endswith('/'):
+        elif not cls.meta.trailing_slash and request.url.endswith('/'):
             # We should redirect if the path does end in '/'.
-            request.path = re.sub(r'/$', '', request.path)
-            return cls.redirect(request)
+            response['Location'] = re.sub(r'/$', '', request.url)
+            return cls.redirect(request, response)
 
         try:
             # Parse any arguments out of the path.
-            arguments = cls.parse(path)
+            arguments = cls.parse(request.path)
 
             # Traverse down the path and determine to resource we're actually
             # accessing.
-            resource = cls.traverse(arguments)
+            Resource = cls.traverse(arguments)
 
             # Instantiate the resource.
-            obj = resource(request, **arguments)
+            obj = Resource(request, response, **arguments)
 
-            # Initiate the dispatch cycle and return its response.
-            response = obj.dispatch()
+            # Initiate the dispatch cycle.
+            obj.dispatch()
 
             # TODO: Commit
 
-            # Return the response from the dispatch cycle.
-            return response
-
-        except exceptions.Base as ex:
+        except exceptions.Base as e:
             # Something that we can handle and return properly happened.
+
             # TODO: Rollback
 
-            # Instantiate a new response object.
-            response = cls.response(status=ex.status)
+            # Set response properties from the exception.
+            response.status = e.status
+            for name in e.headers:
+                response[name] = e.headers[name]
 
-            # Set the content if we have some.
-            # TODO: We need encoders.
-            # if ex.content is not None:
-            #     response.content = ex.content
-            #     response.header('Content-Type', MIMETYPE)
+            if e.content:
+                # Write the exception body if present.
+                response.write(e.content)
 
-            # Set all headers on the response object.
-            for name in ex.headers:
-                response[name] = ex.headers[name]
+        except BaseException as e:
+            # Something unexpected happenend.
 
-            # Return the response object.
-            return response
+            # TODO: Rollback
 
-        # except BaseException as ex:
-        #     # Something unexpected happenend.
-        #     # TODO: Rollback
+            # Log error message to the logger.
+            logger.exception('Internal server error')
 
-        #     import ipdb; ipdb.set_trace()
-
-        #     # Log error message to the logger.
-        #     logger.exception('Internal server error')
-
-        #     # Return nothing and indicate a server failure.
-        #     # TODO: Pass back the status code (500).
-        #     return None
+            # TODO: Don't do the following if not in DEBUG mode.
+            raise
 
     #! Precompiled regular expression used to parse out the path.
     _parse_pattern = re.compile(
@@ -153,7 +126,6 @@ class Resource(object):
         path = re.sub(r'/$', r'', path or '')
 
         # Apply the compiled regex.
-        # import ipdb; ipdb.set_trace()
         arguments = re.match(cls._parse_pattern, path).groupdict()
 
         # Explode the list arguments; they should be represented as
@@ -179,21 +151,11 @@ class Resource(object):
         # TODO: Implement resource traversal.
         return cls
 
-    def __init__(self, request, **kwargs):
-        """Initializes the resources and sets its properites on self.
-
-        @param[in] request
-            Request wrapper that communicates accesses to headers and other
-            information about the request to the underlying request object
-            provided by the HTTP connector.
-
-        @param[in] slug
-            The slug that identifies the resource or resources in question.
-            If this is being accessed as a list of resources however the slug
-            is None.
-        """
-        # Store the given request object.
+    def __init__(self, request, response, **kwargs):
+        """Initializes the resources and sets its properites on self."""
+        # Store the given request and response objects.
         self.request = request
+        self.response = response
 
         # Update our instance dictionary with the arugments from `parse`.
         self.__dict__.update(**kwargs)
@@ -227,18 +189,15 @@ class Resource(object):
                 raise exceptions.Forbidden()
 
     def make_response(self, data, status=http.client.OK):
-        """Constructs a response object from the passed data."""
+        """Fills the response object from the passed data."""
         # Prepare the data for transmission.
         data = self.prepare(data)
 
         # Encode the data using a desired encoder.
-        response = self.encode(data)
+        self.encode(data)
 
-        # Make sure that the status code is set properly
-        response.status = status
-
-        # Return the built response.
-        return response
+        # Make sure that the status code is set.
+        self.response.status = status
 
     def prepare(self, data):
         """Prepares the data for encoding."""
@@ -246,7 +205,7 @@ class Resource(object):
             # No data; return nothing.
             return None
 
-        if self.slug is not None:
+        if self.slug is None:
             # Attempt to prepare each item of the iterable (as long as
             # we're not a string or some sort of mapping).
             return (self.item_prepare(x) for x in data)
@@ -332,7 +291,8 @@ class Resource(object):
         if encoder:
             try:
                 # Attempt to encode the data using the determined encoder.
-                return encoder(accept, self.response).encode(data)
+                instance = encoder(accept, self.request, self.response)
+                return instance.encode(data)
 
             except ValueError:
                 # Failed to encode the data.
@@ -343,7 +303,8 @@ class Resource(object):
         available = {}
         for name in self.meta.allowed_encoders:
             encoder = self.meta.encoders[name]
-            if encoder(accept, self.response).can_encode(data):
+            instance = encoder(accept, self.request, self.response)
+            if instance.can_encode(data):
                 available[name] = encoder.mimetype
 
         # Raise a Not Acceptable exception.
@@ -357,12 +318,7 @@ class Resource(object):
         same name as the request method.
         """
         # TODO: Assert authentication and attempt to get a valid user object.
-
         # TODO: Assert accessibiltiy of the resource in question.
-        # if not self.authorization.is_accessible(self.user):
-        #     # If a resource is not accessible then we return 404 as the
-        #     #   resource in its entirety is hidden from this user.
-        #     raise exceptions.NotFound()
 
         # Ensure that we understand the HTTP method.
         if self.request.method not in self.meta.http_method_names:
@@ -389,11 +345,7 @@ class Resource(object):
         return function()
 
     def get(self):
-        """Processes a `GET` request.
-
-        @returns
-            The response to return to the client.
-        """
+        """Processes a `GET` request."""
         # Ensure we're allowed to read the resource.
         self.assert_operations('read')
 
@@ -416,8 +368,8 @@ class Resource(object):
                     # Assume that `items` is already a single object.
                     pass
 
-        # Build and return the response object
-        return self.make_response(items)
+        # Build the response object.
+        self.make_response(items)
 
     def read(self):
         """Retrieves data to be displayed; called via GET.

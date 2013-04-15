@@ -11,6 +11,11 @@ class Request(collections.Mapping):
     """Implements the RESTful request abstraction.
     """
 
+    def __init__(self, path, *args, **kwargs):
+        #! The captured path of the request, after the mount point.
+        #! Example: GET /api/poll/23 => '/23'
+        self.path = path
+
     @abc.abstractmethod
     def __getitem__(self, name):
         """Retrieves a header with the passed name.
@@ -34,14 +39,6 @@ class Request(collections.Mapping):
     @abc.abstractproperty
     def url(self):
         """Returns the complete URL of the request."""
-
-    @abc.abstractproperty
-    def path(self):
-        """Retrieves the complete path of the request."""
-
-    @path.setter
-    def path(self, value):
-        """Sets the path value of the request."""
 
     @abc.abstractproperty
     def method(self):

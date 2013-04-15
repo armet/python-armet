@@ -13,6 +13,8 @@ def setup():
     # Twistedtools spins off the reactor loop into a separate thread
     # so the tests may continue on this thread.
     from nose import twistedtools
+    from twisted.python import log
+    log.startLogging(sys.stdout)
     twistedtools.reactor.listenTCP(5000, application, interface='localhost')
     twistedtools.threaded_reactor()
 

@@ -6,60 +6,46 @@ from armet import http
 class Request(http.Request):
 
     def __init__(self, handler, *args, **kwargs):
-        self.handler = handler
-
-        # This is the python request object
-        self.request = handler.request
-
         super(Request, self).__init__(*args, **kwargs)
+        self.handle = handler.request
 
     @property
     def url(self):
-        return self.request.full_url()
-
-    @property
-    def path(self):
-        return self.request.path
-
-    @path.setter
-    def path(self, value):
-        self.request.path = value
+        return self.handle.full_url()
 
     @property
     def method(self):
-        return self.request.method
+        return self.handle.method
 
     @method.setter
     def method(self, value):
-        self.request.method = value.upper()
+        self.handle.method = value.upper()
 
     def __getitem__(self, name):
-        return self.request.headers[name]
+        return self.handle.headers[name]
 
     def __iter__(self):
-        return iter(self.request.headers)
+        return iter(self.handle.headers)
 
     def __len__(self):
-        return len(self.request.headers)
+        return len(self.handle.headers)
 
     def __contains__(self, item):
-        return item in self.request.headers
+        return item in self.handle.headers
 
 
 class Response(http.Response):
 
     def __init__(self, handler, *args, **kwargs):
-        self.handler = handler
         super(Response, self).__init__(*args, **kwargs)
+        self.handler = handler
 
     def __setitem__(self, name, value):
         self.handler.set_header(name, value)
 
     def __getitem__(self, name):
         # Cyclone doesn't provide a way to get headers normally, so break
-        # into the private methods to retrieve the header.  Note that
-        # this doesn't retrieve multi-value headers.  However, armet should
-        # handle multi-value wrangling itself.
+        # into the private methods to retrieve the header.
         return self.handler._headers[name]
 
     def __contains__(self, name):
