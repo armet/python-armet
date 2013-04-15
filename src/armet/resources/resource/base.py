@@ -58,15 +58,16 @@ class Resource(object):
         if override:
             request.method = override.upper()
 
-        # Determine if we need to redirect.
-        if cls.meta.trailing_slash and not request.url.endswith('/'):
-            # We should redirect if the path doesn't end in '/'.
-            response['Location'] = request.url + '/'
-            return cls.redirect(request, response)
+        # Determine if we need to redirect. based on the trailing slash
+        if cls.meta.trailing_slash ^ request.url.endswith('/'):
+            if cls.meta.trailing_slash:
+                # The trailing slash is absent from the url, but required.
+                response['Location'] = request.url + '/'
+            else:
+                # The trailing slash is present in the url, but unwanted.
+                response['Location'] = request.url[:-1]
 
-        elif not cls.meta.trailing_slash and request.url.endswith('/'):
-            # We should redirect if the path does end in '/'.
-            response['Location'] = re.sub(r'/$', '', request.url)
+            # Redirect to the version with the correct trailing slash.
             return cls.redirect(request, response)
 
         try:
@@ -120,10 +121,11 @@ class Resource(object):
         r'(?:\.(?P<extensions>[^/]+?))??$')
 
     @classmethod
-    def parse(cls, path):
+    def parse(cls, path=''):
         """Parses out parameters and separates them out of the path."""
         # Strip the trailing slash, if any.
-        path = re.sub(r'/$', r'', path or '')
+        if path.endswith('/'):
+            path = path[:-1]
 
         # Apply the compiled regex.
         arguments = re.match(cls._parse_pattern, path).groupdict()
@@ -158,6 +160,8 @@ class Resource(object):
         self.response = response
 
         # Update our instance dictionary with the arugments from `parse`.
+        # Note that this adds the 'directives', 'query', 'slug', 'path', and
+        # 'extensions' attributes.
         self.__dict__.update(**kwargs)
 
         if self.slug:
