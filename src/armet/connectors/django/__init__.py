@@ -27,5 +27,5 @@ def is_available(*capacities):
         return True
 
     except ImproperlyConfigured:
-        # We don't have an available settings file; django is actually in use.
+        # We don't have an available settings file; django isn't in use.
         return False
