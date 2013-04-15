@@ -238,8 +238,6 @@ class ResourceOptions(object):
             'PUT',
             'PATCH',
             'DELETE',
-            'CONNECT',
-            'TRACE',
         ))
 
         #! List of allowed HTTP methods.

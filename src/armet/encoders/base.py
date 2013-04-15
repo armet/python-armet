@@ -12,7 +12,7 @@ from armet import transcoders
 
 class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
 
-    def __init__(self, accept, response):
+    def __init__(self, accept, request, response):
         """
         @params[in] accept
             The accept header specifiying the media type.
@@ -24,7 +24,8 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
         mime_type = mimeparse.best_match(self.mimetypes, accept)
         self.params = mimeparse.parse_mime_type(mime_type)[2]
 
-        #! The response class to use.
+        #! The request and response objects to use.
+        self.request = request
         self.response = response
 
     def can_encode(self, obj=None):
@@ -45,24 +46,14 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
         """
         Transforms the object into an acceptable format for transmission.
 
-        @returns
-            An http response object that can be directly returned to the
-            client.
-
         @throws ValueError
             To indicate this encoder does not support the encoding of the
             specified object.
         """
-        # Initialize the response object.
-        response = self.response()
-
         if data is not None:
             # Set the appropriate headers.
-            response['Content-Type'] = self.mimetype
-            response['Content-Length'] = len(data.encode('utf-8'))
+            self.response['Content-Type'] = self.mimetype
+            self.response['Content-Length'] = len(data.encode('utf-8'))
 
             # Write the encoded and prepared data to the response.
-            response.write(data)
-
-        # Return the constructed response.
-        return response
+            self.response.write(data)

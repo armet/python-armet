@@ -68,3 +68,4 @@
      ☐ web2py (http & model)
      ✔ sqlalchemy (model) @done (13-04-11 14:47)
      ☐ mongoengine (model)
+ ☐ CRUD-based resource v/s non-CRUD-based resource

@@ -11,10 +11,6 @@ class Response(collections.MutableMapping):
     """Implements the RESTful response abstraction.
     """
 
-    def __init__(self, status=None):
-        if status is not None:
-            self.status = status
-
     @abc.abstractproperty
     def status(self):
         """Gets the status code of the response."""
