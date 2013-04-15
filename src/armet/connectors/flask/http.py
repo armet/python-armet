@@ -20,14 +20,6 @@ class Request(http.Request):
     def url(self):
         return get_current_url(request.environ)
 
-    @property
-    def path(self):
-        return request.environ['PATH_INFO']
-
-    @path.setter
-    def path(self, value):
-        request.environ['PATH_INFO'] = value
-
     def __getitem__(self, name):
         return request.headers.get(name)
 
@@ -60,9 +52,9 @@ class Response(http.Response):
     def content(self):
         return self.handle.data
 
-    @content.setter
-    def content(self, value):
-        self.handle.data = value if value is not None else ''
+    def write(self, value):
+        if value is not None:
+            self.handle.data += value
 
     def __getitem__(self, name):
         return self.handle.headers[name]

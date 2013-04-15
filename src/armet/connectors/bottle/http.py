@@ -25,19 +25,6 @@ class Request(http.Request):
     def url(self):
         return bottle.request.url
 
-    @property
-    def path(self):
-        return bottle.request.environ['PATH_INFO']
-
-    @path.setter
-    def path(self, value):
-        bottle.request.environ['PATH_INFO'] = value
-        key = 'bottle.request.urlparts'
-        bottle.request.url
-        parts = bottle.request.environ[key]._asdict()
-        parts['path'] = value
-        bottle.request.environ[key] = UrlSplitResult(**parts)
-
     def __getitem__(self, name):
         return bottle.request.headers.get(name)
 
@@ -62,25 +49,21 @@ class Response(http.Response):
     def status(self, value):
         bottle.response.status = value
 
-    @property
-    def content(self):
-        return bottle.response.body
-
-    @content.setter
-    def content(self, value):
-        bottle.response.body = value if value is not None else ''
+    def write(self, value):
+        if value is not None:
+            bottle.response.body += value
 
     def __getitem__(self, name):
-        return bottle.response.headers[name]
+        return bottle.response.headers[str(name)]
 
     def __setitem__(self, name, value):
-        bottle.response.headers[name] = value
+        bottle.response.headers[str(name)] = value
 
     def __delitem__(self, name):
-        del bottle.response.headers[name]
+        del bottle.response.headers[str(name)]
 
     def __contains__(self, name):
-        return name in bottle.response.headers
+        return str(name) in bottle.response.headers
 
     def __iter__(self):
         return iter(bottle.response.headers)
