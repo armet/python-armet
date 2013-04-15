@@ -16,6 +16,11 @@ class Request(collections.Mapping):
         #! Example: GET /api/poll/23 => '/23'
         self.path = path
 
+        # Determine the actual HTTP method; apply the override header.
+        override = self.get('X-Http-Method-Override')
+        if override:
+            self.method = override.upper()
+
     @abc.abstractmethod
     def __getitem__(self, name):
         """Retrieves a header with the passed name.

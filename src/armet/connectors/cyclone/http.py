@@ -6,8 +6,8 @@ from armet import http
 class Request(http.Request):
 
     def __init__(self, handler, *args, **kwargs):
-        super(Request, self).__init__(*args, **kwargs)
         self.handle = handler.request
+        super(Request, self).__init__(*args, **kwargs)
 
     @property
     def url(self):
