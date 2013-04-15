@@ -58,7 +58,7 @@ class Resource(object):
         if override:
             request.method = override.upper()
 
-        # Determine if we need to redirect. based on the trailing slash
+        # Determine if we need to redirect.
         test = cls.meta.trailing_slash
         url = request.url
         if test ^ url.endswith('/'):
