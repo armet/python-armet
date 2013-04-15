@@ -2,8 +2,6 @@
 from __future__ import print_function, division, unicode_literals
 import sys
 import six
-from .app import application
-from ..utils import sqlalchemy
 
 
 def setup():
@@ -11,12 +9,14 @@ def setup():
         # Neither flask nor werkzeug support python 3.x.
         raise unittest.SkipTest('No support for python 3.x')
 
-    # Initialize the database access layer
-    sqlalchemy.initialize()
+    # Initialize the database access layer.
+    from ..utils import django
+    django.initialize('django')
 
     # Start the reactor and run the development server
     # Twistedtools spins off the reactor loop into a separate thread
     # so the tests may continue on this thread.
+    from .app import application
     from nose import twistedtools
     from twisted.python import log
     log.startLogging(sys.stdout)
