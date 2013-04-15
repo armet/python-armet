@@ -47,6 +47,10 @@ def coerce_value(obj):
         # Attempt to encode a file as base64.
         return obj.read().encode('base64')
 
+    except ValueError:
+        # This is a file field, but there is no file associated with it.
+        return ''
+
     except AttributeError:
         # Not a file; move along
         pass
