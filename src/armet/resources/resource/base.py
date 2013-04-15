@@ -59,13 +59,11 @@ class Resource(object):
             request.method = override.upper()
 
         # Determine if we need to redirect. based on the trailing slash
-        if cls.meta.trailing_slash ^ request.url.endswith('/'):
-            if cls.meta.trailing_slash:
-                # The trailing slash is absent from the url, but required.
-                response['Location'] = request.url + '/'
-            else:
-                # The trailing slash is present in the url, but unwanted.
-                response['Location'] = request.url[:-1]
+        test = cls.meta.trailing_slash
+        url = request.url
+        if test ^ url.endswith('/'):
+            # Massage the URL by removing or adding the trailing slash.
+            response['Location'] = url + '/' if test else url[:-1]
 
             # Redirect to the version with the correct trailing slash.
             return cls.redirect(request, response)
@@ -118,15 +116,11 @@ class Resource(object):
         r'(?:\((?P<query>[^/]*)\))?'
         r'(?:/(?P<slug>[^/]+?))?'
         r'(?:/(?P<path>.+?))??'
-        r'(?:\.(?P<extensions>[^/]+?))??$')
+        r'(?:\.(?P<extensions>[^/]+?))??/??$')
 
     @classmethod
     def parse(cls, path=''):
         """Parses out parameters and separates them out of the path."""
-        # Strip the trailing slash, if any.
-        if path.endswith('/'):
-            path = path[:-1]
-
         # Apply the compiled regex.
         arguments = re.match(cls._parse_pattern, path).groupdict()
 
