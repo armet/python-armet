@@ -91,6 +91,38 @@ class Resource(resources.Resource):
         }
 ```
 
+#### [Cyclone](http://cyclone.io/)
+> Cyclone is a web server framework for Python that implements 
+the Tornado API as a Twisted protocol.
+
+```python
+from armet import resources, route
+
+# Mount the resource using the 
+# bottle-style application
+@route(r'/api')
+class Resource(resources.Resource):
+    class Meta:
+        connectors = {
+            'http': 'cyclone',
+            # ... [additional connectors]
+        }
+
+from cyclone import web
+application = web.Application([
+  # Mount the resource in the application 
+  # constructor directly
+  (r'^/api/{}(.*)'.format(Resource.meta.name), Resource.handler),
+  
+  # Mount the resource in the application
+  # constructor using a helper
+  Resource.route(r'^/api'), #=> (r'^/api/resource(.*)', Resource.handler)
+])
+
+# Mount the resource on the cyclone application.
+Resource.mount(r'^/api', application)
+```
+
 ### Database access (model)
 
 #### [Django](https://www.djangoproject.com/)
