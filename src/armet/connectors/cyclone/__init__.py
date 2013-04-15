@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-import importlib
 
 
 def is_available(*capacities):
-    """Detects if the environment is available for use in the (optionally)
-    specified capacities.
+    """
+    Detects if the environment is available for use in
+    the (optionally) specified capacities.
     """
 
     try:
         # Attempt to import cyclone
-        importlib.import_module('cyclone')
+        import cylcone  # flake8: noqa
 
         # TODO: check to see if cyclone is actually being used.
 
