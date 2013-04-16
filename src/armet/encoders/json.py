@@ -3,21 +3,21 @@ from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 import six
 import json
-import collections
+from collections import Iterable
 from armet import transcoders
 from .base import Encoder
 
 
-class _TypeCoerableJSONEncoder(json.JSONEncoder):
+class TypeCoerableJSONEncoder(json.JSONEncoder):
 
     def default(self, obj):
-        if isinstance(obj, collections.Iterable):
+        if isinstance(obj, Iterable):
             # This is an iterable but not recognizable as such
             # by the JSON encoder (eg. generator).
             return list(obj)
 
         # Raise up our hands; we cannot encode this.
-        return super(_TypeCoerableJSONEncoder, self).default(obj)
+        raise ValueError('Unable to encode {}'.format(obj))
 
 
 class Encoder(transcoders.Json, Encoder):
@@ -31,15 +31,8 @@ class Encoder(transcoders.Json, Encoder):
         self.options = {
             'ensure_ascii': True,
             'separators': (',', ':',),
-            'cls': _TypeCoerableJSONEncoder
+            'cls': TypeCoerableJSONEncoder
         }
-
-        pprint = self.params.get('pretty_print', '')
-        if pprint == '1' or pprint.lower() == 'true':
-            # We are pretty printing; turn on indents and
-            # add spaces around separators
-            self.options['indent'] = 2
-            self.options['separators'] = (', ', ': ')
 
     def encode(self, obj=None):
         # If we have nothing; encode as an empty object.
@@ -47,10 +40,7 @@ class Encoder(transcoders.Json, Encoder):
             obj = {}
 
         # Ensure it is atleast wrapped in an array.
-        if isinstance(obj, six.string_types):
-            obj = [obj]
-
-        elif not isinstance(obj, collections.Iterable):
+        if isinstance(obj, six.string_types) or not isinstance(obj, Iterable):
             obj = [obj]
 
         # Encode the resultant text.

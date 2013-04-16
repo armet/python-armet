@@ -38,7 +38,7 @@ class Handler(web.RequestHandler):
             # Decode arguemnts; changed slightly to use six (to be
             # python 3.x compliant).
             decode = self.decode_argument
-            args = [decode(x) for x in args]
+            args = (decode(x) for x in args)
             kwargs = {k: decode(v, name=k) for k, v in six.iteritems(kwargs)}
 
             # Instead of calling each method, instead call the route handler
