@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-"""Defines attributes available on a resource object.s
-"""
 from __future__ import print_function, unicode_literals, division
 import collections
 import six
