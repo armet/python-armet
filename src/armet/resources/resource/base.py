@@ -71,8 +71,7 @@ class Resource(object):
 
             # Set response properties from the exception.
             response.status = e.status
-            for name in e.headers:
-                response[name] = e.headers[name]
+            response.update(e.headers)
 
             if e.content:
                 # Write the exception body if present.
