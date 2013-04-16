@@ -53,48 +53,27 @@ class Attribute(object):
             # Initialize the accessors array.
             self._accessors = []
 
-    def _make_accessor(self, path, cls, value):
+    def _make_accessor(self, path, cls, instance):
         # Attempt to get an unbound class property
         # that may be a descriptor.
         obj = getattr(cls, path, None)
         if obj is not None:
             if hasattr(obj, '__call__'):
                 # The descriptor is callable.
-                return lambda o, x=obj.__call__: x(o)
+                return obj.__call__
 
         else:
             # Check for another kind of descriptor.
             descriptor = cls.__dict__.get(path)
             if descriptor and hasattr(descriptor, '__get__'):
-                return lambda o, x=descriptor.__get__: x(o)
+                return descriptor.__get__
 
         if issubclass(cls, collections.Mapping):
             return lambda o, n=path: o.get(n)
 
-        if issubclass(cls, collections.Sequence):
-            path = int(path)
-            if path == 0:
-                # Sequence access is 1-indexed.
-                def accessor(obj):
-                    raise TypeError()
-
-            else:
-                path = path - 1 if path > 0 else path
-
-                def accessor(obj, index=path):
-                    if isinstance(obj, six.string_types) and len(obj) == 1:
-                        # We cannot index into a 'character'.
-                        raise TypeError()
-
-                    # Return the element.
-                    return obj[index]
-
-            # Return the built accessor.
-            return accessor
-
         # No alternative; let's pretend this will work (which it will
         # most of the time).
-        return lambda o, n=path: o.__dict__[n]
+        return lambda o, n=path: o.__dict__.get(n)
 
     def get(self, value):
         """Retrieves the value of this attribute from the passed object."""
@@ -110,11 +89,15 @@ class Attribute(object):
         if value is not None and self._segments:
             # Value isn't none and we still have additional segments left
             # to resolve into accessors.
-            for index, segment in enumerate(self._segments):
+            while self._segments:
                 if value is None:
                     # We no longer have a value to use to attempt
                     # to resolve additional segments; bail for now.
                     break
+
+                # Remove any path segments that have been resolved
+                # into accessors.
+                segment = self._segments.pop(0)
 
                 # Build the accessor corresponding to this path
                 # segment.
@@ -127,16 +110,12 @@ class Attribute(object):
                 # Utilize the accessor now.
                 value = accessor(value)
 
-            # Remove any path segments that have been resolved
-            # into accessors.
-            del self._segments[:index + 1]
-
         # Return what has been accessed.
         return value
 
     def prepare(self, value):
         """Prepares the value for serialization."""
-        return str(value)
+        return value
 
     def clean(self, value):
         """Cleans the value in preparation for deserialization."""
@@ -155,7 +134,7 @@ class BooleanAttribute(Attribute):
         't',
         'yes',
         'y',
-        'on'
+        'on',
         '1'
     )
 

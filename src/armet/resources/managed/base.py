@@ -91,10 +91,8 @@ class ManagedResource(base.Resource):
 
     def assert_operations(self, *args):
         """Assets if the requested operations are allowed in this context."""
-        operations = self.allowed_operations
-        for operation in args:
-            if operation not in operations:
-                raise http.exceptions.Forbidden()
+        if not set(args).issubset(self.allowed_operations):
+            raise http.exceptions.Forbidden()
 
     def make_response(self, data, status=http.client.OK):
         """Fills the response object from the passed data."""
