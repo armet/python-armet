@@ -47,7 +47,6 @@ class MockResponse(http.Response):
         return len(self.headers)
 
 
-
 class JsonEncoderTestCase(unittest.TestCase):
 
     def setUp(self):

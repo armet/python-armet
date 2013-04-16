@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import re
-import collections
 import six
 from importlib import import_module
 from armet import utils

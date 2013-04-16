@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
-from armet.exceptions import ImproperlyConfigured
 from ..resource import options
 import collections
 import six
