@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from armet import http
-import six
 import bottle
-
-if six.PY3:
-    from urllib.parse import SplitResult as UrlSplitResult
-
-else:
-    from urlparse import SplitResult as UrlSplitResult
 
 
 class Request(http.Request):

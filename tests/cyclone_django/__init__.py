@@ -2,6 +2,7 @@
 from __future__ import print_function, division, unicode_literals
 import sys
 import six
+import unittest
 
 
 def setup():
