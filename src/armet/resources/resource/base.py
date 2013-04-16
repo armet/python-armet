@@ -100,15 +100,16 @@ class Resource(object):
             # Default the accept header to */*
             accept = '*/*'
 
+        # Check to see if an extension has overridden the accept header.
         allowed = self.meta.allowed_encoders
-        if self.extensions and self.extensions[-1] in allowed:
+        if self.extensions:
             name = self.extensions[-1].lower()
             if name in allowed:
                 match = self.meta.encoders[name]
-            if match is not None and match.can_transcode(accept):
-                # An encoder of the same name was discovered and
-                # it matches the requested format.
-                encoder = match
+                if match.can_transcode(accept):
+                    # An encoder of the same name was discovered and
+                    # it matches the requested format.
+                    encoder = match
 
         elif accept.strip() != '*/*':
             # No specific format specified in the URL; iterate through

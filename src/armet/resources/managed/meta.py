@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
+import collections
 from armet.resources.attributes import Attribute
 from ..resource.meta import ResourceBase
 from . import options
@@ -20,24 +21,24 @@ class ManagedResourceBase(ResourceBase):
 
         # Gather declared attributes from ourself and base classes.
         # TODO: We'll likely need a hook here for ORMs
-        self.attributes = attributes = {}
+        self.attributes = attributes = collections.OrderedDict()
         for base in bases:
             if hasattr(base, 'attributes'):
-                attributes.update(**base.attributes)
+                attributes.update(base.attributes)
 
         for index, attribute in six.iteritems(attrs):
             if isinstance(attribute, Attribute):
                 attributes[index] = attribute
 
         # Append include directives here
-        attributes.update(**self.meta.include)
+        attributes.update(self.meta.include)
 
         # Cache access to the attribute preparation cycle.
         self.preparers = preparers = {}
         for key in attributes:
             prepare = getattr(self, 'prepare_{}'.format(key), None)
             if not prepare:
-                prepare = lambda s, o, v: v
+                prepare = lambda self, obj, value: value
             preparers[key] = prepare
 
         # Return the constructed class object.
