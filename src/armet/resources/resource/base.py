@@ -63,25 +63,14 @@ class Resource(object):
             return cls.redirect(request, response)
 
         try:
-            # Parse any arguments out of the path.
-            arguments = cls.parse(request.path)
-
-            # Traverse down the path and determine to resource we're actually
-            # accessing.
-            Resource = cls.traverse(arguments)
-
             # Instantiate the resource.
-            obj = Resource(request, response, **arguments)
+            obj = cls(request, response)
 
             # Initiate the dispatch cycle.
             obj.dispatch()
 
-            # TODO: Commit
-
         except exceptions.Base as e:
             # Something that we can handle and return properly happened.
-
-            # TODO: Rollback
 
             # Set response properties from the exception.
             response.status = e.status
@@ -94,156 +83,16 @@ class Resource(object):
 
         except BaseException as e:
             # Something unexpected happenend.
-
-            # TODO: Rollback
-
             # Log error message to the logger.
             logger.exception('Internal server error')
 
             # TODO: Don't do the following if not in DEBUG mode.
             raise
 
-    #! Precompiled regular expression used to parse out the path.
-    _parse_pattern = re.compile(
-        r'^'
-        r'(?:\:(?P<directives>[^/\(\)]*))?'
-        r'(?:\((?P<query>[^/]*)\))?'
-        r'(?:/(?P<slug>[^/]+?))?'
-        r'(?:/(?P<path>.+?))??'
-        r'(?:\.(?P<extensions>[^/]+?))??/??$')
-
-    @classmethod
-    def parse(cls, path=''):
-        """Parses out parameters and separates them out of the path."""
-        # Apply the compiled regex.
-        arguments = re.match(cls._parse_pattern, path).groupdict()
-
-        # Explode the list arguments; they should be represented as
-        # empty arrays and not None.
-        if arguments['extensions']:
-            arguments['extensions'] = arguments['extensions'].split('.')
-
-        else:
-            arguments['extensions'] = []
-
-        if arguments['directives']:
-            arguments['directives'] = arguments['directives'].split(':')
-
-        else:
-            arguments['directives'] = []
-
-        # Return the arguments
-        return arguments
-
-    @classmethod
-    def traverse(cls, arguments):
-        """Traverses down the path and determines the accessed resource."""
-        # TODO: Implement resource traversal.
-        return cls
-
-    def __init__(self, request, response, **kwargs):
-        """Initializes the resources and sets its properites on self."""
-        # Store the given request and response objects.
+    def __init__(self, request, response):
+        """Initialize; store the given request and response objects."""
         self.request = request
         self.response = response
-
-        # Update our instance dictionary with the arugments from `parse`.
-        # Note that this adds the 'directives', 'query', 'slug', 'path', and
-        # 'extensions' attributes.
-        self.__dict__.update(**kwargs)
-
-        if self.slug:
-            # Clean the incoming slug value from the URI, if any.
-            self.slug = self.meta.slug.clean(self.slug)
-            self.slug = self.slug_clean(self.slug)
-
-    @property
-    def http_allowed_methods(self):
-        """Retrieves the allowed HTTP methods for this request."""
-        if self.slug is not None:
-            return self.meta.http_detail_allowed_methods
-
-        return self.meta.http_list_allowed_methods
-
-    @property
-    def allowed_operations(self):
-        """Retrieves the allowed operations for this request."""
-        if self.slug is not None:
-            return self.meta.detail_allowed_operations
-
-        return self.meta.list_allowed_operations
-
-    def assert_operations(self, *args):
-        """Assets if the requested operations are allowed in this context."""
-        operations = self.allowed_operations
-        for operation in args:
-            if operation not in operations:
-                raise exceptions.Forbidden()
-
-    def make_response(self, data, status=http.client.OK):
-        """Fills the response object from the passed data."""
-        # Prepare the data for transmission.
-        data = self.prepare(data)
-
-        # Encode the data using a desired encoder.
-        self.encode(data)
-
-        # Make sure that the status code is set.
-        self.response.status = status
-
-    def prepare(self, data):
-        """Prepares the data for encoding."""
-        if data is None:
-            # No data; return nothing.
-            return None
-
-        if self.slug is None:
-            # Attempt to prepare each item of the iterable (as long as
-            # we're not a string or some sort of mapping).
-            return (self.item_prepare(x) for x in data)
-
-        # Prepare just the singular value and return.
-        return self.item_prepare(data)
-
-    def item_prepare(self, item):
-        """Prepares a single item for encoding."""
-        # Initialize the object that hold the resultant item.
-        obj = {}
-
-        # Iterate through the attributes and build the object
-        # from the item.
-        for name, attribute in six.iteritems(self.attributes):
-            if not attribute.include:
-                # Attribute is not to be included in the
-                # resource body.
-                continue
-
-            try:
-                # Apply the attribute; request the value of the
-                # attribute from the item.
-                value = attribute.get(item)
-
-            except (TypeError, ValueError, KeyError, AttributeError):
-                # Nothing found; set it to null.
-                value = None
-
-            # Run the attribute through the prepare cycle.
-            value = attribute.prepare(value)
-            value = self.preparers[name](self, item, value)
-
-            # Set the value on the object.
-            obj[name] = value
-
-        # Return the resultant object.
-        return obj
-
-    def slug_prepare(self, obj, value):
-        """Prepares the slug for constructing a URI."""
-        return value
-
-    def slug_clean(self, value):
-        """Cleans the incoming slug into an expected represention."""
-        return value
 
     def encode(self, data):
         """Encodes the data using a selected encoder."""
@@ -302,6 +151,14 @@ class Resource(object):
         # Raise a Not Acceptable exception.
         raise exceptions.NotAcceptable(available)
 
+    def assert_http_allowed_methods(self):
+        """Ensure that we're allowed to use this HTTP method."""
+        if self.request.method not in self.meta.http_allowed_methods:
+            # The specified method is not allowed for the resource
+            # identified by the request URI.
+            # RFC 2616 § 10.4.6 — 405 Method Not Allowed
+            raise exceptions.MethodNotAllowed(self.meta.http_allowed_methods)
+
     def dispatch(self):
         """Entry-point of the dispatch cycle for this resource.
 
@@ -320,11 +177,7 @@ class Resource(object):
             raise exceptions.NotImplemented()
 
         # Ensure that we're allowed to use this HTTP method.
-        if self.request.method not in self.http_allowed_methods:
-            # The specified method is not allowed for the resource
-            # identified by the request URI.
-            # RFC 2616 § 10.4.6 — 405 Method Not Allowed
-            raise exceptions.MethodNotAllowed(self.http_allowed_methods)
+        self.assert_http_allowed_methods()
 
         # Retrieve the function corresponding to this HTTP method.
         function = getattr(self, self.request.method.lower(), None)
@@ -335,82 +188,3 @@ class Resource(object):
 
         # Delegate to the determined function to process the request.
         return function()
-
-    def get(self):
-        """Processes a `GET` request."""
-        # Ensure we're allowed to read the resource.
-        self.assert_operations('read')
-
-        # Delegate to `read` to retrieve the items.
-        items = self.read()
-
-        if self.slug is not None:
-            if not items:
-                # Requested a specific resource but nothing is returned.
-                raise exceptions.NotFound()
-
-            if (not isinstance(items, six.string_types) and
-                    isinstance(items, collections.Sequence)):
-                try:
-                    # Ensure that we only return a single object
-                    # if we're requested to.
-                    items = items[0]
-
-                except (TypeError, AttributeError):
-                    # Assume that `items` is already a single object.
-                    pass
-
-        # Build the response object.
-        self.make_response(items)
-
-    def read(self):
-        """Retrieves data to be displayed; called via GET.
-
-        @returns
-            Either a single object or an iterable of objects to be encoded
-            and returned to the client.
-        """
-        # There is no default behavior.
-        raise exceptions.NotImplemented()
-
-    def create(self, data):
-        """Creates the object that is being requested; via POST or PUT.
-
-        @param[in] data
-            The data to create the object with.
-
-        @returns
-            The object that has been created; or, None, to indicate that no
-            object was created.
-        """
-        # There is no default behavior.
-        raise exceptions.NotImplemented()
-
-    def update(self, obj, data):
-        """Updates the object that is being requested; via PATCH or PUT.
-
-        @param[in] obj
-            The objects represented by the current request; the results of
-            invoking `self.read()`.
-
-        @param[in] data
-            The data to update the object with.
-
-        @returns
-            The object that has been updated.
-        """
-        # There is no default behavior.
-        raise exceptions.NotImplemented()
-
-    def destroy(self, obj):
-        """Destroy the passed object (or objects).
-
-        @param[in] obj
-            The objects represented by the current request; the results of
-            invoking `self.read()`.
-
-        @returns
-            Nothing.
-        """
-        # There is no default behavior.
-        raise exceptions.NotImplemented()

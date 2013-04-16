@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import six
-from .model import ModelResource
+from .base import ModelResource
 from .meta import ModelResourceBase
 
 

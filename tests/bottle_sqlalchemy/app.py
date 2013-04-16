@@ -16,7 +16,7 @@ class Meta:
 
 
 @route('/api/')
-class SimpleResource(resources.Resource):
+class SimpleResource(resources.ManagedResource):
 
     class Meta(Meta):
         pass
@@ -37,14 +37,14 @@ class PollResource(resources.ModelResource):
 
 
 @route('/api/')
-class HttpWholeForbiddenResource(resources.Resource):
+class HttpWholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_allowed_methods = ('GET', 'DELETE',)
 
 
 @route('/api/')
-class HttpForbiddenResource(resources.Resource):
+class HttpForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_list_allowed_methods = ('DELETE',)
@@ -52,14 +52,14 @@ class HttpForbiddenResource(resources.Resource):
 
 
 @route('/api/')
-class WholeForbiddenResource(resources.Resource):
+class WholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         allowed_operations = ('read', 'destroy',)
 
 
 @route('/api/')
-class ForbiddenResource(resources.Resource):
+class ForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         list_allowed_operations = ('destroy',)

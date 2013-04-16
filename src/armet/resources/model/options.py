@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 from armet.exceptions import ImproperlyConfigured
-from ..resource import options
+from ..managed import options
 
 
-class ModelResourceOptions(options.ResourceOptions):
+class ModelResourceOptions(options.ManagedResourceOptions):
 
     def __init__(self, meta, name, bases):
         # Initalize base resource options.
