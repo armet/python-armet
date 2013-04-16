@@ -3,6 +3,9 @@ from __future__ import print_function, division, unicode_literals
 import sys
 import six
 import unittest
+from ..utils import django
+from nose import twistedtools
+from twisted.python import log
 
 
 def setup():
@@ -11,15 +14,12 @@ def setup():
         raise unittest.SkipTest('No support for python 3.x')
 
     # Initialize the database access layer.
-    from ..utils import django
     django.initialize('django')
 
     # Start the reactor and run the development server
     # Twistedtools spins off the reactor loop into a separate thread
     # so the tests may continue on this thread.
     from .app import application
-    from nose import twistedtools
-    from twisted.python import log
     log.startLogging(sys.stdout)
     twistedtools.reactor.listenTCP(5000, application, interface='localhost')
     twistedtools.threaded_reactor()
@@ -27,5 +27,4 @@ def setup():
 
 def teardown():
     # Shutdown the reactor thread.
-    from nose import twistedtools
     twistedtools.stop_reactor()
