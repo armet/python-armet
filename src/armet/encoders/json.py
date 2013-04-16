@@ -13,7 +13,7 @@ class _TypeCoerableJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, collections.Iterable):
             # This is an iterable but not recognizable as such
-            # by the JSON encoder.
+            # by the JSON encoder (eg. generator).
             return list(obj)
 
         # Raise up our hands; we cannot encode this.
