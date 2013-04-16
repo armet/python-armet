@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import contextlib
 import importlib
 import sys
+import functools
 
 
 if sys.version_info[0] == 2 or sys.version_info[1] < 3:
@@ -22,9 +23,11 @@ class Wrapper:
     def __call__(self, function):
         def wrapped(obj, *args, **kwargs):
             self.mock(*args, **kwargs)
-            return function(obj, *args, **kwargs)
+            result = function(*args, **kwargs)
+            self.mock.return_value = result
+            return result
 
-        return wrapped
+        return functools.partial(wrapped, function.im_self)
 
 
 @contextlib.contextmanager
@@ -41,13 +44,8 @@ def spy(target, method):
     wrapped = Wrapper(mocked)(save)
     setattr(target, method, wrapped)
 
-    try:
-        # Yield to the block.
-        yield mocked
-
-    except AttributeError:
-        # Something weird happened because of our spy; oh well.
-        pass
+    # Yield to the block.
+    yield mocked
 
     # Restore the method.
     setattr(target, method, save)

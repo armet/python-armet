@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division
 import logging
-from ..resource import base
+from ..managed import base
 
 
 logger = logging.getLogger(__name__)
 
 
-class ModelResource(base.Resource):
+class ModelResource(base.ManagedResource):
     """Implements the RESTful resource protocol for model-bound resources.
 
     @note

@@ -9,14 +9,13 @@ class ParseTestCase(test.TestCase):
 
     def request(self, url):
         # Spy on the initialize method.
-        target = 'armet.resources.resource.base.Resource'
-        with spy(target, '__init__') as method:
+        target = 'armet.resources.managed.base.ManagedResource'
+        with spy(target, 'parse') as method:
             # Invoke a request against the resource.
             response, _ = self.client.request(url)
 
-        # Grab the keyword arguments that were passed into the mocked
-        # method.
-        arguments = method.call_args[1]
+        # Grab the keyword arguments that were returned.
+        arguments = method.return_value
 
         # Assert that we got enough of them.
         self.assertIn('slug', arguments)

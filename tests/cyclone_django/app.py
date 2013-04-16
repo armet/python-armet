@@ -12,7 +12,7 @@ class Meta:
     connectors = {'http': 'cyclone', 'model': 'django'}
 
 
-class SimpleResource(resources.Resource):
+class SimpleResource(resources.ManagedResource):
 
     class Meta(Meta):
         pass
@@ -30,26 +30,26 @@ class PollResource(resources.ModelResource):
     question = attributes.Attribute('question')
 
 
-class HttpWholeForbiddenResource(resources.Resource):
+class HttpWholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_allowed_methods = ('GET', 'DELETE',)
 
 
-class HttpForbiddenResource(resources.Resource):
+class HttpForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_list_allowed_methods = ('DELETE',)
         http_detail_allowed_methods = ('GET',)
 
 
-class WholeForbiddenResource(resources.Resource):
+class WholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         allowed_operations = ('read', 'destroy',)
 
 
-class ForbiddenResource(resources.Resource):
+class ForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         list_allowed_operations = ('destroy',)

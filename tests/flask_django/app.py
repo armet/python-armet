@@ -20,7 +20,7 @@ class Meta:
 
 
 @armet.route('/api/', application)
-class SimpleResource(resources.Resource):
+class SimpleResource(resources.ManagedResource):
 
     class Meta(Meta):
         pass
@@ -40,14 +40,14 @@ class PollResource(resources.ModelResource):
 
 
 @armet.route('/api/', application)
-class HttpWholeForbiddenResource(resources.Resource):
+class HttpWholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_allowed_methods = ('GET', 'DELETE',)
 
 
 @armet.route('/api/', application)
-class HttpForbiddenResource(resources.Resource):
+class HttpForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         http_list_allowed_methods = ('DELETE',)
@@ -55,14 +55,14 @@ class HttpForbiddenResource(resources.Resource):
 
 
 @armet.route('/api/', application)
-class WholeForbiddenResource(resources.Resource):
+class WholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         allowed_operations = ('read', 'destroy',)
 
 
 @armet.route('/api/', application)
-class ForbiddenResource(resources.Resource):
+class ForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
         list_allowed_operations = ('destroy',)

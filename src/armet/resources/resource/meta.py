@@ -70,23 +70,6 @@ class ResourceBase(type):
         base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
         meta = attrs['meta'] = cls.options(metadata, name, base_meta)
 
-        # Gather declared attributes from ourself and base classes.
-        # TODO: We'll likely need a hook here for ORMs
-        attributes = {}
-        for base in bases:
-            if hasattr(base, 'attributes'):
-                attributes.update(**base.attributes)
-
-        for index, attribute in six.iteritems(attrs):
-            if isinstance(attribute, Attribute):
-                attributes[index] = attribute
-
-        # Append include directives here
-        attributes.update(**meta.include)
-
-        # Store the gathered attributes
-        attrs['attributes'] = attributes
-
         # Remove connector layer from base classes.
         new_bases = []
         for base in bases:
@@ -100,14 +83,6 @@ class ResourceBase(type):
 
         # Construct the class object.
         self = super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
-
-        # Cache access to the attribute preparation cycle.
-        self.preparers = preparers = {}
-        for key in attributes:
-            prepare = getattr(self, 'prepare_{}'.format(key), None)
-            if not prepare:
-                prepare = lambda s, o, v: v
-            preparers[key] = prepare
 
         # Filter the available connectors according to the
         # metaclass restriction set.
