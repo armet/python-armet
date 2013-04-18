@@ -79,9 +79,9 @@ def run(name):
     elif connector == 'cyclone':
         # Start the reactor and run the development server
         from twisted.internet import reactor
-        # from twisted.python import log
+        from twisted.python import log
         module = importlib.import_module('tests.{}.app'.format(name))
-        # log.startLogging(sys.stdout)
+        log.startLogging(sys.stdout)
         reactor.listenTCP(PORT, module.application, interface=HOST)
         reactor.run()
 
