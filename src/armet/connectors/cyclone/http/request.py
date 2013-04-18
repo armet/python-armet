@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 from armet.http import request
 from six.moves import cStringIO as StringIO
 
 
 class Headers(request.Headers):
 
-    def __init__(self, handle, *args, **kwargs):
+    def __init__(self, handle):
         self.__handle = handle
-        super(Headers, self).__init__(*args, **kwargs)
+        super(Headers, self).__init__()
 
     def __getitem__(self, name):
         return self.__handle.headers[name]
