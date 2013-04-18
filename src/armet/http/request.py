@@ -66,7 +66,7 @@ class Headers(collections.Mapping):
         return self.__sequence[name]
 
 
-class Request(six.with_metaclass(abc.ABCMeta)):
+class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     """Describes the RESTful request abstraction.
     """
 
@@ -177,3 +177,67 @@ class Request(six.with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def readlines(self, hint=-1):
         """Read and return a list of lines from the stream."""
+
+    def __iter__(self):
+        """File-like objects are implicitly iterators."""
+        return self
+
+    def __next__(self):
+        """Iterate over the lines of the request."""
+        line = self.readline()
+        if line:
+            return line
+        raise StopIteration()
+
+    def __len__(self):
+        """Returns the length of the request body, if known."""
+        length = self.headers.get('Content-Length')
+        return int(length) if length else 0
+
+    def __getitem__(self, name):
+        """Retrieves a header with the passed name.
+
+        @param[in] name
+            The case-insensitive name of the header to retrieve.
+        """
+        return self.headers[name]
+
+    def get(self, name, default=None):
+        """Retrieves a header with the passed name."""
+        return self.headers.get(name, default)
+
+    def getlist(self, name):
+        """
+        Retrieves a the multi-valued list of
+        the header with the passed name.
+        """
+        return self.headers.getlist(name)
+
+    def __contains__(self, name):
+        """Tests if the passed header exists in the request."""
+        return name in self.headers
+
+    def keys(self):
+        """Return a new view of the header names."""
+        return self.headers.keys()
+
+    def values(self):
+        """Return a new view of the header values."""
+        return self.headers.values()
+
+    def items(self):
+        """Return a new view of the headers."""
+        return self.headers.items()
+
+    if not six.PY3:
+        def iterkeys(self):
+            """Return a new view of the header names."""
+            return self.headers.iterkeys()
+
+        def itervalues(self):
+            """Return a new view of the header values."""
+            return self.headers.itervalues()
+
+        def iteritems(self):
+            """Return a new view of the headers."""
+            return self.headers.iteritems()
