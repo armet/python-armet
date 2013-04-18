@@ -14,7 +14,7 @@ class Headers(request.Headers):
         return self.__handle.headers[name]
 
     def __iter__(self):
-        return self.__handle.headers
+        return iter(self.__handle.headers)
 
     def __len__(self):
         return len(self.__handle.headers)
@@ -28,7 +28,8 @@ class Request(request.Request):
     def __init__(self, handler, *args, **kwargs):
         self.__handle = handler.request
         self.__stream = StringIO(self.__handle.body)
-        kwargs.update(method=self.__handle.method, headers=Headers(self))
+        kwargs.update(method=self.__handle.method,
+                      headers=Headers(self.__handle))
         super(Request, self).__init__(*args, **kwargs)
 
     @property
@@ -53,8 +54,5 @@ class Request(request.Request):
     def readline(self, limit=-1):
         return self.__stream.readline(limit)
 
-    def seek(self, offset, whence=0):
-        return self.__stream.seek(offset, whence)
-
-    def tell(self):
-        return self.__stream.tell()
+    def readlines(self, hint=-1):
+        return self.__stream.readlines(hint)
