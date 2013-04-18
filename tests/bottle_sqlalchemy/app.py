@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 from __future__ import absolute_import
 from armet import resources, route
 from armet.resources import attributes

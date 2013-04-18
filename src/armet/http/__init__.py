@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Normalizes access to the HTTP libraries.
 """
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 
 # Normalize `http.client` and `httplib`.
 from six.moves import http_client as client

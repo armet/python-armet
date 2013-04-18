@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import six
 from cyclone import web
 from cyclone import bottle
@@ -20,7 +20,8 @@ class Handler(web.RequestHandler):
     def __route(self, path, *args, **kwargs):
         # Construct request and response wrappers.
         request = http.Request(self, path)
-        response = http.Response(self)
+        response = None # http.Response(self)
+        import ipdb; ipdb.set_trace()
 
         # Pass control off to the resource handler.
         self.Resource.view(request, response)

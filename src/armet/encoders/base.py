@@ -3,7 +3,7 @@
 Describes the encoder protocols and generalizations used to
 encode objects to a format suitable for transmission.
 """
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
 import mimeparse
