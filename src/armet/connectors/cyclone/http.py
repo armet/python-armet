@@ -11,7 +11,7 @@ class Request(http.Request):
 
         def __init__(self, request):
             self._handle = request._handle
-            super(Headers, self).__init__(request)
+            super(Request.Headers, self).__init__(request)
 
         def __getitem__(self, name):
             return self._handle.headers[name]
@@ -63,7 +63,7 @@ class Response(http.Response):
 
         def __init__(self, response):
             self._handler = response._handler
-            super(Headers, self).__init__(response)
+            super(Response.Headers, self).__init__(response)
 
         def __setitem__(self, name, value):
             self._obj._assert_open()
