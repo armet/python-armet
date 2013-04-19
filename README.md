@@ -11,8 +11,43 @@ behind the interface.
 
 ## Prerequisites
 
- - **[six](https://pypi.python.org/pypi/six)** — Python 2 and 3 compatibility utilities.
- - **[mimeparse](https://pypi.python.org/pypi/python-mimeparse/0.1.4)** — Provides functions for parsing mime-type names and matching them against a list of media-ranges.
+### Required
+
+ - **[six](https://pypi.python.org/pypi/six)** <br />
+   Python 2 and 3 compatibility utilities.
+
+ - **[mimeparse](https://pypi.python.org/pypi/python-mimeparse/0.1.4)** <br />
+   Provides functions for parsing mime-type names and matching them against a list of media-ranges.
+
+### Optional
+
+ - **[gevent](http://www.gevent.org/)** `~ 1.0` <br />
+   Provides support for implicit asynchronous handling of requests on WSGI-based connectors.
+   For example, using the `bottle` connector:
+   ```python
+   from gevent import monkey
+   monkey.patch_all()  # Transparently switch python to use gevent.
+   
+   from bottle import run
+   from armet import resources, route
+   import time
+   
+   @route('/')
+   class Resource(resources.Resource):
+      class Meta:
+          connectors = {'http': 'bottle'}
+          asynchronous = True
+   
+      def get(self):
+          for number in range(100):
+              self.response.write(str(number) + '\n')
+              time.sleep(0.1)  # Wait a bit so we can see it streaming.
+              self.response.flush()  # Async write body to transport stream.
+   
+          self.response.close()  # Close the http connection.
+   
+   run(server='gevent')
+   ```
 
 ## Connectors
 
