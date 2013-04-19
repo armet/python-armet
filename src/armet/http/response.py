@@ -4,6 +4,7 @@ import collections
 import abc
 import six
 import re
+import mimeparse
 import io
 from armet import exceptions
 
@@ -12,7 +13,7 @@ class Headers(collections.MutableMapping):
     """Describes a mutable mapping abstraction over response headers.
     """
 
-    class __Header(collections.MutableSequence):
+    class _Header(collections.MutableSequence):
         """
         Provides an implementation of a mutable sequence of multi-valued
         headers that are synced with the normal list of headers.
@@ -21,7 +22,7 @@ class Headers(collections.MutableMapping):
         def __init__(self, sequence, name):
             #! Internal reference to the first-degree headers dictionary.
             self._headers = sequence._headers
-            self._resource = sequence._resource
+            self._response = sequence._response
             self._name = name
 
             #! Internal store of the value at instantiation of the header.
@@ -53,39 +54,42 @@ class Headers(collections.MutableMapping):
 
         def __setitem__(self, index, value):
             # Store the value at the passed index
-            self._resource._assert_state()
+            self._response._assert_open()
             self._sequence[index] = value
             self._push()
 
         def __delitem__(self, index):
             # Remove the value at the passed index.
-            self._resource._assert_state()
+            self._response._assert_open()
             del self._sequence[index]
             self._push()
 
         def insert(self, index, value):
             # Insert the header value at the passed index.
-            self._resource._assert_state()
+            self._response._assert_open()
             self._sequence.insert(index, value)
             self._push()
 
-    class __Sequence(dict):
+    class _Sequence(dict):
         """
         Provides an implementation of a dictionary that retreives its
         values as sequences.
         """
 
-        def __init__(self, headers, resource):
+        def __init__(self, headers, response):
             self._headers = headers
-            self._resource = resource
+            self._response = response
 
         def __missing__(self, name):
-            self[name] = value = Headers.__Header(self, name)
+            self[name] = value = Headers._Header(self, name)
             return value
 
-    def __init__(self, resource):
+    def __init__(self, response):
         #! Internal store of the multi-valued headers as lists.
-        self.__sequence = Headers.__Sequence(self, resource)
+        self._sequence = Headers._Sequence(self, response)
+
+        #! Reference to the response.
+        self._response = response
 
     @staticmethod
     def _normalize(name):
@@ -136,52 +140,52 @@ class Headers(collections.MutableMapping):
 
     def append(self, name, value):
         """Add a value to the end of the list for the named header."""
-        return self.__sequence[name].append(value)
+        return self._sequence[name].append(value)
 
     def extend(self, name, values):
         """Extend the list for the named header by appending all values."""
-        return self.__sequence[name].extend(values)
+        return self._sequence[name].extend(values)
 
     def insert(self, name, index, value):
         """Insert a value at the passed index in the named header."""
-        return self.__sequence[name].insert(index, value)
+        return self._sequence[name].insert(index, value)
 
     def remove(self, name, value):
         """
         Remove the first item with the passed value from the
         list for the named header.
         """
-        return self.__sequence[name].remove(value)
+        return self._sequence[name].remove(value)
 
     def popvalue(self, name, index=None):
         """Remove the item at the given position in the named header list."""
-        return self.__sequence[name].pop(index)
+        return self._sequence[name].pop(index)
 
     def index(self, name, value):
         """
         Return the index in the list of the first item whose value is x in
         the values of the named header.
         """
-        return self.__sequence[name].index(value)
+        return self._sequence[name].index(value)
 
     def count(self, name, value):
         """
         Return the number of times a value appears in the list of the values
         of the named header.
         """
-        return self.__sequence[name].count(value)
+        return self._sequence[name].count(value)
 
     def sort(self, name):
         """Sort the items of the list, in place."""
-        return self.__sequence[name].sort()
+        return self._sequence[name].sort()
 
     def reverse(self, name):
         """Reverse the elements of the list, in place."""
-        return self.__sequence[name].reverse()
+        return self._sequence[name].reverse()
 
     def getlist(self, name):
         """Retrieves the passed header as a sequence of its values."""
-        return self.__sequence[name]
+        return self._sequence[name]
 
 
 class Response(six.with_metaclass(abc.ABCMeta)):
@@ -190,18 +194,27 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
     def __init__(self, headers, *args, **kwargs):
         #! The response headers dictionary.
-        self.__headers = headers
+        self._headers = headers
 
-    def _assert_state(self):
-        # Ensure things are not changed on a closed or streaming response.
-        if self.closed or self.streaming:
-            raise exceptions.InvalidOperation(
-                'Resource is closed or streaming.')
+        #! True if the response object is closed.
+        self._closed = False
+
+        #! True if the response object is streaming.
+        self._streaming = False
+
+    def _assert_open(self):
+        self._assert_not_closed()
+        if self.streaming:
+            raise exceptions.InvalidOperation('Response is streaming.')
+
+    def _assert_not_closed(self):
+        if self.closed:
+            raise exceptions.InvalidOperation('Response is closed.')
 
     @property
     def headers(self):
         """Retrieves the response headers dictionary."""
-        return self.__headers
+        return self._headers
 
     @abc.abstractproperty
     def status(self):
@@ -209,7 +222,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
     @status.setter
     def status(self, value):
-        """Sets the status code of the response."""
+        """Sets the status code of the response.
+        """
 
     def isatty(self):
         """Return True if the stream is interactive."""
@@ -242,19 +256,73 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         """Response objects do not support random access."""
         raise io.UnsupportedOperation()
 
+    @property
+    def encoding(self):
+        if hasattr(self, '__encoding'):
+            # Encoding has been set manually.
+            return self.__encoding
+
+        # Get the `Content-Type` header, if available.
+        content_type = self.headers.get('Content-Type')
+        if content_type:
+            # Parse out the primary type and parameters from the media type.
+            ptype, _, params = mimeparse.parse_mime_type(content_type)
+
+            # Return the specified charset or the default depending on the
+            # primary type.
+            default = 'utf-8' if ptype == 'application' else 'iso-8859-1'
+            return params.get('charset', default)
+
+        # No encoding found.
+
+    @encoding.setter
+    def encoding(self, value):
+        # Explicitly set the character encoding to use.
+        self.__encoding = value
+
     @abc.abstractmethod
-    def close(self):
+    def _close(self):
         """Flush and close the stream."""
 
-    @abc.abstractproperty
+    def close(self):
+        """Flush and close the stream.
+
+        @note
+            This is not the method that connectors will override; refer to
+            `self._close` instead.
+        """
+        if self.streaming:
+            # We're streaming; flush out the current buffer.
+            self.flush()
+
+        else:
+            # We're not streaming, auto-write content-length if not
+            # already set.
+            if 'Content-Length' not in self.headers:
+                self.headers['Content-Length'] = self.tell()
+
+        # We're done with the response; inform the HTTP connector
+        # to close the response stream.
+        self._close()
+        self._closed = True
+
+    @property
     def closed(self):
         """True if the stream is closed."""
+        return self._closed
 
     @abc.abstractmethod
     def tell(self):
         """Return the current stream position."""
 
     @abc.abstractmethod
+    def _write(self, chunk):
+        """Writes the given byte string chunk to the output buffer.
+
+        @note
+            This is what a connector is meant to override.
+        """
+
     def write(self, content):
         """Writes the given content to the output buffer.
 
@@ -268,7 +336,32 @@ class Response(six.with_metaclass(abc.ABCMeta)):
                     self.write(x)
                     self.flush()
             @endcode
+
+        @note
+            This is not the method that connectors will override; refer to
+            `self._write` instead.
         """
+        # Ensure we do not flush a closed response.
+        self._assert_not_closed()
+
+        # If passed a byte string we can optionally encode it and
+        # write it to the stream
+        if type(content) is six.binary_type:
+            if self.encoding:
+                content = content.encode(self.encoding)
+            self._write(content)
+
+        # If passed a string, we hope that the user
+        # encoded it properly.
+        elif isinstance(content, six.string_types):
+            self._write(content)
+
+        # If passed some kind of iterator, attempt to recurse into
+        # oblivion.
+        else:
+            for chunk in content:
+                self.write(chunk)
+                self.flush()
 
     def writelines(self, lines):
         """
@@ -279,6 +372,9 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             self.write(line)
 
     @abc.abstractmethod
+    def _flush(self):
+        """Flush the write buffers of the stream."""
+
     def flush(self):
         """Flush the write buffers of the stream.
 
@@ -286,9 +382,16 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         the transport layer, initiating the HTTP/1.1 response. This initiates
         a streaming response. If the `Content-Length` header is not given
         then the chunked `Transfer-Encoding` is applied.
-        """
 
-    @abc.abstractproperty
+        @note
+            This is not the method that connectors will override; refer to
+            `self._flush` instead.
+        """
+        self._assert_not_closed()
+        self._streaming = True
+        self._flush()
+
+    @property
     def streaming(self):
         """True if the stream is currently streaming content to the client.
 
@@ -298,3 +401,91 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         Any attempt to modify the headers or the status of the response
         will result in a `TypeError`.
         """
+        return self._streaming
+
+    def __getitem__(self, name):
+        """Retrieves a header with the passed name.
+
+        @param[in] name
+            The case-insensitive name of the header to retrieve.
+        """
+        return self._headers[name]
+
+    def __setitem__(self, name, value):
+        """Stores a header with the passed name.
+
+        @param[in] name
+            The name to store the header as. This is passed through
+            `Headers.normalize` before storing on the response.
+
+        @param[in] value
+            The value to store for the header; for multi-valued headers,
+            this can be a comma-separated list of values.
+        """
+        self._headers[name] = value
+
+    def __delitem__(self, name):
+        """Removes a header with the passed name.
+
+        @param[in] name
+            The case-insensitive name of the header to remove
+            from the response.
+        """
+        del self._headers
+
+    def __len__(self):
+        """Retrieves the actual length of the response."""
+        return self.tell()
+
+    def __contains__(self, name):
+        """Tests if the passed header exists in the response."""
+        return name in self._headers
+
+    def append(self, name, value):
+        """Add a value to the end of the list for the named header."""
+        return self._headers.append(name, value)
+
+    def extend(self, name, values):
+        """Extend the list for the named header by appending all values."""
+        return self._headers.extend(name, values)
+
+    def insert(self, name, index, value):
+        """Insert a value at the passed index in the named header."""
+        return self._headers.insert(index, value)
+
+    def remove(self, name, value):
+        """
+        Remove the first item with the passed value from the
+        list for the named header.
+        """
+        return self._headers.remove(name, value)
+
+    def popvalue(self, name, index=None):
+        """Remove the item at the given position in the named header list."""
+        return self._headers.popvalue(name, index)
+
+    def index(self, name, value):
+        """
+        Return the index in the list of the first item whose value is x in
+        the values of the named header.
+        """
+        return self._headers.index(name, value)
+
+    def count(self, name, value):
+        """
+        Return the number of times a value appears in the list of the values
+        of the named header.
+        """
+        return self._headers.count(name, value)
+
+    def sort(self, name):
+        """Sort the items of the list, in place."""
+        return self._headers.sort(name)
+
+    def reverse(self, name):
+        """Reverse the elements of the list, in place."""
+        return self._headers.reverse(name)
+
+    def getlist(self, name):
+        """Retrieves the passed header as a sequence of its values."""
+        return self._headers.getlist(name)

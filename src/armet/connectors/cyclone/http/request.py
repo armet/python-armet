@@ -48,7 +48,7 @@ class Request(request.Request):
     def uri(self):
         return self.__handle.full_url()
 
-    def read(self, count=None):
+    def read(self, count=-1):
         return self.__stream.read(count)
 
     def readline(self, limit=-1):
