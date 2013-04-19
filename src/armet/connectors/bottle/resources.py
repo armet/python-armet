@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import bottle
 from . import http
 
@@ -19,7 +19,7 @@ class Resource(object):
         return bottle.response.body
 
     @classmethod
-    def mount(cls, url, application=None):
+    def mount(cls, url='/', application=None):
         # If no explicit application is passed; use
         # the current default application.
         application = bottle.app[-1]

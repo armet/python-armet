@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import collections
 import functools
 
@@ -13,19 +13,6 @@ class classproperty(object):
 
     def __get__(self, obj, cls):
         return self.getter(cls)
-
-
-def memoize_single(function):
-    """Memoization decorator for a function taking a single argument.
-
-    @note
-        This is roughly ~6 times faster than `memoize` under CPython 2.7.
-    """
-    class memoizer(dict):
-        def __missing__(self, key):
-            result = self[key] = function(key)
-            return result
-    return memoizer().__getitem__
 
 
 class memoize(dict):

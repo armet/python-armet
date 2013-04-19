@@ -6,7 +6,7 @@
      ✔ `.write()` and `.read()` @done (13-04-15 17:26)
  ☐ encode
      ✔ base @done (13-04-07 21:12)
-     ☐ json
+     ✔ json @done (13-04-15 17:37)
      ☐ xml
      ☐ yaml
      ☐ message pack (.pack)

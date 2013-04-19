@@ -1,38 +1,79 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 from armet import http
+from six.moves import cStringIO as StringIO
 import bottle
 
 
 class Request(http.Request):
 
-    @property
-    def method(self):
-        return bottle.request.method
+    class Headers(http.request.Headers):
 
-    @method.setter
-    def method(self, value):
-        bottle.request.environ['REQUEST_METHOD'] = value
+        def __getitem__(self, name):
+            return bottle.request.headers[name]
+
+        def __iter__(self):
+            return iter(bottle.request.headers)
+
+        def __len__(self):
+            return len(bottle.request.headers)
+
+        def __contains__(self, name):
+            return name in bottle.request.headers
+
+    def __init__(self, *args, **kwargs):
+        kwargs.update(method=bottle.request.method)
+        super(Request, self).__init__(*args, **kwargs)
 
     @property
-    def url(self):
+    def protocol(self):
+        return bottle.request.urlparts.scheme.upper()
+
+    @property
+    def query(self):
+        return bottle.request.query_string
+
+    @property
+    def uri(self):
         return bottle.request.url
 
-    def __getitem__(self, name):
-        return bottle.request.headers.get(name)
+    def read(self, count=-1):
+        return bottle.request.body.read(count)
 
-    def __iter__(self):
-        for key, _ in bottle.request.headers:
-            yield key
+    def readline(self, limit=-1):
+        return bottle.request.body.readline(limit)
 
-    def __len__(self):
-        return len(bottle.request.headers)
-
-    def __contains__(self, name):
-        return name in bottle.request.headers
+    def readlines(self, hint=-1):
+        return bottle.request.body.readlines(hint)
 
 
 class Response(http.Response):
+
+    class Headers(http.response.Headers):
+
+        def __setitem__(self, name, value):
+            self._obj._assert_open()
+            bottle.response.headers[self._normalize(name)] = value
+
+        def __getitem__(self, name):
+            return bottle.response.headers[name]
+
+        def __contains__(self, name):
+            return name in bottle.response.headers
+
+        def __delitem__(self, name):
+            self._obj._assert_open()
+            del bottle.response.headers[name]
+
+        def __len__(self):
+            return len(bottle.response.headers)
+
+        def __iter__(self):
+            return iter(bottle.response.headers)
+
+    def __init__(self, *args, **kwargs):
+        self._stream = StringIO()
+        super(Response, self).__init__(*args, **kwargs)
 
     @property
     def status(self):
@@ -40,26 +81,18 @@ class Response(http.Response):
 
     @status.setter
     def status(self, value):
+        self._assert_open()
         bottle.response.status = value
 
-    def write(self, value):
-        if value is not None:
-            bottle.response.body += value
+    def tell(self):
+        return self._stream.tell() + len(bottle.response.body)
 
-    def __getitem__(self, name):
-        return bottle.response.headers[str(name)]
+    def _write(self, chunk):
+        self._stream.write(chunk)
 
-    def __setitem__(self, name, value):
-        bottle.response.headers[str(name)] = value
+    def _flush(self):
+        raise NotImplementedError()
 
-    def __delitem__(self, name):
-        del bottle.response.headers[str(name)]
-
-    def __contains__(self, name):
-        return str(name) in bottle.response.headers
-
-    def __iter__(self):
-        return iter(bottle.response.headers)
-
-    def __len__(self):
-        return len(bottle.response.headers)
+    def close(self):
+        super(Response, self).close()
+        bottle.response.body = self._stream.getvalue()

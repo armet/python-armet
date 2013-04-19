@@ -1,50 +1,9 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import unittest
 import json
 from armet import encoders, http
-
-
-# TODO: Move this to somewhere interesting like `armet.test.mock.Response`
-class MockResponse(http.Response):
-
-    def __init__(self, *args, **kwargs):
-        super(MockResponse, self).__init__(*args, **kwargs)
-        self.reset()
-
-    def reset(self):
-        self.content = ''
-        self.headers = {}
-        self._status = 200
-
-    @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        self._status = value
-
-    def write(self, value):
-        self.content += value
-
-    def __getitem__(self, name):
-        return self.headers[name]
-
-    def __setitem__(self, name, value):
-        self.headers[name] = value
-
-    def __delitem__(self, name):
-        del self.headers[str(name)]
-
-    def __contains__(self, name):
-        return name in self.headers
-
-    def __iter__(self):
-        return iter(self.headers)
-
-    def __len__(self):
-        return len(self.headers)
+from armet.test.http import Response as MockResponse
 
 
 class JsonEncoderTestCase(unittest.TestCase):
@@ -58,6 +17,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_none(self):
         self.response.reset()
         self.encode(None)
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '{}')
@@ -65,6 +25,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_nothing(self):
         self.response.reset()
         self.encode()
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '{}')
@@ -72,6 +33,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_number(self):
         self.response.reset()
         self.encode(42)
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[42]')
@@ -79,12 +41,14 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_boolean(self):
         self.response.reset()
         self.encode(True)
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[true]')
 
         self.response.reset()
         self.encode(False)
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[false]')
@@ -92,6 +56,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_array(self):
         self.response.reset()
         self.encode([1, 2, 3])
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[1,2,3]')
@@ -99,6 +64,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_array_nested(self):
         self.response.reset()
         self.encode([1, [2, 4, 5], 3])
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[1,[2,4,5],3]')
@@ -107,6 +73,7 @@ class JsonEncoderTestCase(unittest.TestCase):
         message = {'x': 1, 'y': 2}
         self.response.reset()
         self.encode(message)
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(json.loads(value), message)
@@ -114,6 +81,7 @@ class JsonEncoderTestCase(unittest.TestCase):
     def test_generator(self):
         self.response.reset()
         self.encode(x for x in range(10))
+        self.response.close()
         value = self.response.content
 
         self.assertEqual(value, '[0,1,2,3,4,5,6,7,8,9]')

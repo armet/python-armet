@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import six
 from cyclone import web
 from cyclone import bottle
@@ -17,13 +17,9 @@ class Handler(web.RequestHandler):
         self.Resource = Resource
         return super(Handler, self).__init__(*args, **kwargs)
 
-    def __route(self, path, *args, **kwargs):
-        # Construct request and response wrappers.
-        request = http.Request(self, path)
-        response = http.Response(self)
-
+    def __route(self, path):
         # Pass control off to the resource handler.
-        self.Resource.view(request, response)
+        self.Resource.view(self, path)
 
     def _execute_handler(self, _, args, kwargs):
         """
@@ -52,17 +48,28 @@ class Handler(web.RequestHandler):
 class Resource(object):
 
     @classmethod
-    def mount(cls, url, application=None, host_pattern=r'.*'):
+    def view(cls, handler, path):
+        # Construct request and response wrappers.
+        request = http.Request(handler, path)
+        response = http.Response(handler)
+
+        # Pass control off to the resource handler.
+        super(Resource, cls).view(request, response)
+
+    @classmethod
+    def mount(cls, url=r'^', application=None, host_pattern=r'.*'):
         if application is None:
             # No application specified; add this to the bottle style handlers.
-            bottle.route(cls.route(url)[0])(cls.handler)
+            url = cls.route(url)[0]
+            for method in cls.meta.http_method_names:
+                bottle.route(url, method)(cls.view)
 
         else:
             # Add the handler normally.
             application.add_handlers(host_pattern, (cls.route(url),))
 
     @classmethod
-    def route(cls, url):
+    def route(cls, url=r'^'):
         return (r'{}/{}(.*)'.format(url, cls.meta.name), cls.handler)
 
     @classmethod

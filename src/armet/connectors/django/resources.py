@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
@@ -20,7 +20,7 @@ class Resource(object):
         super(Resource, cls).view(request, response)
 
         # Return the response handle.
-        return response.handle
+        return response._handle
 
     @utils.classproperty
     def urls(cls):

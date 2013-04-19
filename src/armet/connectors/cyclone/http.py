@@ -1,72 +1,115 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 from armet import http
+from six.moves import cStringIO as StringIO
+from twisted.internet import reactor
 
 
 class Request(http.Request):
 
+    class Headers(http.request.Headers):
+
+        def __init__(self, request):
+            self._handle = request._handle
+            super(Request.Headers, self).__init__(request)
+
+        def __getitem__(self, name):
+            return self._handle.headers[name]
+
+        def __iter__(self):
+            return iter(self._handle.headers)
+
+        def __len__(self):
+            return len(self._handle.headers)
+
+        def __contains__(self, name):
+            return name in self._handle.headers
+
     def __init__(self, handler, *args, **kwargs):
-        self.handle = handler.request
+        self._handle = handler.request
+        self._stream = StringIO(self._handle.body)
+        kwargs.update(method=self._handle.method)
         super(Request, self).__init__(*args, **kwargs)
 
     @property
-    def url(self):
-        return self.handle.full_url()
+    def protocol(self):
+        return self._handle.protocol.upper()
 
     @property
-    def method(self):
-        return self.handle.method
+    def query(self):
+        return self._handle.query
 
-    @method.setter
-    def method(self, value):
-        self.handle.method = value.upper()
+    @property
+    def uri(self):
+        return self._handle.full_url()
 
-    def __getitem__(self, name):
-        return self.handle.headers[name]
+    def read(self, count=-1):
+        return self._stream.read(count)
 
-    def __iter__(self):
-        return iter(self.handle.headers)
+    def readline(self, limit=-1):
+        return self._stream.readline(limit)
 
-    def __len__(self):
-        return len(self.handle.headers)
-
-    def __contains__(self, item):
-        return item in self.handle.headers
+    def readlines(self, hint=-1):
+        return self._stream.readlines(hint)
 
 
 class Response(http.Response):
 
+    class Headers(http.response.Headers):
+
+        def __init__(self, response):
+            self._handler = response._handler
+            super(Response.Headers, self).__init__(response)
+
+        def __setitem__(self, name, value):
+            self._obj._assert_open()
+            self._handler.set_header(self._normalize(name), value)
+
+        def __getitem__(self, name):
+            return self._handler._headers[name]
+
+        def __contains__(self, name):
+            return name in self._handler._headers
+
+        def __delitem__(self, name):
+            self._obj._assert_open()
+            self._handler.clear_header(name)
+
+        def __len__(self):
+            return len(self._handler._headers)
+
+        def __iter__(self):
+            return iter(self._handler._headers)
+
     def __init__(self, handler, *args, **kwargs):
+        self._handler = handler
+        self._stream = StringIO()
+        self._length = 0
         super(Response, self).__init__(*args, **kwargs)
-        self.handler = handler
-
-    def __setitem__(self, name, value):
-        self.handler.set_header(name, value)
-
-    def __getitem__(self, name):
-        # Cyclone doesn't provide a way to get headers normally, so break
-        # into the private methods to retrieve the header.
-        return self.handler._headers[name]
-
-    def __contains__(self, name):
-        return name in self.handler._headers
-
-    def __delitem__(self, name):
-        self.handler.clear_header(name)
-
-    def __len__(self):
-        return len(self.handler._headers)
-
-    def __iter__(self):
-        return iter(self.handler._headers)
 
     @property
     def status(self):
-        return self.handler.get_status()
+        return self._handler.get_status()
 
     @status.setter
     def status(self, value):
-        self.handler.set_status(value)
+        self._assert_open()
+        self._handler.set_status(value)
 
-    def write(self, chunk):
-        self.handler.write(chunk)
+    def tell(self):
+        return self._stream.tell() + self._length
+
+    def _write(self, chunk):
+        self._stream.write(chunk)
+
+    def _flush(self):
+        # self._handler.write(self._stream.getvalue())
+        # self._length += self._stream.tell()
+        # self._stream.truncate(0)
+        # self._handler.flush()
+        raise NotImplementedError()
+
+    def close(self):
+        super(Response, self).close()
+        self._handler.write(self._stream.getvalue())
+        self._handler.finish()

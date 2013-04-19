@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
+from __future__ import absolute_import, unicode_literals, division
 import flask
 from werkzeug.routing import BaseConverter
 from . import http
@@ -32,7 +32,7 @@ class Resource(object):
         super(Resource, cls).view(request, response)
 
         # Return the response handle.
-        return response.handle
+        return response._handle
 
     @classmethod
     def mount(cls, url, app):
