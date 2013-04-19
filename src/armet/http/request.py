@@ -121,9 +121,10 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def protocol(self):
         """Retrieves the upper-cased version of the protocol (eg. HTTP)."""
 
-    @abc.abstractproperty
+    @property
     def host(self):
         """Retrieves the hostname, normally from the `Host` header."""
+        return self.headers.get('Host') or '127.0.0.1'
 
     @property
     def path(self):

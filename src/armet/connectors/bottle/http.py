@@ -30,10 +30,6 @@ class Request(http.Request):
         return bottle.request.urlparts.scheme.upper()
 
     @property
-    def host(self):
-        return self.headers.get('Host') or '127.0.0.1'
-
-    @property
     def query(self):
         return bottle.request.query_string
 
@@ -67,7 +63,7 @@ class Response(http.Response):
 
         def __delitem__(self, name):
             self._obj._assert_open()
-            del bottle.response.headers[self._normalize(name)]
+            del bottle.response.headers[name]
 
         def __len__(self):
             return len(bottle.response.headers)

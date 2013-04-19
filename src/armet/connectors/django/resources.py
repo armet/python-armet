@@ -20,7 +20,7 @@ class Resource(object):
         super(Resource, cls).view(request, response)
 
         # Return the response handle.
-        return response.handle
+        return response._handle
 
     @utils.classproperty
     def urls(cls):
