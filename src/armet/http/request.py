@@ -11,7 +11,7 @@ class Headers(collections.Mapping):
     """Describes a mapping abstraction over request headers.
     """
 
-    class __Sequence(dict):
+    class _Sequence(dict):
         """
         Provides an implementation of a dictionary that retreives its
         values as sequences.
@@ -25,7 +25,7 @@ class Headers(collections.Mapping):
             return value
 
     def __init__(self):
-        self.__sequence = Headers.__Sequence(self)
+        self._sequence = Headers._Sequence(self)
 
     @abc.abstractmethod
     def __getitem__(self, name):
@@ -52,18 +52,18 @@ class Headers(collections.Mapping):
         Return the index in the list of the first item whose value is x in
         the values of the named header.
         """
-        return self.__sequence[name].index(value)
+        return self._sequence[name].index(value)
 
     def count(self, name, value):
         """
         Return the number of times a value appears in the list of the values
         of the named header.
         """
-        return self.__sequence[name].count(value)
+        return self._sequence[name].count(value)
 
     def getlist(self, name):
         """Retrieves the passed header as a tuple of its values."""
-        return self.__sequence[name]
+        return self._sequence[name]
 
 
 class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
@@ -76,35 +76,35 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         self.__path = path
 
         #! The request headers dictionary.
-        self.__headers = headers
+        self._headers = headers
 
         # Determine the actual HTTP method; apply the override header.
         override = self.headers.get('X-Http-Method-Override')
         if override:
             # Passed method was overriden; store override.
-            self.__method = override.upper()
+            self._method = override.upper()
 
         else:
             # Passed method is the actual method.
-            self.__method = method.upper()
+            self._method = method.upper()
 
     @property
     def method(self):
         """Retrieves the HTTP upper-cased method of the request (eg. GET)."""
-        return self.__method
+        return self._method
 
     @property
     def headers(self):
         """Retrieves the immutable request headers dictionary."""
-        return self.__headers
+        return self._headers
 
     @abc.abstractproperty
     def protocol(self):
-        return self.__handle.protocol.upper()
+        return self._handle.protocol.upper()
 
     @abc.abstractproperty
     def host(self):
-        return self.__handle.host
+        return self._handle.host
 
     @property
     def path(self):
@@ -113,7 +113,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
     @abc.abstractproperty
     def query(self):
-        return self.__handle.query
+        return self._handle.query
 
     @abc.abstractproperty
     def uri(self):
@@ -164,7 +164,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             return params.get('charset', default)
 
     @abc.abstractmethod
-    def read(self, count=None):
+    def read(self, count=-1):
         """
         Read and return up to `count` bytes or characters (depending on
         the value of `self.encoding`).
