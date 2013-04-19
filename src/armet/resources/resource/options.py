@@ -58,6 +58,14 @@ class ResourceOptions(object):
                 # Something went wrong; just use the class name
                 self.name = name
 
+        #! True if the resource is expected to operate asynchronously.
+        #!
+        #! The side-effect of setting this to True is that returning from
+        #! `dispatch` (and by extension `get`, `post`, etc.) does not
+        #! terminate the connection. You must invoke `response.close()` to
+        #! terminate the connection.
+        self.asynchronous = meta.get('asynchronous', False)
+
         #! Connectors to use to connect to the environment.
         #!
         #! This is a dictionary that maps hooks (keys) to the connector to use

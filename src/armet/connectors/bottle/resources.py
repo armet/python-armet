@@ -11,7 +11,18 @@ class Resource(object):
     def view(cls, *args, **kwargs):
         # Construct request and response wrappers.
         request = http.Request(kwargs.get('path', ''))
-        response = http.Response()
+        response = http.Response(asynchronous=cls.meta.asynchronous)
+
+        # Defer the execution thread if we're running asynchronously.
+        if cls.meta.asynchronous:
+            def view():
+                # Pass control off to the resource handler.
+                super(Resource, cls).view(request, response)
+
+            # Defer the view.
+            import gevent
+            gevent.spawn(view)
+            return response._queue
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
@@ -21,6 +32,9 @@ class Resource(object):
             # Construct the iterator and run the sequence once.
             iterator = iter(result)
             next(iterator)
+
+            # Push the initial HTTP response.
+            response._push()
 
             def stream():
                 # Iterate through the generator and yield its content
@@ -35,8 +49,11 @@ class Resource(object):
             # Return our streamer.
             return stream()
 
-        # Otherwise; just return the one 'chunk'.
-        return bottle.response.body
+        # Push the initial HTTP response.
+        response._push()
+
+        # Return the one 'chunk' of data.
+        return response._stream.getvalue()
 
     @classmethod
     def mount(cls, url='/', application=None):
