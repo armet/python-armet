@@ -18,7 +18,7 @@ behind the interface.
 > A module provides basic functions for parsing mime-type names and 
 > matching them against a list of media-ranges.
 
-###### [gevent](http://www.gevent.org/) `~1.0` *optional*
+###### [gevent](http://www.gevent.org/) `~ 1.0` *optional*
 > A coroutine-based Python networking library that uses greenlet to provide 
 > high-level synchronous API on top of the libevent event loop.
 
