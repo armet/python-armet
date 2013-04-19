@@ -10,7 +10,7 @@ from armet import exceptions
 from . import request
 
 
-class Headers(request.Headers):
+class Headers(collections.MutableMapping, request.Headers):
     """Describes a mutable mapping abstraction over response headers.
     """
 
