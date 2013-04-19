@@ -36,10 +36,6 @@ class Request(http.Request):
         return self._handle.protocol.upper()
 
     @property
-    def host(self):
-        return self._handle.host
-
-    @property
     def query(self):
         return self._handle.query
 
@@ -70,14 +66,14 @@ class Response(http.Response):
             self._handler.set_header(self._normalize(name), value)
 
         def __getitem__(self, name):
-            return self._handler._headers[self._normalize(name)]
+            return self._handler._headers[name]
 
         def __contains__(self, name):
-            return self._normalize(name) in self._handler._headers
+            return name in self._handler._headers
 
         def __delitem__(self, name):
             self._obj._assert_open()
-            self._handler.clear_header(self._normalize(name))
+            self._handler.clear_header(name)
 
         def __len__(self):
             return len(self._handler._headers)
