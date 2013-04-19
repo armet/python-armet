@@ -28,6 +28,7 @@ this with the **bottle** connector however any WSGI-based connector
 could be used (eg. **django**, **flask**, etc.).
 
 ```python
+import gevent
 from gevent import monkey
 monkey.patch_all()  # Transparently switch python to use gevent.
    
@@ -37,16 +38,23 @@ import time
    
 @route('/')
 class Resource(resources.Resource):
-   class Meta:
-       connectors = {'http': 'bottle'}
-       asynchronous = True
+    class Meta:
+        connectors = {'http': 'bottle'}
+        asynchronous = True
    
-   def get(self):
-       for number in range(100):
-           self.response.write(str(number) + '\n')
-           time.sleep(0.1)  # Wait a bit so we can see it streaming.
-           self.response.flush()  # Async write body to transport stream.
-   
+    def get(self):
+        def writer(index, delay):
+            for number in range(10):
+                self.response.write('{}: {}\n'.format(index, number))
+                time.sleep(delay)  # Wait a bit so we can see it streaming.
+                self.response.flush()  # Async write body to transport stream.
+                
+        threads = []  # Initialize a thread group
+        for index in range(10):
+            # Spawn lots of writer jobs with various delays.
+            threads.append(gevent.spawn(writer, index, index / 10))
+            
+        gevent.joinall(threads)  # Wait for all threads to finish
         self.response.close()  # Close the http connection.
    
 run(server='gevent')
