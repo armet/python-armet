@@ -21,6 +21,23 @@ class SimpleResource(resources.ManagedResource):
         return None
 
 
+class StreamingResource(resources.Resource):
+
+    class Meta(Meta):
+        pass
+
+    def get(self):
+        self.response['Content-Type'] = 'text/plain'
+        yield 'this\n'
+        self.response.write('where\n')
+        self.response.flush()
+        self.response.write('whence\n')
+        yield
+        yield 'that\n'
+        self.response.write('why\n')
+        yield 'and the other'
+
+
 class WrongResource(resources.ModelResource):
 
     class Meta:

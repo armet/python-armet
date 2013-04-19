@@ -31,6 +31,23 @@ class PollResource(resources.ModelResource):
     question = attributes.Attribute('question')
 
 
+class StreamingResource(resources.Resource):
+
+    class Meta(Meta):
+        pass
+
+    def get(self):
+        self.response['Content-Type'] = 'text/plain'
+        yield 'this\n'
+        self.response.write('where\n')
+        self.response.flush()
+        self.response.write('whence\n')
+        yield
+        yield 'that\n'
+        self.response.write('why\n')
+        yield 'and the other'
+
+
 class HttpWholeForbiddenResource(resources.ManagedResource):
 
     class Meta(Meta):
@@ -63,6 +80,7 @@ application = web.Application(debug=True)
 # Mount the urls on the application.
 mount = r'^/api'
 SimpleResource.mount(mount, application)
+StreamingResource.mount(mount, application)
 PollResource.mount(mount, application)
 HttpWholeForbiddenResource.mount(mount, application)
 HttpForbiddenResource.mount(mount, application)

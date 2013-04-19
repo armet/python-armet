@@ -103,11 +103,9 @@ class Response(http.Response):
         self._stream.write(chunk)
 
     def _flush(self):
-        # self._handler.write(self._stream.getvalue())
-        # self._length += self._stream.tell()
-        # self._stream.truncate(0)
-        # self._handler.flush()
-        raise NotImplementedError()
+        self._handler.write(self._stream.getvalue())
+        self._stream.truncate(0)
+        self._handler.flush()
 
     def close(self):
         super(Response, self).close()

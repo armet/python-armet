@@ -7,6 +7,7 @@ from . import api
 urlpatterns = patterns(
     '',
     url(r'^api/', include(api.PollResource.urls)),
+    url(r'^api/', include(api.StreamingResource.urls)),
     url(r'^api/', include(api.SimpleResource.urls)),
     url(r'^api/', include(api.HttpWholeForbiddenResource.urls)),
     url(r'^api/', include(api.HttpForbiddenResource.urls)),

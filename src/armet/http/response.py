@@ -221,6 +221,9 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     def close(self):
         """Flush and close the stream.
         """
+        # We can't close the stream if we're already closed.
+        self._assert_not_closed()
+
         if self.streaming:
             # We're streaming; flush out the current buffer.
             self.flush()
@@ -267,8 +270,12 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             This is not the method that connectors will override; refer to
             `self._write` instead.
         """
-        # Ensure we do not flush a closed response.
+        # Ensure we do not write a closed response.
         self._assert_not_closed()
+
+        if content is None:
+            # There is nothing here..
+            return
 
         if type(content) is six.binary_type:
             # If passed a byte string we can optionally encode it and
@@ -320,8 +327,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             `self._flush` instead.
         """
         self._assert_not_closed()
-        self._streaming = True
         self._flush()
+        self._streaming = True
 
     @property
     def streaming(self):

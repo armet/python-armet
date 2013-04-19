@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import logging
+import six
+import collections
 from armet import http
 from armet.http import exceptions
 
@@ -64,7 +66,46 @@ class Resource(object):
             obj = cls(request, response)
 
             # Initiate the dispatch cycle.
-            obj.dispatch()
+            result = obj.dispatch()
+
+            # There is several things that dispatch is allowed to return.
+            if result is None:
+                # If there was no result from dispatch; just
+                # close the response.
+                response.close()
+
+            elif isinstance(result, six.string_types):
+                # If `chunk` is some kind of string; just write it out
+                # and close the response.
+                response.write(result)
+                response.close()
+
+            elif isinstance(result, collections.Iterable):
+                # This should be some kind of iterable, perhaps
+                # a generator.
+                def stream():
+                    # Iterate and yield the chunks to the network
+                    # stream.
+                    for chunk in result:
+                        # Write the chunk.
+                        response.write(chunk)
+                        response.flush()
+
+                        # Yield control to the connector to further
+                        # do whatever it needs to do.
+                        yield
+
+                    # Close the response.
+                    response.close()
+
+                # Return our streaming method.
+                return stream()
+
+            else:
+                # We've got something here; naively coerce this to
+                # a binary string.
+                response.write(six.binary_type(result))
+                response.close()
 
         except exceptions.Base as e:
             # Something that we can handle and return properly happened.
@@ -74,8 +115,10 @@ class Resource(object):
             response.headers.update(e.headers)
 
             if e.content:
-                # Write the exception body if present.
+                # Write the exception body if present and close
+                # the response.
                 response.write(e.content)
+                response.close()
 
         except BaseException as e:
             # Something unexpected happenend.
@@ -85,9 +128,6 @@ class Resource(object):
             # TODO: Don't do the following if not in DEBUG mode.
             raise
 
-        finally:
-            # Close the response object.
-            response.close()
 
     def __init__(self, request, response):
         """Initialize; store the given request and response objects."""

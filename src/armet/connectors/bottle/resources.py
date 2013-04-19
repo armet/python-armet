@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
+import six
 import bottle
 from . import http
 
@@ -13,9 +14,28 @@ class Resource(object):
         response = http.Response()
 
         # Pass control off to the resource handler.
-        super(Resource, cls).view(request, response)
+        result = super(Resource, cls).view(request, response)
 
-        # Return the response body.
+        # If we got anything back; it is some kind of generator.
+        if result is not None:
+            # Construct the iterator and run the sequence once.
+            iterator = iter(result)
+            next(iterator)
+
+            def stream():
+                # Iterate through the generator and yield its content
+                # to the network stream.
+                for chunk in result:
+                    # Yield what we currently have in the buffer; if any.
+                    yield response._stream.getvalue()
+
+                    # Remove what we have in the buffer.
+                    response._stream.truncate(0)
+
+            # Return our streamer.
+            return stream()
+
+        # Otherwise; just return the one 'chunk'.
         return bottle.response.body
 
     @classmethod

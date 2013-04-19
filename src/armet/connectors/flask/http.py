@@ -95,7 +95,9 @@ class Response(http.Response):
         self._stream.write(chunk)
 
     def _flush(self):
-        raise NotImplementedError()
+        # Nothing needs to be done as the write stream is doubling as
+        # the output buffer.
+        return
 
     def close(self):
         super(Response, self).close()

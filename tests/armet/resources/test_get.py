@@ -11,6 +11,7 @@ class GetTestCase(test.TestCase):
 
         content = json.loads(content.decode('utf-8'))
 
+        self.assertEqual(response.status, http.client.OK)
         self.assertIsInstance(content, list)
         self.assertEqual(len(content), 100)
         self.assertEqual(
@@ -24,6 +25,7 @@ class GetTestCase(test.TestCase):
 
         content = json.loads(content.decode('utf-8'))
 
+        self.assertEqual(response.status, http.client.OK)
         self.assertIsInstance(content, dict)
         self.assertEqual(
             content['question'], 'Are you an innie or an outie?')
@@ -32,6 +34,7 @@ class GetTestCase(test.TestCase):
 
         content = json.loads(content.decode('utf-8'))
 
+        self.assertEqual(response.status, http.client.OK)
         self.assertIsInstance(content, dict)
         self.assertEqual(
             content['question'],
@@ -41,3 +44,11 @@ class GetTestCase(test.TestCase):
         response, _ = self.client.request('/api/poll/101/')
 
         self.assertEqual(response.status, http.client.NOT_FOUND)
+
+    def test_streaming(self):
+        response, content = self.client.request('/api/streaming/')
+
+        self.assertEqual(response.status, http.client.OK)
+        self.assertEqual(response.get('content-type'), 'text/plain')
+        self.assertEqual(
+            content, 'this\nwhere\nwhence\nthat\nwhy\nand the other')
