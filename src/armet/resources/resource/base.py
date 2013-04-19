@@ -51,10 +51,10 @@ class Resource(object):
         """
         # Determine if we need to redirect.
         test = cls.meta.trailing_slash
-        url = request.url
-        if test ^ url.endswith('/'):
+        uri = request.uri
+        if test ^ uri.endswith('/'):
             # Massage the URL by removing or adding the trailing slash.
-            response['Location'] = url + '/' if test else url[:-1]
+            response['Location'] = uri + '/' if test else uri[:-1]
 
             # Redirect to the version with the correct trailing slash.
             return cls.redirect(request, response)
@@ -65,6 +65,9 @@ class Resource(object):
 
             # Initiate the dispatch cycle.
             obj.dispatch()
+
+            # Close the response and send the headers.
+            response.close()
 
         except exceptions.Base as e:
             # Something that we can handle and return properly happened.
