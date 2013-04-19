@@ -11,8 +11,49 @@ behind the interface.
 
 ## Prerequisites
 
- - **[six](https://pypi.python.org/pypi/six)** — Python 2 and 3 compatibility utilities.
- - **[mimeparse](https://pypi.python.org/pypi/python-mimeparse/0.1.4)** — Provides functions for parsing mime-type names and matching them against a list of media-ranges.
+###### [six](https://pypi.python.org/pypi/six) `~ 0.1.3`
+> Python 2 and 3 compatibility utilities.
+
+###### [mimeparse](https://pypi.python.org/pypi/python-mimeparse/) `~ 0.1.4`
+> A module provides basic functions for parsing mime-type names and 
+> matching them against a list of media-ranges.
+
+###### [gevent](http://www.gevent.org/) `~1.0` *optional*
+> A coroutine-based Python networking library that uses greenlet to provide 
+> high-level synchronous API on top of the libevent event loop.
+
+Provides tight integration for WSGI-based connectors with gevent so a request
+may be transparently handled asynchronously. The code snippet below demonstates
+this with the **bottle** connector however any WSGI-based connector
+could be used (eg. **django**, **flask**, etc.).
+
+```python
+from gevent import monkey
+monkey.patch_all()  # Transparently switch python to use gevent.
+   
+from bottle import run
+from armet import resources, route
+import time
+   
+@route('/')
+class Resource(resources.Resource):
+   class Meta:
+       connectors = {'http': 'bottle'}
+       asynchronous = True
+   
+   def get(self):
+       for number in range(100):
+           self.response.write(str(number) + '\n')
+           time.sleep(0.1)  # Wait a bit so we can see it streaming.
+           self.response.flush()  # Async write body to transport stream.
+   
+        self.response.close()  # Close the http connection.
+   
+run(server='gevent')
+```
+
+Non WSGI-based connectors provide an identical interface to write to the 
+response stream asynchronously (eg. **twisted**).
 
 ## Connectors
 
@@ -31,7 +72,7 @@ its model one as well).
 
 ### Request / response (http)
 
-#### [Django](https://www.djangoproject.com/)
+###### [Django](https://www.djangoproject.com/) `>= 1.4`
 > The Web framework for perfectionists (with deadlines).
 > Django makes it easier to build better Web apps more quickly and
 > with less code.
@@ -54,7 +95,7 @@ urlpatterns += patterns('',
 )
 ```
 
-#### [Flask](http://flask.pocoo.org/)
+###### [Flask](http://flask.pocoo.org/)
 > Flask is a microframework for Python based on Werkzeug,
 > Jinja 2 and good intentions.
 
@@ -75,7 +116,7 @@ class Resource(resources.Resource):
         }
 ```
 
-#### [Bottle](http://bottlepy.org/docs/dev/)
+###### [Bottle](http://bottlepy.org/docs/dev/)
 > Bottle is a fast, simple and lightweight 
 > WSGI micro web-framework for Python.
 
@@ -91,7 +132,7 @@ class Resource(resources.Resource):
         }
 ```
 
-#### [Cyclone](http://cyclone.io/)
+###### [Cyclone](http://cyclone.io/)
 > Cyclone is a web server framework for Python that implements 
 the Tornado API as a Twisted protocol.
 
@@ -125,11 +166,11 @@ Resource.mount(r'^/api', application)
 
 ### Database access (model)
 
-#### [Django](https://www.djangoproject.com/)
+###### [Django](https://www.djangoproject.com/) `>= 1.4`
 > The Web framework for perfectionists (with deadlines).
 Django makes it easier to build better Web apps more quickly and with less code.
 
-#### [SQLAlchemy](http://www.sqlalchemy.org/)
+###### [SQLAlchemy](http://www.sqlalchemy.org/) `>= 0.7`
 > SQLAlchemy is the Python SQL toolkit and Object Relational Mapper that 
 gives application developers the full power and flexibility of SQL.
 
