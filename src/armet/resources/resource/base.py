@@ -66,15 +66,12 @@ class Resource(object):
             # Initiate the dispatch cycle.
             obj.dispatch()
 
-            # Close the response and send the headers.
-            response.close()
-
         except exceptions.Base as e:
             # Something that we can handle and return properly happened.
 
-            # Set response properties from the exception.
+            # Set response propertie    s from the exception.
             response.status = e.status
-            response.update(e.headers)
+            response.headers.update(e.headers)
 
             if e.content:
                 # Write the exception body if present.
@@ -87,6 +84,10 @@ class Resource(object):
 
             # TODO: Don't do the following if not in DEBUG mode.
             raise
+
+        finally:
+            # Close the response object.
+            response.close()
 
     def __init__(self, request, response):
         """Initialize; store the given request and response objects."""
