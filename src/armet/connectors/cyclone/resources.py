@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 from cyclone import web
 from cyclone import bottle
+from twisted.internet import reactor
 from . import http
 
 
@@ -54,7 +55,14 @@ class Resource(object):
         response = http.Response(handler)
 
         # Pass control off to the resource handler.
-        super(Resource, cls).view(request, response)
+        result = super(Resource, cls).view(request, response)
+
+        # If we got anything back; it is some kind of generator.
+        if result is not None:
+            for _ in result:
+                # Control was yielded to us and we're not async.. not much
+                # we can do here.
+                reactor.doIteration(0)
 
     @classmethod
     def mount(cls, url=r'^', application=None, host_pattern=r'.*'):

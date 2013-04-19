@@ -120,16 +120,20 @@ class Response(http.Response):
 
     @status.setter
     def status(self, value):
+        self._assert_open()
         self._handle.status_code = value
 
     def tell(self):
+        self._assert_open()
         return self._stream.tell() + len(self._handle.content)
 
     def _write(self, chunk):
         self._stream.write(chunk)
 
     def _flush(self):
-        raise NotImplementedError()
+        # Nothing needs to be done as the write stream is doubling as
+        # the output buffer.
+        return
 
     def close(self):
         super(Response, self).close()

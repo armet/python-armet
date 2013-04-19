@@ -17,7 +17,27 @@ class Resource(object):
         response = http.Response()
 
         # Pass control off to the resource handler.
-        super(Resource, cls).view(request, response)
+        result = super(Resource, cls).view(request, response)
+
+        # If we got anything back; it is some kind of generator.
+        if result is not None:
+            # Construct the iterator and run the sequence once.
+            iterator = iter(result)
+            next(iterator)
+
+            def stream():
+                # Iterate through the generator and yield its content
+                # to the network stream.
+                for _ in iterator:
+                    # Yield what we currently have in the buffer; if any.
+                    yield response._stream.getvalue()
+
+                    # Remove what we have in the buffer.
+                    response._stream.truncate(0)
+
+            # Configure the streamer and return it
+            response._handle.content = stream()
+            return response._handle
 
         # Return the response handle.
         return response._handle
