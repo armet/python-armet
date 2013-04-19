@@ -19,7 +19,7 @@ class Resource(object):
         return bottle.response.body
 
     @classmethod
-    def mount(cls, url, application=None):
+    def mount(cls, url='/', application=None):
         # If no explicit application is passed; use
         # the current default application.
         application = bottle.app[-1]

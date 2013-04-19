@@ -7,9 +7,10 @@ import re
 import mimeparse
 import io
 from armet import exceptions
+from . import request
 
 
-class Headers(collections.MutableMapping):
+class Headers(request.Headers):
     """Describes a mutable mapping abstraction over response headers.
     """
 
@@ -22,7 +23,7 @@ class Headers(collections.MutableMapping):
         def __init__(self, sequence, name):
             #! Internal reference to the first-degree headers dictionary.
             self._headers = sequence._headers
-            self._response = sequence._response
+            self._obj = self._headers._obj
             self._name = name
 
             #! Internal store of the value at instantiation of the header.
@@ -54,55 +55,21 @@ class Headers(collections.MutableMapping):
 
         def __setitem__(self, index, value):
             # Store the value at the passed index
-            self._response._assert_open()
+            self._obj._assert_open()
             self._sequence[index] = value
             self._push()
 
         def __delitem__(self, index):
             # Remove the value at the passed index.
-            self._response._assert_open()
+            self._obj._assert_open()
             del self._sequence[index]
             self._push()
 
         def insert(self, index, value):
             # Insert the header value at the passed index.
-            self._response._assert_open()
+            self._obj._assert_open()
             self._sequence.insert(index, value)
             self._push()
-
-    class _Sequence(dict):
-        """
-        Provides an implementation of a dictionary that retreives its
-        values as sequences.
-        """
-
-        def __init__(self, headers, response):
-            self._headers = headers
-            self._response = response
-
-        def __missing__(self, name):
-            self[name] = value = Headers._Header(self, name)
-            return value
-
-    def __init__(self, response):
-        #! Internal store of the multi-valued headers as lists.
-        self._sequence = Headers._Sequence(self, response)
-
-        #! Reference to the response.
-        self._response = response
-
-    @staticmethod
-    def _normalize(name):
-        """Normalizes the case of the passed name to be Http-Header-Case."""
-        return '-'.join(x.capitalize() for x in re.split(r'_|-', name))
-
-    @abc.abstractmethod
-    def __getitem__(self, name):
-        """Retrieves a header with the passed name.
-
-        @param[in] name
-            The case-insensitive name of the header to retrieve.
-        """
 
     @abc.abstractmethod
     def __setitem__(self, name, value):
@@ -125,18 +92,6 @@ class Headers(collections.MutableMapping):
             The case-insensitive name of the header to remove
             from the response.
         """
-
-    @abc.abstractmethod
-    def __len__(self):
-        """Retrieves the number of headers in the response."""
-
-    @abc.abstractmethod
-    def __iter__(self):
-        """Returns an iterable for all headers in the response."""
-
-    @abc.abstractmethod
-    def __contains__(self, name):
-        """Tests if the passed header exists in the response."""
 
     def append(self, name, value):
         """Add a value to the end of the list for the named header."""
@@ -161,20 +116,6 @@ class Headers(collections.MutableMapping):
         """Remove the item at the given position in the named header list."""
         return self._sequence[name].pop(index)
 
-    def index(self, name, value):
-        """
-        Return the index in the list of the first item whose value is x in
-        the values of the named header.
-        """
-        return self._sequence[name].index(value)
-
-    def count(self, name, value):
-        """
-        Return the number of times a value appears in the list of the values
-        of the named header.
-        """
-        return self._sequence[name].count(value)
-
     def sort(self, name):
         """Sort the items of the list, in place."""
         return self._sequence[name].sort()
@@ -183,18 +124,14 @@ class Headers(collections.MutableMapping):
         """Reverse the elements of the list, in place."""
         return self._sequence[name].reverse()
 
-    def getlist(self, name):
-        """Retrieves the passed header as a sequence of its values."""
-        return self._sequence[name]
-
 
 class Response(six.with_metaclass(abc.ABCMeta)):
     """Describes the RESTful response abstraction.
     """
 
-    def __init__(self, headers, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         #! The response headers dictionary.
-        self._headers = headers
+        self._headers = self.Headers(self)
 
         #! True if the response object is closed.
         self._closed = False
@@ -281,15 +218,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         self.__encoding = value
 
     @abc.abstractmethod
-    def _close(self):
-        """Flush and close the stream."""
-
     def close(self):
         """Flush and close the stream.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._close` instead.
         """
         if self.streaming:
             # We're streaming; flush out the current buffer.
@@ -303,7 +233,6 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
         # We're done with the response; inform the HTTP connector
         # to close the response stream.
-        self._close()
         self._closed = True
 
     @property
@@ -318,9 +247,6 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     @abc.abstractmethod
     def _write(self, chunk):
         """Writes the given byte string chunk to the output buffer.
-
-        @note
-            This is what a connector is meant to override.
         """
 
     def write(self, content):
@@ -344,24 +270,30 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         # Ensure we do not flush a closed response.
         self._assert_not_closed()
 
-        # If passed a byte string we can optionally encode it and
-        # write it to the stream
         if type(content) is six.binary_type:
+            # If passed a byte string we can optionally encode it and
+            # write it to the stream
             if self.encoding:
                 content = content.encode(self.encoding)
             self._write(content)
 
-        # If passed a string, we hope that the user
-        # encoded it properly.
         elif isinstance(content, six.string_types):
+            # If passed a string, we hope that the user
+            # encoded it properly.
             self._write(content)
 
-        # If passed some kind of iterator, attempt to recurse into
-        # oblivion.
         else:
-            for chunk in content:
-                self.write(chunk)
-                self.flush()
+            try:
+                # If passed some kind of iterator, attempt to recurse into
+                # oblivion.
+                for chunk in content:
+                    self.write(chunk)
+
+            except TypeError:
+                # Apparently we didn't get an iterator..
+                # Try and blindly cast this into a byte string and
+                # just write it.
+                self.write(six.binary_type(content))
 
     def writelines(self, lines):
         """
