@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
+import string
 import io
 import collections
 import mimeparse
@@ -10,6 +11,15 @@ import mimeparse
 class Headers(collections.Mapping):
     """Describes a mapping abstraction over request headers.
     """
+
+    @staticmethod
+    def _Header(sequence, name):
+        """Returns the passed header as a tuple.
+
+        Implements a facade so that the response headers can override
+        this to provide a mutable sequence header.
+        """
+        return tuple(sequence._headers.get(name, '').split(','))
 
     class _Sequence(dict):
         """
@@ -21,11 +31,20 @@ class Headers(collections.Mapping):
             self._headers = headers
 
         def __missing__(self, name):
-            self[name] = value = tuple(self._headers.get(name, '').split(','))
+            self[name] = value = self.headers._Header(self, name)
             return value
 
-    def __init__(self):
-        self._sequence = Headers._Sequence(self)
+    def __init__(self, obj):
+        #! Reference to the request / response object.
+        self._obj = obj
+
+        #! Internal store of the multi-valued headers as lists.
+        self._sequence = self._Sequence(self)
+
+    @staticmethod
+    def _normalize(name):
+        """Normalizes the case of the passed name to be Http-Header-Case."""
+        return str(string.capwords(name, '-'))
 
     @abc.abstractmethod
     def __getitem__(self, name):
@@ -70,13 +89,13 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     """Describes the RESTful request abstraction.
     """
 
-    def __init__(self, path, method, headers, *args, **kwargs):
+    def __init__(self, path, method, *args, **kwargs):
         #! The captured path of the request, after the mount point.
         #! Example: GET /api/poll/23 => '/23'
         self.__path = path
 
         #! The request headers dictionary.
-        self._headers = headers
+        self._headers = self.Headers(self)
 
         # Determine the actual HTTP method; apply the override header.
         override = self.headers.get('X-Http-Method-Override')
@@ -100,11 +119,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
     @abc.abstractproperty
     def protocol(self):
-        return self._handle.protocol.upper()
+        """Retrieves the upper-cased version of the protocol (eg. HTTP)."""
 
     @abc.abstractproperty
     def host(self):
-        return self._handle.host
+        """Retrieves the hostname, normally from the `Host` header."""
 
     @property
     def path(self):
@@ -113,7 +132,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
     @abc.abstractproperty
     def query(self):
-        return self._handle.query
+        """Retrieves the text after the first ? in the path."""
 
     @abc.abstractproperty
     def uri(self):

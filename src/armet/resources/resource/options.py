@@ -90,7 +90,7 @@ class ResourceOptions(object):
         #! @endcode
         self.connectors = connectors = _merge(meta, 'connectors', bases, {})
 
-        if not connectors['http']:
+        if not connectors.get('http'):
             raise ImproperlyConfigured('No valid HTTP connector was detected.')
 
         # Pull out the connectors and convert them into module references.
