@@ -15,16 +15,8 @@ class route:
     """
 
     def __init__(self, *args):
-        # If the length of args is 1 and the first argument is a type
-        # then this is being used without parens.
-        if len(args) == 1 and isinstance(args[0], type):
-            # Store no arguments and invoke ourself
-            self.arguments = ()
-            self(args[0])
-
-        else:
-            # Just store the arguments, we're being invoked with parenthesis.
-            self.arguments = args
+        # Just store the arguments.
+        self.arguments = args
 
     def __call__(self, resource):
         # Ensure the resource has a `mount` classmethod.
@@ -38,3 +30,25 @@ class route:
 
         # Return the resource
         return resource
+
+
+def asynchronous(resource):
+    """Instructs a decorated resource that it is to be asynchronous.
+
+    An asynchronous resource means that `response.close()` must be called
+    explicitly as returning from a method (eg. `get`) does not close
+    the connection.
+
+    @note
+        This can also be configured by setting `asynchronous` to `True`
+        on `<resource>.Meta`. The benefit of the decorator is that this
+        can be applied to specific methods as well as the entire class
+        body.
+    """
+    # TODO: Check for gevent support...
+
+    # Flip the asynchronous switch.
+    resource.meta.asynchronous = True
+
+    # Return the resource
+    return resource

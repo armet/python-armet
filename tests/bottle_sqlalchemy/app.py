@@ -49,6 +49,7 @@ class PollResource(resources.ModelResource):
     class Meta(Meta):
         model = models.Poll
         engine = models.engine
+        # asynchronous = True
 
     id = attributes.Attribute('id')
     question = attributes.Attribute('question')

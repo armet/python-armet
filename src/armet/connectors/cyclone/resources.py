@@ -16,6 +16,8 @@ class Handler(web.RequestHandler):
     def __init__(self, Resource, *args, **kwargs):
         # This must be set before we super, becuase that begins routing
         self.Resource = Resource
+
+        # Pass off control to cyclone.
         return super(Handler, self).__init__(*args, **kwargs)
 
     def __route(self, path):
@@ -50,6 +52,9 @@ class Resource(object):
 
     @classmethod
     def view(cls, handler, path):
+        # Turn on asynchronous operation if we can.
+        handler._auto_finish = not cls.meta.asynchronous
+
         # Construct request and response wrappers.
         request = http.Request(handler, path)
         response = http.Response(handler)
@@ -58,7 +63,7 @@ class Resource(object):
         result = super(Resource, cls).view(request, response)
 
         # If we got anything back; it is some kind of generator.
-        if result is not None:
+        if not cls.meta.asynchronous and result is not None:
             for _ in result:
                 # Control was yielded to us and we're not async.. not much
                 # we can do here.

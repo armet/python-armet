@@ -37,6 +37,9 @@ class Resource(object):
             # The RFC explicitly discourages UserAgent sniffing.
             response.status = http.client.PERMANENT_REDIRECT
 
+        # Terminate the connection.
+        response.close()
+
     @classmethod
     def view(cls, request, response):
         """
@@ -68,44 +71,45 @@ class Resource(object):
             # Initiate the dispatch cycle.
             result = obj.dispatch()
 
-            # There is several things that dispatch is allowed to return.
-            if result is None:
-                # If there was no result from dispatch; just
-                # close the response.
-                response.close()
-
-            elif isinstance(result, six.string_types):
-                # If `chunk` is some kind of string; just write it out
-                # and close the response.
-                response.write(result)
-                response.close()
-
-            elif isinstance(result, collections.Iterable):
-                # This should be some kind of iterable, perhaps
-                # a generator.
-                def stream():
-                    # Iterate and yield the chunks to the network
-                    # stream.
-                    for chunk in result:
-                        # Write the chunk.
-                        response.write(chunk)
-                        response.flush()
-
-                        # Yield control to the connector to further
-                        # do whatever it needs to do.
-                        yield
-
-                    # Close the response.
+            if not cls.meta.asynchronous:
+                # There is several things that dispatch is allowed to return.
+                if result is None:
+                    # If there was no result from dispatch; just
+                    # close the response.
                     response.close()
 
-                # Return our streaming method.
-                return stream()
+                elif isinstance(result, six.string_types):
+                    # If `chunk` is some kind of string; just write it out
+                    # and close the response.
+                    response.write(result)
+                    response.close()
 
-            else:
-                # We've got something here; naively coerce this to
-                # a binary string.
-                response.write(six.binary_type(result))
-                response.close()
+                elif isinstance(result, collections.Iterable):
+                    # This should be some kind of iterable, perhaps
+                    # a generator.
+                    def stream():
+                        # Iterate and yield the chunks to the network
+                        # stream.
+                        for chunk in result:
+                            # Write the chunk.
+                            response.write(chunk)
+                            response.flush()
+
+                            # Yield control to the connector to further
+                            # do whatever it needs to do.
+                            yield
+
+                        # Close the response.
+                        response.close()
+
+                    # Return our streaming method.
+                    return stream()
+
+                else:
+                    # We've got something here; naively coerce this to
+                    # a binary string.
+                    response.write(six.binary_type(result))
+                    response.close()
 
         except exceptions.Base as e:
             # Something that we can handle and return properly happened.
@@ -118,7 +122,9 @@ class Resource(object):
                 # Write the exception body if present and close
                 # the response.
                 response.write(e.content)
-                response.close()
+
+            # Terminate the connection.
+            response.close()
 
         except BaseException as e:
             # Something unexpected happenend.
