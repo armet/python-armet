@@ -7,13 +7,6 @@ from armet import utils
 from armet.exceptions import ImproperlyConfigured
 
 
-def _detect_connector(*capacities):
-    """Auto-detect available connectors."""
-    for module in utils.iter_modules(import_module('armet.connectors')):
-        if module.is_available(*capacities):
-            return module.__name__
-
-
 def _merge(options, name, bases, default=None):
     """Merges a named option collection."""
     result = None
@@ -95,15 +88,7 @@ class ResourceOptions(object):
         #! class Resource(resources.Resource):
         #!     connectors = {'http': 'some.other.place'}
         #! @endcode
-        #!
-        #! If connectors are not specified there is *some* auto-detection done
-        #! to introspect your environment and determine the appropriate
-        #! connectors. This *should* work for most.
         self.connectors = connectors = _merge(meta, 'connectors', bases, {})
-
-        if not connectors.get('http'):
-            # Attempt to detect the HTTP connector
-            connectors['http'] = _detect_connector('http')
 
         if not connectors['http']:
             raise ImproperlyConfigured('No valid HTTP connector was detected.')
