@@ -49,13 +49,16 @@ class Resource(resources.Resource):
                 time.sleep(delay)  # Wait a bit so we can see it streaming.
                 self.response.flush()  # Async write body to transport stream.
                 
-        threads = []  # Initialize a thread group
-        for index in range(10):
-            # Spawn lots of writer jobs with various delays.
-            threads.append(gevent.spawn(writer, index, index / 10))
+        def spawner():
+            threads = []  # Initialize a thread group
+            for index in range(10):
+                # Spawn lots of writer jobs with various delays.
+                threads.append(gevent.spawn(writer, index, index / 10))
             
-        gevent.joinall(threads)  # Wait for all threads to finish
-        self.response.close()  # Close the http connection.
+            gevent.joinall(threads)  # Wait for all threads to finish
+            self.response.close()  # Close the http connection.
+            
+        gevent.spawn_later(1, spawner)  # Spawn the spawner after a second for fun
    
 run(server='gevent')
 ```
