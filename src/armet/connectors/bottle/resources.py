@@ -16,7 +16,7 @@ class Resource(object):
         response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
-        if cls.meta.asynchronous:
+        if response.asynchronous:
             # Defer the view to pass of control.
             view = super(Resource, cls).view
             import_module('gevent').spawn(view, request, response)
@@ -82,5 +82,6 @@ class Resource(object):
         name = '{}:{}:{}'.format('armet', name, cls.meta.name)
 
         # Apply the routing rules and add the URL route.
-        rule = '{}{}<path:re:.*>'.format(url, cls.meta.name)
+        pattern = r'$|(?:[/:(.].*)'
+        rule = '{}{}<path:re:{}>'.format(url, cls.meta.name, pattern)
         application.route(rule, cls.meta.http_method_names, cls.view, name)

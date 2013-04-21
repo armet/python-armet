@@ -89,10 +89,13 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     """Describes the RESTful request abstraction.
     """
 
-    def __init__(self, path, method, *args, **kwargs):
+    def __init__(self, path, method, asynchronous, *args, **kwargs):
         #! The captured path of the request, after the mount point.
         #! Example: GET /api/poll/23 => '/23'
         self.__path = path
+
+        #! True if we're asynchronous.
+        self._asynchronous = asynchronous
 
         #! The request headers dictionary.
         self._headers = self.Headers(self)
@@ -106,6 +109,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         else:
             # Passed method is the actual method.
             self._method = method.upper()
+
+    @property
+    def asynchronous(self):
+        """True if we're being handled asynchronously."""
+        return self._asynchronous
 
     @property
     def method(self):

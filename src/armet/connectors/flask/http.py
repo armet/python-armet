@@ -24,10 +24,10 @@ class Request(http.Request):
         def __contains__(self, name):
             return name in self._obj._handle.headers
 
-    def __init__(self, asynchronous=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         request = flask.request
-        env = request.environ
-        self._handle = request if not asynchronous else flask.Request(env)
+        async = kwargs['asynchronous']
+        self._handle = request if not async else flask.Request(request.environ)
         kwargs.update(method=self._handle.method)
         super(Request, self).__init__(*args, **kwargs)
         self._stream = LimitedStream(self._handle.input_stream, len(self))
@@ -78,13 +78,11 @@ class Response(http.Response):
         def __len__(self):
             return len(self._obj._handle.headers)
 
-    def __init__(self, asynchronous=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(Response, self).__init__(*args, **kwargs)
         self._handle = current_app.response_class()
         self._stream = StringIO()
-        self._asynchronous = asynchronous
-
-        if self._asynchronous:
+        if self.asynchronous:
             # If we're dealing with an asynchronous response, we need an
             # asynchronous queue to give to WSGI.
             self._queue = import_module('gevent.queue').Queue()
@@ -105,7 +103,7 @@ class Response(http.Response):
         self._stream.write(chunk)
 
     def _flush(self):
-        if not self._asynchronous:
+        if not self.asynchronous:
             # Nothing needs to be done as the write stream is doubling as
             # the output buffer.
             return
@@ -116,7 +114,7 @@ class Response(http.Response):
 
     def close(self):
         super(Response, self).close()
-        if self._asynchronous:
+        if self.asynchronous:
             # Close the queue and terminate the connection.
-            self._flush()
             self._queue.put(StopIteration)
+

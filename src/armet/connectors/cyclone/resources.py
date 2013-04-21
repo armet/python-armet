@@ -52,18 +52,19 @@ class Resource(object):
 
     @classmethod
     def view(cls, handler, path):
-        # Turn on asynchronous operation if we can.
-        handler._auto_finish = not cls.meta.asynchronous
-
         # Construct request and response wrappers.
-        request = http.Request(handler, path)
-        response = http.Response(handler)
+        async = cls.meta.asynchronous
+        request = http.Request(handler, path=path, asynchronous=async)
+        response = http.Response(handler, asynchronous=async)
+
+        # Turn on asynchronous operation if we can.
+        handler._auto_finish = not response.asynchronous
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
 
         # If we got anything back; it is some kind of generator.
-        if not cls.meta.asynchronous and result is not None:
+        if not response.asynchronous and result is not None:
             for _ in result:
                 # Control was yielded to us and we're not async.. not much
                 # we can do here.
@@ -83,7 +84,8 @@ class Resource(object):
 
     @classmethod
     def route(cls, url=r'^'):
-        return (r'{}/{}(.*)'.format(url, cls.meta.name), cls.handler)
+        return (r'{}/{}(?:$|([/:(.].*))'.format(url, cls.meta.name),
+                cls.handler)
 
     @classmethod
     def handler(cls, *args, **kwargs):

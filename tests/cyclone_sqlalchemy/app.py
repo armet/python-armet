@@ -5,6 +5,7 @@ from armet import resources
 from armet.resources import attributes
 from ..sqlalchemy import models
 from cyclone import web
+from twisted.internet import reactor
 
 
 # Configure armet globally to use the appropriate connectors.
@@ -37,6 +38,7 @@ class StreamingResource(resources.Resource):
         pass
 
     def get(self):
+        self.response.status = 202
         self.response['Content-Type'] = 'text/plain'
         yield 'this\n'
         self.response.write('where\n')
@@ -46,6 +48,42 @@ class StreamingResource(resources.Resource):
         yield 'that\n'
         self.response.write('why\n')
         yield 'and the other'
+
+
+class AsyncResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('Hello')
+            self.response.close()
+        reactor.callLater(0, spawn)
+
+
+class AsyncStreamResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn_stream():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('this\n')
+            self.response.flush()
+            self.response.write('where\n')
+            self.response.flush()
+            self.response.write('whence\n')
+            self.response.write('that\n')
+            self.response.flush()
+            self.response.write('why\n')
+            self.response.write('and the other')
+            self.response.close()
+        reactor.callLater(0, spawn_stream)
 
 
 class HttpWholeForbiddenResource(resources.ManagedResource):
@@ -81,6 +119,8 @@ application = web.Application(debug=True)
 mount = r'^/api'
 SimpleResource.mount(mount, application)
 StreamingResource.mount(mount, application)
+AsyncResource.mount(mount, application)
+AsyncStreamResource.mount(mount, application)
 PollResource.mount(mount, application)
 HttpWholeForbiddenResource.mount(mount, application)
 HttpForbiddenResource.mount(mount, application)

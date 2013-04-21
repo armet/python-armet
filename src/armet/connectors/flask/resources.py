@@ -10,7 +10,7 @@ class RegexConverter(BaseConverter):
     """Regular expression URL converter for werkzeug / flask.
     """
 
-    def __init__(self, url_map, pattern='(.*)'):
+    def __init__(self, url_map, pattern=r'(.*)'):
         super(RegexConverter, self).__init__(url_map)
         self.regex = pattern
 
@@ -29,9 +29,9 @@ class Resource(object):
         async = cls.meta.asynchronous
         request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
         response = http.Response(asynchronous=async)
-
+        # import ipdb; ipdb.set_trace()
         # Defer the execution thread if we're running asynchronously.
-        if cls.meta.asynchronous:
+        if response.asynchronous:
             # Defer the view to pass of control.
             view = super(Resource, cls).view
             import_module('gevent').spawn(view, request, response)
@@ -77,7 +77,8 @@ class Resource(object):
             response._handle.response = stream()
             return response._handle
 
-        # Return the response handle.
+        # Configure the response and return it.
+        response._handle.data = response._stream.getvalue()
         return response._handle
 
     @classmethod

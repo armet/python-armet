@@ -48,7 +48,22 @@ class GetTestCase(test.TestCase):
     def test_streaming(self):
         response, content = self.client.request('/api/streaming/')
 
-        self.assertEqual(response.status, http.client.OK)
+        self.assertEqual(response.status, 202)
+        self.assertEqual(response.get('content-type'), 'text/plain')
+        self.assertEqual(
+            content, 'this\nwhere\nwhence\nthat\nwhy\nand the other')
+
+    def test_async(self):
+        response, content = self.client.request('/api/async/')
+
+        self.assertEqual(response.status, 202)
+        self.assertEqual(response.get('content-type'), 'text/plain')
+        self.assertEqual(content, 'Hello')
+
+    def test_async_stream(self):
+        response, content = self.client.request('/api/async-stream/')
+
+        self.assertEqual(response.status, 202)
         self.assertEqual(response.get('content-type'), 'text/plain')
         self.assertEqual(
             content, 'this\nwhere\nwhence\nthat\nwhy\nand the other')

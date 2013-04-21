@@ -5,6 +5,8 @@ from armet import http
 from six.moves import cStringIO as StringIO
 import string
 import re
+from importlib import import_module
+
 
 # For almost all headers, django prefixes the header with `HTTP_`.  This is a
 # list of headers that are an exception to that rule.
@@ -110,9 +112,13 @@ class Response(http.Response):
             return len(self._obj._handle)
 
     def __init__(self, *args, **kwargs):
+        super(Response, self).__init__(*args, **kwargs)
         self._handle = HttpResponse()
         self._stream = StringIO()
-        super(Response, self).__init__(*args, **kwargs)
+        if self.asynchronous:
+            # If we're dealing with an asynchronous response, we need an
+            # asynchronous queue to give to WSGI.
+            self._queue = import_module('gevent.queue').Queue()
 
     @property
     def status(self):
@@ -131,10 +137,17 @@ class Response(http.Response):
         self._stream.write(chunk)
 
     def _flush(self):
-        # Nothing needs to be done as the write stream is doubling as
-        # the output buffer.
-        return
+        if not self.asynchronous:
+            # Nothing needs to be done as the write stream is doubling as
+            # the output buffer.
+            return
+
+        # Write the buffer to the queue.
+        self._queue.put(self._stream.getvalue())
+        self._stream.truncate(0)
 
     def close(self):
         super(Response, self).close()
-        self._handle.content = self._stream.getvalue()
+        if self.asynchronous:
+            # Close the queue and terminate the connection.
+            self._queue.put(StopIteration)

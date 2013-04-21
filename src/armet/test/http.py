@@ -33,6 +33,7 @@ class Response(http.Response):
             return iter(self._store)
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault('asynchronous', False)
         super(Response, self).__init__(*args, **kwargs)
         self.reset()
 

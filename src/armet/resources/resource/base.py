@@ -70,8 +70,7 @@ class Resource(object):
 
             # Initiate the dispatch cycle.
             result = obj.dispatch()
-
-            if not cls.meta.asynchronous:
+            if not response.asynchronous:
                 # There is several things that dispatch is allowed to return.
                 if result is None:
                     # If there was no result from dispatch; just

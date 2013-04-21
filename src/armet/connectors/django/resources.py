@@ -4,6 +4,7 @@ from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
 from armet.http import exceptions
+from importlib import import_module
 from . import http
 
 
@@ -13,8 +14,34 @@ class Resource(object):
     @csrf.csrf_exempt
     def view(cls, request, *args, **kwargs):
         # Construct request and response wrappers.
-        request = http.Request(request, kwargs.get('path', ''))
-        response = http.Response()
+        async = cls.meta.asynchronous
+        response = http.Response(asynchronous=async)
+        request = http.Request(
+            request, path=kwargs.get('path', ''), asynchronous=async)
+
+        # Defer the execution thread if we're running asynchronously.
+        if response.asynchronous:
+            # Defer the view to pass of control.
+            view = super(Resource, cls).view
+            import_module('gevent').spawn(view, request, response)
+
+            # Construct the iterator and run the sequence once.
+            iterator = iter(response._queue)
+            content = next(iterator)
+
+            def stream():
+                # Yield our initial data.
+                yield content
+
+                # Iterate through the generator and yield its content
+                # to the network stream.
+                for chunk in iterator:
+                    # Yield what we currently have in the buffer; if any.
+                    yield chunk
+
+            # Configure the streamer and return it
+            response._handle.content = stream()
+            return response._handle
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
@@ -39,14 +66,15 @@ class Resource(object):
             response._handle.content = stream()
             return response._handle
 
-        # Return the response handle.
+        # Configure the response and return it.
+        response._handle.content = response._stream.getvalue()
         return response._handle
 
     @utils.classproperty
     def urls(cls):
         """Builds the URL configuration for this resource."""
         return urls.patterns('', urls.url(
-            r'^{}(?P<path>.*)'.format(cls.meta.name),
+            r'^{}(?:$|(?P<path>[/:(.].*))'.format(cls.meta.name),
             cls.view,
             name='armet-api-{}'.format(cls.meta.name),
             kwargs={'resource': cls.meta.name}))

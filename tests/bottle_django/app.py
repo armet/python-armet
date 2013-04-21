@@ -5,6 +5,8 @@ from armet import resources, route
 from armet.resources import attributes
 from ..django import models
 import bottle
+import gevent
+
 
 # Instantiate the bottle application.
 bottle.default_app.push()
@@ -32,6 +34,7 @@ class StreamingResource(resources.Resource):
         pass
 
     def get(self):
+        self.response.status = 202
         self.response['Content-Type'] = 'text/plain'
         yield 'this\n'
         self.response.write('where\n')
@@ -41,6 +44,44 @@ class StreamingResource(resources.Resource):
         yield 'that\n'
         self.response.write('why\n')
         yield 'and the other'
+
+
+@route('/api/')
+class AsyncResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('Hello')
+            self.response.close()
+        gevent.spawn(spawn)
+
+
+@route('/api/')
+class AsyncStreamResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn_stream():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('this\n')
+            self.response.flush()
+            self.response.write('where\n')
+            self.response.flush()
+            self.response.write('whence\n')
+            self.response.write('that\n')
+            self.response.flush()
+            self.response.write('why\n')
+            self.response.write('and the other')
+            self.response.close()
+        gevent.spawn(spawn_stream)
 
 
 @route('/api/')

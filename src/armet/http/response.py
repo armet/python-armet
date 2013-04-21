@@ -129,7 +129,7 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     """Describes the RESTful response abstraction.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, asynchronous, *args, **kwargs):
         #! The response headers dictionary.
         self._headers = self.Headers(self)
 
@@ -138,6 +138,9 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
         #! True if the response object is streaming.
         self._streaming = False
+
+        #! True if we're asynchronous.
+        self._asynchronous = asynchronous
 
     def _assert_open(self):
         self._assert_not_closed()
@@ -152,6 +155,11 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     def headers(self):
         """Retrieves the response headers dictionary."""
         return self._headers
+
+    @property
+    def asynchronous(self):
+        """True if we're being handled asynchronously."""
+        return self._asynchronous
 
     @abc.abstractproperty
     def status(self):
@@ -224,8 +232,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         # We can't close the stream if we're already closed.
         self._assert_not_closed()
 
-        if self.streaming:
-            # We're streaming; flush out the current buffer.
+        if self.streaming or self.asynchronous:
+            # We're streaming or asynchronous; flush out the current buffer.
             self.flush()
 
         else:

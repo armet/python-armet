@@ -9,6 +9,8 @@ urlpatterns = patterns(
     url(r'^api/', include(api.PollResource.urls)),
     url(r'^api/', include(api.StreamingResource.urls)),
     url(r'^api/', include(api.SimpleResource.urls)),
+    url(r'^api/', include(api.AsyncResource.urls)),
+    url(r'^api/', include(api.AsyncStreamResource.urls)),
     url(r'^api/', include(api.HttpWholeForbiddenResource.urls)),
     url(r'^api/', include(api.HttpForbiddenResource.urls)),
     url(r'^api/', include(api.WholeForbiddenResource.urls)),

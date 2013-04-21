@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from armet import resources
 from armet.resources import attributes
 from ..sqlalchemy import models
+import gevent
 
 
 class Meta:
@@ -27,6 +28,7 @@ class StreamingResource(resources.Resource):
         pass
 
     def get(self):
+        self.response.status = 202
         self.response['Content-Type'] = 'text/plain'
         yield 'this\n'
         self.response.write('where\n')
@@ -36,6 +38,42 @@ class StreamingResource(resources.Resource):
         yield 'that\n'
         self.response.write('why\n')
         yield 'and the other'
+
+
+class AsyncResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('Hello')
+            self.response.close()
+        gevent.spawn(spawn)
+
+
+class AsyncStreamResource(resources.Resource):
+
+    class Meta(Meta):
+        asynchronous = True
+
+    def get(self):
+        def spawn_stream():
+            self.response.status = 202
+            self.response['Content-Type'] = 'text/plain'
+            self.response.write('this\n')
+            self.response.flush()
+            self.response.write('where\n')
+            self.response.flush()
+            self.response.write('whence\n')
+            self.response.write('that\n')
+            self.response.flush()
+            self.response.write('why\n')
+            self.response.write('and the other')
+            self.response.close()
+        gevent.spawn(spawn_stream)
 
 
 class WrongResource(resources.ModelResource):

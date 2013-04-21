@@ -22,9 +22,10 @@ class Request(http.Request):
         def __contains__(self, name):
             return name in bottle.request.headers
 
-    def __init__(self, asynchronous=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         request = bottle.request
-        self._handle = request.copy() if asynchronous else request
+        async = kwargs['asynchronous']
+        self._handle = request.copy() if async else request
         kwargs.update(method=bottle.request.method)
         super(Request, self).__init__(*args, **kwargs)
 
@@ -74,12 +75,11 @@ class Response(http.Response):
         def __iter__(self):
             return iter(self._obj._handle.headers)
 
-    def __init__(self, asynchronous=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(Response, self).__init__(*args, **kwargs)
-        self._asynchronous = asynchronous
         self._stream = StringIO()
 
-        if self._asynchronous:
+        if self.asynchronous:
             # If we're dealing with an asynchronous response, we need
             # to have a thread-safe response handle as well as an
             # asynchronous queue to give to WSGI.
@@ -112,7 +112,7 @@ class Response(http.Response):
         bottle.response.headers.update(self.headers)
 
     def _flush(self):
-        if not self._asynchronous:
+        if not self.asynchronous:
             # Nothing more to do as the write buffer is the output buffer.
             return
 
@@ -122,7 +122,6 @@ class Response(http.Response):
 
     def close(self):
         super(Response, self).close()
-        if self._asynchronous:
+        if self.asynchronous:
             # Close the queue and terminate the connection.
-            self._flush()
             self._queue.put(StopIteration)
