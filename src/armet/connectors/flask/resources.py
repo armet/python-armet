@@ -29,7 +29,7 @@ class Resource(object):
         async = cls.meta.asynchronous
         request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
         response = http.Response(asynchronous=async)
-        # import ipdb; ipdb.set_trace()
+
         # Defer the execution thread if we're running asynchronously.
         if response.asynchronous:
             # Defer the view to pass of control.
