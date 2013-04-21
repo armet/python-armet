@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import flask
 from werkzeug.routing import BaseConverter
 from . import http
+from importlib import import_module
 
 
 class RegexConverter(BaseConverter):
@@ -25,8 +26,33 @@ class Resource(object):
             path += '/'
 
         # Construct request and response wrappers.
-        request = http.Request(path)
-        response = http.Response()
+        async = cls.meta.asynchronous
+        request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
+        response = http.Response(asynchronous=async)
+
+        # Defer the execution thread if we're running asynchronously.
+        if cls.meta.asynchronous:
+            # Defer the view to pass of control.
+            view = super(Resource, cls).view
+            import_module('gevent').spawn(view, request, response)
+
+            # Construct the iterator and run the sequence once.
+            iterator = iter(response._queue)
+            content = next(iterator)
+
+            def stream():
+                # Yield our initial data.
+                yield content
+
+                # Iterate through the generator and yield its content
+                # to the network stream.
+                for chunk in iterator:
+                    # Yield what we currently have in the buffer; if any.
+                    yield chunk
+
+            # Configure the streamer and return it
+            response._handle.response = stream()
+            return response._handle
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)

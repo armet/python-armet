@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 import bottle
 from . import http
+from importlib import import_module
 
 
 class Resource(object):
@@ -10,19 +11,34 @@ class Resource(object):
     @classmethod
     def view(cls, *args, **kwargs):
         # Construct request and response wrappers.
-        request = http.Request(kwargs.get('path', ''))
-        response = http.Response(asynchronous=cls.meta.asynchronous)
+        async = cls.meta.asynchronous
+        request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
+        response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
         if cls.meta.asynchronous:
-            def view():
-                # Pass control off to the resource handler.
-                super(Resource, cls).view(request, response)
+            # Defer the view to pass of control.
+            view = super(Resource, cls).view
+            import_module('gevent').spawn(view, request, response)
 
-            # Defer the view.
-            import gevent
-            gevent.spawn(view)
-            return response._queue
+            def stream():
+                # Construct the iterator and run the sequence once.
+                iterator = iter(response._queue)
+                chunk = next(iterator)
+
+                # Push the initial HTTP response.
+                response._push()
+
+                # Yield our initial data.
+                yield chunk
+
+                # Iterate through the asynchronous queue.
+                for chunk in iterator:
+                    # Yield the pushed chunk to bottle.
+                    yield chunk
+
+            # Return our asynchronous streamer.
+            return stream()
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)

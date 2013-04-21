@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from armet import http
 from six.moves import cStringIO as StringIO
 import bottle
+from importlib import import_module
 
 
 class Request(http.Request):
@@ -21,8 +22,9 @@ class Request(http.Request):
         def __contains__(self, name):
             return name in bottle.request.headers
 
-    def __init__(self, *args, **kwargs):
-        self._handle =  bottle.request.copy()
+    def __init__(self, asynchronous=False, *args, **kwargs):
+        request = bottle.request
+        self._handle = request.copy() if asynchronous else request
         kwargs.update(method=bottle.request.method)
         super(Request, self).__init__(*args, **kwargs)
 
@@ -54,39 +56,40 @@ class Response(http.Response):
 
         def __setitem__(self, name, value):
             self._obj._assert_open()
-            # bottle.response.headers[self._normalize(name)] = value
             self._obj._handle.headers[self._normalize(name)] = value
 
         def __getitem__(self, name):
-            # return bottle.response.headers[name]
             return self._obj._handle.headers[name]
 
         def __contains__(self, name):
-            # return name in bottle.response.headers
             return name in self._obj._handle.headers
 
         def __delitem__(self, name):
             self._obj._assert_open()
-            # del bottle.response.headers[name]
             del self._obj._handle.headers[name]
 
         def __len__(self):
-            # return len(bottle.response.headers)
             return len(self._obj._handle.headers)
 
         def __iter__(self):
-            # return iter(bottle.response.headers)
             return iter(self._obj._handle.headers)
 
     def __init__(self, asynchronous=False, *args, **kwargs):
-        self._stream = StringIO()
-        # self._handle = bottle.response # bottle.response.copy()
-        self._handle = bottle.response.copy()
-        self._asynchronous = asynchronous
-        if self._asynchronous:
-            import gevent.queue
-            self._queue = gevent.queue.Queue()
         super(Response, self).__init__(*args, **kwargs)
+        self._asynchronous = asynchronous
+        self._stream = StringIO()
+
+        if self._asynchronous:
+            # If we're dealing with an asynchronous response, we need
+            # to have a thread-safe response handle as well as an
+            # asynchronous queue to give to WSGI.
+            self._handle = bottle.response.copy()
+            self._queue = import_module('gevent.queue').Queue()
+
+        else:
+            # Not an asynchronous; just store the reference to the
+            # thread-local response object.
+            self._handle = bottle.response
 
     @property
     def status(self):
@@ -118,9 +121,7 @@ class Response(http.Response):
         self._stream.truncate(0)
 
     def close(self):
-        # Perform pre-close clean up and state fixing.
         super(Response, self).close()
-
         if self._asynchronous:
             # Close the queue and terminate the connection.
             self._flush()

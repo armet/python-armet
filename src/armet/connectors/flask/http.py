@@ -5,6 +5,7 @@ import flask
 from six.moves import cStringIO as StringIO
 from flask.globals import current_app
 from werkzeug.wsgi import get_current_url, LimitedStream
+from importlib import import_module
 
 
 class Request(http.Request):
@@ -12,33 +13,36 @@ class Request(http.Request):
     class Headers(http.request.Headers):
 
         def __getitem__(self, name):
-            return flask.request.headers.get(name)
+            return self._obj._handle.headers.get(name)
 
         def __iter__(self):
-            return (key for key, _ in flask.request.headers)
+            return (key for key, _ in self._obj._handle.headers)
 
         def __len__(self):
-            return len(flask.request.headers)
+            return len(self._obj._handle.headers)
 
         def __contains__(self, name):
-            return name in flask.request.headers
+            return name in self._obj._handle.headers
 
-    def __init__(self, *args, **kwargs):
-        kwargs.update(method=flask.request.method)
+    def __init__(self, asynchronous=False, *args, **kwargs):
+        request = flask.request
+        env = request.environ
+        self._handle = request if not asynchronous else flask.Request(env)
+        kwargs.update(method=self._handle.method)
         super(Request, self).__init__(*args, **kwargs)
-        self._stream = LimitedStream(flask.request.input_stream, len(self))
+        self._stream = LimitedStream(self._handle.input_stream, len(self))
 
     @property
     def protocol(self):
-        return flask.request.scheme.upper()
+        return self._handle.scheme.upper()
 
     @property
     def query(self):
-        return flask.request.query_string
+        return self._handle.query_string
 
     @property
     def uri(self):
-        return get_current_url(flask.request.environ)
+        return get_current_url(self._handle.environ)
 
     def read(self, count=-1):
         return self._stream.read(count)
@@ -74,10 +78,16 @@ class Response(http.Response):
         def __len__(self):
             return len(self._obj._handle.headers)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, asynchronous=False, *args, **kwargs):
+        super(Response, self).__init__(*args, **kwargs)
         self._handle = current_app.response_class()
         self._stream = StringIO()
-        super(Response, self).__init__(*args, **kwargs)
+        self._asynchronous = asynchronous
+
+        if self._asynchronous:
+            # If we're dealing with an asynchronous response, we need an
+            # asynchronous queue to give to WSGI.
+            self._queue = import_module('gevent.queue').Queue()
 
     @property
     def status(self):
@@ -95,10 +105,18 @@ class Response(http.Response):
         self._stream.write(chunk)
 
     def _flush(self):
-        # Nothing needs to be done as the write stream is doubling as
-        # the output buffer.
-        return
+        if not self._asynchronous:
+            # Nothing needs to be done as the write stream is doubling as
+            # the output buffer.
+            return
+
+        # Write the buffer to the queue.
+        self._queue.put(self._stream.getvalue())
+        self._stream.truncate(0)
 
     def close(self):
         super(Response, self).close()
-        self._handle.data = self._stream.getvalue()
+        if self._asynchronous:
+            # Close the queue and terminate the connection.
+            self._flush()
+            self._queue.put(StopIteration)
