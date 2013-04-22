@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import six
-import json
 from collections import OrderedDict
 from .base import Deserializer
 from armet import media_types
