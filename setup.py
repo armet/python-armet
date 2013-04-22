@@ -28,10 +28,6 @@ test_dependencies = (
     # The Web framework for perfectionists with deadlines.
     'django',
 
-    # Provides various utilities for managing django. Currently shell_plus
-    # is in use inside `manage.py`.
-    'django-extensions',
-
     # Bottle is a fast and simple micro-framework for small web applications.
     'bottle',
 

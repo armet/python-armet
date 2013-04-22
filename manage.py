@@ -90,16 +90,6 @@ def run(name):
         reactor.run()
 
 
-def shell(name):
-    # Initialize the data access layer.
-    initialize(name)
-
-    # Open the database access shell.
-    if name.endswith('django'):
-        from django.core.management import call_command
-        call_command('shell_plus')
-
-
 if __name__ == '__main__':
     # Extend our python path with armet.
     sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -107,7 +97,7 @@ if __name__ == '__main__':
     # Initialize and add arguments to the argument parser.
     parser = argparse.ArgumentParser()
     parser.add_argument('connector')
-    parser.add_argument('command', choices=('run', 'shell'))
+    parser.add_argument('command', choices=('run',))
 
     # Parse the arguments using our parser.
     arguments = parser.parse_args()
