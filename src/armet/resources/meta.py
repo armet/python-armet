@@ -606,11 +606,11 @@ class DeclarativeModel(DeclarativeResource):
             # Six contrivance; we don't care
             return super(DeclarativeModel, self).__init__(name, bases, attrs)
 
-        if self.form is None and self.model is not None:
+        if (self.form is None or self.form.__name__ == 'armet:Form') and self.model is not None:
             # Create a model form automatically if none exists
-            class Form(forms.ModelForm):
-                class Meta:
-                    model = self.model
+            class Meta:
+                model = self.model
+            Form = type(b'armet:Form', (forms.ModelForm,), {'Meta': Meta})
 
             # Assign our new model form
             self.form = Form
