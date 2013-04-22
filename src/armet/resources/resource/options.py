@@ -163,11 +163,6 @@ class ResourceOptions(object):
                 'json': 'armet.serializers.JSONSerializer'
             }
 
-        # Check to ensure at least one serializer is defined.
-        if len(self.serializers) == 0:
-            raise ImproperlyConfigured(
-                'At least one available serializer must be defined.')
-
         # Expand the serializer name references.
         for name, serializer in six.iteritems(self.serializers):
             if isinstance(serializer, six.string_types):
@@ -180,11 +175,6 @@ class ResourceOptions(object):
         self.allowed_serializers = meta.get('allowed_serializers')
         if not self.allowed_serializers:
             self.allowed_serializers = tuple(self.serializers.keys())
-
-        # Check to ensure at least one serializer is allowed.
-        if len(self.allowed_serializers) == 0:
-            raise ImproperlyConfigured(
-                'There must be at least one allowed serializer.')
 
         # Check to ensure that all allowed serializers are
         # understood serializers.
@@ -208,3 +198,33 @@ class ResourceOptions(object):
             raise ImproperlyConfigured(
                 'The chosen default serializer, {}, is not one of the '
                 'allowed serializers'.format(self.default_serializer))
+
+        #! Mapping of deserializers known by this resource.
+        #! Values may either be a string reference to the deserializer type
+        #! or an deserializer class object.
+        self.deserializers = deserializers = meta.get('deserializers')
+        if not deserializers:
+            self.deserializers = {
+                'url': 'armet.deserializers.URLDeserializer'
+            }
+
+        # Expand the deserializer name references.
+        for name, deserializer in six.iteritems(self.deserializers):
+            if isinstance(deserializer, six.string_types):
+                segments = deserializer.split('.')
+                module = '.'.join(segments[:-1])
+                module = import_module(module)
+                self.deserializers[name] = getattr(module, segments[-1])
+
+        #! List of allowed deserializers of the understood deserializers.
+        self.allowed_deserializers = meta.get('allowed_deserializers')
+        if not self.allowed_deserializers:
+            self.allowed_deserializers = tuple(self.deserializers.keys())
+
+        # Check to ensure that all allowed deserializers are
+        # understood deserializers.
+        for name in self.allowed_deserializers:
+            if name not in self.deserializers:
+                raise ImproperlyConfigured(
+                    'The allowed deserializer, {}, is not one of the '
+                    'understood deserializers'.format(name))

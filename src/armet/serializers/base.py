@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Describes the encoder protocols and generalizations used to
-encode objects to a format suitable for transmission.
-"""
 from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
@@ -19,13 +15,13 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
         self.request = request
         self.response = response
 
-    def can_serialize(self, obj=None):
-        """Tests this encoder to see if it can serialize the passed object."""
+    def can_serialize(self, data=None):
+        """Tests this serializer to see if it can serialize."""
         try:
-            # Attempt to serialize the object.
-            self.serialize(obj)
+            # Attet to serialize the object.
+            self.serialize(data)
 
-            # The encoding process is assumed to have succeed.
+            # The serialization process is assumed to have succeed.
             return True
 
         except ValueError:
@@ -37,7 +33,7 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
         Transforms the object into an acceptable format for transmission.
 
         @throws ValueError
-            To indicate this encoder does not support the encoding of the
+            To indicate this serializer does not support the encoding of the
             specified object.
         """
         if data is not None and self.response is not None:

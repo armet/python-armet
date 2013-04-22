@@ -34,5 +34,9 @@ class NotAcceptable(BaseHTTPException):
     status = client.NOT_ACCEPTABLE
 
 
+class UnsupportedMediaType(BaseHTTPException):
+    status = client.UNSUPPORTED_MEDIA_TYPE
+
+
 class NotImplemented(BaseHTTPException):
     status = client.NOT_IMPLEMENTED
