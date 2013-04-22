@@ -4,6 +4,7 @@ import httplib2
 import unittest
 import socket
 import errno
+from . import http  # flake8: noqa
 
 
 def is_available(host='localhost', port=5000):

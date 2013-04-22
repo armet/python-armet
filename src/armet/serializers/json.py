@@ -24,7 +24,7 @@ class JSONSerializer(Serializer):
 
     def __init__(self, *args, **kwargs):
         # Let the base class figure out things.
-        super(Serializer, self).__init__(*args, **kwargs)
+        super(JSONSerializer, self).__init__(*args, **kwargs)
 
         #! The configuration options that are passed to the
         #! JSON serializer.
@@ -44,4 +44,4 @@ class JSONSerializer(Serializer):
             obj = [obj]
 
         # serialize the resultant text.
-        super(Serializer, self).serialize(json.dumps(obj, **self.options))
+        super(JSONSerializer, self).serialize(json.dumps(obj, **self.options))
