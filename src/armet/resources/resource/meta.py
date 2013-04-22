@@ -26,6 +26,15 @@ class ResourceBase(type):
     #! Connectors to instantiate and mixin to the inheritance.
     connectors = ['http']
 
+    def __instancecheck__(cls, instance):
+        return cls.__subclasscheck__(type(instance))
+
+    def __subclasscheck__(cls, sub):
+        mro = sub.mro()
+        if cls in mro:
+            return True
+        return any(b in mro for b in cls.__bases__)
+
     @classmethod
     def _is_resource(cls, name, bases):
         if name == 'NewBase':
