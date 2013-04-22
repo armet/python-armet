@@ -171,9 +171,10 @@ def _get_field_class(field):
     try:
         # Attempt to handle file streams
         test = StringIO()
-        if field.to_python(test).getvalue() == '':
+        if (field.to_python(test).getvalue() == ''
+                and hasattr(field(), 'allow_empty_file')):
             # Looks like we're capable of dealing with file streams
-            return attributes.FileAttribute
+            return attributes.FileAttributea
 
     except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # File streams cannot be handled
