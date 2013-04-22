@@ -72,7 +72,9 @@ def run(name):
 
     elif connector == 'bottle':
         # Run the development server.
-        from gevent import monkey; monkey.patch_all()
+        from gevent import monkey
+        monkey.patch_all()
+
         from bottle import run
         module = importlib.import_module('tests.{}.app'.format(name))
         run(module.application, host=HOST, port=PORT, debug=True,

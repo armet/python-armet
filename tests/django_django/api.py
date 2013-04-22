@@ -76,7 +76,6 @@ class AsyncStreamResource(resources.Resource):
         gevent.spawn(spawn_stream)
 
 
-
 class WrongResource(resources.ModelResource):
 
     class Meta:

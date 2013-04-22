@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 from django.http import HttpResponse
 from armet import http
 from six.moves import cStringIO as StringIO
-import string
 import re
 from importlib import import_module
 
@@ -12,18 +11,6 @@ from importlib import import_module
 # list of headers that are an exception to that rule.
 SPECIAL_HEADERS = ('CONTENT_TYPE', 'CONTENT_LENGTH')
 
-
-def from_django(name):
-    """De-djangoifies the name of a header."""
-    name = re.sub(r'^HTTP_', '', name)
-    name = re.sub(r'_', '-', name)
-    return string.capwords(name.lower(), '-')
-
-
-def to_django(name):
-    """Djangoifies the name of a header."""
-    name = name.replace('-', '_').upper()
-    return name if name in SPECIAL_HEADERS else 'HTTP_{}'.format(name)
 
 def _normalize(name):
     name = re.sub(r'^HTTP-', '', name.replace('_', '-'))

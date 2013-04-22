@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
 from six.moves import cStringIO as StringIO
-from twisted.internet import reactor
 
 
 class Request(http.Request):

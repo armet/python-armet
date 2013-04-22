@@ -133,7 +133,6 @@ class Resource(object):
             # TODO: Don't do the following if not in DEBUG mode.
             raise
 
-
     def __init__(self, request, response):
         """Initialize; store the given request and response objects."""
         self.request = request

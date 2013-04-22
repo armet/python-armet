@@ -117,4 +117,3 @@ class Response(http.Response):
         if self.asynchronous:
             # Close the queue and terminate the connection.
             self._queue.put(StopIteration)
-

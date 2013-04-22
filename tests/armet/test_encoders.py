@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import unittest
 import json
-from armet import encoders, http
+from armet import encoders
 from armet.test.http import Response as MockResponse
 
 

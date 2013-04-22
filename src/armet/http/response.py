@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import collections
 import abc
 import six
-import re
 import mimeparse
 import io
 from armet import exceptions
@@ -34,9 +33,9 @@ class Headers(collections.MutableMapping, request.Headers):
 
         def _pull(self):
             # Pull the headers from the source.
-            if self._value != self._headers.get(name, ''):
+            if self._value != self._headers.get(self._name, ''):
                 # If the header value has changed; update our sequence.
-                self._value = self._headers.get(name, '')
+                self._value = self._headers.get(self._name, '')
                 self._sequence = self._value.split(',')
 
         def __getitem__(self, index):
