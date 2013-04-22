@@ -15,6 +15,23 @@ class classproperty(object):
         return self.getter(cls)
 
 
+class boundmethod(object):
+    """
+    Declares a method that can be invoked as both an instance method
+    and a class method.
+    """
+
+    def __init__(self, method):
+        self.method = method
+
+    def __get__(self, obj, cls):
+        self.obj = obj if obj else cls
+        return self
+
+    def __call__(self, *args, **kwargs):
+        return self.method(self.obj, *args, **kwargs)
+
+
 class memoize(dict):
     """Memoization decorator for functions taking one or more arguments."""
 

@@ -3,8 +3,8 @@ from __future__ import absolute_import, unicode_literals, division
 import logging
 import six
 import collections
-from armet import http
-from armet.http import exceptions
+import mimeparse
+from armet import http, utils
 
 
 logger = logging.getLogger(__name__)
@@ -110,9 +110,8 @@ class Resource(object):
                     response.write(six.binary_type(result))
                     response.close()
 
-        except exceptions.Base as e:
+        except http.exceptions.BaseHTTPException as e:
             # Something that we can handle and return properly happened.
-
             # Set response propertie    s from the exception.
             response.status = e.status
             response.headers.update(e.headers)
@@ -120,7 +119,8 @@ class Resource(object):
             if e.content:
                 # Write the exception body if present and close
                 # the response.
-                response.write(e.content)
+                # TODO: Use the plain-text encoder.
+                cls.serialize(e.content, response, format='json')
 
             # Terminate the connection.
             response.close()
@@ -138,63 +138,95 @@ class Resource(object):
         self.request = request
         self.response = response
 
-    def encode(self, data):
-        """Encodes the data using a selected encoder."""
-        # Determine the appropriate encoder to use by reading
-        # the request object.
-        accept = self.request.get('Accept')
-        encoder = None
-        if not accept:
-            # Default the accept header to */*
-            accept = '*/*'
+    @utils.boundmethod
+    def serialize(obj, data, response=None, request=None, format=None):
+        """Serializes the data using a serializer.
 
-        # Check to see if an extension has overridden the accept header.
-        allowed = self.meta.allowed_encoders
-        if self.extensions:
-            name = self.extensions[-1].lower()
-            if name in allowed:
-                match = self.meta.encoders[name]
-                if match.can_transcode(accept):
-                    # An encoder of the same name was discovered and
-                    # it matches the requested format.
-                    encoder = match
+        @param[in] data
+            The data to be serialized.
 
-        elif accept.strip() != '*/*':
-            # No specific format specified in the URL; iterate through
-            # encoders until one matches the specification defined
-            # in the Accept header.
-            for name in allowed:
-                match = self.meta.encoders[name]
-                if match.can_transcode(accept):
-                    # An encoder has matched to the format.
-                    encoder = match
-                    break
+        @param[in] response
+            The response object to serialize the data to.
+            If this method is invoked as an instance method, the response
+            object can be omitted and it will be taken from the instance.
 
-        else:
-            # Resort to the default encoder.
-            encoder = self.meta.encoders[self.meta.default_encoder]
+        @param[in] request
+            The request object to pull information from; normally used to
+            determine the encoding format (when `format` is not provided).
+            May be used by some serializers as well to pull additional headers.
+            If this method is invoked as an instance method, the request
+            object can be omitted and it will be taken from the instance.
 
-        if encoder:
+        @param[in] format
+            A specific format to serialize in; if provided, no detection is
+            done. If not provided, the accept header (as well as the URL
+            extension) is looked at to determine an appropriate serializer.
+
+        @returns
+            The instance of the used serializer, if any.
+        """
+        if isinstance(obj, Resource):
+            if not request:
+                # Ensure we have a request object.
+                request = obj.request
+
+            if not response:
+                # Ensure we have a response object.
+                response = obj.response
+
+        Serializer = None
+        if format:
+            # An explicit format was given; do not attempt to auto-detect
+            # a serializer.
+            Serializer = obj.meta.serializers[format]
+
+        if not Serializer:
+            # Determine an appropriate serializer to use by
+            # introspecting the request object and looking at the `Accept`
+            # header.
+            media_ranges = request.get('Accept', '*/*').strip()
+            if not media_ranges:
+                # Default the media ranges to */*
+                media_ranges = '*/*'
+
+            if media_ranges != '*/*':
+                # Parse the media ranges and determine the serializer
+                # that is the closest match.
+                media_types = six.iterkeys(obj._serializer_map)
+                media_type = mimeparse.best_match(media_types, media_ranges)
+                if media_type:
+                    format = obj._serializer_map[media_type]
+                    Serializer = obj.meta.serializers[format]
+
+            else:
+                # Client indicated no preference; use the default.
+                Serializer = obj.meta.serializers[obj.meta.default_serializer]
+
+        if Serializer:
             try:
-                # Attempt to encode the data using the determined encoder.
-                instance = encoder(accept, self.request, self.response)
-                return instance.encode(data)
+                # Attempt to serialize the data using the determined
+                # serializer.
+                serializer = Serializer(request, response)
+                serializer.serialize(data)
+
+                # Return the instance of the serializer used.
+                return serializer
 
             except ValueError:
-                # Failed to encode the data.
+                # Failed to serialize the data.
                 pass
 
-        # Either failed to determine an encoder or failed to encode
+        # Either failed to determine a serializer or failed to serialize
         # the data; construct a list of available and valid encoders.
         available = {}
-        for name in self.meta.allowed_encoders:
-            encoder = self.meta.encoders[name]
-            instance = encoder(accept, self.request, self.response)
-            if instance.can_encode(data):
-                available[name] = encoder.mimetype
+        for name in obj.meta.allowed_serializers:
+            Serializer = obj.meta.serializers[name]
+            instance = Serializer(request, None)
+            if instance.can_serialize(data):
+                available[name] = Serializer.media_types[0]
 
         # Raise a Not Acceptable exception.
-        raise exceptions.NotAcceptable(available)
+        raise http.exceptions.NotAcceptable(available)
 
     def assert_http_allowed_methods(self):
         """Ensure that we're allowed to use this HTTP method."""
@@ -202,7 +234,8 @@ class Resource(object):
             # The specified method is not allowed for the resource
             # identified by the request URI.
             # RFC 2616 § 10.4.6 — 405 Method Not Allowed
-            raise exceptions.MethodNotAllowed(self.meta.http_allowed_methods)
+            raise http.exceptions.MethodNotAllowed(
+                self.meta.http_allowed_methods)
 
     def dispatch(self):
         """Entry-point of the dispatch cycle for this resource.
@@ -219,7 +252,7 @@ class Resource(object):
             # This is the appropriate response when the server does
             # not recognize the request method.
             # RFC 2616 § 10.5.2 — 501 Not Implemented
-            raise exceptions.NotImplemented()
+            raise http.exceptions.NotImplemented()
 
         # Ensure that we're allowed to use this HTTP method.
         self.assert_http_allowed_methods()
@@ -229,7 +262,7 @@ class Resource(object):
         if function is None:
             # Server is not capable of supporting it.
             # RFC 2616 § 10.5.2 — 501 Not Implemented
-            raise exceptions.NotImplemented()
+            raise http.exceptions.NotImplemented()
 
         # Delegate to the determined function to process the request.
         return function()

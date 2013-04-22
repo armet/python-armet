@@ -25,3 +25,4 @@ except AttributeError:
 # Import request and response classes into the root level of the package.
 from .request import Request  # flake8: noqa
 from .response import Response  # flake8: noqa
+from . import exceptions  # flake8: noqa

@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from armet.http import client
 
 
-class Base(BaseException):
+class BaseHTTPException(BaseException):
     status = None
 
     def __init__(self, content=None, headers=None):
@@ -14,15 +14,15 @@ class Base(BaseException):
         self.headers = headers or {}
 
 
-class Forbidden(Base):
+class Forbidden(BaseHTTPException):
     status = client.FORBIDDEN
 
 
-class NotFound(Base):
+class NotFound(BaseHTTPException):
     status = client.NOT_FOUND
 
 
-class MethodNotAllowed(Base):
+class MethodNotAllowed(BaseHTTPException):
     status = client.METHOD_NOT_ALLOWED
 
     def __init__(self, allowed):
@@ -30,5 +30,9 @@ class MethodNotAllowed(Base):
             headers={'Allowed': ', '.join(allowed)})
 
 
-class NotImplemented(Base):
+class NotAcceptable(BaseHTTPException):
+    status = client.NOT_ACCEPTABLE
+
+
+class NotImplemented(BaseHTTPException):
     status = client.NOT_IMPLEMENTED

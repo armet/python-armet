@@ -92,6 +92,14 @@ class ResourceBase(type):
         # Construct the class object.
         self = super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
 
+        # Generate a serializer map that maps media ranges to serializer
+        # names.
+        self._serializer_map = smap = {}
+        for key in self.meta.allowed_serializers:
+            serializer = self.meta.serializers[key]
+            for media_type in serializer.media_types:
+                smap[media_type] = key
+
         # Filter the available connectors according to the
         # metaclass restriction set.
         for key in list(meta.connectors.keys()):

@@ -14,33 +14,7 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
     #! Applicable media types for this serializer.
     media_types = ()
 
-    @classmethod
-    def is_candidate(cls, media_ranges):
-        """
-        Determine if this serializer might be
-        able to serialize appropriately.
-        """
-        try:
-            # Attempt to use mimeparse to determine if the mimetype matches
-            return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
-
-        except ValueError:
-            # Mimeparse died something fierce (this happens when the
-            # Accept header is in an invalid format).
-            return False
-
-    def __init__(self, accept, request, response):
-        """
-        @params[in] accept
-            The accept header specifiying the media type.
-
-        @params[in] response
-            The http response class used to instantiate response objects.
-        """
-        # Parse out any parameters
-        media_type = mimeparse.best_match(self.media_types, accept)
-        self.params = mimeparse.parse_mime_type(media_type)[2]
-
+    def __init__(self, request, response):
         #! The request and response objects to use.
         self.request = request
         self.response = response
@@ -66,7 +40,7 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
             To indicate this encoder does not support the encoding of the
             specified object.
         """
-        if data is not None:
+        if data is not None and self.response is not None:
             # Set the content type.
             self.response['Content-Type'] = self.media_types[0]
 
