@@ -4,38 +4,38 @@ from __future__ import absolute_import, division
 import six
 import json
 from collections import Iterable
-from armet import transcoders
-from .base import Encoder
+from .base import Serializer
+from armet import media_types
 
 
-class TypeCoerableJSONEncoder(json.JSONEncoder):
+class JSONSerializer(Serializer):
 
-    def default(self, obj):
+    media_types = media_types.JSON
+
+    @staticmethod
+    def _default(obj):
         if isinstance(obj, Iterable):
             # This is an iterable but not recognizable as such
-            # by the JSON encoder (eg. generator).
+            # by the JSON serializer (eg. generator).
             return list(obj)
 
-        # Raise up our hands; we cannot encode this.
-        raise ValueError('Unable to encode {}'.format(obj))
-
-
-class Encoder(transcoders.Json, Encoder):
+        # Raise up our hands; we cannot serialize this.
+        raise ValueError('Unable to serialize {}'.format(obj))
 
     def __init__(self, *args, **kwargs):
         # Let the base class figure out things.
-        super(Encoder, self).__init__(*args, **kwargs)
+        super(Serializer, self).__init__(*args, **kwargs)
 
         #! The configuration options that are passed to the
-        #! JSON encoder.
+        #! JSON serializer.
         self.options = {
             'ensure_ascii': True,
             'separators': (',', ':',),
-            'cls': TypeCoerableJSONEncoder
+            'default': self._default
         }
 
-    def encode(self, obj=None):
-        # If we have nothing; encode as an empty object.
+    def serialize(self, obj=None):
+        # If we have nothing; serialize as an empty object.
         if obj is None:
             obj = {}
 
@@ -43,5 +43,5 @@ class Encoder(transcoders.Json, Encoder):
         if isinstance(obj, six.string_types) or not isinstance(obj, Iterable):
             obj = [obj]
 
-        # Encode the resultant text.
-        super(Encoder, self).encode(json.dumps(obj, **self.options))
+        # serialize the resultant text.
+        super(Serializer, self).serialize(json.dumps(obj, **self.options))

@@ -154,55 +154,57 @@ class ResourceOptions(object):
         #! As of 19 March 2013 only Firefox supports it since a year ago.
         self.legacy_redirect = meta.get('legacy_redirect', True)
 
-        #! Mapping of encoders known by this resource.
-        #! Values may either be a string reference to the encoder type
-        #! or an encoder class object.
-        self.encoders = encoders = meta.get('encoders')
-        if not encoders:
-            self.encoders = {
-                'json': 'armet.encoders.JsonEncoder'
+        #! Mapping of serializers known by this resource.
+        #! Values may either be a string reference to the serializer type
+        #! or an serializer class object.
+        self.serializers = serializers = meta.get('serializers')
+        if not serializers:
+            self.serializers = {
+                'json': 'armet.serializers.JSONSerializer'
             }
 
-        # Check to ensure at least one encoder is defined.
-        if len(self.encoders) == 0:
+        # Check to ensure at least one serializer is defined.
+        if len(self.serializers) == 0:
             raise ImproperlyConfigured(
-                'At least one available encoder must be defined.')
+                'At least one available serializer must be defined.')
 
-        # Expand the encoder name references.
-        for name, encoder in six.iteritems(self.encoders):
-            if isinstance(encoder, six.string_types):
-                segments = encoder.split('.')
+        # Expand the serializer name references.
+        for name, serializer in six.iteritems(self.serializers):
+            if isinstance(serializer, six.string_types):
+                segments = serializer.split('.')
                 module = '.'.join(segments[:-1])
                 module = import_module(module)
-                self.encoders[name] = getattr(module, segments[-1])
+                self.serializers[name] = getattr(module, segments[-1])
 
-        #! List of allowed encoders of the understood encoders.
-        self.allowed_encoders = meta.get('allowed_encoders')
-        if not self.allowed_encoders:
-            self.allowed_encoders = tuple(self.encoders.keys())
+        #! List of allowed serializers of the understood serializers.
+        self.allowed_serializers = meta.get('allowed_serializers')
+        if not self.allowed_serializers:
+            self.allowed_serializers = tuple(self.serializers.keys())
 
-        # Check to ensure at least one encoder is allowed.
-        if len(self.allowed_encoders) == 0:
+        # Check to ensure at least one serializer is allowed.
+        if len(self.allowed_serializers) == 0:
             raise ImproperlyConfigured(
-                'There must be at least one allowed encoder.')
+                'There must be at least one allowed serializer.')
 
-        # Check to ensure that all allowed encoders are understood encoders.
-        for name in self.allowed_encoders:
-            if name not in self.encoders:
+        # Check to ensure that all allowed serializers are
+        # understood serializers.
+        for name in self.allowed_serializers:
+            if name not in self.serializers:
                 raise ImproperlyConfigured(
-                    'The allowed encoder, {}, is not one of the '
-                    'understood encoders'.format(name))
+                    'The allowed serializer, {}, is not one of the '
+                    'understood serializers'.format(name))
 
-        #! Name of the default encoder of the list of understood encoders.
-        self.default_encoder = meta.get('default_encoder')
-        if not self.default_encoder:
-            if 'json' in self.allowed_encoders:
-                self.default_encoder = 'json'
+        #! Name of the default serializer of the list of
+        #! understood serializers.
+        self.default_serializer = meta.get('default_serializer')
+        if not self.default_serializer:
+            if 'json' in self.allowed_serializers:
+                self.default_serializer = 'json'
 
             else:
-                self.default_encoder = self.allowed_encoders[0]
+                self.default_serializer = self.allowed_serializers[0]
 
-        if self.default_encoder not in self.allowed_encoders:
+        if self.default_serializer not in self.allowed_serializers:
             raise ImproperlyConfigured(
-                'The chosen default encoder, {}, is not one of the '
-                'allowed encoders'.format(self.default_encoder))
+                'The chosen default serializer, {}, is not one of the '
+                'allowed serializers'.format(self.default_serializer))

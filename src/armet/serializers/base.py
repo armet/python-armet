@@ -7,10 +7,27 @@ from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
 import mimeparse
-from armet import transcoders
 
 
-class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
+class Serializer(six.with_metaclass(abc.ABCMeta)):
+
+    #! Applicable media types for this serializer.
+    media_types = ()
+
+    @classmethod
+    def is_candidate(cls, media_ranges):
+        """
+        Determine if this serializer might be
+        able to serialize appropriately.
+        """
+        try:
+            # Attempt to use mimeparse to determine if the mimetype matches
+            return mimeparse.best_match(cls.mimetypes, media_ranges) != ''
+
+        except ValueError:
+            # Mimeparse died something fierce (this happens when the
+            # Accept header is in an invalid format).
+            return False
 
     def __init__(self, accept, request, response):
         """
@@ -21,19 +38,18 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             The http response class used to instantiate response objects.
         """
         # Parse out any parameters
-        mime_type = mimeparse.best_match(self.mimetypes, accept)
-        self.params = mimeparse.parse_mime_type(mime_type)[2]
+        media_type = mimeparse.best_match(self.media_types, accept)
+        self.params = mimeparse.parse_mime_type(media_type)[2]
 
         #! The request and response objects to use.
         self.request = request
         self.response = response
 
-    def can_encode(self, obj=None):
-        """Tests this encoder to see if it can encode the passed object.
-        """
+    def can_serialize(self, obj=None):
+        """Tests this encoder to see if it can serialize the passed object."""
         try:
-            # Attempt to encode the object.
-            self.encode(obj)
+            # Attempt to serialize the object.
+            self.serialize(obj)
 
             # The encoding process is assumed to have succeed.
             return True
@@ -42,7 +58,7 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             # The object was of an unsupported type.
             return False
 
-    def encode(self, data=None):
+    def serialize(self, data=None):
         """
         Transforms the object into an acceptable format for transmission.
 
@@ -51,9 +67,8 @@ class Encoder(six.with_metaclass(abc.ABCMeta, transcoders.Transcoder)):
             specified object.
         """
         if data is not None:
-            # Set the appropriate headers.
-            self.response['Content-Type'] = self.mimetype
-            self.response['Content-Length'] = len(data.encode('utf-8'))
+            # Set the content type.
+            self.response['Content-Type'] = self.media_types[0]
 
             # Write the encoded and prepared data to the response.
             self.response.write(data)
