@@ -825,9 +825,16 @@ class BaseResource(object):
         #   off to the creation method of the related class.
         try:
             # Attempt to resolve the relation reference.
+            return [self.resolve(x) for x in value]
+
+        except (TypeError, ValueError, AttributeError):
+            pass
+
+        try:
+            # Attempt to resolve the relation reference.
             return self.resolve(value)
 
-        except ValueError:
+        except (ValueError, AttributeError):
             # Must be already resolved (or something weird)
             return value
 
