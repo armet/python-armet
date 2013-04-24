@@ -34,16 +34,16 @@ class Response(http.Response):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('asynchronous', False)
-        super(Response, self).__init__(*args, **kwargs)
-        self.reset()
-
-    def reset(self):
-        self.content = ''
         self.stream = io.BytesIO()
-        self._headers = self.Headers(self)
-        self._status = 200
+        super(Response, self).__init__(*args, **kwargs)
+
+    def clear(self):
         self._closed = False
         self._streaming = False
+        super(Response, self).clear()
+        self.content = ''
+        self.stream.truncate(0)
+        self.stream.seek(0)
 
     @property
     def status(self):

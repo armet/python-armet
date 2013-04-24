@@ -18,7 +18,7 @@ class SerializerTestCase(unittest.TestCase):
         cls.serializer = cls.Serializer(cls.request, cls.response)
 
     def serialize(self, data):
-        self.response.reset()
+        self.response.clear()
         self.serializer.serialize(data)
         self.response.close()
         self.content = self.response.content.decode('utf-8')

@@ -91,13 +91,14 @@ class Response(http.Response):
             del self._obj._handle[name]
 
         def __contains__(self, name):
-            return name in self._obj._handle
+            return self._obj._handle.has_header(name)
 
         def __iter__(self):
-            return iter(self._obj._handle)
+            for name, _ in self._obj._handle.items():
+                yield name
 
         def __len__(self):
-            return len(self._obj._handle)
+            return len(self._obj._handle._headers)
 
     def __init__(self, *args, **kwargs):
         self._handle = HttpResponse()

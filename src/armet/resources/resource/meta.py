@@ -66,7 +66,7 @@ class ResourceBase(type):
 
         # Gather the attributes of all options classes.
         # Start with the base configuration.
-        metadata = armet.use()
+        metadata = armet.use().copy()
         values = lambda x: {n: getattr(x, n) for n in dir(x)}
         for base in bases:
             meta = getattr(base, 'Meta', None)

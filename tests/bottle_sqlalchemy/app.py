@@ -19,10 +19,9 @@ class Meta:
 class SimpleResource(resources.ManagedResource):
 
     class Meta(Meta):
-        debug = True
+        pass
 
     def read(self):
-        raise Exception('siojgsjgojsij')
         return None
 
 

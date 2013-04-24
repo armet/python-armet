@@ -78,17 +78,14 @@ class Response(http.Response):
 
     def __init__(self, *args, **kwargs):
         self._stream = io.BytesIO()
-        if kwargs['asynchronous']:
+        self._handle = bottle.response
+        super(Response, self).__init__(*args, **kwargs)
+        if self.asynchronous:
             # If we're dealing with an asynchronous response, we need
             # to have a thread-safe response handle as well as an
             # asynchronous queue to give to WSGI.
-            self._handle = bottle.response.copy()
+            self._handle = self._handle.copy()
             self._queue = import_module('gevent.queue').Queue()
-        else:
-            # Not an asynchronous; just store the reference to the
-            # thread-local response object.
-            self._handle = bottle.response
-        super(Response, self).__init__(*args, **kwargs)
 
     @property
     def status(self):
