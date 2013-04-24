@@ -4,6 +4,7 @@ import logging
 import six
 import collections
 import mimeparse
+import traceback
 from armet import http, utils
 
 
@@ -126,13 +127,22 @@ class Resource(object):
             # Terminate the connection.
             response.close()
 
-        except BaseException as e:
-            # Something unexpected happenend.
+        except Exception:
+            # Something unexpected happened.
+
             # Log error message to the logger.
             logger.exception('Internal server error')
 
-            # TODO: Don't do the following if not in DEBUG mode.
-            raise
+            # Write a debug message for the client.
+            if not response.streaming and not response.closed:
+                response.clear()
+                response.status = http.client.INTERNAL_SERVER_ERROR
+                if cls.meta.debug:
+                    # We're debugging; write the traceback.
+                    response['Content-Type'] = 'text/plain'
+                    response.write(traceback.format_exc())
+
+                response.close()
 
     def __init__(self, request, response):
         """Initialize; store the given request and response objects."""

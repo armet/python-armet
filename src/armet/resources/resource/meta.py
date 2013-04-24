@@ -56,7 +56,7 @@ class ResourceBase(type):
                 # This is some sort of derived resource; good.
                 return True
 
-        # This is not derived at all from Resource (eg. is Resource)
+        # This is not derived at all from Resource (eg. is base).
         return False
 
     def __new__(cls, name, bases, attrs):

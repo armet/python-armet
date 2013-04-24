@@ -40,6 +40,12 @@ class ResourceOptions(object):
         @param[in] name
             Name of the resource class this is being instantiataed for.
         """
+        #! Whether to allow display of debugging information
+        #! to the client.
+        self.debug = meta.get('debug')
+        if self.debug is None:
+            self.debug = False
+
         #! Name of the resource to use in URIs; defaults to the dasherized
         #! version of the camel cased class name (eg. SomethingHere becomes
         #! something-here). The defaulted version also strips a trailing

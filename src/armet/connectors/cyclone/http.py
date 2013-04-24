@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
-from six.moves import cStringIO as StringIO
+import io
 
 
 class Request(http.Request):
@@ -26,7 +26,7 @@ class Request(http.Request):
 
     def __init__(self, handler, *args, **kwargs):
         self._handle = handler.request
-        self._stream = StringIO(self._handle.body)
+        self._stream = io.BytesIO(self._handle.body)
         kwargs.update(method=self._handle.method)
         super(Request, self).__init__(*args, **kwargs)
 
@@ -82,7 +82,7 @@ class Response(http.Response):
 
     def __init__(self, handler, *args, **kwargs):
         self._handler = handler
-        self._stream = StringIO()
+        self._stream = io.BytesIO()
         self._length = 0
         super(Response, self).__init__(*args, **kwargs)
 
@@ -94,6 +94,11 @@ class Response(http.Response):
     def status(self, value):
         self._assert_open()
         self._handler.set_status(value)
+
+    def clear(self):
+        super(Response, self).clear()
+        self._stream.truncate(0)
+        self._stream.seek(0)
 
     def tell(self):
         return self._stream.tell() + self._length

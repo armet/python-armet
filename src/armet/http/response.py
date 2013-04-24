@@ -6,7 +6,7 @@ import six
 import mimeparse
 import io
 from armet import exceptions
-from . import request
+from . import request, client
 
 
 class Headers(collections.MutableMapping, request.Headers):
@@ -141,6 +141,9 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         #! True if we're asynchronous.
         self._asynchronous = asynchronous
 
+        #! Clear the response of all pre-initialized values.
+        self.clear()
+
     def _assert_open(self):
         self._assert_not_closed()
         if self.streaming:
@@ -168,6 +171,13 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     def status(self, value):
         """Sets the status code of the response.
         """
+
+    @abc.abstractmethod
+    def clear(self):
+        """Clears the response object of all values."""
+        self._assert_not_closed()
+        self.status = client.OK
+        self._headers.clear()
 
     def isatty(self):
         """Return True if the stream is interactive."""

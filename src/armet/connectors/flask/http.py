@@ -79,9 +79,9 @@ class Response(http.Response):
             return len(self._obj._handle.headers)
 
     def __init__(self, *args, **kwargs):
-        super(Response, self).__init__(*args, **kwargs)
         self._handle = current_app.response_class()
         self._stream = io.BytesIO()
+        super(Response, self).__init__(*args, **kwargs)
         if self.asynchronous:
             # If we're dealing with an asynchronous response, we need an
             # asynchronous queue to give to WSGI.
@@ -90,6 +90,11 @@ class Response(http.Response):
     @property
     def status(self):
         return self._handle.status_code
+
+    def clear(self):
+        super(Response, self).clear()
+        self._stream.truncate(0)
+        self._stream.seek(0)
 
     @status.setter
     def status(self, value):

@@ -74,7 +74,7 @@ def run(name):
         # Run the development server.
         from bottle import run
         module = importlib.import_module('tests.{}.app'.format(name))
-        run(module.application, host=HOST, port=PORT, debug=True)
+        run(module.application, host=HOST, port=PORT) # , debug=True)
 
     elif connector == 'cyclone':
         # Start the reactor and run the development server
