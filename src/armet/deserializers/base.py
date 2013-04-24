@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
-import mimeparse
 
 
 class Deserializer(six.with_metaclass(abc.ABCMeta)):

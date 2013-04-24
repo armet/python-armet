@@ -84,7 +84,7 @@ class Attribute(object):
             # Iterate and resolve the attribute path.
             value = accessor(value)
 
-        if value is not None and self._segments:
+        if self._segments and value is not None:
             # Value isn't none and we still have additional segments left
             # to resolve into accessors.
             while self._segments:
@@ -120,10 +120,19 @@ class Attribute(object):
         return value
 
 
+class TextAttribute(Attribute):
+    """Represents text.
+    """
+
+    def prepare(self, value):
+        """Stringifies the value."""
+        return str(value)
+
+
 class BooleanAttribute(Attribute):
     """
-    Represents a boolean; serialzied as a python bool and deserialized as
-    an actual bool in most decoders.
+    Represents a boolean; prepared as a python bool and cleaned as
+    an actual bool in most deserializers.
     """
 
     #! Textual values accepted for `True`.

@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import logging
 from ..resource import base
 import re
-import six
 from armet import http
 
 
@@ -100,7 +99,7 @@ class ManagedResource(base.Resource):
         data = self.prepare(data)
 
         # Encode the data using a desired encoder.
-        self.encode(data)
+        self.serialize(data)
 
         # Make sure that the status code is set.
         self.response.status = status
@@ -114,7 +113,10 @@ class ManagedResource(base.Resource):
         if self.slug is None:
             # Attempt to prepare each item of the iterable (as long as
             # we're not a string or some sort of mapping).
-            return (self.item_prepare(x) for x in data)
+            for index, value in enumerate(data):
+                data[index] = self.item_prepare(data[index])
+
+            return data
 
         # Prepare just the singular value and return.
         return self.item_prepare(data)
@@ -124,29 +126,15 @@ class ManagedResource(base.Resource):
         # Initialize the object that hold the resultant item.
         obj = {}
 
-        # Iterate through the attributes and build the object
-        # from the item.
-        for name, attribute in six.iteritems(self.attributes):
-            if not attribute.include:
-                # Attribute is not to be included in the
-                # resource body.
-                continue
-
-            try:
-                # Apply the attribute; request the value of the
-                # attribute from the item.
-                value = attribute.get(item)
-
-            except (TypeError, ValueError, KeyError, AttributeError):
-                # Nothing found; set it to null.
-                value = None
-
-            # Run the attribute through the prepare cycle.
-            value = attribute.prepare(value)
-            value = self.preparers[name](self, item, value)
-
-            # Set the value on the object.
-            obj[name] = value
+        # Iterate through the attributes and build the object from the item.
+        for name, attribute in self.attributes.items():
+            if attribute.include:
+                # Run the attribute through its prepare cycle.
+                obj[name] = self.preparers[name](
+                    # Micro preparation cycle on the attribute object.
+                    self, item, attribute.prepare(
+                        # Retrieves the value from the object.
+                        attribute.get(item)))
 
         # Return the resultant object.
         return obj
