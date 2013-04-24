@@ -5,7 +5,11 @@ python:
   - '3.3'
   - 'pypy'
 
-# Install dependencies
+# Install system dependencies
+before_install:
+  - 'sudo apt-get install python-dev libevent-dev'
+
+# Install python dependencies
 install:
   - 'pip install -e ".[test]" --use-mirrors'
 
