@@ -251,7 +251,7 @@ class Resource(object):
             # Determine an appropriate serializer to use by
             # introspecting the request object and looking at the `Accept`
             # header.
-            media_ranges = request.get('Accept', '*/*').strip()
+            media_ranges = (request.get('Accept') or '*/*').strip()
             if not media_ranges:
                 # Default the media ranges to */*
                 media_ranges = '*/*'

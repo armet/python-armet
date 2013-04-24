@@ -27,7 +27,7 @@ class Resource(object):
 
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
-        request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
+        request = http.Request(path=path, asynchronous=async)
         response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.

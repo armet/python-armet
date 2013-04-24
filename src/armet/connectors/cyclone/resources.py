@@ -54,7 +54,7 @@ class Resource(object):
     def view(cls, handler, path):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
-        request = http.Request(handler, path=path, asynchronous=async)
+        request = http.Request(handler, path=path or '', asynchronous=async)
         response = http.Response(handler, asynchronous=async)
 
         # Turn on asynchronous operation if we can.

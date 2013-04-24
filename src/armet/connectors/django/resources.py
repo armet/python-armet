@@ -16,8 +16,8 @@ class Resource(object):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
         response = http.Response(asynchronous=async)
-        request = http.Request(
-            request, path=kwargs.get('path', ''), asynchronous=async)
+        path = kwargs.get('path') or ''
+        request = http.Request(request, path=path, asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
         if response.asynchronous:
@@ -98,4 +98,4 @@ class ModelResource(object):
                 raise exceptions.NotFound()
 
         # Return the entire queryset.
-        return queryset.all()
+        return list(queryset.all())

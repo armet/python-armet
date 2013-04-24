@@ -15,8 +15,7 @@ class SerializerTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.response = test.http.Response()
         cls.request = None  # test.http.Request(...)
-        cls.serializer = cls.Serializer(
-            cls.media_type, cls.request, cls.response)
+        cls.serializer = cls.Serializer(cls.request, cls.response)
 
     def serialize(self, data):
         self.response.reset()
