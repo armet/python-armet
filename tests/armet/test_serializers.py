@@ -21,7 +21,7 @@ class SerializerTestCase(unittest.TestCase):
         self.response.reset()
         self.serializer.serialize(data)
         self.response.close()
-        self.content = self.response.content
+        self.content = self.response.content.decode('utf-8')
 
 
 class JSONSerializerTestCase(SerializerTestCase):

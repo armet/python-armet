@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
-from six.moves import cStringIO as StringIO
+import io
 
 
 class Response(http.Response):
@@ -39,7 +39,7 @@ class Response(http.Response):
 
     def reset(self):
         self.content = ''
-        self.stream = StringIO()
+        self.stream = io.BytesIO()
         self._headers = self.Headers(self)
         self._status = 200
         self._closed = False

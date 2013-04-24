@@ -28,13 +28,15 @@ class Resource(object):
                 # Push the initial HTTP response.
                 response._push()
 
-                # Yield our initial data.
-                yield chunk
+                if chunk:
+                    # Yield our initial data (if any).
+                    yield chunk
 
                 # Iterate through the asynchronous queue.
                 for chunk in iterator:
-                    # Yield the pushed chunk to bottle.
-                    yield chunk
+                    if chunk:
+                        # Yield the pushed chunk to bottle.
+                        yield chunk
 
             # Return our asynchronous streamer.
             return stream()
@@ -54,12 +56,14 @@ class Resource(object):
             def stream():
                 # Iterate through the generator and yield its content
                 # to the network stream.
-                for chunk in result:
-                    # Yield what we currently have in the buffer; if any.
-                    yield response._stream.getvalue()
+                for _ in result:
+                    if response._stream.tell():
+                        # Yield what we currently have in the buffer; if any.
+                        yield response._stream.getvalue()
 
-                    # Remove what we have in the buffer.
-                    response._stream.truncate(0)
+                        # Remove what we have in the buffer.
+                        response._stream.truncate(0)
+                        response._stream.seek(0)
 
             # Return our streamer.
             return stream()

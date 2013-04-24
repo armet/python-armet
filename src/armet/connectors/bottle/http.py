@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
-from six.moves import cStringIO as StringIO
+# from six.moves import cStringIO as StringIO
+import io
 import bottle
 from importlib import import_module
 
@@ -77,7 +78,7 @@ class Response(http.Response):
 
     def __init__(self, *args, **kwargs):
         super(Response, self).__init__(*args, **kwargs)
-        self._stream = StringIO()
+        self._stream = io.BytesIO()
 
         if self.asynchronous:
             # If we're dealing with an asynchronous response, we need
@@ -119,6 +120,7 @@ class Response(http.Response):
         # Write the buffer to the queue.
         self._queue.put(self._stream.getvalue())
         self._stream.truncate(0)
+        self._stream.seek(0)
 
     def close(self):
         super(Response, self).close()

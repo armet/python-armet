@@ -5,6 +5,7 @@ import contextlib
 import importlib
 import sys
 import functools
+import six
 
 
 if sys.version_info[0] == 2 or sys.version_info[1] < 3:
@@ -27,7 +28,7 @@ class Wrapper:
             self.mock.return_value = result
             return result
 
-        return functools.partial(wrapped, function.im_self)
+        return functools.partial(wrapped, six.get_method_self(function))
 
 
 @contextlib.contextmanager

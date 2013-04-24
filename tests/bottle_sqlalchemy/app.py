@@ -36,8 +36,9 @@ class StreamingResource(resources.Resource):
         self.response['Content-Type'] = 'text/plain'
         yield 'this\n'
         self.response.write('where\n')
-        self.response.flush()
+        yield
         self.response.write('whence\n')
+        self.response.flush()
         yield
         yield 'that\n'
         self.response.write('why\n')

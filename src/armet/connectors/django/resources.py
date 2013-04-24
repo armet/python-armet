@@ -61,6 +61,7 @@ class Resource(object):
 
                     # Remove what we have in the buffer.
                     response._stream.truncate(0)
+                    response._stream.seek(0)
 
             # Configure the streamer and return it
             response._handle.content = stream()

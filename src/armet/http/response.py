@@ -285,15 +285,14 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             return
 
         if type(content) is six.binary_type:
-            # If passed a byte string we can optionally encode it and
-            # write it to the stream
-            if self.encoding:
-                content = content.encode(self.encoding)
+            # If passed a byte string, we hope the user encoded it properly.
             self._write(content)
 
         elif isinstance(content, six.string_types):
-            # If passed a string, we hope that the user
-            # encoded it properly.
+            # If passed a string, we can encode it for the user.
+            encoding = self.encoding
+            if encoding:
+                content = content.encode(encoding)
             self._write(content)
 
         else:
@@ -305,9 +304,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
             except TypeError:
                 # Apparently we didn't get an iterator..
-                # Try and blindly cast this into a byte string and
-                # just write it.
-                self.write(six.binary_type(content))
+                # Try and blindly cast this and write it.
+                self.write(str(content))
 
     def writelines(self, lines):
         """

@@ -4,6 +4,7 @@ from armet import http, test
 import json
 import platform
 import six
+import unittest
 
 
 class GetTestCase(test.TestCase):
@@ -49,6 +50,7 @@ class GetTestCase(test.TestCase):
 
     def test_streaming(self):
         response, content = self.client.request('/api/streaming/')
+        content = content.decode('utf-8')
 
         self.assertEqual(response.status, 202)
         self.assertEqual(response.get('content-type'), 'text/plain')
@@ -60,6 +62,7 @@ class GetTestCase(test.TestCase):
             raise unittest.SkipTest('gevent not available for this platform')
 
         response, content = self.client.request('/api/async/')
+        content = content.decode('utf-8')
 
         self.assertEqual(response.status, 202)
         self.assertEqual(response.get('content-type'), 'text/plain')
@@ -70,6 +73,7 @@ class GetTestCase(test.TestCase):
             raise unittest.SkipTest('gevent not available for this platform')
 
         response, content = self.client.request('/api/async-stream/')
+        content = content.decode('utf-8')
 
         self.assertEqual(response.status, 202)
         self.assertEqual(response.get('content-type'), 'text/plain')

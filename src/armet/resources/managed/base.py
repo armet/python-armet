@@ -27,7 +27,7 @@ class ManagedResource(base.Resource):
         cls = cls.traverse(arguments)
 
         # Actually construct the resource and return the instance.
-        obj = super(ManagedResource, cls).__new__(cls, request, response)
+        obj = super(ManagedResource, cls).__new__(cls)
 
         # Update our instance dictionary with the arugments from `parse`.
         # Note that this adds the 'directives', 'query', 'slug', 'path', and

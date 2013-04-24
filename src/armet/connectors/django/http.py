@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 from django.http import HttpResponse
 from armet import http
-from six.moves import cStringIO as StringIO
+import io
 import re
 from importlib import import_module
 
@@ -48,7 +48,7 @@ class Request(http.Request):
 
     def __init__(self, request, *args, **kwargs):
         self._handle = request
-        self._stream = StringIO(self._handle.body)
+        self._stream = io.BytesIO(self._handle.body)
         kwargs.update(method=self._handle.method)
         super(Request, self).__init__(*args, **kwargs)
 
@@ -65,13 +65,14 @@ class Request(http.Request):
         return self._handle.build_absolute_uri()
 
     def read(self, count=-1):
-        return self._stream.read(count)
+        return self._stream.read(count).decode(self.encoding)
 
     def readline(self, limit=-1):
-        return self._stream.readline(limit)
+        return self._stream.readline(limit).decode(self.encoding)
 
     def readlines(self, hint=-1):
-        return self._stream.readlines(hint)
+        encoding = self.encoding
+        return [x.decode(encoding) for x in self._stream.readlines(hint)]
 
 
 class Response(http.Response):
@@ -101,7 +102,7 @@ class Response(http.Response):
     def __init__(self, *args, **kwargs):
         super(Response, self).__init__(*args, **kwargs)
         self._handle = HttpResponse()
-        self._stream = StringIO()
+        self._stream = io.BytesIO()
         if self.asynchronous:
             # If we're dealing with an asynchronous response, we need an
             # asynchronous queue to give to WSGI.
@@ -132,6 +133,7 @@ class Response(http.Response):
         # Write the buffer to the queue.
         self._queue.put(self._stream.getvalue())
         self._stream.truncate(0)
+        self._stream.seek(0)
 
     def close(self):
         super(Response, self).close()

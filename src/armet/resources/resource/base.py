@@ -90,9 +90,10 @@ class Resource(object):
                         # Iterate and yield the chunks to the network
                         # stream.
                         for chunk in result:
-                            # Write the chunk.
-                            response.write(chunk)
-                            response.flush()
+                            if chunk:
+                                # Write the chunk and flush.
+                                response.write(chunk)
+                                response.flush()
 
                             # Yield control to the connector to further
                             # do whatever it needs to do.
