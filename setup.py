@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import sys
-
-
-#! True if we are running on Python 3.
-PY3 = sys.version_info[0] == 3
+import platform
 
 
 # Required test dependencies.
@@ -37,7 +34,7 @@ test_dependencies = (
 )
 
 
-if not PY3:
+if sys.version_info[0] == 2:
     # Test dependencies for python 2.x only.
     test_dependencies += (
         # A microframework based on Werkzeug, Jinja2 and good intentions.
@@ -50,6 +47,15 @@ if not PY3:
         # the Tornado API as a Twisted protocol.
         'cyclone',
     )
+
+    if platform.python_implementation() != 'PyPy':
+        # Test dependencies that don't apply for python 2.x.
+        test_dependencies += (
+            # gevent is a coroutine-based Python networking library that uses
+            # greenlet to provide a high-level synchronous API on top of the
+            # libevent event loop.
+            'gevent',
+        )
 
 
 if sys.version_info[0] == 2 or sys.version_info[1] < 3:
