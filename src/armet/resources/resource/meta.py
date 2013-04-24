@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import six
+import armet
 from armet import utils
 from . import options
 
@@ -64,14 +65,17 @@ class ResourceBase(type):
             return super(ResourceBase, cls).__new__(cls, name, bases, attrs)
 
         # Gather the attributes of all options classes.
-        metadata = {}
+        # Start with the base configuration.
+        metadata = armet.use()
         values = lambda x: {n: getattr(x, n) for n in dir(x)}
         for base in bases:
             meta = getattr(base, 'Meta', None)
             if meta:
+                # Apply the configuration from each class in the chain.
                 metadata.update(**values(meta))
 
         if attrs.get('Meta'):
+            # Apply the configuration from the current class.
             metadata.update(**values(attrs['Meta']))
 
         # Expand the options class with the gathered metadata.
