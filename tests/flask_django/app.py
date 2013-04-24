@@ -6,7 +6,6 @@ from ..django import models
 import armet
 from armet import resources
 from armet.resources import attributes
-import gevent
 
 
 # Instantiate the flask application.
@@ -56,6 +55,7 @@ class AsyncResource(resources.Resource):
         asynchronous = True
 
     def get(self):
+        import gevent
         def spawn():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'
@@ -71,6 +71,7 @@ class AsyncStreamResource(resources.Resource):
         asynchronous = True
 
     def get(self):
+        import gevent
         def spawn_stream():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'

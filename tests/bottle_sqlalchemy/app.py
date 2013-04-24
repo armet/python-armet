@@ -5,7 +5,6 @@ from armet import resources, route
 from armet.resources import attributes
 from ..sqlalchemy import models
 import bottle
-import gevent
 
 # Instantiate the bottle application.
 bottle.default_app.push()
@@ -52,6 +51,7 @@ class AsyncResource(resources.Resource):
         asynchronous = True
 
     def get(self):
+        import gevent
         def spawn():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'
@@ -67,6 +67,7 @@ class AsyncStreamResource(resources.Resource):
         asynchronous = True
 
     def get(self):
+        import gevent
         def spawn_stream():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'
