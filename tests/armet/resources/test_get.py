@@ -2,6 +2,8 @@
 from __future__ import absolute_import, unicode_literals, division
 from armet import http, test
 import json
+import platform
+import six
 
 
 class GetTestCase(test.TestCase):
@@ -54,6 +56,9 @@ class GetTestCase(test.TestCase):
             content, 'this\nwhere\nwhence\nthat\nwhy\nand the other')
 
     def test_async(self):
+        if six.PY3 or platform.python_implementation() == 'PyPy':
+            raise unittest.SkipTest('gevent not available for this platform')
+
         response, content = self.client.request('/api/async/')
 
         self.assertEqual(response.status, 202)
@@ -61,6 +66,9 @@ class GetTestCase(test.TestCase):
         self.assertEqual(content, 'Hello')
 
     def test_async_stream(self):
+        if six.PY3 or platform.python_implementation() == 'PyPy':
+            raise unittest.SkipTest('gevent not available for this platform')
+
         response, content = self.client.request('/api/async-stream/')
 
         self.assertEqual(response.status, 202)
