@@ -111,6 +111,20 @@ class BaseModel(base.BaseResource):
             self._form.instance.pk = self.slug
         return data
 
+    def relation_clean(self, value):
+        value = super(BaseModel, self).relation_clean(value)
+        try:
+            return [str(x.pk) for x in value]
+
+        except TypeError:
+            pass
+
+        try:
+            return str(value.pk)
+
+        except AttributeError:
+            return value
+
     def read(self):
         # Initially instantiate a queryset representing every object.
         queryset = self.model.objects.all()
