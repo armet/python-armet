@@ -116,7 +116,7 @@ class BaseModel(base.BaseResource):
         try:
             return [str(x.pk) for x in value]
 
-        except TypeError:
+        except (TypeError, AttributeError):
             pass
 
         try:
