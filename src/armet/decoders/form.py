@@ -35,7 +35,7 @@ class Decoder(transcoders.Form, Decoder):
         for key in obj:
             if attributes and key in attributes and attributes[key].collection:
                 # Field declared to be an array; don't bother.
-                pass
+                continue
 
             if len(obj[key]) == 1:
                 # Field probably supposed to be scalar.

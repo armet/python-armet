@@ -10,7 +10,7 @@ import six
 from django import forms
 from django.core import urlresolvers
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models.fields import FieldDoesNotExist
+from django.db.models.fields.files import FileField
 from django.db.models.fields.related import RelatedField
 from django.db.models.related import RelatedObject
 from .. import utils
@@ -172,9 +172,9 @@ def _get_field_class(field):
         # Attempt to handle file streams
         test = StringIO()
         if (field.to_python(test).getvalue() == ''
-                and hasattr(field(), 'allow_empty_file')):
+                or isinstance(field, FileField)):
             # Looks like we're capable of dealing with file streams
-            return attributes.FileAttributea
+            return attributes.FileAttribute
 
     except (forms.ValidationError, AttributeError, TypeError, ValueError):
         # File streams cannot be handled
