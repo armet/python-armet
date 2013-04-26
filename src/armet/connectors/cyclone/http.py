@@ -35,6 +35,13 @@ class Request(http.Request):
         return self._handle.protocol.upper()
 
     @property
+    def mount_point(self):
+        if self.path:
+            return self._handle.path.rsplit(self.path)[0]
+
+        return self._handle.path
+
+    @property
     def query(self):
         return self._handle.query
 
@@ -109,6 +116,7 @@ class Response(http.Response):
     def _flush(self):
         self._handler.write(self._stream.getvalue())
         self._stream.truncate(0)
+        self._stream.seek(0)
         self._handler.flush()
 
     def close(self):

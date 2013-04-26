@@ -99,7 +99,7 @@ class ManagedResource(base.Resource):
         data = self.prepare(data)
 
         # Encode the data using a desired encoder.
-        self.serialize(data)
+        self.response.write(data, serialize=True)
 
         # Make sure that the status code is set.
         self.response.status = status

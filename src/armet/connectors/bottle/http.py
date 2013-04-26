@@ -27,12 +27,20 @@ class Request(http.Request):
         request = bottle.request
         async = kwargs['asynchronous']
         self._handle = request.copy() if async else request
+        self._stream = io.BytesIO(self._handle.body.read())
         kwargs.update(method=bottle.request.method)
         super(Request, self).__init__(*args, **kwargs)
 
     @property
     def protocol(self):
         return self._handle.urlparts.scheme.upper()
+
+    @property
+    def mount_point(self):
+        if self.path:
+            return self._handle.path.rsplit(self.path)[0]
+
+        return self._handle.path
 
     @property
     def query(self):
@@ -43,13 +51,13 @@ class Request(http.Request):
         return self._handle.url
 
     def _read(self, count=-1):
-        return self._handle.body.read(count)
+        return self._stream.read(count)
 
     def _readline(self, limit=-1):
-        return self._handle.body.readline(limit)
+        return self._stream.readline(limit)
 
     def _readlines(self, hint=-1):
-        return self._handle.body.readlines(hint)
+        return self._stream.readlines(hint)
 
 
 class Response(http.Response):

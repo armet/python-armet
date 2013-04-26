@@ -57,6 +57,13 @@ class Request(http.Request):
         return self._handle.META['SERVER_PROTOCOL'].split('/')[0].upper()
 
     @property
+    def mount_point(self):
+        if self.path:
+            return self._handle.path.rsplit(self.path)[0]
+
+        return self._handle.path
+
+    @property
     def query(self):
         return self._handle.META.get('QUERY_STRING', '')
 

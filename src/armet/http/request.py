@@ -147,6 +147,10 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         """Retrieves the hostname, normally from the `Host` header."""
         return self.headers.get('Host') or '127.0.0.1'
 
+    @abc.abstractproperty
+    def mount_point(self):
+        """Retrieves the mount point portion of the path of this request."""
+
     @property
     def path(self):
         """Retrieves the path of the request, after the mount point."""
