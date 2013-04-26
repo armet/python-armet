@@ -298,7 +298,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             `self._readlines` instead.
         """
         # Perform the initial read; iterate through its lines.
-        content = self._readlines(limit)
+        content = self._readlines(hint)
         for index, value in content:
             if type(value) is six.binary_type:
                 # If received a byte string; decode it.
