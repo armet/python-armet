@@ -22,13 +22,8 @@ class URLSerializer(Serializer):
         # expanded properly instead of causing crazy nested percent encoding.
         self.doseq = kwargs.get('doseq', True)
 
-        # # When encountering an array value, this will slap some php brackets
-        # # around it for easy php-ization.
-        # self.php_brackets = False
-
     def serialize(self, obj=None):
 
-        #
         if obj is None:
             obj = {}
 
