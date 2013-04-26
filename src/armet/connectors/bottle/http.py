@@ -42,13 +42,13 @@ class Request(http.Request):
     def uri(self):
         return self._handle.url
 
-    def read(self, count=-1):
+    def _read(self, count=-1):
         return self._handle.body.read(count)
 
-    def readline(self, limit=-1):
+    def _readline(self, limit=-1):
         return self._handle.body.readline(limit)
 
-    def readlines(self, hint=-1):
+    def _readlines(self, hint=-1):
         return self._handle.body.readlines(hint)
 
 

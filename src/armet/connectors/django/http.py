@@ -64,15 +64,14 @@ class Request(http.Request):
     def uri(self):
         return self._handle.build_absolute_uri()
 
-    def read(self, count=-1):
-        return self._stream.read(count).decode(self.encoding)
+    def _read(self, count=-1):
+        return self._stream.read(count)
 
-    def readline(self, limit=-1):
-        return self._stream.readline(limit).decode(self.encoding)
+    def _readline(self, limit=-1):
+        return self._stream.readline(limit)
 
-    def readlines(self, hint=-1):
-        encoding = self.encoding
-        return [x.decode(encoding) for x in self._stream.readlines(hint)]
+    def _readlines(self, hint=-1):
+        return self._stream.readlines(hint)
 
 
 class Response(http.Response):

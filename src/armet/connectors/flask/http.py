@@ -44,13 +44,13 @@ class Request(http.Request):
     def uri(self):
         return get_current_url(self._handle.environ)
 
-    def read(self, count=-1):
+    def _read(self, count=-1):
         return self._stream.read(count)
 
-    def readline(self, limit=-1):
+    def _readline(self, limit=-1):
         return self._stream.readline(limit)
 
-    def readlines(self, hint=-1):
+    def _readlines(self, hint=-1):
         return self._stream.readlines(hint)
 
 

@@ -192,19 +192,72 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             return params.get('charset', default)
 
     @abc.abstractmethod
-    def read(self, count=-1):
+    def _read(self, count=-1):
         """
         Read and return up to `count` bytes or characters (depending on
         the value of `self.encoding`).
         """
 
-    @abc.abstractmethod
-    def readline(self, limit=-1):
-        """Read and return one line from the stream."""
+    def read(self, count=-1):
+        """
+        Read and return up to `count` bytes or characters (depending on
+        the value of `self.encoding`).
+
+        @note
+            This is not the method that connectors will override; refer to
+            `self._read` instead.
+        """
+        # Perform the initial read.
+        content = self._read(count)
+
+        if type(content) is six.binary_type:
+            # If received a byte string; decode it.
+            return content.decode(self.encoding)
+
+        # Whatever else we were passed; return it.
+        return content
 
     @abc.abstractmethod
-    def readlines(self, hint=-1):
+    def _readline(self, limit=-1):
+        """Read and return one line from the stream."""
+
+    def readline(self, limit=-1):
+        """Read and return one line from the stream.
+
+        @note
+            This is not the method that connectors will override; refer to
+            `self._readline` instead.
+        """
+        # Perform the initial read.
+        content = self._readline(limit)
+
+        if type(content) is six.binary_type:
+            # If received a byte string; decode it.
+            return content.decode(self.encoding)
+
+        # Whatever else we were passed; return it.
+        return content
+
+    @abc.abstractmethod
+    def _readlines(self, hint=-1):
         """Read and return a list of lines from the stream."""
+
+    def readlines(self, hint=-1):
+        """Read and return a list of lines from the stream.
+
+        @note
+            This is not the method that connectors will override; refer to
+            `self._readlines` instead.
+        """
+        # Perform the initial read; iterate through its lines.
+        content = self._readlines(limit)
+        for index, value in content:
+            if type(value) is six.binary_type:
+                # If received a byte string; decode it.
+                content[index] = value.decode(self.encoding)
+
+        # Return our decoded content.
+        return content
 
     def __iter__(self):
         """File-like objects are implicitly iterators."""
