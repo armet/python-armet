@@ -10,4 +10,10 @@ class JSONDeserializer(Deserializer):
     media_types = media_types.JSON
 
     def deserialize(self, text=None):
-        return json.loads(text)
+        try:
+            # Attempt to deserialize the text.
+            return json.loads(text)
+
+        except TypeError:
+            # Failed; possibly null.
+            raise ValueError
