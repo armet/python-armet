@@ -13,5 +13,11 @@ before_install:
 install:
   - 'pip install -e ".[test]" --use-mirrors'
 
+# Blacklist legacy branches as they don't have operating tests
+branches:
+  except:
+    - legacy/armet
+    - legacy/flapjack
+
 # Run tests
 script: nosetests
