@@ -46,3 +46,9 @@ class AccessTestCase(test.TestCase):
         response, _ = self.client.request('/api/forbidden/12/', 'DELETE')
 
         self.assertEqual(response.status, http.client.METHOD_NOT_ALLOWED)
+
+    def test_redirect_slash(self):
+        response, _ = self.client.request('/api/simple?foo=bar', 'POST')
+        expected = 'http://localhost:5000/api/simple/?foo=bar'
+
+        self.assertEqual(response.get('location'), expected)
