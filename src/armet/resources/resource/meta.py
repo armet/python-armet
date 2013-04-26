@@ -104,6 +104,14 @@ class ResourceBase(type):
             for media_type in serializer.media_types:
                 smap[media_type] = key
 
+        # Generate a deserializer map that maps media ranges to deserializer
+        # names.
+        self._deserializer_map = dmap = {}
+        for key in self.meta.allowed_deserializers:
+            deserializer = self.meta.deserializers[key]
+            for media_type in deserializer.media_types:
+                dmap[media_type] = key
+
         # Filter the available connectors according to the
         # metaclass restriction set.
         for key in list(meta.connectors.keys()):

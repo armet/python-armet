@@ -211,6 +211,7 @@ class ResourceOptions(object):
         self.deserializers = deserializers = meta.get('deserializers')
         if not deserializers:
             self.deserializers = {
+                'json': 'armet.deserializers.JSONDeserializer',
                 'url': 'armet.deserializers.URLDeserializer'
             }
 
