@@ -363,21 +363,20 @@ class TemporalAttribute(object):
             from dateutil.parser import parse
             return parse(value, fuzzy=False)
 
-        except ValueError:
+        except (ValueError, AttributeError):
             # Not a strictly formatted date; return nothing.
             pass
 
         try:
-            import parsedatetime.parsedatetime as pdt
-            import parsedatetime.parsedatetime_consts as pdc
-            c = pdc.Constants()
+            from parsedatetime import parsedatetime as pdt
+            c = pdt.Constants()
             c.BirthdayEpoch = 80
             p = pdt.Calendar(c)
             result = p.parse(value)
             if result[1] != 0:
                 return datetime.fromtimestamp(mktime(result[0]))
 
-        except NameError:
+        except (NameError, TypeError):
             # No magic date/time support
             pass
 
