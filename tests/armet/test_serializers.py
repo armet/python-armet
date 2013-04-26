@@ -13,8 +13,8 @@ class SerializerTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.response = test.http.Response()
         cls.request = None  # test.http.Request(...)
+        cls.response = test.http.Response(cls.request)
         cls.serializer = cls.Serializer(cls.request, cls.response)
 
     def serialize(self, data):
