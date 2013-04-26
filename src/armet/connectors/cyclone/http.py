@@ -116,6 +116,7 @@ class Response(http.Response):
     def _flush(self):
         self._handler.write(self._stream.getvalue())
         self._stream.truncate(0)
+        self._stream.seek(0)
         self._handler.flush()
 
     def close(self):
