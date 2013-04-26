@@ -37,6 +37,13 @@ class Request(http.Request):
         return self._handle.scheme.upper()
 
     @property
+    def mount_point(self):
+        if self.path:
+            return self._handle.path.rsplit(self.path)[0]
+
+        return self._handle.path
+
+    @property
     def query(self):
         return self._handle.query_string
 
@@ -73,7 +80,7 @@ class Response(http.Response):
             del self._obj._handle.headers[name]
 
         def __iter__(self):
-            return iter(self._obj._handle.headers)
+            return (key for key, _ in self._obj._handle.headers)
 
         def __len__(self):
             return len(self._obj._handle.headers)

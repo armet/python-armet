@@ -58,9 +58,14 @@ class Resource(object):
         # Determine if we need to redirect.
         test = cls.meta.trailing_slash
         if test ^ request.path.endswith('/'):
-            # Massage the URL by removing or adding the trailing slash.
-            uri = request.uri
-            response['Location'] = uri + '/' if test else uri[:-1]
+            # Construct a new URL by removing or adding the trailing slash.
+            path = request.path + '/' if test else request.path[:-1]
+            response['Location'] = '{}://{}{}{}{}'.format(
+                request.protocol.lower(),
+                request.host,
+                request.mount_point,
+                path,
+                '?' + request.query if request.query else '')
 
             # Redirect to the version with the correct trailing slash.
             return cls.redirect(request, response)
