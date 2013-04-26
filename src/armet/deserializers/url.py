@@ -18,4 +18,9 @@ class URLDeserializer(Deserializer):
     media_types = media_types.URL
 
     def deserialize(self, text=None):
-        return OrderedDict(parse_qsl(text, keep_blank_values=True))
+        data = OrderedDict()
+        for name, value in parse_qsl(text, keep_blank_values=True):
+            if name not in data:
+                data[name] = []
+            data[name].append(value)
+        return data
