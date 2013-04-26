@@ -12,7 +12,7 @@ class Resource(object):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
         request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
-        response = http.Response(asynchronous=async)
+        response = http.Response(request, asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
         if response.asynchronous:

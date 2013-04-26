@@ -66,6 +66,12 @@ class Resource(object):
             return cls.redirect(request, response)
 
         try:
+            # arguments = cls.parse(request.path)
+            # cls = cls.traverse(arguments)
+
+            # Bind the request and response to the resource class object.
+            request._Resource = response._Resource = cls
+
             # Instantiate the resource.
             obj = cls(request, response)
 
@@ -150,12 +156,11 @@ class Resource(object):
         self.response = response
 
     @utils.boundmethod
-    def deserialize(obj, text=None, request=None, format=None):
+    def deserialize(obj, text, request=None, format=None):
         """Deserializes the text using a determined deserializer.
 
         @param[in] text
-            The text to be deserialized; if none is provided and this method
-            was called as an instance method, uses the request body.
+            The text to be deserialized.
 
         @param[in] request
             The request object to pull information from; normally used to
@@ -168,16 +173,13 @@ class Resource(object):
             determine an appropriate deserializer.
 
         @returns
-            The deserialized data.
+            A tuple of the deserialized data and an instance of the
+            deserializer used.
         """
         if isinstance(obj, Resource):
             if not request:
                 # Ensure we have a response object.
                 request = obj.request
-
-        if not text:
-            # Ensure we have text to deserialize.
-            text = request.read()
 
         Deserializer = None
         if format:
@@ -210,7 +212,7 @@ class Resource(object):
                 # Attempt to deserialize the data using the determined
                 # deserializer.
                 deserializer = Deserializer()
-                return deserializer.deserialize(text)
+                return deserializer.deserialize(text), deserializer
 
             except ValueError:
                 # Failed to deserialize the data.
@@ -242,15 +244,15 @@ class Resource(object):
             A specific format to serialize in; if provided, no detection is
             done. If not provided, the accept header (as well as the URL
             extension) is looked at to determine an appropriate serializer.
+
+        @returns
+            A tuple of the serialized text and an instance of the
+            serializer used.
         """
         if isinstance(obj, Resource):
             if not request:
                 # Ensure we have a request object.
                 request = obj.request
-
-            if not response:
-                # Ensure we have a response object.
-                response = obj.response
 
         Serializer = None
         if format:
@@ -285,8 +287,7 @@ class Resource(object):
                 # Attempt to serialize the data using the determined
                 # serializer.
                 serializer = Serializer(request, response)
-                serializer.serialize(data)
-                return  # Return successful.
+                return serializer.serialize(data), serializer
 
             except ValueError:
                 # Failed to serialize the data.

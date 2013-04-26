@@ -41,3 +41,7 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
 
             # Write the encoded and prepared data to the response.
             self.response.write(data)
+
+        # Return the serialized data.
+        # This has normally been transformed by a base class.
+        return data

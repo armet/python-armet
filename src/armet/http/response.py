@@ -128,7 +128,10 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     """Describes the RESTful response abstraction.
     """
 
-    def __init__(self, asynchronous, *args, **kwargs):
+    def __init__(self, request, asynchronous, *args, **kwargs):
+        #! The corresponding request object.
+        self._request = request
+
         #! The response headers dictionary.
         self._headers = self.Headers(self)
 
@@ -143,6 +146,23 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
         #! Clear the response of all pre-initialized values.
         self.clear()
+
+        #! A reference to the bound resource; this is set in the resource
+        #! view method after traversal.
+        self._Resource = None
+
+    @property
+    def Resource(self):
+        """Retrieves a reference to the bound resource object."""
+        if self._Resource is None:
+            raise InvalidOperation('Request object not bound to a resource.')
+
+        return self._Resource
+
+    @property
+    def request(self):
+        """Retrieves a reference to the corresponding request object."""
+        return self._request
 
     def _assert_open(self):
         self._assert_not_closed()
@@ -269,7 +289,7 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         """Writes the given byte string chunk to the output buffer.
         """
 
-    def write(self, content):
+    def write(self, content, serialize=False, format=None):
         """Writes the given content to the output buffer.
 
         @param[in] content
@@ -283,6 +303,14 @@ class Response(six.with_metaclass(abc.ABCMeta)):
                     self.flush()
             @endcode
 
+        @param[in] serialize
+            True to serialize the lines in a determined serializer.
+
+        @param[in] format
+            A specific format to serialize in; if provided, no detection is
+            done. If not provided, the accept header (as well as the URL
+            extension) is looked at to determine an appropriate serializer.
+
         @note
             This is not the method that connectors will override; refer to
             `self._write` instead.
@@ -294,6 +322,12 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             # There is nothing here..
             return
 
+        if serialize:
+            # Forward to the serializer to serialize the content
+            # before it gets written to the response.
+            self.serialize(content, format=format)
+            return  # `serialize` invokes write(...)
+
         if type(content) is six.binary_type:
             # If passed a byte string, we hope the user encoded it properly.
             self._write(content)
@@ -303,6 +337,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             encoding = self.encoding
             if encoding:
                 content = content.encode(encoding)
+
+            # Write the encoded data into the byte stream.
             self._write(content)
 
         else:
@@ -317,13 +353,38 @@ class Response(six.with_metaclass(abc.ABCMeta)):
                 # Try and blindly cast this and write it.
                 self.write(str(content))
 
-    def writelines(self, lines):
+    def writelines(self, lines, serialize=False, format=None):
         """
         Write a list of lines to the stream.
         Line separators are not added.
+
+        @param[in] serialize
+            True to serialize the lines in a determined serializer.
+
+        @param[in] format
+            A specific format to serialize in; if provided, no detection is
+            done. If not provided, the accept header (as well as the URL
+            extension) is looked at to determine an appropriate serializer.
         """
         for line in lines:
-            self.write(line)
+            self.write(line, serialize=serialize, format=format)
+
+    def serialize(self, data, format=None):
+        """Serializes the data into this response using a serializer.
+
+        @param[in] data
+            The data to be serialized.
+
+        @param[in] format
+            A specific format to serialize in; if provided, no detection is
+            done. If not provided, the accept header (as well as the URL
+            extension) is looked at to determine an appropriate serializer.
+
+        @returns
+            A tuple of the serialized text and an instance of the
+            serializer used.
+        """
+        return self.Resource.serialize(data, self, self.request, format)
 
     @abc.abstractmethod
     def _flush(self):

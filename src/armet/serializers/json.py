@@ -42,5 +42,8 @@ class JSONSerializer(Serializer):
         if isinstance(obj, six.string_types) or not isinstance(obj, Iterable):
             obj = [obj]
 
-        # serialize the resultant text.
-        super(JSONSerializer, self).serialize(json.dumps(obj, **self.options))
+        # Serialize the resultant text.
+        text = json.dumps(obj, **self.options)
+
+        # Return us to the base to enclose it inside of a response object.
+        return super(JSONSerializer, self).serialize(text)

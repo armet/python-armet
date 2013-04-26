@@ -12,12 +12,12 @@ class Resource(object):
 
     @classmethod
     @csrf.csrf_exempt
-    def view(cls, request, *args, **kwargs):
+    def view(cls, django_request, *args, **kwargs):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
-        response = http.Response(asynchronous=async)
         path = kwargs.get('path') or ''
-        request = http.Request(request, path=path, asynchronous=async)
+        request = http.Request(django_request, path=path, asynchronous=async)
+        response = http.Response(request, asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
         if response.asynchronous:

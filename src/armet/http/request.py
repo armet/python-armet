@@ -6,6 +6,7 @@ import string
 import io
 import collections
 import mimeparse
+from armet.exceptions import InvalidOperation
 
 
 class Headers(collections.Mapping):
@@ -92,7 +93,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def __init__(self, path, method, asynchronous, *args, **kwargs):
         #! The captured path of the request, after the mount point.
         #! Example: GET /api/poll/23 => '/23'
-        self.__path = path
+        self._path = path
 
         #! True if we're asynchronous.
         self._asynchronous = asynchronous
@@ -109,6 +110,18 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         else:
             # Passed method is the actual method.
             self._method = method.upper()
+
+        #! A reference to the bound resource; this is set in the resource
+        #! view method after traversal.
+        self._Resource = None
+
+    @property
+    def Resource(self):
+        """Retrieves a reference to the bound resource object."""
+        if self._Resource is None:
+            raise InvalidOperation('Request object not bound to a resource.')
+
+        return self._Resource
 
     @property
     def asynchronous(self):
@@ -137,7 +150,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     @property
     def path(self):
         """Retrieves the path of the request, after the mount point."""
-        return self.__path
+        return self._path
 
     @abc.abstractproperty
     def query(self):
@@ -198,10 +211,19 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         the value of `self.encoding`).
         """
 
-    def read(self, count=-1):
+    def read(self, count=-1, deserialize=False, format=None):
         """
         Read and return up to `count` bytes or characters (depending on
         the value of `self.encoding`).
+
+        @param[in] deserialize
+            True to deserialize the resultant text using a determiend format
+            or the passed format.
+
+        @param[in] format
+            A specific format to deserialize in; if provided, no detection is
+            done. If not provided, the content-type header is looked at to
+            determine an appropriate deserializer.
 
         @note
             This is not the method that connectors will override; refer to
@@ -212,7 +234,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
         if type(content) is six.binary_type:
             # If received a byte string; decode it.
-            return content.decode(self.encoding)
+            content = content.decode(self.encoding)
+
+        if deserialize:
+            # Deserialize the content using the passed format.
+            content, _ = self.Resource.deserialize(content, self, format)
 
         # Whatever else we were passed; return it.
         return content
@@ -221,8 +247,17 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def _readline(self, limit=-1):
         """Read and return one line from the stream."""
 
-    def readline(self, limit=-1):
+    def readline(self, limit=-1, deserialize=False, format=None):
         """Read and return one line from the stream.
+
+        @param[in] deserialize
+            True to deserialize the resultant text using a determiend format
+            or the passed format.
+
+        @param[in] format
+            A specific format to deserialize in; if provided, no detection is
+            done. If not provided, the content-type header is looked at to
+            determine an appropriate deserializer.
 
         @note
             This is not the method that connectors will override; refer to
@@ -233,7 +268,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
         if type(content) is six.binary_type:
             # If received a byte string; decode it.
-            return content.decode(self.encoding)
+            content = content.decode(self.encoding)
+
+        if deserialize:
+            # Deserialize the content using the passed format.
+            content, _ = self.Resource.deserialize(content, self, format)
 
         # Whatever else we were passed; return it.
         return content
@@ -242,8 +281,17 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def _readlines(self, hint=-1):
         """Read and return a list of lines from the stream."""
 
-    def readlines(self, hint=-1):
+    def readlines(self, hint=-1, deserialize=False, format=None):
         """Read and return a list of lines from the stream.
+
+        @param[in] deserialize
+            True to deserialize the resultant text using a determiend format
+            or the passed format.
+
+        @param[in] format
+            A specific format to deserialize in; if provided, no detection is
+            done. If not provided, the content-type header is looked at to
+            determine an appropriate deserializer.
 
         @note
             This is not the method that connectors will override; refer to
@@ -254,10 +302,31 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         for index, value in content:
             if type(value) is six.binary_type:
                 # If received a byte string; decode it.
-                content[index] = value.decode(self.encoding)
+                value = value.decode(self.encoding)
+
+                if deserialize:
+                    # Deserialize the content using the passed format.
+                    value, _ = self.Resource.deserialize(value, self, format)
+
+                # Mutate the line list.
+                content[index] = value
 
         # Return our decoded content.
         return content
+
+    def deserialize(self, format=None):
+        """Deserializes the request body using a determined deserializer.
+
+        @param[in] format
+            A specific format to deserialize in; if provided, no detection is
+            done. If not provided, the content-type header is looked at to
+            determine an appropriate deserializer.
+
+        @returns
+            A tuple of the deserialized data and an instance of the
+            deserializer used.
+        """
+        return self.Resource.deserialize(self.read(), self, format)
 
     def __iter__(self):
         """File-like objects are implicitly iterators."""
