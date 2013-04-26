@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import logging
-from ..resource import base
 import re
 from armet import http
+from armet.resources.resource import base
 
 
 logger = logging.getLogger(__name__)
