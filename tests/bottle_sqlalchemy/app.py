@@ -53,6 +53,7 @@ class AsyncResource(resources.Resource):
 
     def get(self):
         import gevent
+
         def spawn():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'
@@ -69,6 +70,7 @@ class AsyncStreamResource(resources.Resource):
 
     def get(self):
         import gevent
+
         def spawn_stream():
             self.response.status = 202
             self.response['Content-Type'] = 'text/plain'

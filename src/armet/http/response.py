@@ -155,7 +155,8 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     def Resource(self):
         """Retrieves a reference to the bound resource object."""
         if self._Resource is None:
-            raise InvalidOperation('Request object not bound to a resource.')
+            raise exceptions.InvalidOperation(
+                'Request object not bound to a resource.')
 
         return self._Resource
 
