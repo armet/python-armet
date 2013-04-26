@@ -37,6 +37,11 @@
      ☐ serialize (map to Resource.serialize or replace it and have Resource.serialize map to it) @0.3.0
      ☐ write (takes a `serialize=true` param and `format=?`) @0.3.0
 
+ ☐ serialize / deserialize
+     ☐ module-level functions
+     ☐ serialize(...) returns serialized content
+     ☐ serialize(...) serializes into response when passed one
+
  ☐ serialization
      ✔ base @done (13-04-23 15:29)
      ✔ JSON @done (13-04-23 15:28)
