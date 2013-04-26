@@ -166,7 +166,8 @@ class ResourceOptions(object):
         self.serializers = serializers = meta.get('serializers')
         if not serializers:
             self.serializers = {
-                'json': 'armet.serializers.JSONSerializer'
+                'json': 'armet.serializers.JSONSerializer',
+                'url': 'armet.serializers.URLSerializer'
             }
 
         # Expand the serializer name references.
