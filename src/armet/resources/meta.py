@@ -172,8 +172,7 @@ def _get_field_class(field):
     try:
         # Attempt to handle file streams
         test = StringIO()
-        if (field.to_python(test).getvalue() == ''
-                or isinstance(field, FileField)
+        if (isinstance(field, FileField)
                 or isinstance(field, FormFileField)):
             # Looks like we're capable of dealing with file streams
             return attributes.FileAttribute
