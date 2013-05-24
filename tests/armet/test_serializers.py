@@ -80,7 +80,7 @@ class URLSerializerTestCase(SerializerTestCase):
 
     def test_impossible(self):
         req = [{"foo": "bar"}, {"bar": "baz"}]
-        self.assertRaises(exceptions.NotAcceptable, self.serialize, req)
+        self.assertRaises(ValueError, self.serialize, req)
 
     def test_tuple(self):
         self.serialize([('foo', 'bar'), ('bar', 'baz')])
