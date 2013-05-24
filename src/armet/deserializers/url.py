@@ -18,9 +18,16 @@ class URLDeserializer(Deserializer):
     media_types = media_types.URL
 
     def deserialize(self, text=None):
-        data = OrderedDict()
-        for name, value in parse_qsl(text, keep_blank_values=True):
-            if name not in data:
-                data[name] = []
-            data[name].append(value)
-        return data
+        try:
+            # Attempt to desserialize the URL using the
+            # URL decoder.
+            data = OrderedDict()
+            for name, value in parse_qsl(text, keep_blank_values=True):
+                if name not in data:
+                    data[name] = []
+                data[name].append(value)
+            return data
+
+        except AttributeError:
+            # Something went wront internally; bad input.
+            raise ValueError
