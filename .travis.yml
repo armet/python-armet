@@ -7,11 +7,11 @@ python:
 
 # Install system dependencies
 before_install:
-  - 'sudo apt-get install python-dev libevent-dev'
+  - 'travis_retry sudo apt-get install python-dev libevent-dev'
 
 # Install python dependencies
 install:
-  - 'pip install -e ".[test]" --use-mirrors'
+  - 'travis_retry pip install -e ".[test]" --use-mirrors'
 
 # Blacklist legacy branches as they don't have operating tests
 branches:
