@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from .exceptions import ImproperlyConfigured
+import six
+import types
+import collections
 
 
 class route:
@@ -14,11 +17,18 @@ class route:
             # ...
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         # Just store the arguments.
-        self.arguments = args
+        self.args = args
+        self.kwargs = kwargs
 
     def __call__(self, resource):
+        # Is the resources a function?
+        if callable(resource) and not isinstance(resource, type):
+            # Yes; call the resource decorator.
+            import armet
+            resource = armet.resource(**self.kwargs)(resource)
+
         # Ensure the resource has a `mount` classmethod.
         if not hasattr(resource, 'mount'):
             raise ImproperlyConfigured(
@@ -26,7 +36,7 @@ class route:
                 resource.meta.name))
 
         # Hook up the resource at the mount point.
-        resource.mount(*self.arguments)
+        resource.mount(*self.args)
 
         # Return the resource
         return resource
@@ -52,3 +62,52 @@ def asynchronous(resource):
 
     # Return the resource
     return resource
+
+
+#! Mapping of lightweight resources.
+_resources = {}
+
+#! Mapping of functional handlers for the lightweight resources.
+_handlers = {}
+
+
+def resource(**kwargs):
+    """Wraps the decorated function in a lightweight resource."""
+    def inner(function):
+        name = kwargs.pop('name', function.__name__)
+        methods = kwargs.pop('method', None)
+        if isinstance(methods, six.string_types):
+            # Tuple-ify the method if we got just a string.
+            methods = methods,
+
+        # Construct a handler.
+        handler = (function, methods)
+
+        if name not in _resources:
+            # Initiate the handlers list.
+            _handlers[name] = []
+
+            # Construct a light-weight resource using the passed kwargs
+            # as the arguments for the meta.
+            from armet import resources
+            kwargs['name'] = name
+
+            class LightweightResource(resources.Resource):
+                Meta = type(b'Meta', (), kwargs)
+                def route(self):
+                    for handler, methods in _handlers[name]:
+                        if methods is None or self.request.method in methods:
+                            return lambda: handler(self.request, self.response)
+                    resources.Resource.route(self)
+
+            # Construct and add this resource.
+            _resources[name] = LightweightResource
+
+        # Add this to the handlers.
+        _handlers[name].append(handler)
+
+        # Return the resource.
+        return _resources[name]
+
+    # Return the inner method.
+    return inner

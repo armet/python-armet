@@ -339,6 +339,11 @@ class Resource(object):
         # Ensure that we're allowed to use this HTTP method.
         self.assert_http_allowed_methods()
 
+        # Delegate to the determined function to process the request.
+        return self.route()()
+
+    def route(self):
+        """Route the HTTP method to the handling function."""
         # Retrieve the function corresponding to this HTTP method.
         function = getattr(self, self.request.method.lower(), None)
         if function is None:
@@ -347,4 +352,4 @@ class Resource(object):
             raise http.exceptions.NotImplemented()
 
         # Delegate to the determined function to process the request.
-        return function()
+        return function
