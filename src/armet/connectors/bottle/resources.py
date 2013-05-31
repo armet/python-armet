@@ -74,9 +74,10 @@ class Resource(object):
 
     @classmethod
     def mount(cls, url='/', application=None):
-        # If no explicit application is passed; use
-        # the current default application.
-        application = bottle.app[-1]
+        if application is None:
+            # If no explicit application is passed; use
+            # the current default application.
+            application = bottle.app[-1]
 
         # Generate a name to use to mount this resource.
         name = '{}.{}'.format(cls.__module__, cls.__name__)
