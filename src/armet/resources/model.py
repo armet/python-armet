@@ -152,6 +152,9 @@ class BaseModel(base.BaseResource):
             # This significantly reduces the number of queries.
             queryset = queryset.prefetch_related(*self._prefetch_related_cache)
 
+        # Get rid of any duplicates.
+        queryset = queryset.distinct()
+
         # Attempt to directly get it if we can
         if self.slug is not None:
             try:
@@ -160,8 +163,8 @@ class BaseModel(base.BaseResource):
             except self.model.DoesNotExist:
                 return None
 
-        # Return the queryset without duplicates if we still have it.
-        return queryset.distinct()
+        # Return the queryset if we still have it.
+        return queryset
 
     def destroy(self, queryset):
         # The object should be a queryset or a model; delete the model(s).
