@@ -160,8 +160,8 @@ class BaseModel(base.BaseResource):
             except self.model.DoesNotExist:
                 return None
 
-        # Return the queryset if we still have it.
-        return queryset
+        # Return the queryset without duplicates if we still have it.
+        return queryset.distinct()
 
     def destroy(self, queryset):
         # The object should be a queryset or a model; delete the model(s).
