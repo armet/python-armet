@@ -46,6 +46,10 @@ class ResourceOptions(object):
         if self.debug is None:
             self.debug = False
 
+        #! Whether to not actualize a resource from the described class.
+        #! Abstract resources are meant as generic base classes.
+        self.abstract =  meta.get('abstract')
+
         #! Name of the resource to use in URIs; defaults to the dasherized
         #! version of the camel cased class name (eg. SomethingHere becomes
         #! something-here). The defaulted version also strips a trailing
