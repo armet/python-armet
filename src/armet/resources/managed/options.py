@@ -55,9 +55,9 @@ def _operations_to_methods(operations):
 
 class ManagedResourceOptions(options.ResourceOptions):
 
-    def __init__(self, meta, name, bases):
+    def __init__(self, meta, name, data, bases):
         # Initalize base resource options.
-        super(ManagedResourceOptions, self).__init__(meta, name, bases)
+        super(ManagedResourceOptions, self).__init__(meta, name, data, bases)
 
         #! Additional attributes to include in addition to those defined
         #! directly in the resource. This is meant for defining fields

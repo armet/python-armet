@@ -6,9 +6,9 @@ from ..managed import options
 
 class ModelResourceOptions(options.ManagedResourceOptions):
 
-    def __init__(self, meta, name, bases):
+    def __init__(self, meta, name, data, bases):
         # Initalize base resource options.
-        super(ModelResourceOptions, self).__init__(meta, name, bases)
+        super(ModelResourceOptions, self).__init__(meta, name, data, bases)
 
         #! Reference to the declarative model defined by
         #! the Object Relational Mapper (ORM).

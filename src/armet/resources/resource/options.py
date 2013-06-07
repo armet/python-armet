@@ -29,7 +29,7 @@ def _merge(options, name, bases, default=None):
 
 class ResourceOptions(object):
 
-    def __init__(self, meta, name, bases):
+    def __init__(self, meta, name, data, bases):
         """
         Initializes the options object and defaults configuration not
         specified.
@@ -48,7 +48,10 @@ class ResourceOptions(object):
 
         #! Whether to not actualize a resource from the described class.
         #! Abstract resources are meant as generic base classes.
-        self.abstract =  meta.get('abstract')
+        #!
+        #! @note
+        #!      Abstract only counts if it is directly set on the resource.
+        self.abstract = data.get('abstract')
 
         #! Name of the resource to use in URIs; defaults to the dasherized
         #! version of the camel cased class name (eg. SomethingHere becomes
