@@ -82,6 +82,12 @@ class ResourceBase(type):
         base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
         meta = attrs['meta'] = cls.options(metadata, name, base_meta)
 
+        # Are we an "abstract" resource? An abstract resource provides nothing
+        # beyond this point; used as generic base classes.
+        if meta.abstract:
+            # This is an abstract resource.
+            return super(ResourceBase, cls).__new__(cls, name, bases, attrs)
+
         # Remove connector layer from base classes.
         new_bases = []
         for base in bases:
