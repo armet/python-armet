@@ -15,8 +15,8 @@ class ManagedResourceBase(ResourceBase):
         # Construct the class object.
         self = super(ManagedResourceBase, cls).__new__(cls, name, bases, attrs)
 
-        if not cls._is_resource(name, bases):
-            # This is not an actual resource.
+        if not cls._is_resource(name, bases) or self.meta.abstract:
+            # This is not an actual resource or is abstract.
             return self
 
         # Gather declared attributes from ourself and base classes.

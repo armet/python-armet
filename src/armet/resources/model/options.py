@@ -13,6 +13,6 @@ class ModelResourceOptions(options.ManagedResourceOptions):
         #! Reference to the declarative model defined by
         #! the Object Relational Mapper (ORM).
         self.model = meta.get('model')
-        if self.model is None:
+        if self.model is None and not self.abstract:
             raise ImproperlyConfigured(
                 'Model resources must be bound to a model.')
