@@ -4,6 +4,60 @@ from armet import http
 import io
 
 
+class Request(http.Request):
+
+    class Headers(http.request.Headers):
+
+        def __getitem__(self, name):
+            return self._obj._headers[name]
+
+        def __iter__(self):
+            return iter(self._obj._headers)
+
+        def __len__(self):
+            return len(self._obj._headers)
+
+        def __contains__(self, name):
+            return name in self._obj._headers
+
+    def __init__(self, *args, **kwargs):
+        self._stream = io.BytesIO(kwargs.pop('content', ''))
+        self._headers = kwargs.pop('headers', {})
+        self._protocol = kwargs.pop('protocol', 'HTTP')
+        self._mount_point = kwargs.pop('mount_point', '')
+        self._query = kwargs.pop('query', '/')
+        self._uri = kwargs.pop('uri', '/')
+        super(Request, self).__init__(*args, **kwargs)
+
+    @property
+    def protocol(self):
+        return self._protocol
+
+    @property
+    def mount_point(self):
+        return self._mount_point
+
+    @property
+    def query(self):
+        return self._query
+
+    @property
+    def uri(self):
+        return '{}://{}{}{}'.format(self._protocol,
+                                    self._mount_point,
+                                    self.path,
+                                    self._query)
+
+    def _read(self, count=-1):
+        return self._stream.read(count)
+
+    def _readline(self, limit=-1):
+        return self._stream.readline(limit)
+
+    def _readlines(self, hint=-1):
+        return self._stream.readlines(hint)
+
+
 class Response(http.Response):
 
     class Headers(http.response.Headers):
