@@ -51,6 +51,10 @@ class Attribute(object):
             # Initialize the accessors array.
             self._accessors = []
 
+    def clone(self):
+        # Construct a new this.
+        return self.__class__(**self.__dict__)
+
     def _make_accessor(self, path, cls, instance):
         # Attempt to get an unbound class property
         # that may be a descriptor.
@@ -59,6 +63,10 @@ class Attribute(object):
             if hasattr(obj, '__call__'):
                 # The descriptor is callable.
                 return obj.__call__
+
+            if hasattr(obj, '__get__'):
+                # This has a data descriptor.
+                return lambda o, c=cls, g=obj.__get__: g(o, c)
 
         else:
             # Check for another kind of descriptor.
@@ -126,7 +134,7 @@ class TextAttribute(Attribute):
 
     def prepare(self, value):
         """Stringifies the value."""
-        return str(value)
+        return str(value) if value is not None else None
 
 
 class BooleanAttribute(Attribute):

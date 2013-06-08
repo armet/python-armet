@@ -68,25 +68,25 @@ class ResourceBase(type):
         # Start with the base configuration.
         metadata = armet.use().copy()
         values = lambda x: {n: getattr(x, n) for n in dir(x)}
-        cur_meta = values(getattr(base, 'Meta', None))
         for base in bases:
-            if Meta:
+            meta = getattr(base, 'Meta', None)
+            if meta:
                 # Apply the configuration from each class in the chain.
-                metadata.update(**cur_meta)
+                metadata.update(**values(meta))
 
+        cur_meta = None
         if attrs.get('Meta'):
             # Apply the configuration from the current class.
-            metadata.update(**values(attrs['Meta']))
+            cur_meta = values(attrs['Meta'])
+            metadata.update(**cur_meta)
+
+        else:
+            # No direct Meta class.
+            cur_meta = {}
 
         # Expand the options class with the gathered metadata.
         base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
-
-        # Are we an "abstract" resource? An abstract resource provides nothing
-        # beyond this point; used as generic base classes.
-        if meta.abstract:
-            # This is an abstract resource.
-            return super(ResourceBase, cls).__new__(cls, name, bases, attrs)
 
         # Remove connector layer from base classes.
         new_bases = []

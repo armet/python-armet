@@ -15,8 +15,8 @@ class ManagedResourceBase(ResourceBase):
         # Construct the class object.
         self = super(ManagedResourceBase, cls).__new__(cls, name, bases, attrs)
 
-        if not cls._is_resource(name, bases) or self.meta.abstract:
-            # This is not an actual resource or is abstract.
+        if not cls._is_resource(name, bases):
+            # This is not an actual resource.
             return self
 
         # Gather declared attributes from ourself and base classes.
@@ -32,6 +32,10 @@ class ManagedResourceBase(ResourceBase):
 
         # Append include directives here
         attributes.update(self.meta.include)
+
+        # Ensure all attributes are unique instances.
+        for attr in attributes:
+            attributes[attr] = attributes[attr].clone()
 
         # Cache access to the attribute preparation cycle.
         self.preparers = preparers = {}
