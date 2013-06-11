@@ -540,7 +540,7 @@ class BaseResource(object):
         self.encoder = None
 
         #! A list of query.Query objects representing the query parameters
-        self.query = QueryList(self.request.META['QUERY_STRING'])
+        self.query = QueryList(self.request.META.get('QUERY_STRING', ''))
 
         #! This is the form instance that is constructed during the clean
         #! and validation cycle.
