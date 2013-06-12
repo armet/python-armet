@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals, division
 
 
 #! Equality
@@ -30,6 +29,9 @@ OPERATOR_IREGEX = 'iregex', '*='
 #! Null test
 OPERATOR_ISNULL = 'isnull', None
 
+#! In-collection test
+OPERATOR_ISNULL = 'in', None
+
 #! Operators
 OPERATORS = (
     OPERATOR_EQUAL,
@@ -40,7 +42,8 @@ OPERATORS = (
     OPERATOR_GTE,
     OPERATOR_REGEX,
     OPERATOR_IREGEX,
-    OPERATOR_ISNULL)
+    OPERATOR_ISNULL,
+    OPERATOR_IN)
 
 #! Negation
 NEGATION = ('not', '!')

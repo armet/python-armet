@@ -10,6 +10,9 @@ test_dependencies = (
     # Test runner.
     'nose',
 
+    # Test runner with color.
+    'yanc',
+
     # Installs a WSGI application in place of a real URI for testing.
     'wsgi_intercept == 0.6.0',
 
