@@ -30,7 +30,7 @@ OPERATOR_IREGEX = 'iregex', '*='
 OPERATOR_ISNULL = 'isnull', None
 
 #! In-collection test
-OPERATOR_ISNULL = 'in', None
+OPERATOR_IN = 'in', None
 
 #! Operators
 OPERATORS = (

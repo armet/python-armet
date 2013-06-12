@@ -20,7 +20,76 @@ OPERATOR_BEGIN_CHARS = set(x[0] for _, x in constants.OPERATORS if x)
 OPERATOR_SYMBOL_MAP = dict((v, k) for k, v in constants.OPERATORS if v)
 
 
-class Segment(object):
+class Query(object):
+    """Represents a complete query expression.
+    """
+
+    def __init__(self, text):
+        #! The various query segments.
+        self.segments = []
+
+        # Parse the query string.
+        self._parse(text)
+
+    def _parse(self, text):
+        """Parse the querystring into a normalized form."""
+        # Iterate through the characters in the query string; one-by-one
+        # in order to perform one-pass parsing.
+        stream = StringIO()
+        for character in text:
+
+            # We want to stop reading the query and pass it off to someone
+            # when we reach a logical or grouping operator.
+            if character in (constants.LOGICAL_AND, constants.LOGICAL_OR):
+
+                if not stream.tell():
+                    # There is no content in the stream; a logical operator
+                    # was found out of place.
+                    raise ValueError('Found `{}` out of place'.format(
+                        character))
+
+                # Parse the segment up till the combinator
+                segment = QuerySegment(stream.getvalue(), character)
+                self.segments.append(segment)
+                stream.truncate(0)
+
+            else:
+                # This isn't a special character, just roll with it.
+                stream.write(character)
+
+        # TODO: Throw some nonsense here if the query string ended with a
+        # & or ;, because that makes no sense.
+
+        if stream.tell():
+            # Append the remainder of the query string.
+            self.segments.append(QuerySegment(stream.getvalue()))
+
+    def __str__(self):
+        """Format the query for debugging purposes.
+        """
+
+        o = StringIO()
+        for index, segment in enumerate(self.segments):
+            o.write('(')
+            o.write('"{}"'.format('.'.join(segment.path)))
+            o.write(' :{} '.format(segment.operator))
+
+            for jndex, value in enumerate(segment.values):
+                if jndex:
+                    o.write(' OR ')
+
+                o.write("'{}'".format(value))
+
+            o.write(')')
+
+            if (index + 1) < len(self.segments):
+                comb = 'AND' if segment.combinator == operator.and_ else 'OR'
+                o.write(' {} '.format(comb))
+
+        return o.getvalue()
+
+
+class QuerySegment(object):
     """
     Represents a single query segment with a subject path (`x.a.g`),
     an operator (`=` or `<=`), optional directives (`sort`), and
@@ -49,6 +118,9 @@ class Segment(object):
         #! query.
         self.combinator = COMBINATORS[combinator]
 
+        # Parse the text and determine the values of the segment.
+        self._parse(text)
+
     def _parse(self, text):
         # Construct an iterator over the segment text.
         iterator = iter(text)
@@ -62,7 +134,7 @@ class Segment(object):
                 # Found an operator; pull out what we can.
                 self._parse_operator(chain(character, iterator))
 
-                # We're done here — go to the value parser
+                # We're done here; go to the value parser
                 break
 
             if character == constants.SEP_PATH:
@@ -123,34 +195,12 @@ class Segment(object):
                 self.negated = not self.negated
                 continue
 
-            if stream.getvalue() + character not in OPERATOR_SYMBOL_MAP:
-                # We're still an operator
-                break
-
             # Expand the operator
             stream.write(character)
 
+            if stream.getvalue() in OPERATOR_SYMBOL_MAP:
+                # We're an operator.
+                break
+
         # Set the found operator
         self.operator = OPERATOR_SYMBOL_MAP[stream.getvalue()]
-
-
-def parse(text):
-    """Parse the querystring into a normalized form.
-    """
-
-    # Iterate through the characters in the query string; one-by-one
-    # in order to perform one-pass parsing.
-    stream = StringIO()
-    for character in text:
-
-        # We want to stop reading the query and pass it off to someone
-        # when we reach a logical or grouping operator.
-        if character in (constants.LOGICAL_AND, constants.LOGICAL_OR):
-
-            if not stream.tell():
-                # There is no content in the stream; a logical operator
-                # was found out of place.
-                raise ValueError('Found `{}` out of place'.format(character))
-
-            # Parse the segment up till the combinator
-            Segment(stream.getvalue(), character)
