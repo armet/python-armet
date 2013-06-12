@@ -4,6 +4,8 @@ import httplib2
 import unittest
 import socket
 import errno
+import json
+import six
 from . import http  # flake8: noqa
 
 
@@ -25,22 +27,55 @@ def skipUnlessAvailable(host='localhost', port=5000):
 class Client:
 
     def __init__(self, host='localhost', port=5000):
+        # Set the default host and port.
         self.host = host
         self.port = port
 
+        # Setup the HTTP/1.1 connection.
         self.connection = httplib2.Http()
         self.connection.follow_redirects = False
 
-    def request(self, path='/', method='GET', headers=None):
+    def request(self, path='/', method='GET', body='', headers=None):
+        # Construct the URI.
         url = 'http://{}:{}{}'.format(self.host, self.port, path)
-        return self.connection.request(url, method, headers=headers)
+
+        # Serialize the body if neccessary.
+        # TODO: Support more than JSON.
+        if not isinstance(body, six.string_types):
+            body = json.dumps(body)
+
+        # Perform the response. Remember this does not go anywhere; it is
+        # caught by wsgi-intercept and mocked into Armet.
+        return self.connection.request(
+            url, method,
+            body=body,
+            headers=headers)
+
+    def get(self, *args, **kwargs):
+        return self.request(*args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        kwargs.setdefault('method', 'POST')
+        return self.request(*args, **kwargs)
+
+    def put(self, *args, **kwargs):
+        kwargs.setdefault('method', 'PUT')
+        return self.request(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        kwargs.setdefault('method', 'DELETE')
+        return self.request(*args, **kwargs)
 
 
-class TestCase(unittest.TestCase):
+class ResourceTestCase(unittest.TestCase):
+
+    host = 'localhost'
+
+    port = 5000
 
     def setUp(self):
         # Skip this test module unless the server is available.
-        skipUnlessAvailable()
+        skipUnlessAvailable(self.host, self.port)
 
         # Initialize the test client.
-        self.client = Client()
+        self.client = Client(self.host, self.port)

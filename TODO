@@ -71,7 +71,7 @@
      ☐ text @0.4.0
      ☐ csv
 
- ☐ lightweight, functional resources @0.3.0
+ ✔ lightweight, functional resources @0.3.0 @done (13-06-12 08:25)
  ☐ conditional asynchronous (per method) @0.3.0
  ✔ configuration (`use`) @done (13-04-24 05:46)
  ☐ test suite improvements @0.3.0
