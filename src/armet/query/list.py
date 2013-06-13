@@ -10,6 +10,7 @@ from itertools import chain
 from armet.exceptions import BadRequest
 from django.db.models import Q
 from armet.resources.attributes import BooleanAttribute
+import urllib
 from .constants import (OPERATIONS, OPERATION_NOT, AND_OPERATOR, OR_OPERATOR,
                         EQUALS, EQUALS_NOT, PATH_SEP, GROUP_START, GROUP_END,
                         EQUALS_SET, VALUE_SEP, TERMINATOR, SORT, SORT_SEP,
@@ -155,6 +156,9 @@ class QueryList(list):
         value = ''.join(segiter)
         if value:
             values = value.split(VALUE_SEP)
+
+            # Url decode the values
+            values = [urllib.unquote(x) for x in values]
 
             # Boolean clean values that for the 'isnull' operation
             if q.operation in OPERATIONS_BOOLEAN:
