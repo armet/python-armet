@@ -20,49 +20,17 @@ OPERATOR_BEGIN_CHARS = set(x[0] for _, x in constants.OPERATORS if x)
 OPERATOR_SYMBOL_MAP = dict((v, k) for k, v in constants.OPERATORS if v)
 
 
+#! List of operator keywords.
+OPERATOR_KEYWORDS = set(k for k, _ in constants.OPERATORS)
+
+
 class Query(object):
     """Represents a complete query expression.
     """
 
-    def __init__(self, text):
+    def __init__(self, segments=None):
         #! The various query segments.
-        self.segments = []
-
-        # Parse the query string.
-        self._parse(text)
-
-    def _parse(self, text):
-        """Parse the querystring into a normalized form."""
-        # Iterate through the characters in the query string; one-by-one
-        # in order to perform one-pass parsing.
-        stream = StringIO()
-        for character in text:
-
-            # We want to stop reading the query and pass it off to someone
-            # when we reach a logical or grouping operator.
-            if character in (constants.LOGICAL_AND, constants.LOGICAL_OR):
-
-                if not stream.tell():
-                    # There is no content in the stream; a logical operator
-                    # was found out of place.
-                    raise ValueError('Found `{}` out of place'.format(
-                        character))
-
-                # Parse the segment up till the combinator
-                segment = QuerySegment(stream.getvalue(), character)
-                self.segments.append(segment)
-                stream.truncate(0)
-
-            else:
-                # This isn't a special character, just roll with it.
-                stream.write(character)
-
-        # TODO: Throw some nonsense here if the query string ended with a
-        # & or ;, because that makes no sense.
-
-        if stream.tell():
-            # Append the remainder of the query string.
-            self.segments.append(QuerySegment(stream.getvalue()))
+        self.segments = [] if segments is None else segments
 
     def __str__(self):
         """Format the query for debugging purposes.
@@ -89,6 +57,48 @@ class Query(object):
         return o.getvalue()
 
 
+def parse(text):
+    """Parse the querystring into a normalized form."""
+    # Initialize the query object.
+    query = Query()
+
+    # Iterate through the characters in the query string; one-by-one
+    # in order to perform one-pass parsing.
+    stream = StringIO()
+
+    for character in text:
+
+        # We want to stop reading the query and pass it off to someone
+        # when we reach a logical or grouping operator.
+        if character in (constants.LOGICAL_AND, constants.LOGICAL_OR):
+
+            if not stream.tell():
+                # There is no content in the stream; a logical operator
+                # was found out of place.
+                raise ValueError('Found `{}` out of place'.format(
+                    character))
+
+            # Parse the segment up till the combinator
+            segment = parse_segment(stream.getvalue(), character)
+            query.segments.append(segment)
+            stream.truncate(0)
+            stream.seek(0)
+
+        else:
+            # This isn't a special character, just roll with it.
+            stream.write(character)
+
+    # TODO: Throw some nonsense here if the query string ended with a
+    # & or ;, because that makes no sense.
+
+    if stream.tell():
+        # Append the remainder of the query string.
+        query.segments.append(parse_segment(stream.getvalue()))
+
+    # Return the constructed query object.
+    return query
+
+
 class QuerySegment(object):
     """
     Represents a single query segment with a subject path (`x.a.g`),
@@ -96,111 +106,124 @@ class QuerySegment(object):
     a set of values (`5,12,56`).
     """
 
-    def __init__(self, text, combinator=constants.LOGICAL_AND):
+    def __init__(self, **kwargs):
         #! Path to the attribute being tested (as a list of segments).
-        self.path = []
+        self.path = kwargs.get('path', [])
 
         #! This is the operator that is being applied to the attribute path.
-        self.operator = constants.OPERATOR_IEQUAL
+        self.operator = kwargs.get('operator', constants.OPERATOR_IEQUAL)
 
         #! Negation; if this operation has been negated.
-        self.negated = False
+        self.negated = kwargs.get('negated', False)
 
         #! Directives. Directives are a key-value way of specifying commands
         #! on an attribute path.
-        self.directives = []
+        self.directives = kwargs.get('directives', [])
 
         #! Values. Set of values that the attribute path is being checked
         #! against. Only one has to match.
-        self.values = []
+        self.values = kwargs.get('values', [])
 
         #! The combinator that is used to combine this and the next
         #! query.
-        self.combinator = COMBINATORS[combinator]
+        self.combinator = kwargs.get('combinator', operator.and_)
 
-        # Parse the text and determine the values of the segment.
-        self._parse(text)
 
-    def _parse(self, text):
-        # Construct an iterator over the segment text.
-        iterator = iter(text)
-        stream = StringIO()
+def _parse_operator(segment, iterator):
+    """Parses the operator (eg. '==' or '<')."""
+    stream = StringIO()
+    for character in iterator:
+        if character == constants.NEGATION[0]:
+            if stream.tell():
+                # Negation can only occur at the start of an operator.
+                raise ValueError('Unexpected negation.')
 
-        # Iterate through the characters in the segment; one-by-one
-        # in order to perform one-pass parsing.
-        for character in iterator:
+            # We've been negated.
+            segment.negated = not segment.negated
+            continue
 
-            if character in OPERATOR_BEGIN_CHARS:
-                # Found an operator; pull out what we can.
-                self._parse_operator(chain(character, iterator))
+        if (stream.getvalue() + character not in OPERATOR_SYMBOL_MAP and
+            stream.getvalue() + character not in OPERATOR_BEGIN_CHARS):
+            # We're no longer an operator.
+            break
 
-                # We're done here; go to the value parser
-                break
+        # Expand the operator
+        stream.write(character)
 
-            if character == constants.SEP_PATH:
-                # A path separator, push the current stack into the path
-                self.path.append(stream.getvalue())
-                stream.truncate(0)
+    # Set the found operator
+    segment.operator = OPERATOR_SYMBOL_MAP[stream.getvalue()]
 
-                # Keep checking for more path segments.
-                continue
+    # Return the remaining characters.
+    return chain(character, iterator)
 
-            # Append the text to the stream
-            stream.write(character)
 
-        # Write any remaining information into the path.
-        self.path.append(stream.getvalue())
+def parse_segment(text, combinator=constants.LOGICAL_AND):
+    # Initialize a query segment.
+    segment = QuerySegment()
 
-        # Attempt to normalize the path.
-        try:
-            # The keyword 'not' can be the last item which
-            # negates this query.
-            if self.path[-1] == constants.NEGATION[0]:
-                self.negated = not self.negated
-                self.path.pop(-1)
+    # Construct an iterator over the segment text.
+    iterator = iter(text)
+    stream = StringIO()
 
-            # The last keyword can explicitly state the operation; in which
-            # case the operator symbol **must** be `=`.
-            if self.path[-1] in OPERATOR_SYMBOL_MAP.values():
-                if self.operator is not constants.OPERATOR_IEQUAL[0]:
-                    raise ValueError(
-                        'Explicit operations must use the `=` symbol.')
+    # Iterate through the characters in the segment; one-by-one
+    # in order to perform one-pass parsing.
+    for character in iterator:
 
-                self.operator = self.path.pop(-1)
+        if character in OPERATOR_BEGIN_CHARS:
+            # Found an operator; pull out what we can.
+            iterator = _parse_operator(segment, chain(character, iterator))
 
-            # Make sure we still have a path left.
-            if not self.path:
-                raise IndexError()
+            # We're done here; go to the value parser
+            break
 
-        except IndexError:
-            # Ran out of path items after removing operations and negation.
-            raise ValueError('No path specified in {}'.format(text))
+        if character == constants.SEP_PATH:
+            # A path separator, push the current stack into the path
+            segment.path.append(stream.getvalue())
+            stream.truncate(0)
+            stream.seek(0)
 
-        # Values are not complicated (yet) so just slice and dice
-        # until we get a list of possible values.
-        self.values = ''.join(iterator)
-        if self.values:
-            self.values = self.values.split(constants.SEP_VALUE)
+            # Keep checking for more path segments.
+            continue
 
-    def _parse_operator(self, iterator):
-        """Parses the operator (eg. '==' or '<')."""
-        stream = StringIO()
-        for character in iterator:
-            if character == constants.NEGATION[0]:
-                if stream.tell():
-                    # Negation can only occur at the start of an operator.
-                    raise ValueError('Unexpected negation.')
+        # Append the text to the stream
+        stream.write(character)
 
-                # We've been negated.
-                self.negated = not self.negated
-                continue
+    # Write any remaining information into the path.
+    segment.path.append(stream.getvalue())
 
-            # Expand the operator
-            stream.write(character)
+    # Attempt to normalize the path.
+    try:
+        # The keyword 'not' can be the last item which
+        # negates this query.
+        if segment.path[-1] == constants.NEGATION[0]:
+            segment.negated = not segment.negated
+            segment.path.pop(-1)
 
-            if stream.getvalue() in OPERATOR_SYMBOL_MAP:
-                # We're an operator.
-                break
+        # The last keyword can explicitly state the operation; in which
+        # case the operator symbol **must** be `=`.
+        if segment.path[-1] in OPERATOR_KEYWORDS:
+            if segment.operator is not constants.OPERATOR_IEQUAL[0]:
+                raise ValueError(
+                    'Explicit operations must use the `=` symbol.')
 
-        # Set the found operator
-        self.operator = OPERATOR_SYMBOL_MAP[stream.getvalue()]
+            segment.operator = segment.path.pop(-1)
+
+        # Make sure we still have a path left.
+        if not segment.path:
+            raise IndexError()
+
+    except IndexError:
+        # Ran out of path items after removing operations and negation.
+        raise ValueError('No path specified in {}'.format(text))
+
+    # Values are not complicated (yet) so just slice and dice
+    # until we get a list of possible values.
+    segment.values = ''.join(iterator)
+    if segment.values:
+        segment.values = segment.values.split(constants.SEP_VALUE)
+
+    # Set the combinator.
+    segment.combinator = COMBINATORS[combinator]
+
+    # Return the constructed query segment.
+    return segment

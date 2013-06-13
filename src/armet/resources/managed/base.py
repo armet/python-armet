@@ -34,11 +34,6 @@ class ManagedResource(base.Resource):
         # 'extensions' attributes.
         obj.__dict__.update(**arguments)
 
-        if obj.slug:
-            # Clean the incoming slug value from the URI, if any.
-            obj.slug = obj.meta.slug.clean(obj.slug)
-            obj.slug = obj.slug_clean(obj.slug)
-
         # Return our constructed instance.
         return obj
 
@@ -138,14 +133,6 @@ class ManagedResource(base.Resource):
 
         # Return the resultant object.
         return obj
-
-    def slug_prepare(self, obj, value):
-        """Prepares the slug for constructing a URI."""
-        return value
-
-    def slug_clean(self, value):
-        """Cleans the incoming slug into an expected represention."""
-        return value
 
     @property
     def http_allowed_methods(self):

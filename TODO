@@ -85,13 +85,13 @@
  ☐ attribute blacklist: 'exlude' @0.4.0
 
  ☐ filtering @0.4.0
-     ☐ hooks @0.4.0
-     ☐ basic @0.4.0
+     ✔ hooks @0.4.0 @done (13-06-12 17:39)
+     ✔ basic @0.4.0 @done (13-06-12 17:39)
      ☐ grouping @0.4.0
-     ☐ and @0.4.0
-     ☐ or @0.4.0
+     ✔ and @0.4.0 @done (13-06-12 17:39)
+     ✔ or @0.4.0 @done (13-06-12 17:39)
      ☐ operations @0.4.0
-     ☐ not @0.4.0
+     ✔ not @0.4.0 @done (13-06-12 17:39)
      ☐ relation @0.4.0
 
  ☐ traversal @0.4.0

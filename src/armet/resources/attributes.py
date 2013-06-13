@@ -8,6 +8,9 @@ class Attribute(object):
     """Generic attribute; (de)serialzied as text.
     """
 
+    #! Underyling type of the attribute.
+    type = None
+
     def __init__(self, path=None, **kwargs):
         """Initializes this attribute with the given properties."""
         #! If this attribute can be read via direct
@@ -127,10 +130,24 @@ class Attribute(object):
         """Cleans the value in preparation for deserialization."""
         return value
 
+    def try_clean(self, value):
+        """Cleans the value in preparation for deserialization.
+
+        Does not throw errors; returns None if the conversion failed to
+        happen.
+        """
+        try:
+            return self.clean(value)
+
+        except ValueError:
+            return None
+
 
 class TextAttribute(Attribute):
     """Represents text.
     """
+
+    type = str
 
     def prepare(self, value):
         """Stringifies the value."""
@@ -142,6 +159,8 @@ class BooleanAttribute(Attribute):
     Represents a boolean; prepared as a python bool and cleaned as
     an actual bool in most deserializers.
     """
+
+    type = bool
 
     #! Textual values accepted for `True`.
     TRUE = (
@@ -189,10 +208,16 @@ class IntegerAttribute(Attribute):
     """Represents an integer; serialzied as a python integer.
     """
 
+    type = int
+
     def clean(self, value):
         if isinstance(value, six.string_types):
             # Strip the string of whitespace
             value = value.strip()
+
+        if value is None:
+            # Value is nothing; return it.
+            return value
 
         try:
             # Attempt to coerce whatever we have as an int.
@@ -200,4 +225,4 @@ class IntegerAttribute(Attribute):
 
         except ValueError:
             # Failed to do so.
-            return None
+            raise ValueError('Not a valid integer.')
