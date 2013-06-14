@@ -158,7 +158,7 @@ class QueryList(list):
             values = value.split(VALUE_SEP)
 
             # Url decode the values
-            values = [urllib.unquote(x) for x in values]
+            values = [urllib.unquote_plus(x) for x in values]
 
             # Boolean clean values that for the 'isnull' operation
             if q.operation in OPERATIONS_BOOLEAN:
