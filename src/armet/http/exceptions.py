@@ -14,6 +14,10 @@ class BaseHTTPException(BaseException):
         self.headers = headers or {}
 
 
+class BadRequest(BaseHTTPException):
+    status = client.BAD_REQUEST
+
+
 class Forbidden(BaseHTTPException):
     status = client.FORBIDDEN
 
