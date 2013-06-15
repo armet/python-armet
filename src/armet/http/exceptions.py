@@ -38,5 +38,9 @@ class UnsupportedMediaType(BaseHTTPException):
     status = client.UNSUPPORTED_MEDIA_TYPE
 
 
+class InternalServerError(BaseHTTPException):
+    status = client.INTERNAL_SERVER_ERROR
+
+
 class NotImplemented(BaseHTTPException):
     status = client.NOT_IMPLEMENTED
