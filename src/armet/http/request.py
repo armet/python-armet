@@ -101,6 +101,12 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         #! The request headers dictionary.
         self._headers = self.Headers(self)
 
+        # Build a dictionary of cookies from the request headers.
+        self._cookies = {}
+        for cookie in self._headers.get('cookie', '').split(';'):
+            name, value = cookie.strip().split('=')
+            self._cookies[name] = value
+
         # Determine the actual HTTP method; apply the override header.
         override = self.headers.get('X-Http-Method-Override')
         if override:
@@ -137,6 +143,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def headers(self):
         """Retrieves the immutable request headers dictionary."""
         return self._headers
+
+    @property
+    def cookies(self):
+        """Retrieves the immutable request headers dictionary."""
+        return self._cookies
 
     @abc.abstractproperty
     def protocol(self):
