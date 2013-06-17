@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
+import six
 from six.moves import cStringIO as StringIO
 import operator
 from itertools import chain
@@ -57,10 +58,14 @@ class Query(object):
         return o.getvalue()
 
 
-def parse(text):
+def parse(text, encoding='utf8'):
     """Parse the querystring into a normalized form."""
     # Initialize the query object.
     query = Query()
+
+    # Decode the text if we got bytes.
+    if isinstance(text, six.binary_type):
+        text = text.decode(encoding)
 
     # Iterate through the characters in the query string; one-by-one
     # in order to perform one-pass parsing.

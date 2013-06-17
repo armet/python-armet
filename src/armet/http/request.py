@@ -103,9 +103,11 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
         # Build a dictionary of cookies from the request headers.
         self._cookies = {}
-        for cookie in self._headers.get('cookie', '').split(';'):
-            name, value = cookie.strip().split('=')
-            self._cookies[name] = value
+        cookies = self._headers.get('cookie')
+        if cookies:
+            for cookie in cookies.split(';'):
+                name, value = cookie.strip().split('=')
+                self._cookies[name] = value
 
         # Determine the actual HTTP method; apply the override header.
         override = self.headers.get('X-Http-Method-Override')
