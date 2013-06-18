@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import collections
 import six
+import uuid
 
 
 class Attribute(object):
@@ -226,3 +227,51 @@ class IntegerAttribute(Attribute):
         except ValueError:
             # Failed to do so.
             raise ValueError('Not a valid integer.')
+
+
+class UUIDAttribute(Attribute):
+
+    type = uuid.UUID
+
+    def prepare(self, value):
+        return value.hex
+
+    def clean(self, value):
+        if value is None:
+            # Value is nothing; return it.
+            return value
+
+        try:
+            # Attempt to coerce the UUID.
+            return uuid.UUID(value)
+
+        except ValueError:
+            raise ValueError(
+                'UUID must be of the form: '
+                'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
+
+
+try:
+    import pytz
+
+    class TimezoneAttribute(Attribute):
+
+        type = pytz.tzfile.DstTzInfo
+
+        def prepare(self, value):
+            return value.zone
+
+        def clean(self, value):
+            if value is None:
+                # Value is nothing; return it.
+                return value
+
+            try:
+                # Attempt to coerce the timezone.
+                return pytz.timezone(value)
+
+            except pytz.UnknownTimeZoneError:
+                raise ValueError('Unknown time zone.')
+
+except ImportError:
+    pass
