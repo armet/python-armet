@@ -83,7 +83,7 @@ class Resource(object):
         return response._handle
 
     @classmethod
-    def mount(cls, url, app):
+    def mount(cls, url, app=None):
         # Generate a name to use to mount this resource.
         name = '{}.{}'.format(cls.__module__, cls.__name__)
         name = '{}:{}:{}'.format('armet', name, cls.meta.name)
