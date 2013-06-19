@@ -88,6 +88,10 @@ class Resource(object):
         name = '{}.{}'.format(cls.__module__, cls.__name__)
         name = '{}:{}:{}'.format('armet', name, cls.meta.name)
 
+        # If application is not provided; make use of the app context.
+        if app is None:
+            app = flask.current_app
+
         # Prepare the flask application to accept armet resources.
         # The strict slashes setting must be False for our routes.
         strict_slashes = app.url_map.strict_slashes = False
