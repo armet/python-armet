@@ -5,6 +5,7 @@ import unittest
 import socket
 import errno
 import json
+import base64
 import six
 from . import http  # flake8: noqa
 
@@ -36,7 +37,7 @@ class Client:
         self.connection.follow_redirects = False
 
     def request(self, path='/', method='GET', body='', headers=None,
-                url=None):
+                url=None, username=None, password=None):
         if url is None:
             # Construct the URI.
             url = 'http://{}:{}{}'.format(self.host, self.port, path)
@@ -44,6 +45,12 @@ class Client:
         # Default headers.
         if headers is None:
             headers = {}
+
+        # Construct authorization if needed.
+        if username or password:
+            creds = '{}:{}'.format(username or '', password or '')
+            creds = base64.b64encode(creds.encode('utf8'))
+            headers['authorization'] = creds
 
         # Serialize the body if neccessary.
         # TODO: Support more than JSON.
