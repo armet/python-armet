@@ -46,7 +46,7 @@ class BasicAuthentication(Authentication):
 
         try:
             # Split the authorization header into method and credentials.
-            method, credentials = (header or '').split(' ', 1)
+            method, creds = (header or '').split(' ', 1)
 
         except ValueError:
             # Strange format in the header.
@@ -57,9 +57,9 @@ class BasicAuthentication(Authentication):
             return False
 
         try:
-            # Decode credentials into username and password.
-            username, password = base64.b64decode(
-                credentials.encode(resource.request.encoding)).split(':', 1)
+            # Decode creds into username and password.
+            creds = base64.b64decode(creds.encode('utf8')).decode('utf8')
+            username, password = creds.split(':', 1)
 
         except ValueError:
             # Strange format in the authorization header.
