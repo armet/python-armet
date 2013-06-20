@@ -50,7 +50,7 @@ class Client:
         if username or password:
             creds = '{}:{}'.format(username or '', password or '')
             creds = base64.b64encode(creds.encode('utf8'))
-            headers['authorization'] = creds.decode('utf8')
+            headers['authorization'] = 'basic ' + creds.decode('utf8')
 
         # Serialize the body if neccessary.
         # TODO: Support more than JSON.
