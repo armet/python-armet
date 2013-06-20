@@ -59,6 +59,16 @@ class ResourceBase(type):
         # This is not derived at all from Resource (eg. is base).
         return False
 
+    @classmethod
+    def _gather_metadata(cls, metadata, bases):
+        for base in bases:
+            if isinstance(ResourceBase, base) and hasattr(base, 'Meta'):
+                # Append metadata.
+                metadata.append(getattr(base, 'Meta'))
+
+                # Recurse.
+                cls._gather_metadata(metadata, base.__bases__)
+
     def __new__(cls, name, bases, attrs):
         if not cls._is_resource(name, bases):
             # This is not an actual resource.
@@ -85,7 +95,10 @@ class ResourceBase(type):
             cur_meta = {}
 
         # Expand the options class with the gathered metadata.
-        base_meta = [getattr(b, 'Meta') for b in bases if hasattr(b, 'Meta')]
+        base_meta = []
+        _gather_metadata(base_meta, bases)
+
+        # Gather and construct the options object.
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
 
         # Remove connector layer from base classes.
