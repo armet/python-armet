@@ -35,9 +35,11 @@ class Client:
         self.connection = httplib2.Http()
         self.connection.follow_redirects = False
 
-    def request(self, path='/', method='GET', body='', headers=None):
-        # Construct the URI.
-        url = 'http://{}:{}{}'.format(self.host, self.port, path)
+    def request(self, path='/', method='GET', body='', headers=None,
+                url=None):
+        if url is None:
+            # Construct the URI.
+            url = 'http://{}:{}{}'.format(self.host, self.port, path)
 
         # Serialize the body if neccessary.
         # TODO: Support more than JSON.
