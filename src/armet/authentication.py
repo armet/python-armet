@@ -41,7 +41,7 @@ class BasicAuthentication(Authentication):
 
     def authenticate(self, resource):
         # Retrieve the authorization header.
-        header = resource.request.headers.get('HTTP_AUTHORIZATION')
+        header = resource.request.headers.get('Authorization')
 
         try:
             # Split the authorization header into method and credentials.
