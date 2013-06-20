@@ -58,7 +58,8 @@ class BasicAuthentication(Authentication):
 
         try:
             # Decode credentials into username and password.
-            username, password = base64.b64decode(credentials).split(':', 1)
+            username, password = base64.b64decode(
+                credentials.encode(resource.request.encoding)).split(':', 1)
 
         except ValueError:
             # Strange format in the authorization header.
