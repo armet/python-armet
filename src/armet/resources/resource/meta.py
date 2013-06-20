@@ -36,6 +36,15 @@ class ResourceBase(type):
             return True
         return any(b in mro for b in cls.__bases__)
 
+    def mro(cls):
+        mro = super(ResourceBase, cls).mro()
+        if mro[0].__name__.startswith('armet.connector:'):
+            # Remove the connector from the mro.
+            return mro[1:]
+
+        # Return the normal mro.
+        return mro
+
     @classmethod
     def _is_resource(cls, name, bases):
         if name == 'NewBase':
@@ -62,7 +71,7 @@ class ResourceBase(type):
     @classmethod
     def _gather_metadata(cls, metadata, bases):
         for base in bases:
-            if isinstance(ResourceBase, base) and hasattr(base, 'Meta'):
+            if isinstance(base, cls) and hasattr(base, 'Meta'):
                 # Append metadata.
                 metadata.append(getattr(base, 'Meta'))
 
