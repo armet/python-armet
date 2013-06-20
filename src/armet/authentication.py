@@ -41,7 +41,7 @@ class BasicAuthentication(Authentication):
 
         try:
             # Split the authorization header into method and credentials.
-            method, credentials = header.split(' ', 1)
+            method, credentials = (header or '').split(' ', 1)
 
         except ValueError:
             # Strange format in the header.
