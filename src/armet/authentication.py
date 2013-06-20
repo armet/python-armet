@@ -5,6 +5,7 @@ authenticate access to a resource endpoint.
 """
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
+import base64
 
 
 class Authentication(object):
@@ -57,7 +58,7 @@ class BasicAuthentication(Authentication):
 
         try:
             # Decode credentials into username and password.
-            username, password = credentials.decode('base64').split(':', 1)
+            username, password = base64.b64decode(credentials).split(':', 1)
 
         except ValueError:
             # Strange format in the authorization header.
