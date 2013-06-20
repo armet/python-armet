@@ -99,25 +99,20 @@ class ResourceBase(type):
         # Start with the base configuration.
         metadata = armet.use().copy()
         values = lambda x: {n: getattr(x, n) for n in dir(x)}
-        for base in bases:
-            meta = getattr(base, 'Meta', None)
-            if meta:
-                # Apply the configuration from each class in the chain.
-                metadata.update(**values(meta))
-
-        cur_meta = None
-        if attrs.get('Meta'):
-            # Apply the configuration from the current class.
-            cur_meta = values(attrs['Meta'])
-            metadata.update(**cur_meta)
-
-        else:
-            # No direct Meta class.
-            cur_meta = {}
 
         # Expand the options class with the gathered metadata.
         base_meta = []
         cls._gather_metadata(base_meta, bases)
+
+        # Apply the configuration from each class in the chain.
+        for meta in base_meta:
+            metadata.update(**values(meta))
+
+        cur_meta = {}
+        if attrs.get('Meta'):
+            # Apply the configuration from the current class.
+            cur_meta = values(attrs['Meta'])
+            metadata.update(**cur_meta)
 
         # Gather and construct the options object.
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
