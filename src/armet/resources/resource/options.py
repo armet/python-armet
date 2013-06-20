@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import re
 import six
 from importlib import import_module
-from armet import utils
+from armet import utils, authentication
 from armet.exceptions import ImproperlyConfigured
 
 
@@ -243,3 +243,10 @@ class ResourceOptions(object):
                 raise ImproperlyConfigured(
                     'The allowed deserializer, {}, is not one of the '
                     'understood deserializers'.format(name))
+
+        #! List of authentication protocols to attempt in sequence
+        #! to determine the authenticated user.
+        self.authentication = meta.get('authentication')
+        if self.authentication is None:
+            # Default to a single instance of pass-through authentication.
+            self.authentication = (authentication.Authentication(),)

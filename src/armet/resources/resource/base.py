@@ -326,7 +326,30 @@ class Resource(object):
         handing complete control of the result to a function with the
         same name as the request method.
         """
-        # TODO: Assert authentication and attempt to get a valid user object.
+        # Assert authentication and attempt to get a valid user object.
+        user = None
+        for auth in self.meta.authentication:
+            user = auth.authenticate(self.request)
+            if user is False:
+                # Authentication protocol failed to authenticate;
+                # pass the baton.
+                continue
+
+            if user is None:
+                # Authentication protocol determined the user is
+                # unauthenticated.
+                auth.unauthenticated()
+
+            # Authentication protocol determined the user is indeed
+            # authenticated; Store the user for later reference.
+            self.user = user
+            break
+
+        if not user and not auth.allow_anonymous:
+            # No authenticated user found and protocol doesn't allow
+            # anonymous users.
+            auth.unauthenticated()
+
         # TODO: Assert accessibiltiy of the resource in question.
 
         # Ensure that we understand the HTTP method.
