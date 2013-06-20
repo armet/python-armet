@@ -249,6 +249,10 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         # Perform the initial read.
         content = self._read(count)
 
+        if not content:
+            # Content was empty; return an empty string.
+            return ''
+
         if type(content) is six.binary_type:
             # If received a byte string; decode it.
             content = content.decode(self.encoding)
