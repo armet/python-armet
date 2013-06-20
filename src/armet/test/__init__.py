@@ -41,10 +41,15 @@ class Client:
             # Construct the URI.
             url = 'http://{}:{}{}'.format(self.host, self.port, path)
 
+        # Default headers.
+        if headers is None:
+            headers = {}
+
         # Serialize the body if neccessary.
         # TODO: Support more than JSON.
         if not isinstance(body, six.string_types):
             body = json.dumps(body)
+            headers['content-type'] = 'application/json'
 
         # Perform the response. Remember this does not go anywhere; it is
         # caught by wsgi-intercept and mocked into Armet.
