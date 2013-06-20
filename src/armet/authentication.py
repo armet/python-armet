@@ -32,13 +32,6 @@ class Authentication(object):
         """
         raise http.exceptions.Forbidden()
 
-    def get_user(self, **kwargs):
-        """
-        Callback that is invoked when a user is attempting to be
-        authenticated with a set of credentials.
-        """
-        return None
-
 
 class BasicAuthentication(Authentication):
 
@@ -69,3 +62,10 @@ class BasicAuthentication(Authentication):
 
         # Retreive and return the user object.
         return self.get_user(resource, username=username, password=password)
+
+    def get_user(self, **kwargs):
+        """
+        Callback that is invoked when a user is attempting to be
+        authenticated with a set of credentials.
+        """
+        return None

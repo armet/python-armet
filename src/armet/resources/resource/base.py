@@ -329,7 +329,7 @@ class Resource(object):
         # Assert authentication and attempt to get a valid user object.
         self.user = user = None
         for auth in self.meta.authentication:
-            user = auth.authenticate(self.request)
+            user = auth.authenticate(self)
             if user is False:
                 # Authentication protocol failed to authenticate;
                 # pass the baton.
