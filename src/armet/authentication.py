@@ -34,11 +34,22 @@ class Authentication(object):
         raise http.exceptions.Forbidden()
 
 
-class BasicAuthentication(Authentication):
+class HeaderAuthentication(Authentication):
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault('allow_anonymous', False)
-        super(BasicAuthentication, self).__init__(**kwargs)
+    def can_authenticate(self, method):
+        # Determine if we can authenticate.
+        return False
+
+    def get_credentials(self, text):
+        # Decode credentials.
+        return text,
+
+    def get_user(self, *args, **kwargs):
+        """
+        Callback that is invoked when a user is attempting to be
+        authenticated with a set of credentials.
+        """
+        return None
 
     def authenticate(self, resource):
         # Retrieve the authorization header.
@@ -46,32 +57,31 @@ class BasicAuthentication(Authentication):
 
         try:
             # Split the authorization header into method and credentials.
-            method, creds = (header or '').split(' ', 1)
+            method, text = (header or '').split(' ', 1)
 
         except ValueError:
             # Strange format in the header.
             return False
 
-        if method.lower() != 'basic':
-            # Not BASIC authentication.
+        if self.can_authenticate(method):
+            # Not the right kind of authentication.
             return False
 
-        try:
-            # Decode creds into username and password.
-            creds = base64.b64decode(creds.encode('utf8')).decode('utf8')
-            username, password = creds.split(':', 1)
-
-        except ValueError:
-            # Strange format in the authorization header.
-            # We know enough that the user is attempting basic authentication.
-            return None
-
         # Retreive and return the user object.
-        return self.get_user(resource, username=username, password=password)
+        return self.get_user(resource, *self.get_credentials(text))
 
-    def get_user(self, **kwargs):
-        """
-        Callback that is invoked when a user is attempting to be
-        authenticated with a set of credentials.
-        """
-        return None
+
+class BasicAuthentication(HeaderAuthentication):
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('allow_anonymous', False)
+        super(BasicAuthentication, self).__init__(**kwargs)
+
+    def can_authenticate(self, method):
+        # Determine if we can authenticate.
+        return method.lower() == 'basic'
+
+    def get_credentials(self, text):
+        # Decode credentials.
+        text = base64.b64decode(text.encode('utf8')).decode('utf8')
+        return text.split(':', 1)
