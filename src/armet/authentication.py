@@ -35,6 +35,10 @@ class Authentication(object):
 
 class BasicAuthentication(Authentication):
 
+    def __init__(self, **kwargs):
+        kwargs.setdefault('allow_anonymous', False)
+        super(BasicAuthentication, self).__init__(**kwargs)
+
     def authenticate(self, resource):
         # Retrieve the authorization header.
         header = resource.request.headers.get('HTTP_AUTHORIZATION')
