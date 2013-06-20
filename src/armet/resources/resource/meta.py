@@ -96,7 +96,7 @@ class ResourceBase(type):
 
         # Expand the options class with the gathered metadata.
         base_meta = []
-        _gather_metadata(base_meta, bases)
+        cls._gather_metadata(base_meta, bases)
 
         # Gather and construct the options object.
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
