@@ -400,7 +400,7 @@ class Resource(object):
         # Step 3
         # Try to parse the Request-Method header if it exists.
         method = self.request.get('Access-Control-Request-Method')
-        if not method or method not in self.http_method_names:
+        if not method or method not in self.meta.http_method_names:
             return
 
         # Step 4
