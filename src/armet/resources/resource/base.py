@@ -362,28 +362,18 @@ class Resource(object):
         # Ensure that we're allowed to use this HTTP method.
         self.assert_http_allowed_methods()
 
+        # Facilitate CORS by applying various headers.
+        # This must be done on every request.
+        self._preflight()
+
         # Delegate to the determined function to process the request.
         return self.route()()
 
-    def route(self):
-        """Route the HTTP method to the handling function."""
-        # Retrieve the function corresponding to this HTTP method.
-        function = getattr(self, self.request.method.lower(), None)
-        if function is None:
-            # Server is not capable of supporting it.
-            # RFC 2616 § 10.5.2 — 501 Not Implemented
-            raise http.exceptions.NotImplemented()
-
-        # Delegate to the determined function to process the request.
-        return function
-
-    def options(self):
-        """Process an `OPTIONS` request.
-
-        Used to initiate in cross origin requests.
+    def _preflight(self):
+        """Facilitate Cross-Origin Requests (CORs).
         """
-        # Set the initial response code to 200.
-        self.response.status = http.client.OK
+
+        import ipdb; ipdb.set_trace()
 
         # Step 1
         # Check for Origin header.
@@ -400,7 +390,7 @@ class Resource(object):
         # Step 3
         # Try to parse the Request-Method header if it exists.
         method = self.request.get('Access-Control-Request-Method')
-        if not method or method not in self.meta.http_method_names:
+        if method and method not in self.meta.http_method_names:
             return
 
         # Step 4
@@ -410,33 +400,49 @@ class Resource(object):
             headers = [h.strip() for h in headers.split(',')]
 
         # Step 5
-        # Check if the method is allowed on this resource.
-        if method not in self.meta.http_allowed_methods:
-            return
-
-        # Step 6
         # Check if the headers are allowed on this resource.
         allowed_headers = [h.lower() for h in self.meta.http_allowed_headers]
         if any(h.lower() not in allowed_headers for h in headers):
             return
 
-        # Step 7
+        # Step 6
         # Always add the origin.
         self.response['Access-Control-Allow-Origin'] = origin
 
         # TODO: Check if we can provide credentials.
         self.response['Access-Control-Allow-Credentials'] = 'true'
 
-        # Step 8
+        # Step 7
         # TODO: Optionally add Max-Age header.
 
-        # Step 9
+        # Step 8
         # Add the allowed methods.
         allowed_methods = ', '.join(self.meta.http_allowed_methods)
         self.response['Access-Control-Allow-Methods'] = allowed_methods
 
-        # Step 10
+        # Step 9
         # Add any allowed headers.
         allowed_headers = ', '.join(self.meta.http_allowed_headers)
         if allowed_headers:
             self.response['Access-Control-Allow-Headers'] = allowed_headers
+
+    def route(self):
+        """Route the HTTP method to the handling function."""
+        # Retrieve the function corresponding to this HTTP method.
+        function = getattr(self, self.request.method.lower(), None)
+        if function is None:
+            # Server is not capable of supporting it.
+            # RFC 2616 § 10.5.2 — 501 Not Implemented
+            raise http.exceptions.NotImplemented()
+
+        # Delegate to the determined function to process the request.
+        return function
+
+    def options(self):
+        """Process an `OPTIONS` request.
+
+        Used to initiate a cross-origin request.
+        """
+        # All handling is done for every HTTP/1.1 method.
+        # No more handling is neccesary; set the response to 200 and return.
+        self.response.status = http.client.OK
