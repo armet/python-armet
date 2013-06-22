@@ -407,7 +407,7 @@ class Resource(object):
         # Try to parse the Request-Header header if it exists.
         headers = self.request.get('Access-Control-Request-Headers', ())
         if headers:
-            headers = headers.split(',')
+            headers = [h.strip() for h in headers.split(',')]
 
         # Step 5
         # Check if the method is allowed on this resource.
@@ -416,7 +416,7 @@ class Resource(object):
 
         # Step 6
         # Check if the headers are allowed on this resource.
-        allowed_headers = (h.lower() for h in self.meta.http_allowed_headers)
+        allowed_headers = [h.lower() for h in self.meta.http_allowed_headers]
         if any(h.lower() not in allowed_headers for h in headers):
             return
 
@@ -424,10 +424,8 @@ class Resource(object):
         # Always add the origin.
         self.response['Access-Control-Allow-Origin'] = origin
 
-        # Check if we can provide credentials.
-        authn = self.meta.authentication
-        if (authn and type(authn[0]) is not authentication.Authentication):
-            self.response['Access-Control-Allow-Credentials'] = 'true'
+        # TODO: Check if we can provide credentials.
+        self.response['Access-Control-Allow-Credentials'] = 'true'
 
         # Step 8
         # TODO: Optionally add Max-Age header.
