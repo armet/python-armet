@@ -427,7 +427,7 @@ class Resource(object):
         # Check if we can provide credentials.
         authn = self.meta.authentication
         if (authn and type(authn[0]) is not authentication.Authentication):
-            response['Access-Control-Allow-Credentials'] = 'true'
+            self.response['Access-Control-Allow-Credentials'] = 'true'
 
         # Step 8
         # TODO: Optionally add Max-Age header.
@@ -435,10 +435,10 @@ class Resource(object):
         # Step 9
         # Add the allowed methods.
         allowed_methods = ','.join(self.meta.http_allowed_methods)
-        response['Access-Control-Allow-Methods'] = allowed_methods
+        self.response['Access-Control-Allow-Methods'] = allowed_methods
 
         # Step 10
         # Add any allowed headers.
         allowed_headers = ','.join(self.meta.http_allowed_headers)
         if allowed_headers:
-            response['Access-Control-Allow-Headers'] = allowed_headers
+            self.response['Access-Control-Allow-Headers'] = allowed_headers
