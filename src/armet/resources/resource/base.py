@@ -373,8 +373,6 @@ class Resource(object):
         """Facilitate Cross-Origin Requests (CORs).
         """
 
-        import ipdb; ipdb.set_trace()
-
         # Step 1
         # Check for Origin header.
         origin = self.request.get('Origin')
