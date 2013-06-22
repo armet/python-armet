@@ -161,6 +161,7 @@ class ResourceOptions(object):
         if self.http_allowed_headers is None:
             self.http_allowed_headers = (
                 'Content-Type',
+                'Authorization'
             )
 
         #! List of allowed HTTP origins.
