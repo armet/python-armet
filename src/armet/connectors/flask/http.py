@@ -13,7 +13,7 @@ class Request(http.Request):
     class Headers(http.request.Headers):
 
         def __getitem__(self, name):
-            return self._obj._handle.headers.get(name)
+            return self._obj._handle.headers[name]
 
         def __iter__(self):
             return (key for key, _ in self._obj._handle.headers)
