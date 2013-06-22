@@ -434,11 +434,11 @@ class Resource(object):
 
         # Step 9
         # Add the allowed methods.
-        allowed_methods = ','.join(self.meta.http_allowed_methods)
+        allowed_methods = ', '.join(self.meta.http_allowed_methods)
         self.response['Access-Control-Allow-Methods'] = allowed_methods
 
         # Step 10
         # Add any allowed headers.
-        allowed_headers = ','.join(self.meta.http_allowed_headers)
+        allowed_headers = ', '.join(self.meta.http_allowed_headers)
         if allowed_headers:
             self.response['Access-Control-Allow-Headers'] = allowed_headers
