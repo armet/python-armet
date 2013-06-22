@@ -411,7 +411,7 @@ class Resource(object):
 
         # Step 5
         # Check if the method is allowed on this resource.
-        if method not in self.meta.allowed_methods:
+        if method not in self.meta.http_allowed_methods:
             return
 
         # Step 6
