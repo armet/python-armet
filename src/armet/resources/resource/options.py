@@ -155,6 +155,23 @@ class ResourceOptions(object):
                 'DELETE',
             )
 
+        #! List of allowed HTTP headers.
+        #! This is used only to request or prevent CORS requests.
+        self.http_allowed_headers = meta.get('http_allowed_headers')
+        if self.http_allowed_headers is None:
+            self.http_allowed_headers = (
+                'Content-Type',
+            )
+
+        #! List of allowed HTTP origins.
+        #! This is used to request or prevent CORS requests.
+        #! No CORS requests will be allowed, at-all, unless this
+        #! property is set.
+        #! NOTE: This can be set to '*' to indicate any origin.
+        self.http_allowed_origins = meta.get('http_allowed_origins')
+        if self.http_allowed_origins is None:
+            self.http_allowed_origins = ()
+
         #! Whether to use legacy redirects or not to inform the
         #! client the resource is available elsewhere. Legacy redirects
         #! require a combination of 301 and 307 in which 307 is not cacheable.

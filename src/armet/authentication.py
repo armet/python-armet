@@ -63,7 +63,7 @@ class HeaderAuthentication(Authentication):
             # Strange format in the header.
             return False
 
-        if self.can_authenticate(method):
+        if not self.can_authenticate(method):
             # Not the right kind of authentication.
             return False
 

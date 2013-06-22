@@ -5,7 +5,7 @@ import six
 import collections
 import mimeparse
 import traceback
-from armet import http, utils
+from armet import http, utils, authentication
 
 
 logger = logging.getLogger(__name__)
@@ -376,3 +376,69 @@ class Resource(object):
 
         # Delegate to the determined function to process the request.
         return function
+
+    def options(self):
+        """Process an `OPTIONS` request.
+
+        Used to initiate in cross origin requests.
+        """
+        # Set the initial response code to 200.
+        self.response.status = http.client.OK
+
+        # Step 1
+        # Check for Origin header.
+        origin = self.request.get('Origin')
+        if not origin:
+            return
+
+        # Step 2
+        # Check if the origin is in the list of allowed origins.
+        if not (origin in self.meta.http_allowed_origins or
+                '*' == self.meta.http_allowed_origins):
+            return
+
+        # Step 3
+        # Try to parse the Request-Method header if it exists.
+        method = self.request.get('Access-Control-Request-Method')
+        if not method or method not in self.http_method_names:
+            return
+
+        # Step 4
+        # Try to parse the Request-Header header if it exists.
+        headers = self.request.get('Access-Control-Request-Headers', ())
+        if headers:
+            headers = headers.split(',')
+
+        # Step 5
+        # Check if the method is allowed on this resource.
+        if method not in self.meta.allowed_methods:
+            return
+
+        # Step 6
+        # Check if the headers are allowed on this resource.
+        allowed_headers = (h.lower() for h in self.meta.http_allowed_headers)
+        if any(h.lower() not in allowed_headers for h in headers):
+            return
+
+        # Step 7
+        # Always add the origin.
+        self.response['Access-Control-Allow-Origin'] = origin
+
+        # Check if we can provide credentials.
+        authn = self.meta.authentication
+        if (authn and type(authn[0]) is not authentication.Authentication):
+            response['Access-Control-Allow-Credentials'] = 'true'
+
+        # Step 8
+        # TODO: Optionally add Max-Age header.
+
+        # Step 9
+        # Add the allowed methods.
+        allowed_methods = ','.join(self.meta.http_allowed_methods)
+        response['Access-Control-Allow-Methods'] = allowed_methods
+
+        # Step 10
+        # Add any allowed headers.
+        allowed_headers = ','.join(self.meta.http_allowed_headers)
+        if allowed_headers:
+            response['Access-Control-Allow-Headers'] = allowed_headers
