@@ -68,19 +68,19 @@ class ModelResource(object):
         elif operation == constants.OPERATOR_ISNULL[0]:
             op = lambda x, y: (x == None) if y else (x != None)
 
-        elif options == constants.OPERATOR_LT:
+        elif operation == constants.OPERATOR_LT:
             op = operator.lt
 
-        elif options == constants.OPERATOR_GT:
+        elif operation == constants.OPERATOR_GT:
             op = operator.gt
 
-        elif options == constants.OPERATOR_LTE:
+        elif operation == constants.OPERATOR_LTE:
             op = operator.le
 
-        elif options == constants.OPERATOR_GTE:
+        elif operation == constants.OPERATOR_GTE:
             op = operator.ge
 
-        elif options == constants.OPERATOR_REGEX:
+        elif operation == constants.OPERATOR_REGEX:
             # TODO: We need to do something.. this only really works in
             #   mysql; wtf does django do?
             op = lambda x, y: x.op('REGEXP')(y)
