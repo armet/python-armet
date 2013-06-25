@@ -229,12 +229,90 @@ class IntegerAttribute(Attribute):
             raise ValueError('Not a valid integer.')
 
 
+try:
+    # Attempt to import and make use of date/time libraries.
+    # TODO: Make note of this optional dep somewhere.
+    from dateutil.parser import parse as parse_datetime
+    from datetime import datetime
+    from time import mktime
+
+
+    class _TemporalAttribute(object):
+        """Represents a temporal attribute, such as a date or time.
+        """
+
+        def prepare(self, value):
+            # Serialize as ISO format.
+            return value.isoformat()
+
+        def clean(self, value):
+            if not value:
+                # Value is nothing; return it.
+                return value
+
+            try:
+                # Attempt to use the dateutil library to parse.
+                return parse_datetime(value, fuzzy=False)
+
+            except (ValueError, AttributeError):
+                # Not a strictly formatted date; return nothing.
+                pass
+
+            try:
+                # Attempt to magic a date out of it.
+                # TODO: List this somewhere as an optional dep.
+                from parsedatetime import parsedatetime as pdt
+                c = pdt.Constants()
+                c.BirthdayEpoch = 80  # TODO: Figure out what this is.
+                p = ptd.Calendar(c)
+                result = p.parse(value)
+                if result[1] != 0:
+                    return datetime.fromtimestamp(mktime(result[0]))
+
+            except (NameError, ImportError, TypeError):
+                # No magical date/time support.
+                pass
+
+            # Couldn't figure out what we're dealing with.
+            raise ValueError('Invalid date/time or in an invalid format.')
+
+
+    class DateAttribute(Attribute, _TemporalAttribute):
+
+        def clean(self, value):
+            value = super(DateAttribute, self).clean(value)
+            if value:
+                # Constrain to just the date part.
+                value = value.date()
+            return value
+
+
+    class TimeAttribute(Attribute, _TemporalAttribute):
+
+        def clean(self, value):
+            value = super(TimeAttribute, self).clean(value)
+            if value:
+                # Constrain to just the date part.
+                value = value.time()
+            return value
+
+
+    class DateTimeAttribute(Attribute, _TemporalAttribute):
+        pass
+
+
+except ImportError:
+    # No support for date/times.
+    pass
+
+
 class UUIDAttribute(Attribute):
 
     type = uuid.UUID
 
     def prepare(self, value):
-        return value.hex
+        # Serialize as the 16-digit hex representation.
+        return value.hex if value else value
 
     def clean(self, value):
         if value is None:
@@ -252,6 +330,7 @@ class UUIDAttribute(Attribute):
 
 
 try:
+    # TODO: List this somewhere as an optional dep.
     import pytz
 
     class TimezoneAttribute(Attribute):
