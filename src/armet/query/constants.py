@@ -21,7 +21,7 @@ OPERATOR_GT = 'gt', '>'
 OPERATOR_GTE = 'gte', '>='
 
 #! Regular expression match
-OPERATOR_REGEX = 'iregex', '*='
+OPERATOR_REGEX = 'regex', '*='
 
 #! Null test
 OPERATOR_ISNULL = 'isnull', None
