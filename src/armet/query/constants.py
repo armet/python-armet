@@ -21,10 +21,7 @@ OPERATOR_GT = 'gt', '>'
 OPERATOR_GTE = 'gte', '>='
 
 #! Regular expression match
-OPERATOR_REGEX = 'regex', '*=='
-
-#! Case-insenstive regular expression match
-OPERATOR_IREGEX = 'iregex', '*='
+OPERATOR_REGEX = 'iregex', '*='
 
 #! Null test
 OPERATOR_ISNULL = 'isnull', None
@@ -41,7 +38,6 @@ OPERATORS = (
     OPERATOR_GT,
     OPERATOR_GTE,
     OPERATOR_REGEX,
-    OPERATOR_IREGEX,
     OPERATOR_ISNULL,
     OPERATOR_IN)
 

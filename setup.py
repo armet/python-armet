@@ -73,7 +73,7 @@ setup(
         'six',
 
         # For parsing accept and content-type headers
-        'python-mimeparse'
+        'python-mimeparse',
     ),
     extras_require={
         'test': test_dependencies
