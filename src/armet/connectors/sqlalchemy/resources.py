@@ -65,7 +65,7 @@ class ModelResource(object):
                 op = lambda x, y: x.ilike(y)
 
         elif operation == constants.OPERATOR_ISNULL[0]:
-            op = lambda x, y: (x is None) if y else (x is not None)
+            op = lambda x, y: (x.is_(None)) if y else (~x.is_(None))
 
         elif operation == constants.OPERATOR_LT[0]:
             op = operator.lt
