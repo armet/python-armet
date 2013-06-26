@@ -2,9 +2,17 @@
 """Normalizes access to the HTTP libraries.
 """
 from __future__ import absolute_import, unicode_literals, division
-
-# Normalize `http.client` and `httplib`.
 from six.moves import http_client as client
+from .request import Request
+from .response import Response
+from . import exceptions
+
+__all__ = [
+    'client',
+    'Request',
+    'Response',
+    'exceptions'
+]
 
 try:
     # Attempt to get additional status codes (added in python 3.2)
@@ -21,8 +29,3 @@ except AttributeError:
     client.TOO_MANY_REQUESTS = 429
     client.REQUEST_HEADER_FIELDS_TOO_LARGE = 431
     client.NETWORK_AUTHENTICATION_REQUIRED = 511
-
-# Import request and response classes into the root level of the package.
-from .request import Request  # flake8: noqa
-from .response import Response  # flake8: noqa
-from . import exceptions  # flake8: noqa

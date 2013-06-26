@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
-from .base import *  # flake8: noqa
-from .json import * # flake8: noqa
-from .url import * # flake8: noqa
+from .base import Serializer
+from .json import JSONSerializer
+from .url import URLSerializer
+
+__all__ = [
+    'Serializer',
+    'JSONSerializer',
+    'URLSerializer'
+]

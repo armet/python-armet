@@ -7,7 +7,15 @@ import errno
 import json
 import base64
 import six
-from . import http  # flake8: noqa
+from . import http
+
+__all__ = [
+    'http',
+    'is_available',
+    'skipUnlessAvailable',
+    'Client',
+    'ResourceTestCase'
+]
 
 
 def is_available(host='localhost', port=5000):
