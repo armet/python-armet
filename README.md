@@ -23,45 +23,7 @@ behind the interface.
 > high-level synchronous API on top of the libevent event loop.
 
 Provides tight integration for WSGI-based connectors with gevent so a request
-may be transparently handled asynchronously. The code snippet below demonstates
-this with the **bottle** connector however any WSGI-based connector
-could be used (eg. **django**, **flask**, etc.).
-
-```python
-import gevent
-from gevent import monkey
-monkey.patch_all()  # Transparently switch python to use gevent.
-   
-from bottle import run
-from armet import resources, route
-import time
-   
-@route('/')
-class Resource(resources.Resource):
-    class Meta:
-        connectors = {'http': 'bottle'}
-        asynchronous = True
-   
-    def get(self):
-        def writer(index, delay):
-            for number in range(10):
-                self.response.write('{}: {}\n'.format(index, number))
-                time.sleep(delay)  # Wait a bit so we can see it streaming.
-                self.response.flush()  # Async write body to transport stream.
-                
-        def spawner():
-            threads = []  # Initialize a thread group
-            for index in range(10):
-                # Spawn lots of writer jobs with various delays.
-                threads.append(gevent.spawn(writer, index, index / 10))
-            
-            gevent.joinall(threads)  # Wait for all threads to finish
-            self.response.close()  # Close the http connection.
-            
-        gevent.spawn_later(1, spawner)  # Spawn the spawner after a second for fun
-   
-run(server='gevent')
-```
+may be transparently handled asynchronously.
 
 Non WSGI-based connectors provide an identical interface to write to the 
 response stream asynchronously (eg. **twisted**).
@@ -88,92 +50,17 @@ its model one as well).
 > Django makes it easier to build better Web apps more quickly and
 > with less code.
 
-```python
-# api.py
-from armet import resources
-class Resource(resources.Resource):
-    class Meta:
-        connectors = {
-            'http': 'django',
-            # ... [additional connectors]
-        }
-
-# urls.py
-# ... [appending to the generated urls.py file from django-admin.py startproject]
-from . import api
-urlpatterns += patterns('',
-    url(r'^api/', include(api.Resource.urls)),
-)
-```
-
 ###### [Flask](http://flask.pocoo.org/)
 > Flask is a microframework for Python based on Werkzeug,
 > Jinja 2 and good intentions.
-
-```python
-# Initialize the flask application.
-from flask import Flask
-app = Flask(__name__)
-
-import armet
-from armet import resources
-
-@armet.route(app, '/api/')
-class Resource(resources.Resource):
-    class Meta:
-        connectors = {
-            'http': 'flask',
-            # ... [additional connectors]
-        }
-```
 
 ###### [Bottle](http://bottlepy.org/docs/dev/)
 > Bottle is a fast, simple and lightweight 
 > WSGI micro web-framework for Python.
 
-```python
-from armet import resources, route
-
-@route('/api/')
-class Resource(resources.Resource):
-    class Meta:
-        connectors = {
-            'http': 'bottle',
-            # ... [additional connectors]
-        }
-```
-
 ###### [Cyclone](http://cyclone.io/)
 > Cyclone is a web server framework for Python that implements 
 the Tornado API as a Twisted protocol.
-
-```python
-from armet import resources, route
-
-# Mount the resource using the 
-# bottle-style application
-@route(r'/api')
-class Resource(resources.Resource):
-    class Meta:
-        connectors = {
-            'http': 'cyclone',
-            # ... [additional connectors]
-        }
-
-from cyclone import web
-application = web.Application([
-  # Mount the resource in the application 
-  # constructor directly
-  (r'^/api/{}(.*)'.format(Resource.meta.name), Resource.handler),
-  
-  # Mount the resource in the application
-  # constructor using a helper
-  Resource.route(r'^/api'), #=> (r'^/api/resource(.*)', Resource.handler)
-])
-
-# Mount the resource on the cyclone application.
-Resource.mount(r'^/api', application)
-```
 
 ### Database access (model)
 
@@ -280,7 +167,7 @@ gives application developers the full power and flexibility of SQL.
 2. Run the unit tests.
 
    ```sh
-   nosetests
+   py.test
    ```
 
 **Armet** is maintained with all tests passing at all times. If you find
