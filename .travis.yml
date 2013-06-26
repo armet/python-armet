@@ -11,7 +11,7 @@ before_install:
 
 # Install python dependencies
 install:
-  - 'travis_retry pip install -e ".[test]" --use-mirrors'
+  - 'travis_retry pip install -q -e ".[test]" --use-mirrors'
 
 # Blacklist legacy branches as they don't have operating tests
 branches:
@@ -20,4 +20,4 @@ branches:
     - legacy/flapjack
 
 # Run tests
-script: nosetests
+script: 'py.test'
