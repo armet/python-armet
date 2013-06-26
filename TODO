@@ -74,7 +74,7 @@
  ✔ lightweight, functional resources @0.3.0 @done (13-06-12 08:25)
  ☐ conditional asynchronous (per method) @0.3.0
  ✔ configuration (`use`) @done (13-04-24 05:46)
- ☐ test suite improvements @0.3.0
+ ✔ test suite improvements @0.3.0 @done (13-06-26 15:03)
  ☐ composable API @0.3.0
 
  ☐ slug @0.4.0
@@ -90,7 +90,7 @@
      ☐ grouping @0.4.0
      ✔ and @0.4.0 @done (13-06-12 17:39)
      ✔ or @0.4.0 @done (13-06-12 17:39)
-     ☐ operations @0.4.0
+     ✔ operations @0.4.0 @done (13-06-26 15:03)
      ✔ not @0.4.0 @done (13-06-12 17:39)
      ☐ relation @0.4.0
 
@@ -133,7 +133,7 @@
  ☐ POST @0.4.0
  ☐ DELETE @0.4.0
  ☐ HEAD @0.3.0
- ☐ OPTIONS @0.3.0
+ ✔ OPTIONS @0.3.0 @done (13-06-26 15:03)
 
  ☐ read @0.4.0
  ☐ filter @0.4.0
@@ -141,9 +141,9 @@
  ☐ update @0.4.0
  ☐ destroy @0.4.0
 
- ☐ authentication
-     ☐ base @0.3.0
-     ☐ BASIC @0.3.0
+ ✔ authentication @done (13-06-26 15:02)
+     ✔ base @0.3.0 @done (13-06-26 15:02)
+     ✔ BASIC @0.3.0 @done (13-06-26 15:02)
      ☐ DIGEST
      ☐ OAuth 1
      ☐ OAuth 2
