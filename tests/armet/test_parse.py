@@ -158,5 +158,4 @@ class ParseTestCase(unittest.TestCase):
         self.assertArguments(
             arguments,
             slug='23',
-            path='from/this.hub/32/from.hub/32'
-        )
+            path='from/this.hub/32/from.hub/32')
