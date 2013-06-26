@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import collections
 import six
 import uuid
+import datetime
 from armet import exceptions
 
 
@@ -234,7 +235,6 @@ try:
     # Attempt to import and make use of date/time libraries.
     # TODO: Make note of this optional dep somewhere.
     from dateutil.parser import parse as parse_datetime
-    from datetime import datetime
     from time import mktime
 
 except ImportError:
@@ -282,7 +282,7 @@ class _TemporalAttribute(object):
             p = ptd.Calendar(c)
             result = p.parse(value)
             if result[1] != 0:
-                return datetime.fromtimestamp(mktime(result[0]))
+                return datetime.datetime.fromtimestamp(mktime(result[0]))
 
         except (NameError, ImportError, TypeError):
             # No magical date/time support.

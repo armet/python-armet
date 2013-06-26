@@ -2,8 +2,8 @@
 from __future__ import absolute_import, unicode_literals, division
 from .decorators import classproperty, boundmethod, memoize
 from .functional import cons
-from .string import import_module
-from .package import dasherize
+from .string import dasherize
+from .package import import_module
 
 __all__ = [
     'classproperty',

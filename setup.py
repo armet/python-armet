@@ -10,6 +10,12 @@ test_dependencies = (
     # Test runner.
     'pytest',
 
+    # Ensure PEP8 conformance.
+    'pytest-pep8',
+
+    # Ensure test coverage.
+    'pytest-cov',
+
     # Installs a WSGI application that intercepts requests made to a hostname
     # and port combination for testing.
     'wsgi_intercept == 0.6.0',
