@@ -20,4 +20,4 @@ branches:
     - legacy/flapjack
 
 # Run tests
-script: 'py.test'
+script: 'py.test --pep8 --cov armet'

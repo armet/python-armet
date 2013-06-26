@@ -364,12 +364,20 @@ class Resource(object):
 
         # Facilitate CORS by applying various headers.
         # This must be done on every request.
-        self._preflight()
+        # TODO: Provide cross_domain configuration that turns this off.
+        self._facilitate_cross_domain_request()
+
+        # Retrieve the function corresponding to this HTTP method.
+        function = getattr(self, self.request.method.lower(), None)
+        if function is None:
+            # Server is not capable of supporting it.
+            # RFC 2616 § 10.5.2 — 501 Not Implemented
+            raise http.exceptions.NotImplemented()
 
         # Delegate to the determined function to process the request.
-        return self.route()()
+        return function()
 
-    def _preflight(self):
+    def _facilitate_cross_domain_request(self):
         """Facilitate Cross-Origin Requests (CORs).
         """
 
@@ -423,18 +431,6 @@ class Resource(object):
         allowed_headers = ', '.join(self.meta.http_allowed_headers)
         if allowed_headers:
             self.response['Access-Control-Allow-Headers'] = allowed_headers
-
-    def route(self):
-        """Route the HTTP method to the handling function."""
-        # Retrieve the function corresponding to this HTTP method.
-        function = getattr(self, self.request.method.lower(), None)
-        if function is None:
-            # Server is not capable of supporting it.
-            # RFC 2616 § 10.5.2 — 501 Not Implemented
-            raise http.exceptions.NotImplemented()
-
-        # Delegate to the determined function to process the request.
-        return function
 
     def options(self):
         """Process an `OPTIONS` request.
