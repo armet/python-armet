@@ -9,7 +9,7 @@ class DeserializerTestCase(unittest.TestCase):
     Deserializer = None
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.deserializer = cls.Deserializer()
 
     def deserialize(self, text):
@@ -28,26 +28,32 @@ class JSONDeserializerTestCase(DeserializerTestCase):
 
     def test_number(self):
         self.deserialize(b'[42]')
-        self.assertEqual(self.data, [42])
+
+        assert self.data == [42]
 
     def test_boolean(self):
         self.deserialize(b'[true]')
-        self.assertEqual(self.data, [True])
+
+        assert self.data == [True]
 
         self.deserialize(b'[false]')
-        self.assertEqual(self.data, [False])
+
+        assert self.data == [False]
 
     def test_array(self):
         self.deserialize(b'[1, 2, 3]')
-        self.assertEqual(self.data, [1, 2, 3])
+
+        assert self.data == [1, 2, 3]
 
     def test_dict(self):
         self.deserialize(b'{"x": 2, "y": "bob"}')
-        self.assertEqual(self.data, {"x": 2, "y": "bob"})
+
+        assert self.data == {"x": 2, "y": "bob"}
 
     def test_dict_array(self):
         self.deserialize(b'{"x": [1, 2], "y": "bob"}')
-        self.assertEqual(self.data, {"x": [1, 2], "y": "bob"})
+
+        assert self.data == {"x": [1, 2], "y": "bob"}
 
 
 class URLDeserializerTestCase(DeserializerTestCase):
@@ -62,8 +68,10 @@ class URLDeserializerTestCase(DeserializerTestCase):
 
     def test_sequence(self):
         self.deserialize(b'x=2&y=51')
-        self.assertEqual(self.data, {'x': ['2'], 'y': ['51']})
+
+        assert self.data == {'x': ['2'], 'y': ['51']}
 
     def test_multi_sequence(self):
         self.deserialize(b'x=2&y=51&x=781&y=165')
-        self.assertEqual(self.data, {"x": ['2', '781'], "y": ['51', '165']})
+
+        assert self.data == {"x": ['2', '781'], "y": ['51', '165']}

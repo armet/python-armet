@@ -8,12 +8,10 @@ import platform
 # Required test dependencies.
 test_dependencies = (
     # Test runner.
-    'nose',
+    'pytest',
 
-    # Test runner with color.
-    'yanc',
-
-    # Installs a WSGI application in place of a real URI for testing.
+    # Installs a WSGI application that intercepts requests made to a hostname
+    # and port combination for testing.
     'wsgi_intercept == 0.6.0',
 
     # HTTP request abstraction layer over httplib.
@@ -21,6 +19,9 @@ test_dependencies = (
 
     # The Web framework for perfectionists with deadlines.
     'django',
+
+    # A microframework based on Werkzeug, Jinja2 and good intentions.
+    'flask',
 
     # Bottle is a fast and simple micro-framework for small web applications.
     'bottle',
@@ -34,9 +35,6 @@ test_dependencies = (
 if sys.version_info[0] == 2:
     # Test dependencies for python 2.x only.
     test_dependencies += (
-        # A microframework based on Werkzeug, Jinja2 and good intentions.
-        'flask',
-
         # Twisted is an event-driven networking engine written in Python.
         'twisted',
 

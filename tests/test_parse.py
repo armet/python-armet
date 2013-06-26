@@ -12,81 +12,81 @@ class ParseTestCase(unittest.TestCase):
         arguments = resources.ManagedResource.parse(url)
 
         # Assert that we got enough of them.
-        self.assertIn('slug', arguments)
-        self.assertIn('query', arguments)
-        self.assertIn('extensions', arguments)
-        self.assertIn('directives', arguments)
-        self.assertIn('path', arguments)
+        assert 'slug' in arguments
+        assert 'query' in arguments
+        assert 'extensions' in arguments
+        assert 'directives' in arguments
+        assert 'path' in arguments
 
         # Return the arguments
         return arguments
 
-    def assertArguments(self, arguments, **kwargs):
+    def assert_arguments(self, arguments, **kwargs):
         for argument in kwargs:
             value = arguments.pop(argument)
-            self.assertEqual(value, kwargs[argument])
+            assert value == kwargs[argument]
 
         for name, value in six.iteritems(arguments):
             test = [] if name.endswith('s') else None
-            self.assertEqual(value, test)
+            assert value == test
 
     def test_simple(self):
         arguments = self.request('/')
 
-        self.assertArguments(arguments)
+        self.assert_arguments(arguments)
 
     def test_slug(self):
         arguments = self.request('/123/')
 
-        self.assertArguments(arguments, slug='123')
+        self.assert_arguments(arguments, slug='123')
 
     def test_slug_long(self):
         arguments = self.request('/sdf-sdg-sgh-sh234-bf/')
 
-        self.assertArguments(arguments, slug='sdf-sdg-sgh-sh234-bf')
+        self.assert_arguments(arguments, slug='sdf-sdg-sgh-sh234-bf')
 
     def test_query(self):
         arguments = self.request('(stuff=32)/')
 
-        self.assertArguments(arguments, query='stuff=32')
+        self.assert_arguments(arguments, query='stuff=32')
 
     def test_query_long(self):
         query = 'x=32&y=61;z=135,15&x=16;!(h=134&b=324)'
         arguments = self.request('({})/'.format(query))
 
-        self.assertArguments(arguments, query=query)
+        self.assert_arguments(arguments, query=query)
 
     def test_query_directives(self):
         query = 'x:asc=32&y:desc=61;z:-=135,15&x:descending=16;!(h=134&b=324)'
         arguments = self.request('({})/'.format(query))
 
-        self.assertArguments(arguments, query=query)
+        self.assert_arguments(arguments, query=query)
 
     def test_directive(self):
         arguments = self.request(':random/')
 
-        self.assertArguments(arguments, directives=['random'])
+        self.assert_arguments(arguments, directives=['random'])
 
     def test_directives(self):
         directives = ['random', 'rand', 'other', 'weird', 'wan']
         url = ':{}/'.format(':'.join(directives))
         arguments = self.request(url)
 
-        self.assertArguments(arguments, directives=directives)
+        self.assert_arguments(arguments, directives=directives)
 
     def test_directives_query(self):
         directives = ['random', 'rand', 'other', 'weird', 'wan']
         url = ':{}(x=4&y=234&z=34)/'.format(':'.join(directives))
         arguments = self.request(url)
 
-        self.assertArguments(
+        self.assert_arguments(
             arguments, directives=directives, query='x=4&y=234&z=34')
 
     def test_path(self):
         path = 'this/is/a/path/to/somewhere'
         arguments = self.request('/124/{}/'.format(path))
 
-        self.assertArguments(arguments, slug='124', path=path)
+        self.assert_arguments(arguments, slug='124', path=path)
 
     def test_query_path(self):
         query = 'x=34&t:desc=324&(x=234&x:asc=2134)'
@@ -94,38 +94,38 @@ class ParseTestCase(unittest.TestCase):
         arguments = self.request('({})/555/{}/'.format(
             query, path))
 
-        self.assertArguments(arguments, slug='555', query=query, path=path)
+        self.assert_arguments(arguments, slug='555', query=query, path=path)
 
     def test_path_query(self):
         path = 'this/is/a(x=324)/path(y=3124&x=23)/to/somewhere'
         arguments = self.request('/124/{}/'.format(path))
 
-        self.assertArguments(arguments, slug='124', path=path)
+        self.assert_arguments(arguments, slug='124', path=path)
 
     def test_extension(self):
         ext = 'json'
         arguments = self.request('.{}/'.format(ext))
 
-        self.assertArguments(arguments, extensions=[ext])
+        self.assert_arguments(arguments, extensions=[ext])
 
     def test_extensions(self):
         exts = ['schema', 'json']
         arguments = self.request('.{}/'.format('.'.join(exts)))
 
-        self.assertArguments(arguments, extensions=exts)
+        self.assert_arguments(arguments, extensions=exts)
 
     def test_extensions_slug(self):
         exts = ['schema', 'json']
         arguments = self.request('/234.{}/'.format('.'.join(exts)))
 
-        self.assertArguments(arguments, slug='234', extensions=exts)
+        self.assert_arguments(arguments, slug='234', extensions=exts)
 
     def test_extensions_path(self):
         exts = ['schema', 'json']
         url = '/234/from/this/to/that.{}/'.format('.'.join(exts))
         arguments = self.request(url)
 
-        self.assertArguments(
+        self.assert_arguments(
             arguments, slug='234', extensions=exts,
             path='from/this/to/that')
 
@@ -143,7 +143,7 @@ class ParseTestCase(unittest.TestCase):
             '.'.join(extensions))
         arguments = self.request(url)
 
-        self.assertArguments(
+        self.assert_arguments(
             arguments,
             slug=slug,
             extensions=extensions,
@@ -155,7 +155,7 @@ class ParseTestCase(unittest.TestCase):
         url = '/23/from/this.hub/32/from.hub/32/'
         arguments = self.request(url)
 
-        self.assertArguments(
+        self.assert_arguments(
             arguments,
             slug='23',
             path='from/this.hub/32/from.hub/32')
