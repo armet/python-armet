@@ -2,8 +2,6 @@
 from __future__ import absolute_import, unicode_literals, division
 from .exceptions import ImproperlyConfigured
 import six
-import types
-import collections
 
 
 class route:
@@ -94,6 +92,7 @@ def resource(**kwargs):
 
             class LightweightResource(resources.Resource):
                 Meta = type(b'Meta', (), kwargs)
+
                 def route(self):
                     for handler, methods in _handlers[name]:
                         if methods is None or self.request.method in methods:

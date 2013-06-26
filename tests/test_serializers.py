@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import unittest
 import json
 from armet import serializers, test
-from armet.http import exceptions
 
 
 class SerializerTestCase(unittest.TestCase):

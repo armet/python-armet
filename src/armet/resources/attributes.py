@@ -236,7 +236,6 @@ try:
     from datetime import datetime
     from time import mktime
 
-
     class _TemporalAttribute(object):
         """Represents a temporal attribute, such as a date or time.
         """
@@ -276,7 +275,6 @@ try:
             # Couldn't figure out what we're dealing with.
             raise ValueError('Invalid date/time or in an invalid format.')
 
-
     class DateAttribute(Attribute, _TemporalAttribute):
 
         def clean(self, value):
@@ -286,7 +284,6 @@ try:
                 value = value.date()
             return value
 
-
     class TimeAttribute(Attribute, _TemporalAttribute):
 
         def clean(self, value):
@@ -295,7 +292,6 @@ try:
                 # Constrain to just the date part.
                 value = value.time()
             return value
-
 
     class DateTimeAttribute(Attribute, _TemporalAttribute):
         pass

@@ -5,7 +5,7 @@ import six
 import collections
 import mimeparse
 import traceback
-from armet import http, utils, authentication
+from armet import http, utils
 
 
 logger = logging.getLogger(__name__)

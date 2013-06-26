@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import collections
 import operator
 from armet.exceptions import ImproperlyConfigured
-from armet.http import exceptions
 from armet.query import parser, Query, QuerySegment, constants
 
 
@@ -66,7 +65,7 @@ class ModelResource(object):
                 op = lambda x, y: x.ilike(y)
 
         elif operation == constants.OPERATOR_ISNULL[0]:
-            op = lambda x, y: (x == None) if y else (x != None)
+            op = lambda x, y: (x is None) if y else (x is not None)
 
         elif operation == constants.OPERATOR_LT[0]:
             op = operator.lt
@@ -167,45 +166,3 @@ class ModelResource(object):
 
         # Evaluate and return all items.
         return obj.all()
-
-    # def read(self):
-    #     # Initialize the query to the model manager.
-    #     q = self.session.query(self.meta.model)
-
-    #     if self.request.query:
-    #         # The request has a query (eg. GET /poll?...).
-    #         # Send it off to the query string parser and then
-    #         # off to the filterer to construct the appropriate expression
-    #         # and filter our queryable.
-    #         query = parser.Query(self.request.query)
-
-    #     # if self.slug is not None:
-    #     #     name = self.meta.slug.path
-    #     #     if '.' in name:
-    #     #         # TODO: Implement relations.
-    #     #         raise NotImplemented
-
-    #     #     # Attempt to filter out and retrieve the specific
-    #     #     # item referenced by the slug.
-    #     #     obj = queryset.filter_by(**{name: self.slug}).first()
-
-    #     #     if obj:
-    #     #         # Found something; return it.
-    #     #         return obj
-
-    #     #     # We found nothing; return Not Found - 404.
-    #     #     raise exceptions.NotFound()
-
-    #     # # else:
-    #     # #     # The slug is not none; the resource is being accessed
-    #     # #     # as a resource (eg. GET /poll).
-
-    #     # #     if self.request.query:
-    #     # #         # The request has a query (eg. GET /poll?...).
-    #     # #         # Send it off to the query string parser and then
-    #     # #         # off to the filterer to construct the appropriate expression
-    #     # #         # and filter our queryable.
-    #     # #         queryset = self.filter(queryset, Query(self.requset.query))
-
-    #     # Return the entire queryset.
-        # return queryset.all()

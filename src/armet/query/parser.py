@@ -148,7 +148,7 @@ def _parse_operator(segment, iterator):
             continue
 
         if (stream.getvalue() + character not in OPERATOR_SYMBOL_MAP and
-            stream.getvalue() + character not in OPERATOR_BEGIN_CHARS):
+                stream.getvalue() + character not in OPERATOR_BEGIN_CHARS):
             # We're no longer an operator.
             break
 

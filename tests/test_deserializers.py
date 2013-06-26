@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import unittest
-from armet import deserializers, test
-from armet.http import exceptions
+from armet import deserializers
 
 
 class DeserializerTestCase(unittest.TestCase):
@@ -40,7 +39,7 @@ class JSONDeserializerTestCase(DeserializerTestCase):
 
     def test_array(self):
         self.deserialize(b'[1, 2, 3]')
-        self.assertEqual(self.data, [1 ,2 , 3])
+        self.assertEqual(self.data, [1, 2, 3])
 
     def test_dict(self):
         self.deserialize(b'{"x": 2, "y": "bob"}')
@@ -67,4 +66,4 @@ class URLDeserializerTestCase(DeserializerTestCase):
 
     def test_multi_sequence(self):
         self.deserialize(b'x=2&y=51&x=781&y=165')
-        self.assertEqual(self.data, {"x": ['2', '781'], "y": [ '51', '165' ]})
+        self.assertEqual(self.data, {"x": ['2', '781'], "y": ['51', '165']})
