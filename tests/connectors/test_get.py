@@ -50,26 +50,24 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
-    # The following two tests currently fail in cyclone.
+    def test_async(self, connectors):
+        if six.PY3 and platform.python_implementation() == 'PyPy':
+            raise unittest.SkipTest('gevent not available for this platform')
 
-    # def test_async(self, connectors):
-    #     if six.PY3 and platform.python_implementation() == 'PyPy':
-    #         raise unittest.SkipTest('gevent not available for this platform')
+        response, content = self.client.request('/api/async/')
+        data = content.decode('utf-8')
 
-    #     response, content = self.client.request('/api/async/')
-    #     data = content.decode('utf-8')
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'Hello'
 
-    #     assert response.status == 412
-    #     assert response.get('content-type') == 'text/plain'
-    #     assert data == 'Hello'
+    def test_async_stream(self, connectors):
+        if six.PY3 and platform.python_implementation() == 'PyPy':
+            raise unittest.SkipTest('gevent not available for this platform')
 
-    # def test_async_stream(self, connectors):
-    #     if six.PY3 and platform.python_implementation() == 'PyPy':
-    #         raise unittest.SkipTest('gevent not available for this platform')
+        response, content = self.client.request('/api/async-stream/')
+        content = content.decode('utf-8')
 
-    #     response, content = self.client.request('/api/async-stream/')
-    #     content = content.decode('utf-8')
-
-    #     assert response.status == 412
-    #     assert response.get('content-type') == 'text/plain'
-    #     assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'

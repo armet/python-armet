@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import bottle
 import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
-from importlib import import_module
+from .utils import force_import_module
 
 
 def http_setup(connectors, host, port, callback):
@@ -22,7 +22,7 @@ def http_setup(connectors, host, port, callback):
         callback()
 
     # Then import the resources; iterate and mount each one.
-    module = import_module('tests.connectors.resources')
+    module = force_import_module('tests.connectors.resources')
     for name in module.__all__:
         getattr(module, name).mount(r'/api/', application)
 

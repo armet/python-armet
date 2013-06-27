@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import collections
-import six
 import flask
 from werkzeug.routing import BaseConverter
 from . import http

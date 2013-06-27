@@ -26,29 +26,18 @@ class BaseResourceTest(object):
         # Install the WSGI interception layer.
         install()
 
-        # Remove the armet resources module so the resources
-        # may be re-initialized.
-        prefix = 'tests.connectors.'
-        if (prefix + 'resources') in sys.modules:
-            del sys.modules[prefix + 'resources']
-
         # Initialize armet configuration.
         armet.use(connectors=connectors, debug=True)
 
-        # # Collect all loaded modules.
-        # for name in set(sys.modules.keys()):
-        #     for connector in connectors.values():
-        #         if connector in name:
-        #             del sys.modules[name]
-
         callback = None
+        prefix = 'tests.connectors.'
         if 'model' in connectors:
             # Initialize the database access layer.
             model = import_module(prefix + connectors['model'])
             callback = model.model_setup
 
             # Add the models module so that it can be generically imported.
-            sys.modules['tests.connectors.models'] = model
+            sys.modules[prefix + 'models'] = model
 
         # Initialize the http access layer.
         http = import_module(prefix + connectors['http'])
@@ -56,14 +45,3 @@ class BaseResourceTest(object):
 
         # Add a finalizer to teardown the http layer.
         request.addfinalizer(lambda: http.http_teardown(self.host, self.port))
-
-        # Get all module names that were loaded by the connectors.
-        # These need to be unloaded on teardown.
-        # module_names = set(sys.modules.keys()) - module_names
-
-        # # Construct a module finalizer to unload all of those modules.
-        # def module_finalizer():
-        #     for name in module_names:
-        #         del sys.modules[name]
-
-        # request.addfinalizer(module_finalizer)

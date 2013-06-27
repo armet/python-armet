@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from cyclone import web
 from twisted.internet import reactor
 from threading import Thread
-from importlib import import_module
+from .utils import force_import_module
 
 
 _reactor_thread = None
@@ -44,7 +44,7 @@ def http_setup(connectors, host, port, callback):
         reactor.callFromThread(callback)
 
     # Then import the resources; iterate and mount each one.
-    module = import_module('tests.connectors.resources')
+    module = force_import_module('tests.connectors.resources')
     for name in module.__all__:
         getattr(module, name).mount(r'^/api', application)
 
