@@ -5,6 +5,9 @@ from armet import http
 import pytest
 from .base import BaseResourceTest
 
+# Shortcut to the skipif marker.
+skipif = pytest.mark.skipif
+
 
 class TestResourceGet(BaseResourceTest):
 
@@ -48,8 +51,8 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
-    @pytest.mark.skipif("sys.version_info >= (3, 0)")
-    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
+    @skipif("sys.version_info >= (3, 0)")
+    @skipif("__import__('platform').python_implementation == 'PyPy'")
     def test_async(self, connectors):
         response, content = self.client.request('/api/async/')
         data = content.decode('utf-8')
@@ -58,8 +61,8 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'Hello'
 
-    @pytest.mark.skipif("sys.version_info >= (3, 0)")
-    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
+    @skipif("sys.version_info >= (3, 0)")
+    @skipif("__import__('platform').python_implementation == 'PyPy'")
     def test_async_stream(self, connectors):
         response, content = self.client.request('/api/async-stream/')
         content = content.decode('utf-8')
@@ -84,8 +87,8 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
-    @pytest.mark.skipif("sys.version_info >= (3, 0)")
-    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
+    @skipif("sys.version_info >= (3, 0)")
+    @skipif("__import__('platform').python_implementation == 'PyPy'")
     def test_lightweight_async(self, connectors):
         response, content = self.client.request('/api/lightweight-async/')
         data = content.decode('utf-8')
