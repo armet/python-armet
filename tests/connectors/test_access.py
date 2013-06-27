@@ -43,7 +43,7 @@ class TestResourceAccess(BaseResourceTest):
     def test_unknown(self, connectors):
         response, _ = self.client.request('/api/simple/', method='APPLE')
 
-        assert response.status == http.client.NOT_IMPLEMENTED
+        assert response.status == http.client.METHOD_NOT_ALLOWED
 
     def test_not_allowed(self, connectors):
         response, _ = self.client.request('/api/simple/', method='CONNECT')

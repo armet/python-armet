@@ -352,13 +352,6 @@ class Resource(object):
 
         # TODO: Assert accessibiltiy of the resource in question.
 
-        # Ensure that we understand the HTTP method.
-        if self.request.method not in self.meta.http_method_names:
-            # This is the appropriate response when the server does
-            # not recognize the request method.
-            # RFC 2616 § 10.5.2 — 501 Not Implemented
-            raise http.exceptions.NotImplemented()
-
         # Ensure that we're allowed to use this HTTP method.
         self.assert_http_allowed_methods()
 
@@ -371,7 +364,6 @@ class Resource(object):
         function = getattr(self, self.request.method.lower(), None)
         if function is None:
             # Server is not capable of supporting it.
-            # RFC 2616 § 10.5.2 — 501 Not Implemented
             raise http.exceptions.NotImplemented()
 
         # Delegate to the determined function to process the request.

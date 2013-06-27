@@ -128,19 +128,6 @@ class ResourceOptions(object):
         #! canonical URI.
         self.trailing_slash = meta.get('trailing_slash', True)
 
-        #! List of understood HTTP methods.
-        self.http_method_names = meta.get('http_method_names', (
-            'HEAD',
-            'OPTIONS',
-            'GET',
-            'POST',
-            'PUT',
-            'PATCH',
-            'DELETE',
-            'TRACE',
-            'CONNECT'
-        ))
-
         #! List of allowed HTTP methods.
         #! If not provided and allowed_operations was provided instead
         #! the operations are appropriately mapped; else, the default
