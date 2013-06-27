@@ -7,24 +7,11 @@ from twisted.internet import reactor
 from . import http
 
 
-class Everything(object):
-    """
-    A container-like object that pretends to contain everything to fool
-    cyclone into accepting weird HTTP/1.1 methods.
-    """
-
-    def __contains__(self, name):
-        return True
-
-
 class Handler(web.RequestHandler):
     """A cyclone request handler that forwards the request to armet.
 
     This involves overloading an internal method; `_execute_handler`.
     """
-
-    # Construct an everything to fool cyclone.
-    SUPPORTED_METHODS = Everything()
 
     def __init__(self, Resource, *args, **kwargs):
         # This must be set before we super, becuase that begins routing
