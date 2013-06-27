@@ -21,28 +21,31 @@ class BaseResourceTest(object):
         # Initialize the test client.
         cls.client = test.Client(cls.host, cls.port)
 
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=True, scope='session')
     def initialize(self, request, connectors):
         # Install the WSGI interception layer.
         install()
 
         # Remove the armet resources module so the resources
         # may be re-initialized.
-        if 'tests.connectors.resources' in sys.modules:
-            del sys.modules['tests.connectors.resources']
+        prefix = 'tests.connectors.'
+        if (prefix + 'resources') in sys.modules:
+            del sys.modules[prefix + 'resources']
 
         # Initialize armet configuration.
         armet.use(connectors=connectors, debug=True)
 
-        # Initialize the http access layer.
-        prefix = 'tests.connectors.'
-        http = import_module(prefix + connectors['http'])
-        http.setup(connectors, self.host, self.port)
-
-        # Add a finalizer to teardown the http layer.
-        request.addfinalizer(lambda: http.teardown(self.host, self.port))
-
         if 'model' in connectors:
             # Initialize the database access layer.
             model = import_module(prefix + connectors['model'])
-            model.setup()
+            model.model_setup()
+
+            # Add the models module so that it can be generically imported.
+            sys.modules['tests.connectors.models'] = model
+
+        # Initialize the http access layer.
+        http = import_module(prefix + connectors['http'])
+        http.http_setup(connectors, self.host, self.port)
+
+        # Add a finalizer to teardown the http layer.
+        request.addfinalizer(lambda: http.http_teardown(self.host, self.port))

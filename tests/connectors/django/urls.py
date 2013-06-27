@@ -9,6 +9,7 @@ from armet import resources
 urlpatterns = patterns('')
 
 # Import the resources; iterate and mount each one.
-for cls in import_module('tests.connectors.resources').__dict__.values():
-    if isinstance(cls, type) and issubclass(cls, resources.Resource):
-        urlpatterns += patterns('', url(r'^api/', include(cls.urls)))
+module = import_module('tests.connectors.resources')
+for name in module.__all__:
+    cls = getattr(module, name)
+    urlpatterns += patterns('', url(r'^api/', include(cls.urls)))

@@ -44,20 +44,20 @@ def start_reactor(*args, **kwargs):
     _reactor_thread.start()
 
 
-def setup(connectors, host, port):
+def http_setup(connectors, host, port):
     # Flask is pretty straightforward.
     # We just need to push an application context.
     application = web.Application()
 
     # Then import the resources; iterate and mount each one.
-    for cls in import_module('tests.connectors.resources').__dict__.values():
-        if isinstance(cls, type) and issubclass(cls, resources.Resource):
-            cls.mount(r'^/api', application)
+    module = import_module('tests.connectors.resources')
+    for name in module.__all__:
+        getattr(module, name).mount(r'^/api', application)
 
     # Spawn the reactor.
     start_reactor(port, application, interface=host)
 
 
-def teardown(host, port):
+def http_teardown(host, port):
     # Bring down the reactor.
     stop_reactor()

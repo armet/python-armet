@@ -7,7 +7,7 @@ from importlib import import_module
 from armet import resources
 
 
-def setup(connectors, host, port):
+def http_setup(connectors, host, port):
     # Install the WSGI interception layer.
     install()
 
@@ -17,14 +17,14 @@ def setup(connectors, host, port):
     application.debug = True
 
     # Then import the resources; iterate and mount each one.
-    for cls in import_module('tests.connectors.resources').__dict__.values():
-        if isinstance(cls, type) and issubclass(cls, resources.Resource):
-            cls.mount(r'/api/', application)
+    module = import_module('tests.connectors.resources')
+    for name in module.__all__:
+        getattr(module, name).mount(r'/api/', application)
 
     # Enable the WSGI interception layer.
     wsgi_intercept.add_wsgi_intercept(host, port, lambda: application)
 
 
-def teardown(host, port):
+def http_teardown(host, port):
     # Remove the WSGI interception layer.
     wsgi_intercept.remove_wsgi_intercept(host, port)

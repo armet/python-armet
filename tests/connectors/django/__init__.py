@@ -4,8 +4,17 @@ import os
 import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
 
+# Setup the environment variables.
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
 
-def setup(connectors, host, port):
+from .models import Poll
+
+__all__ = [
+    'Poll'
+]
+
+
+def http_setup(connectors, host, port):
     # Setup the environment variables.
     os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
 
@@ -19,6 +28,21 @@ def setup(connectors, host, port):
     wsgi_intercept.add_wsgi_intercept(host, port, get_wsgi_application)
 
 
-def teardown(host, port):
+def http_teardown(host, port):
     # Remove the WSGI interception layer.
     wsgi_intercept.remove_wsgi_intercept(host, port)
+
+
+def model_setup():
+    # Setup the environment variables.
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
+
+    # Initialize the database and create all models.
+    from django.db import connections, DEFAULT_DB_ALIAS
+    connection = connections[DEFAULT_DB_ALIAS]
+    connection.creation.create_test_db()
+
+    # Load the data fixture.
+    from django.core import management
+    data = os.path.join(os.path.dirname(__file__), '..', 'data.json')
+    management.call_command('loaddata', data, verbosity=0, interactive=0)
