@@ -9,20 +9,6 @@ from armet import resources
 
 _reactor_thread = None
 
-
-def stop_reactor():
-    """Stop the Twisted reactor in the separate thread."""
-    global _reactor_thread
-
-    def stop():
-        reactor.stop
-
-    if _reactor_thread:
-        reactor.callFromThread(stop)
-        _reactor_thread.join(1)
-        _reactor_thread = None
-
-
 def start_reactor(*args, **kwargs):
     """
     Start the Twisted reactor in a separate thread so that it can
@@ -30,34 +16,43 @@ def start_reactor(*args, **kwargs):
     """
     global _reactor_thread
 
-    def run_this(*args, **kwargs):
-        reactor.listenTCP(*args, **kwargs)
+    def start(*args, **kwargs):
         reactor.run(installSignalHandlers=False)
 
-    # Stop the reactor if it is already started.
-    if _reactor_thread:
-        stop_reactor()
-
-    # Start the reactor in a separate thread.
-    _reactor_thread = Thread(target=run_this, args=args, kwargs=kwargs)
-    _reactor_thread.daemon = True
-    _reactor_thread.start()
+    if not _reactor_thread:
+        # Start the reactor in a separate thread.
+        _reactor_thread = Thread(target=start, args=args, kwargs=kwargs)
+        _reactor_thread.daemon = True
+        _reactor_thread.start()
 
 
-def http_setup(connectors, host, port):
+# Start the reactor; it will auto-stop at the end of the test suite.
+start_reactor()
+
+
+_socket = None
+
+
+def http_setup(connectors, host, port, callback):
     # Flask is pretty straightforward.
     # We just need to push an application context.
     application = web.Application()
+
+    # Invoke the callback if we got one.
+    if callback:
+        callback()
+        reactor.callFromThread(callback)
 
     # Then import the resources; iterate and mount each one.
     module = import_module('tests.connectors.resources')
     for name in module.__all__:
         getattr(module, name).mount(r'^/api', application)
 
-    # Spawn the reactor.
-    start_reactor(port, application, interface=host)
+    # Start the TCP listener.
+    global _socket
+    _socket = reactor.listenTCP(port, application, interface=host)
 
 
 def http_teardown(host, port):
-    # Bring down the reactor.
-    stop_reactor()
+    # Stop listening on that port.
+    reactor.callFromThread(_socket.loseConnection)

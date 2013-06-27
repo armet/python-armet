@@ -14,9 +14,13 @@ __all__ = [
 ]
 
 
-def http_setup(connectors, host, port):
+def http_setup(connectors, host, port, callback):
     # Setup the environment variables.
     os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
+
+    # Invoke the callback if we got one.
+    if callback:
+        callback()
 
     # Install the WSGI interception layer.
     install()

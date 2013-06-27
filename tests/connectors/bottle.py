@@ -7,13 +7,17 @@ from importlib import import_module
 from armet import resources
 
 
-def http_setup(connectors, host, port):
+def http_setup(connectors, host, port, callback):
     # Install the WSGI interception layer.
     install()
 
     # Bottle is pretty straightforward.
     # We just need to push an application context.
     application = bottle.Bottle(__name__)
+
+    # Invoke the callback if we got one.
+    if callback:
+        callback()
 
     # Then import the resources; iterate and mount each one.
     module = import_module('tests.connectors.resources')

@@ -7,7 +7,7 @@ from importlib import import_module
 from armet import resources
 
 
-def http_setup(connectors, host, port):
+def http_setup(connectors, host, port, callback):
     # Install the WSGI interception layer.
     install()
 
@@ -15,6 +15,10 @@ def http_setup(connectors, host, port):
     # We just need to push an application context.
     application = flask.Flask(__name__)
     application.debug = True
+
+    # Invoke the callback if we got one.
+    if callback:
+        callback()
 
     # Then import the resources; iterate and mount each one.
     module = import_module('tests.connectors.resources')

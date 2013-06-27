@@ -7,11 +7,24 @@ from twisted.internet import reactor
 from . import http
 
 
+class Everything(object):
+    """
+    A container-like object that pretends to contain everything to fool
+    cyclone into accepting weird HTTP/1.1 methods.
+    """
+
+    def __contains__(self, name):
+        return True
+
+
 class Handler(web.RequestHandler):
     """A cyclone request handler that forwards the request to armet.
 
     This involves overloading an internal method; `_execute_handler`.
     """
+
+    # Construct an everything to fool cyclone.
+    SUPPORTED_METHODS = Everything()
 
     def __init__(self, Resource, *args, **kwargs):
         # This must be set before we super, becuase that begins routing
@@ -34,7 +47,7 @@ class Handler(web.RequestHandler):
         df43a89edd361d54f54e4d275ed5194512793789/cyclone/web.py#L1095-L1104
         """
         if not self._finished:
-            # Decode arguemnts; changed slightly to use six (to be
+            # Decode arguments; changed slightly to use six (to be
             # python 3.x compliant).
             decode = self.decode_argument
             args = (decode(x) for x in args)
@@ -71,16 +84,11 @@ class Resource(object):
                 reactor.doIteration(0)
 
     @classmethod
-    def mount(cls, url=r'^', application=None, host_pattern=r'.*'):
-        if application is None:
-            # No application specified; add this to the bottle style handlers.
-            url = cls.route(url)[0]
-            for method in cls.meta.http_method_names:
-                bottle.route(url, method)(cls.view)
-
-        else:
-            # Add the handler normally.
-            application.add_handlers(host_pattern, (cls.route(url),))
+    def mount(cls, url, application, host_pattern=r'.*'):
+        # Add the handler normally.
+        # NOTE: bottle-style routes are not supported at the moment.
+        # <https://github.com/fiorix/cyclone/issues/108>
+        application.add_handlers(host_pattern, (cls.route(url),))
 
     @classmethod
     def route(cls, url=r'^'):
