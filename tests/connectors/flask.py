@@ -14,6 +14,7 @@ def setup(connectors, host, port):
     # Flask is pretty straightforward.
     # We just need to push an application context.
     application = flask.Flask(__name__)
+    application.debug = True
 
     # Then import the resources; iterate and mount each one.
     for cls in import_module('tests.connectors.resources').__dict__.values():

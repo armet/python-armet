@@ -101,9 +101,10 @@ class Resource(object):
         app.url_map.converters['default'] = RegexConverter
 
         # Mount this resource.
-        methods = cls.meta.http_method_names
-        rule = '{}{}<path>'.format(url, cls.meta.name)
-        app.add_url_rule(rule, name, cls.view, methods=methods)
+        pattern = '{}{}<path>'.format(url, cls.meta.name)
+        rule = app.url_rule_class(pattern, endpoint=name)
+        app.url_map.add(rule)
+        app.view_functions[name] = cls.view
 
         # Restore the flask environment.
         app.url_map.strict_slashes = strict_slashes

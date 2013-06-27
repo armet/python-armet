@@ -86,4 +86,4 @@ class Resource(object):
         # Apply the routing rules and add the URL route.
         pattern = r'$|(?:[/:(.].*)'
         rule = '{}{}<path:re:{}>'.format(url, cls.meta.name, pattern)
-        application.route(rule, cls.meta.http_method_names, cls.view, name)
+        application.route(rule, 'ANY', cls.view, name)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
+import six
 from armet import http
 import flask
 import io
@@ -45,6 +46,9 @@ class Request(http.Request):
 
     @property
     def query(self):
+        if isinstance(self._handle.query_string, six.binary_type):
+            return self._handle.query_string.decode('utf8')
+
         return self._handle.query_string
 
     @property
