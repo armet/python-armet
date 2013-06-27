@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals, division
 from django.conf.urls import patterns, include, url
 from importlib import import_module
-from armet import resources
 
 
 # Initial URL configuration.

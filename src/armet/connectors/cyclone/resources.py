@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 from cyclone import web
-from cyclone import bottle
+# from cyclone import bottle
 from twisted.internet import reactor
 from . import http
 

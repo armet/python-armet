@@ -4,10 +4,10 @@ from cyclone import web
 from twisted.internet import reactor
 from threading import Thread
 from importlib import import_module
-from armet import resources
 
 
 _reactor_thread = None
+
 
 def start_reactor(*args, **kwargs):
     """

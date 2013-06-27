@@ -63,9 +63,7 @@ def model_setup():
     Base.metadata.create_all(engine)
 
     # Load the data fixture.
-    from django.core import management
-    data = os.path.join(os.path.dirname(__file__), 'data.json')
-    _load_fixture(data)
+    _load_fixture(os.path.join(os.path.dirname(__file__), 'data.json'))
 
     # Configure armet and provide the session factory.
     armet.use(Session=Session)

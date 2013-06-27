@@ -4,7 +4,6 @@ import flask
 import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
 from importlib import import_module
-from armet import resources
 
 
 def http_setup(connectors, host, port, callback):
