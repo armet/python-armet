@@ -8,6 +8,7 @@ __all__ = [
     'Resource'
 ]
 
+
 class Resource(six.with_metaclass(ResourceBase, BaseResource)):
     """Implements the RESTful resource protocol for abstract resources.
     """
