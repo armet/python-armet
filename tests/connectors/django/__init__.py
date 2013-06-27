@@ -40,7 +40,7 @@ def model_setup():
     # Initialize the database and create all models.
     from django.db import connections, DEFAULT_DB_ALIAS
     connection = connections[DEFAULT_DB_ALIAS]
-    connection.creation.create_test_db()
+    connection.creation.create_test_db(verbosity=0)
 
     # Load the data fixture.
     from django.core import management
