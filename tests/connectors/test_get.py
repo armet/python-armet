@@ -3,9 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import json
 from armet import http
 import pytest
-import unittest
-import six
-import platform
 from .base import BaseResourceTest
 
 

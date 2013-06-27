@@ -6,7 +6,6 @@ from wsgi_intercept.httplib2_intercept import install
 import pytest
 import armet
 from armet import test
-from . import utils
 
 
 class BaseResourceTest(object):
