@@ -44,14 +44,16 @@ class Resource(object):
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
 
-        if (isinstance(result, collections.Iterable) and
-                not isinstance(result, six.string_types)):
+        if isinstance(result, collections.Iterator):
             # Construct and return the generator response.
             response._handle.response = result
             return response._handle
 
-        # Configure the response and return it.
-        response._handle.data = result
+        # Configure the response if we received any data.
+        if result is not None:
+            response._handle.data = result
+
+        # Return the response.
         return response._handle
 
     @classmethod

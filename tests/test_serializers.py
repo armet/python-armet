@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import unittest
 import json
+import six
 from armet import serializers
 
 
@@ -17,7 +18,7 @@ class SerializerTestCase(unittest.TestCase):
 
     def serialize(self, data):
         self.content = self.serializer.serialize(data)
-        if self.content:
+        if self.content and isinstance(self.content, six.binary_type):
             self.content = self.content.decode('utf8')
 
 
