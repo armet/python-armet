@@ -7,6 +7,7 @@ from armet import media_types
 # Import urlencode
 if six.PY3:
     from urllib.parse import urlencode
+
 else:
     from urllib import urlencode
 

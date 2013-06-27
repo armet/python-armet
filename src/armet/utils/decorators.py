@@ -30,23 +30,3 @@ class boundmethod(object):
 
     def __call__(self, *args, **kwargs):
         return self.method(self.obj, *args, **kwargs)
-
-
-class memoize(dict):
-    """Memoization decorator for functions taking one or more arguments."""
-
-    def __init__(self, function):
-        self.function = function
-
-    def __call__(self, *args):
-        if not isinstance(args, collections.Hashable):
-            # Uncacheable; just return.
-            return self.function(*args)
-        return self[args]
-
-    def __missing__(self, key):
-        result = self[key] = self.function(*key)
-        return result
-
-    def __get__(self, obj, cls):
-        return functools.partial(self.__call__, obj)
