@@ -15,7 +15,7 @@ COMBINATORS = {
 
 #! Set of characters that begin an operator.
 OPERATOR_BEGIN_CHARS = set(x[0] for _, x in constants.OPERATORS if x)
-
+OPERATOR_BEGIN_CHARS.add(constants.NEGATION[1])
 
 #! Dictionary of operator symbols to operators.
 OPERATOR_SYMBOL_MAP = dict((v, k) for k, v in constants.OPERATORS if v)
@@ -40,14 +40,20 @@ class Query(object):
         o = StringIO()
         for index, segment in enumerate(self.segments):
             o.write('(')
+
+            if segment.negated:
+                o.write('not ')
+
             o.write('"{}"'.format('.'.join(segment.path)))
-            o.write(' :{} '.format(segment.operator))
+
+            if segment.values:
+                o.write(' :{}'.format(segment.operator))
 
             for jndex, value in enumerate(segment.values):
                 if jndex:
-                    o.write(' OR ')
+                    o.write(' OR')
 
-                o.write("'{}'".format(value))
+                o.write(" '{}'".format(value))
 
             o.write(')')
 
@@ -116,7 +122,7 @@ class QuerySegment(object):
         self.path = kwargs.get('path', [])
 
         #! This is the operator that is being applied to the attribute path.
-        self.operator = kwargs.get('operator', constants.OPERATOR_IEQUAL)
+        self.operator = kwargs.get('operator', constants.OPERATOR_IEQUAL[0])
 
         #! Negation; if this operation has been negated.
         self.negated = kwargs.get('negated', False)
@@ -138,7 +144,7 @@ def _parse_operator(segment, iterator):
     """Parses the operator (eg. '==' or '<')."""
     stream = StringIO()
     for character in iterator:
-        if character == constants.NEGATION[0]:
+        if character == constants.NEGATION[1]:
             if stream.tell():
                 # Negation can only occur at the start of an operator.
                 raise ValueError('Unexpected negation.')
@@ -155,8 +161,15 @@ def _parse_operator(segment, iterator):
         # Expand the operator
         stream.write(character)
 
-    # Set the found operator
-    segment.operator = OPERATOR_SYMBOL_MAP[stream.getvalue()]
+    # Check for existance.
+    text = stream.getvalue()
+    if text not in OPERATOR_SYMBOL_MAP:
+        # Doesn't exist because of a mis-placed negation in the middle
+        # of the path.
+        raise ValueError('Unexpected negation.')
+
+    # Set the found operator.
+    segment.operator = OPERATOR_SYMBOL_MAP[text]
 
     # Return the remaining characters.
     return chain(character, iterator)
@@ -173,6 +186,12 @@ def parse_segment(text, combinator=constants.LOGICAL_AND):
     # Iterate through the characters in the segment; one-by-one
     # in order to perform one-pass parsing.
     for character in iterator:
+
+        if (character == constants.NEGATION[1]
+                and not stream.tell() and not segment.path):
+            # We've been negated.
+            segment.negated = not segment.negated
+            continue
 
         if character in OPERATOR_BEGIN_CHARS:
             # Found an operator; pull out what we can.
@@ -207,7 +226,7 @@ def parse_segment(text, combinator=constants.LOGICAL_AND):
         # The last keyword can explicitly state the operation; in which
         # case the operator symbol **must** be `=`.
         if segment.path[-1] in OPERATOR_KEYWORDS:
-            if segment.operator is not constants.OPERATOR_IEQUAL[0]:
+            if segment.operator != constants.OPERATOR_IEQUAL[0]:
                 raise ValueError(
                     'Explicit operations must use the `=` symbol.')
 
