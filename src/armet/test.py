@@ -73,6 +73,14 @@ class Client:
             body=body,
             headers=headers)
 
+    def options(self, *args, **kwargs):
+        kwargs.setdefault('method', 'OPTIONS')
+        return self.request(*args, **kwargs)
+
+    def head(self, *args, **kwargs):
+        kwargs.setdefault('method', 'HEAD')
+        return self.request(*args, **kwargs)
+
     def get(self, *args, **kwargs):
         return self.request(*args, **kwargs)
 

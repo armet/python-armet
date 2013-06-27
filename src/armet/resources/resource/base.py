@@ -115,7 +115,7 @@ class Resource(object):
 
         except http.exceptions.BaseHTTPException as e:
             # Something that we can handle and return properly happened.
-            # Set response propertie    s from the exception.
+            # Set response properties from the exception.
             response.status = e.status
             response.headers.update(e.headers)
 
@@ -354,7 +354,7 @@ class Resource(object):
         # Step 3
         # Try to parse the Request-Method header if it exists.
         method = request.get('Access-Control-Request-Method')
-        if method and method not in cls.meta.http_method_names:
+        if method and method not in cls.meta.http_allowed_methods:
             return
 
         # Step 4

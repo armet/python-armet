@@ -16,6 +16,8 @@ __all__ = [
     'lightweight',
     'lightweight_streaming',
     'lightweight_async',
+    'LeftResource',
+    'RightResource'
 ]
 
 
@@ -147,3 +149,27 @@ class PollResource(resources.ModelResource):
     id = resources.IntegerAttribute('id')
 
     question = resources.TextAttribute('question')
+
+
+class LeftResource(resources.Resource):
+
+    class Meta:
+        http_allowed_methods = ('HEAD', 'GET', 'OPTIONS',)
+        http_allowed_origins = ('http://127.0.0.1:80',)
+        http_allowed_headers = ('Content-Type', 'Content-MD5', 'Accept',)
+
+    def get(self):
+        # Do nothing.
+        pass
+
+
+class RightResource(resources.Resource):
+
+    class Meta:
+        http_allowed_methods = ('HEAD', 'GET', 'DELETE', 'OPTIONS',)
+        http_allowed_origins = ('*',)
+        http_allowed_headers = ('Content-Type', 'Content-MD5', 'Accept')
+
+    def get(self):
+        # Do nothing.
+        pass
