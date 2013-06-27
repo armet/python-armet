@@ -11,4 +11,4 @@ if not six.PY3:
     http += ('cyclone',)
 
 #! List of available ORM connectors.
-model = ('django', 'django')
+model = ('django', 'sqlalchemy')

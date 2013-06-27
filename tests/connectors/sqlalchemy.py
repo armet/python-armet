@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import os
+import json
+import armet
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
@@ -24,7 +26,7 @@ class Poll(Base):
     question = sa.Column(sa.String(1024))
 
 
-def _load_fixture(filename, base, engine):
+def _load_fixture(filename):
     """
     Loads the passed fixture into the database following the
     django format.
@@ -43,23 +45,27 @@ def _load_fixture(filename, base, engine):
     # Iterate through the entries to add them one by one.
     for item in data:
         # Resolve model from the table reference.
-        target = Base.metadata.tables[item['model'].split('.')[-1]]
+        table = Base.metadata.tables[item['model'].split('.')[-1]]
 
         # Add the primary key.
-        target['fields']['id'] = item['pk']
+        item['fields']['id'] = item['pk']
 
         # Add a new row.
-        session.connection().execute(table.insert().values(**target['fields']))
+        session.connection().execute(table.insert().values(**item['fields']))
 
     # Commit the session to the database.
     session.commit()
 
 
-def setup_model():
+def model_setup():
     # Initialize the database and create all models.
-    Base.metadata.create_all(models.engine)
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
 
     # Load the data fixture.
     from django.core import management
-    data = os.path.join(os.path.dirname(__file__), '..', 'data.json')
+    data = os.path.join(os.path.dirname(__file__), 'data.json')
     _load_fixture(data)
+
+    # Configure armet and provide the session factory.
+    armet.use(Session=Session)

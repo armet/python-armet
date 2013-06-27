@@ -3,7 +3,9 @@ from __future__ import absolute_import, unicode_literals, division
 
 
 def use(**kwargs):
-    """Sets the active resource configuration to the passed keyword arguments.
+    """
+    Updates the active resource configuration to the passed
+    keyword arguments.
 
     Invoking this method without passing arguments will just return the
     active resource configuration.
@@ -11,10 +13,9 @@ def use(**kwargs):
     @returns
         The previous configuration.
     """
-    config = use._config
-    if kwargs:
-        use._config = kwargs
+    config = dict(use.config)
+    use.config.update(kwargs)
     return config
 
 # Set the initial resource configuration.
-use._config = {}
+use.config = {}
