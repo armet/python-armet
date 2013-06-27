@@ -11,3 +11,7 @@ def force_import_module(name):
 
     else:
         return import_module(name)
+
+def unload_module(name):
+    if name in sys.modules:
+        del sys.modules[name]

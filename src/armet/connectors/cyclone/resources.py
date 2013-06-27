@@ -75,10 +75,10 @@ class Resource(object):
         # Add the handler normally.
         # NOTE: bottle-style routes are not supported at the moment.
         # <https://github.com/fiorix/cyclone/issues/108>
-        application.add_handlers(host_pattern, (cls.route(url),))
+        application.add_handlers(host_pattern, (cls.rule(url),))
 
     @classmethod
-    def route(cls, url=r'^'):
+    def rule(cls, url=r'^'):
         return (r'{}/{}(?:$|([/:(.].*))'.format(url, cls.meta.name),
                 cls.handler)
 

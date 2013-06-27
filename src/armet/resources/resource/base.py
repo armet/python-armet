@@ -90,9 +90,13 @@ class Resource(object):
             request.bind(obj)
             response.bind(obj)
 
+            # Bind the request object to the resource.
+            # This is used to facilitate the serializer and deserializer.
+            obj._request = request
+
             # Initiate the dispatch cycle and handle its result on
             # synchronous requests.
-            result = obj.dispatch()
+            result = obj.dispatch(request, response)
 
             if not response.asynchronous:
                 # There is several things that dispatch is allowed to return.
@@ -179,11 +183,6 @@ class Resource(object):
         # Return the streaming function.
         return streamer()
 
-    def __init__(self, request, response):
-        """Initialize; store the given request and response objects."""
-        self.request = request
-        self.response = response
-
     @utils.boundmethod
     def deserialize(self, text, request=None, format=None):
         """Deserializes the text using a determined deserializer.
@@ -208,7 +207,7 @@ class Resource(object):
         if isinstance(self, Resource):
             if not request:
                 # Ensure we have a response object.
-                request = self.request
+                request = self._request
 
         Deserializer = None
         if format:
@@ -280,8 +279,8 @@ class Resource(object):
         """
         if isinstance(self, Resource):
             if not request:
-                # Ensure we have a request object.
-                request = self.request
+                # Ensure we have a response object.
+                request = self._request
 
         Serializer = None
         if format:
@@ -335,125 +334,143 @@ class Resource(object):
         # Raise a Not Acceptable exception.
         raise http.exceptions.NotAcceptable(available)
 
-    def assert_http_allowed_methods(self):
-        """Ensure that we're allowed to use this HTTP method."""
-        if self.request.method not in self.meta.http_allowed_methods:
-            # The specified method is not allowed for the resource
-            # identified by the request URI.
-            # RFC 2616 § 10.4.6 — 405 Method Not Allowed
-            raise http.exceptions.MethodNotAllowed(
-                self.meta.http_allowed_methods)
-
-    def dispatch(self):
-        """Entry-point of the dispatch cycle for this resource.
-
-        Performs common work such as authentication, decoding, etc. before
-        handing complete control of the result to a function with the
-        same name as the request method.
-        """
-        # Assert authentication and attempt to get a valid user object.
-        self.user = user = None
-        for auth in self.meta.authentication:
-            user = auth.authenticate(self)
-            if user is False:
-                # Authentication protocol failed to authenticate;
-                # pass the baton.
-                continue
-
-            if user is None and not auth.allow_anonymous:
-                # Authentication protocol determined the user is
-                # unauthenticated.
-                auth.unauthenticated()
-
-            # Authentication protocol determined the user is indeed
-            # authenticated (or not); Store the user for later reference.
-            self.user = user
-            break
-
-        if not user and not auth.allow_anonymous:
-            # No authenticated user found and protocol doesn't allow
-            # anonymous users.
-            auth.unauthenticated()
-
-        # TODO: Assert accessibiltiy of the resource in question.
-
-        # Ensure that we're allowed to use this HTTP method.
-        self.assert_http_allowed_methods()
-
-        # Facilitate CORS by applying various headers.
-        # This must be done on every request.
-        # TODO: Provide cross_domain configuration that turns this off.
-        self._facilitate_cross_domain_request()
-
-        # Retrieve the function corresponding to this HTTP method.
-        function = getattr(self, self.request.method.lower(), None)
-        if function is None:
-            # Server is not capable of supporting it.
-            raise http.exceptions.NotImplemented()
-
-        # Delegate to the determined function to process the request.
-        return function()
-
-    def _facilitate_cross_domain_request(self):
+    @classmethod
+    def _facilitate_cross_domain_request(cls, request, response):
         """Facilitate Cross-Origin Requests (CORs).
         """
 
         # Step 1
         # Check for Origin header.
-        origin = self.request.get('Origin')
+        origin = request.get('Origin')
         if not origin:
             return
 
         # Step 2
         # Check if the origin is in the list of allowed origins.
-        if not (origin in self.meta.http_allowed_origins or
-                '*' == self.meta.http_allowed_origins):
+        if not (origin in cls.meta.http_allowed_origins or
+                '*' == cls.meta.http_allowed_origins):
             return
 
         # Step 3
         # Try to parse the Request-Method header if it exists.
-        method = self.request.get('Access-Control-Request-Method')
-        if method and method not in self.meta.http_method_names:
+        method = request.get('Access-Control-Request-Method')
+        if method and method not in cls.meta.http_method_names:
             return
 
         # Step 4
         # Try to parse the Request-Header header if it exists.
-        headers = self.request.get('Access-Control-Request-Headers', ())
+        headers = request.get('Access-Control-Request-Headers', ())
         if headers:
             headers = [h.strip() for h in headers.split(',')]
 
         # Step 5
         # Check if the headers are allowed on this resource.
-        allowed_headers = [h.lower() for h in self.meta.http_allowed_headers]
+        allowed_headers = [h.lower() for h in cls.meta.http_allowed_headers]
         if any(h.lower() not in allowed_headers for h in headers):
             return
 
         # Step 6
         # Always add the origin.
-        self.response['Access-Control-Allow-Origin'] = origin
+        response['Access-Control-Allow-Origin'] = origin
 
         # TODO: Check if we can provide credentials.
-        self.response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Allow-Credentials'] = 'true'
 
         # Step 7
         # TODO: Optionally add Max-Age header.
 
         # Step 8
         # Add the allowed methods.
-        allowed_methods = ', '.join(self.meta.http_allowed_methods)
-        self.response['Access-Control-Allow-Methods'] = allowed_methods
+        allowed_methods = ', '.join(cls.meta.http_allowed_methods)
+        response['Access-Control-Allow-Methods'] = allowed_methods
 
         # Step 9
         # Add any allowed headers.
-        allowed_headers = ', '.join(self.meta.http_allowed_headers)
+        allowed_headers = ', '.join(cls.meta.http_allowed_headers)
         if allowed_headers:
-            self.response['Access-Control-Allow-Headers'] = allowed_headers
+            response['Access-Control-Allow-Headers'] = allowed_headers
 
-    def options(self):
+    def __init__(self, request, response):
+        self.request = request
+        self.response = response
+
+    def dispatch(self, request, response):
+        """Entry-point of the dispatch cycle for this resource.
+
+        Performs common work such as authentication, decoding, etc. before
+        handing complete control of the result to a function with the
+        same name as the request method.
+        """
+        # TODO: Assert authentication and attempt to get a valid user object.
+        # self.user = user = None
+        # for auth in self.meta.authentication:
+        #     user = auth.authenticate(self)
+        #     if user is False:
+        #         # Authentication protocol failed to authenticate;
+        #         # pass the baton.
+        #         continue
+
+        #     if user is None and not auth.allow_anonymous:
+        #         # Authentication protocol determined the user is
+        #         # unauthenticated.
+        #         auth.unauthenticated()
+
+        #     # Authentication protocol determined the user is indeed
+        #     # authenticated (or not); Store the user for later reference.
+        #     self.user = user
+        #     break
+
+        # if not user and not auth.allow_anonymous:
+        #     # No authenticated user found and protocol doesn't allow
+        #     # anonymous users.
+        #     auth.unauthenticated()
+
+        # TODO: Assert accessibiltiy of the resource in question.
+
+        # Facilitate CORS by applying various headers.
+        # This must be done on every request.
+        # TODO: Provide cross_domain configuration that turns this off.
+        self._facilitate_cross_domain_request(request, response)
+
+        # Route the HTTP/1.1 request to an appropriate method.
+        return self.route(request, response)
+
+    def require_http_allowed_method(cls, request):
+        """Ensure that we're allowed to use this HTTP method."""
+        allowed = cls.meta.http_allowed_methods
+        if request.method not in allowed:
+            # The specified method is not allowed for the resource
+            # identified by the request URI.
+            # RFC 2616 § 10.4.6 — 405 Method Not Allowed
+            raise http.exceptions.MethodNotAllowed(allowed)
+
+    def route(self, request, response):
+        """Processes every request.
+
+        Directs control flow to the appropriate HTTP/1.1 method.
+        """
+        # Ensure that we're allowed to use this HTTP method.
+        self.require_http_allowed_method(request)
+
+        # Retrieve the function corresponding to this HTTP method.
+        function = getattr(self, request.method.lower(), None)
+        if function is None:
+            # Server is not capable of supporting it.
+            raise http.exceptions.NotImplemented()
+
+        # Delegate to the determined function to process the request.
+        return function(request, response)
+
+    def options(self, request, response):
         """Process an `OPTIONS` request.
 
-        Used to initiate a cross-origin request.
+        Used to initiate a cross-origin request. All handling specific to
+        CORS requests is done on every request however this method also
+        returns a list of available methods.
         """
-        # All handling is done for every HTTP/1.1 method.
+        # Gather a list available HTTP/1.1 methods for this URI.
+        response['Allowed'] = ', '.join(self.meta.http_allowed_methods)
+
+        # All CORS handling is done for every HTTP/1.1 method.
         # No more handling is neccesary; set the response to 200 and return.
-        self.response.status = http.client.OK
+        response.status = http.client.OK

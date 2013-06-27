@@ -6,6 +6,7 @@ from wsgi_intercept.httplib2_intercept import install
 import pytest
 import armet
 from armet import test
+from . import utils
 
 
 class BaseResourceTest(object):
@@ -26,11 +27,18 @@ class BaseResourceTest(object):
         # Install the WSGI interception layer.
         install()
 
-        # Initialize armet configuration.
+        # Reset and clear all global cache in armet.
+        from armet import decorators
+
+        decorators._resources = {}
+        # decorators._handlers = {}
+        armet.use.config = {}
+
+        # Re-initialize the configuration.
         armet.use(connectors=connectors, debug=True)
 
-        callback = None
         prefix = 'tests.connectors.'
+        callback = None
         if 'model' in connectors:
             # Initialize the database access layer.
             model = import_module(prefix + connectors['model'])

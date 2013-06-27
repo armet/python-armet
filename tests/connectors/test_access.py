@@ -54,3 +54,11 @@ class TestResourceAccess(BaseResourceTest):
         response, _ = self.client.request('/api/simple/', method='PATCH')
 
         assert response.status == http.client.NOT_IMPLEMENTED
+
+    def test_lightweight(self, connectors):
+        response, content = self.client.get('/api/lightweight/')
+        data = content.decode('utf-8')
+
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'Hello'

@@ -93,10 +93,11 @@ def resource(**kwargs):
             class LightweightResource(resources.Resource):
                 Meta = type(b'Meta', (), kwargs)
 
-                def route(self):
+                def route(self, request, response):
                     for handler, methods in _handlers[name]:
-                        if methods is None or self.request.method in methods:
-                            return lambda: handler(self.request, self.response)
+                        if methods is None or request.method in methods:
+                            return handler(request, response)
+
                     resources.Resource.route(self)
 
             # Construct and add this resource.

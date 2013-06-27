@@ -194,18 +194,18 @@ class ManagedResource(base.Resource):
         # A slug exists; this is being accessed as an item.
         return self.meta.http_detail_allowed_methods
 
-    def assert_http_allowed_methods(self):
+    def assert_http_allowed_methods(self, request):
         # No super call as the following replaces it by checking
         # only against the more specific `list_*` or `detail_*` http
         # allowed methods.
 
         # Check against `list_*` or `detail_*` allowed methods.
-        if self.request.method not in self.http_allowed_methods:
+        if request.method not in self.http_allowed_methods:
             # Current method is found to not be allowed for
             # this type of access; raise.
             raise http.exceptions.MethodNotAllowed(self.http_allowed_methods)
 
-    def get(self):
+    def get(self, request, response):
         """Processes a `GET` request."""
         # Ensure we're allowed to read the resource.
         self.assert_operations('read')
