@@ -95,7 +95,7 @@ def resource(**kwargs):
             kwargs['name'] = name
 
             class LightweightResource(resources.Resource):
-                Meta = type(b'Meta', (), kwargs)
+                Meta = type(str('Meta'), (), kwargs)
 
                 def route(self, request, response):
                     for handler, methods in _handlers[name]:
