@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import abc
-import six
 
 
-class Serializer(six.with_metaclass(abc.ABCMeta)):
+class Serializer(object):
 
     #! Applicable media types for this serializer.
     media_types = ()

@@ -23,7 +23,7 @@ class ManagedResourceBase(ResourceBase):
         # TODO: We'll likely need a hook here for ORMs
         self.attributes = attributes = collections.OrderedDict()
         for base in bases:
-            if hasattr(base, 'attributes'):
+            if getattr(base, 'attributes', None):
                 attributes.update(base.attributes)
 
         for index, attribute in six.iteritems(attrs):

@@ -128,6 +128,10 @@ class Response(object):
     """Describes the RESTful response abstraction.
     """
 
+    #! Dictionary-like interface to access headers; this should be
+    #! set by the dervied class to an instance of a derived Headers class.
+    headers = None
+
     def __init__(self, asynchronous, *args, **kwargs):
         #! True if the response object is closed.
         self._closed = False

@@ -18,6 +18,57 @@ class ManagedResource(base.Resource):
         the `__init__.py`).
     """
 
+    #! An ordered dictionary of attributes that are gathered from both
+    #! the metaclass and attributes defined directly on the resource.
+    #!
+    #! Attributes may be declared in a few different
+    #! ways. The next few code blocks are identical in function.
+    #!
+    #! @code
+    #! from armet import resources
+    #!
+    #! class Resource(resources.Resource):
+    #!     name = resources.Attribute()
+    #!     created = resources.Attribute('created')
+    #! @endcode
+    #!
+    #! @code
+    #! from armet import resources
+    #!
+    #! class Resource(resources.Resource):
+    #!     class Meta:
+    #!         include = {
+    #!             'name': resources.Attribute()
+    #!             'created': resources.Attribute('created')
+    #!         }
+    #! @endcode
+    #!
+    #! @code
+    #! from armet import resources
+    #!
+    #! class Resource(resources.Resource):
+    #!     class Meta:
+    #!         include = {
+    #!             'name': None,
+    #!             'created': 'created'
+    #!         }
+    #! @endcode
+    #!
+    #! @code
+    #! from armet import resources
+    #!
+    #! class Resource(resources.Resource):
+    #!     class Meta:
+    #!         include = ('name',)
+    #!
+    #!     created = resources.Attribute('created')
+    #! @endcode
+    attributes = None
+
+    #! The slug that is used to identify the resource an item is being
+    #! requested. None if a list is being requested.
+    slug = None
+
     def __new__(cls, request, response):
         # Parse any arguments out of the path.
         arguments = cls.parse(request.path)

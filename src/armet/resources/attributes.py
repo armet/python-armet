@@ -279,7 +279,7 @@ class _TemporalAttribute(object):
             from parsedatetime import parsedatetime as pdt
             c = pdt.Constants()
             c.BirthdayEpoch = 80  # TODO: Figure out what this is.
-            p = ptd.Calendar(c)
+            p = pdt.Calendar(c)
             result = p.parse(value)
             if result[1] != 0:
                 return datetime.datetime.fromtimestamp(mktime(result[0]))

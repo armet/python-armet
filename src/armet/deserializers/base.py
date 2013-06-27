@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import abc
-import six
 
 
-class Deserializer(six.with_metaclass(abc.ABCMeta)):
+class Deserializer(object):
 
     #! Applicable media types for this deserializer.
     media_types = ()
@@ -22,7 +20,6 @@ class Deserializer(six.with_metaclass(abc.ABCMeta)):
             # The object was of an unsupported type.
             return False
 
-    @abc.abstractmethod
     def deserialize(self, text=None):
         """Parses the text into a format consumable by python.
 
@@ -30,3 +27,4 @@ class Deserializer(six.with_metaclass(abc.ABCMeta)):
             To indicate this deserializer cannot deserialize the
             passed text.
         """
+        return text

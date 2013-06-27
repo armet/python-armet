@@ -86,6 +86,10 @@ class Request(six.Iterator):
     """Describes the RESTful request abstraction.
     """
 
+    #! Dictionary-like interface to access headers; this should be
+    #! set by the dervied class to an instance of a derived Headers class.
+    headers = None
+
     def __init__(self, body, path, method, asynchronous, *args, **kwargs):
         #! The body of the request.
         self.body = body

@@ -64,48 +64,6 @@ class ManagedResourceOptions(options.ResourceOptions):
         #! with names that conflict with names used in the resource as
         #! methods. This could be used exclusively; it's a matter of
         #! preference.
-        #!
-        #! Attributes may also be declared shorthand in a few different
-        #! ways. The next few code blocks are identical in function.
-        #!
-        #! @code
-        #! from armet import resources
-        #! from armet.resources import attributes
-        #! class Resource(resources.Resource):
-        #!     name = attributes.Attribute()
-        #!     created = attributes.Attribute('created')
-        #! @endcode
-        #!
-        #! @code
-        #! from armet import resources
-        #! from armet.resources import attributes
-        #! class Resource(resources.Resource):
-        #!     class Meta:
-        #!         include = {
-        #!             'name': attributes.Attribute()
-        #!             'created': attributes.Attribute('created')
-        #!         }
-        #! @endcode
-        #!
-        #! @code
-        #! from armet import resources
-        #! from armet.resources import attributes
-        #! class Resource(resources.Resource):
-        #!     class Meta:
-        #!         include = {
-        #!             'name': None,
-        #!             'created': 'created'
-        #!         }
-        #! @endcode
-        #!
-        #! @code
-        #! from armet import resources
-        #! from armet.resources import attributes
-        #! class Resource(resources.Resource):
-        #!     class Meta:
-        #!         include = ('name',)
-        #!     created = attributes.Attribute('created')
-        #! @endcode
         self.include = include = meta.get('include', {})
         if not isinstance(include, collections.Mapping):
             # This is a list, tuple, etc. but not a dictionary.
@@ -205,9 +163,7 @@ class ManagedResourceOptions(options.ResourceOptions):
         #! One is that it must be a unique reference. A /url/slug must
         #! return at most one item. Second is that as it is a special
         #! attribute that is not part of the body there is not
-        #! a `prepare_slug` method; however, there is a `slug_prepare` method
-        #! that accomplishes the same purpose. This is to allow for a
-        #! normal attribute that is named slug.
+        #! a `prepare_slug` method.
         self.slug = meta.get('slug')
         if self.slug is None:
             # The slug defaults to `id`; which on most model engines
