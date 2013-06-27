@@ -13,7 +13,9 @@ __all__ = [
     'StreamingResource',
     'AsyncResource',
     'AsyncStreamResource',
-    'lightweight'
+    'lightweight',
+    'lightweight_streaming',
+    'lightweight_async',
 ]
 
 
@@ -102,6 +104,37 @@ def lightweight(request, response):
     response.status = 412
     response['Content-Type'] = 'text/plain'
     response.write('Hello')
+
+
+@armet.resource(method='GET')
+def lightweight_streaming(request, response):
+    response.status = 412
+    response['Content-Type'] = 'text/plain'
+
+    yield 'this\n'
+
+    response.write('where\n')
+    response.flush()
+    response.write('whence\n')
+
+    yield
+    yield 'that\n'
+
+    response.write('why\n')
+
+    yield 'and the other'
+
+
+@armet.asynchronous
+@armet.resource(method='GET')
+def lightweight_async(request, response):
+    def writer():
+        response.status = 412
+        response['Content-Type'] = 'text/plain'
+        response.write('Hello')
+        response.close()
+
+    spawn(lightweight_async.meta.connectors, writer)
 
 
 class PollResource(resources.ModelResource):

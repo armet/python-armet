@@ -70,3 +70,29 @@ class TestResourceGet(BaseResourceTest):
         assert response.status == 412
         assert response.get('content-type') == 'text/plain'
         assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
+
+    def test_lightweight(self, connectors):
+        response, content = self.client.get('/api/lightweight/')
+        data = content.decode('utf-8')
+
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'Hello'
+
+    def test_lightweight_streaming(self, connectors):
+        response, content = self.client.request('/api/lightweight-streaming/')
+        data = content.decode('utf-8')
+
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
+
+    @pytest.mark.skipif("sys.version_info >= (3, 0)")
+    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
+    def test_lightweight_async(self, connectors):
+        response, content = self.client.request('/api/lightweight-async/')
+        data = content.decode('utf-8')
+
+        assert response.status == 412
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'Hello'

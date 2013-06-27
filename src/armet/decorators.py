@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 from .exceptions import ImproperlyConfigured
 import six
+from . import utils
 
 
 class route:
@@ -72,7 +73,10 @@ _handlers = {}
 def resource(**kwargs):
     """Wraps the decorated function in a lightweight resource."""
     def inner(function):
-        name = kwargs.pop('name', function.__name__)
+        name = kwargs.pop('name', None)
+        if name is None:
+            name = utils.dasherize(function.__name__)
+
         methods = kwargs.pop('method', None)
         if isinstance(methods, six.string_types):
             # Tuple-ify the method if we got just a string.
