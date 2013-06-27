@@ -143,9 +143,8 @@ class BaseModel(base.BaseResource):
             queryset = queryset.order_by(*self.query.as_order())
 
         # Perform authorization filtering.
-        if self.slug is None:
-            queryset = self.authorization.filter(self.request.user,
-                'read', self, queryset)
+        queryset = self.authorization.filter(self.request.user,
+            'read', self, queryset)
 
         if self.prefetch and hasattr(self, '_prefetch_related_cache'):
             # Prefetch all related attributes and store in a cache.
