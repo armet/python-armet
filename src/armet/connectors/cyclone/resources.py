@@ -18,7 +18,7 @@ class Handler(web.RequestHandler):
         self.Resource = Resource
 
         # Pass off control to cyclone.
-        return super(Handler, self).__init__(*args, **kwargs)
+        super(Handler, self).__init__(*args, **kwargs)
 
     def __route(self, path):
         # Pass control off to the resource handler.
@@ -55,7 +55,7 @@ class Resource(object):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
         request = http.Request(handler, path=path or '', asynchronous=async)
-        response = http.Response(handler, request, asynchronous=async)
+        response = http.Response(handler, asynchronous=async)
 
         # Turn on asynchronous operation if we can.
         handler._auto_finish = not response.asynchronous

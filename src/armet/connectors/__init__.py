@@ -7,7 +7,7 @@ import six
 http = ('bottle', 'flask', 'django',)
 
 if not six.PY3:
-    # Add python 2.x only connectors.
+#     # Add python 2.x only connectors.
     http += ('cyclone',)
 
 #! List of available ORM connectors.

@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals, division
 import bottle
 from . import http
-from importlib import import_module
 
 
 class Resource(object):
@@ -12,65 +11,19 @@ class Resource(object):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
         request = http.Request(path=kwargs.get('path', ''), asynchronous=async)
-        response = http.Response(request, asynchronous=async)
+        response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
-        if response.asynchronous:
+        if async:
             # Defer the view to pass of control.
-            view = super(Resource, cls).view
-            import_module('gevent').spawn(view, request, response)
+            import gevent
+            gevent.spawn(super(Resource, cls).view, request, response)
 
-            def stream():
-                # Construct the iterator and run the sequence once.
-                iterator = iter(response._queue)
-                chunk = next(iterator)
-
-                # Push the initial HTTP response.
-                response._push()
-
-                if chunk:
-                    # Yield our initial data (if any).
-                    yield chunk
-
-                # Iterate through the asynchronous queue.
-                for chunk in iterator:
-                    # Yield the pushed chunk to bottle.
-                    yield chunk
-
-            # Return our asynchronous streamer.
-            return stream()
+            # Construct and return a streamer.
+            return cls.stream(response, response)
 
         # Pass control off to the resource handler.
-        result = super(Resource, cls).view(request, response)
-
-        # If we got anything back; it is some kind of generator.
-        if result is not None:
-            # Construct the iterator and run the sequence once.
-            iterator = iter(result)
-            next(iterator)
-
-            # Push the initial HTTP response.
-            response._push()
-
-            def stream():
-                # Iterate through the generator and yield its content
-                # to the network stream.
-                for _ in result:
-                    # Yield what we currently have in the buffer; if any.
-                    yield response._stream.getvalue()
-
-                    # Remove what we have in the buffer.
-                    response._stream.truncate(0)
-                    response._stream.seek(0)
-
-            # Return our streamer.
-            return stream()
-
-        # Push the initial HTTP response.
-        response._push()
-
-        # Return the one 'chunk' of data.
-        return response._stream.getvalue()
+        return super(Resource, cls).view(request, response)
 
     @classmethod
     def mount(cls, url='/', application=None):
@@ -80,10 +33,8 @@ class Resource(object):
             application = bottle.app[-1]
 
         # Generate a name to use to mount this resource.
-        name = '{}.{}'.format(cls.__module__, cls.__name__)
-        name = '{}:{}:{}'.format('armet', name, cls.meta.name)
+        name = '{}:{}:{}'.format('armet', cls.__module__, cls.meta.name)
 
         # Apply the routing rules and add the URL route.
-        pattern = r'$|(?:[/:(.].*)'
-        rule = '{}{}<path:re:{}>'.format(url, cls.meta.name, pattern)
+        rule = '{}{}<path:re:$|(?:[/:(.].*)>'.format(url, cls.meta.name)
         application.route(rule, 'ANY', cls.view, name)

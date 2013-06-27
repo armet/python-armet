@@ -14,6 +14,9 @@ def http_setup(connectors, host, port, callback):
     # We just need to push an application context.
     application = bottle.Bottle(__name__)
 
+    # Ensure we're debugging.
+    bottle.debug(True)
+
     # Invoke the callback if we got one.
     if callback:
         callback()

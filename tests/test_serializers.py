@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import unittest
 import json
-from armet import serializers, test
+from armet import serializers
 
 
 class SerializerTestCase(unittest.TestCase):
@@ -13,15 +13,12 @@ class SerializerTestCase(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
-        cls.request = None
-        cls.response = test.http.Response(cls.request)
-        cls.serializer = cls.Serializer(cls.request, cls.response)
+        cls.serializer = cls.Serializer()
 
     def serialize(self, data):
-        self.response.clear()
-        self.serializer.serialize(data)
-        self.response.close()
-        self.content = self.response.content.decode('utf-8')
+        self.content = self.serializer.serialize(data)
+        if self.content:
+            self.content = self.content.decode('utf8')
 
 
 class JSONSerializerTestCase(SerializerTestCase):

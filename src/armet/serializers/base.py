@@ -9,7 +9,7 @@ class Serializer(six.with_metaclass(abc.ABCMeta)):
     #! Applicable media types for this serializer.
     media_types = ()
 
-    def __init__(self, request, response):
+    def __init__(self, request=None, response=None):
         #! The request and response objects to use.
         self.request = request
         self.response = response

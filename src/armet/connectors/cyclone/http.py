@@ -1,33 +1,44 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
-import io
+
+
+class RequestHeaders(http.request.Headers):
+
+    def __init__(self, handle):
+        #! Reference to the underlying request handle.
+        self._handle = handle
+
+        # Continue the initialization.
+        super(RequestHeaders, self).__init__()
+
+    def __getitem__(self, name):
+        return self._handle.headers[name]
+
+    def __iter__(self):
+        return iter(self._handle.headers)
+
+    def __len__(self):
+        return len(self._handle.headers)
+
+    def __contains__(self, name):
+        return name in self._handle.headers
 
 
 class Request(http.Request):
 
-    class Headers(http.request.Headers):
-
-        def __init__(self, request):
-            self._handle = request._handle
-            super(Request.Headers, self).__init__(request)
-
-        def __getitem__(self, name):
-            return self._handle.headers[name]
-
-        def __iter__(self):
-            return iter(self._handle.headers)
-
-        def __len__(self):
-            return len(self._handle.headers)
-
-        def __contains__(self, name):
-            return name in self._handle.headers
-
     def __init__(self, handler, *args, **kwargs):
+        # Store the request handle.
         self._handle = handler.request
-        self._stream = io.BytesIO(self._handle.body)
+
+        # Initialize the request headers.
+        self.headers = RequestHeaders(self._handle)
+
+        # Set the method and body of the request.
+        kwargs.update(body=self._handle.body)
         kwargs.update(method=self._handle.method)
+
+        # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
 
     @property
@@ -36,10 +47,8 @@ class Request(http.Request):
 
     @property
     def mount_point(self):
-        if self.path:
-            return self._handle.path.rsplit(self.path)[0]
-
-        return self._handle.path
+        path = self._handle.path
+        return path.rsplit(self.path)[0] if self.path else path
 
     @property
     def query(self):
@@ -49,48 +58,50 @@ class Request(http.Request):
     def uri(self):
         return self._handle.full_url()
 
-    def _read(self, count=-1):
-        return self._stream.read(count)
 
-    def _readline(self, limit=-1):
-        return self._stream.readline(limit)
+class ResponseHeaders(http.response.Headers):
 
-    def _readlines(self, hint=-1):
-        return self._stream.readlines(hint)
+    def __init__(self, response, handler):
+        #! Reference to the response object.
+        self._response = response
+
+        #! Reference to the underlying response handler.
+        self._handler = handler
+
+        # Continue the initialization.
+        super(ResponseHeaders, self).__init__()
+
+    def __setitem__(self, name, value):
+        self._response.require_open()
+        self._handler.set_header(self.normalize(name), value)
+
+    def __getitem__(self, name):
+        return self._handler._headers[name]
+
+    def __contains__(self, name):
+        return name in self._handler._headers
+
+    def __delitem__(self, name):
+        self._response.require_open()
+        self._handler.clear_header(name)
+
+    def __len__(self):
+        return len(self._handler._headers)
+
+    def __iter__(self):
+        return iter(self._handler._headers)
 
 
 class Response(http.Response):
 
-    class Headers(http.response.Headers):
-
-        def __init__(self, response):
-            self._handler = response._handler
-            super(Response.Headers, self).__init__(response)
-
-        def __setitem__(self, name, value):
-            self._obj._assert_open()
-            self._handler.set_header(self._normalize(name), value)
-
-        def __getitem__(self, name):
-            return self._handler._headers[name]
-
-        def __contains__(self, name):
-            return name in self._handler._headers
-
-        def __delitem__(self, name):
-            self._obj._assert_open()
-            self._handler.clear_header(name)
-
-        def __len__(self):
-            return len(self._handler._headers)
-
-        def __iter__(self):
-            return iter(self._handler._headers)
-
     def __init__(self, handler, *args, **kwargs):
+        # Store the handler.
         self._handler = handler
-        self._stream = io.BytesIO()
-        self._length = 0
+
+        # Initialize the response headers.
+        self.headers = ResponseHeaders(self, handler)
+
+        # Complete the initialization.
         super(Response, self).__init__(*args, **kwargs)
 
     @property
@@ -99,27 +110,31 @@ class Response(http.Response):
 
     @status.setter
     def status(self, value):
-        self._assert_open()
+        self.require_open()
         self._handler.set_status(value)
 
-    def clear(self):
-        super(Response, self).clear()
-        self._stream.truncate(0)
-        self._stream.seek(0)
+    @http.Response.body.setter
+    def body(self, value):
+        if value:
+            # Write out the value.
+            self._handler.write(value)
 
-    def tell(self):
-        return self._stream.tell() + self._length
+            if self.asynchronous or self.streaming:
+                # Unset the underlying store.
+                super(Response, Response).body.__set__(self, None)
 
-    def _write(self, chunk):
-        self._stream.write(chunk)
+                # Flush what we have.
+                self._handler.flush()
+                return
 
-    def _flush(self):
-        self._handler.write(self._stream.getvalue())
-        self._stream.truncate(0)
-        self._stream.seek(0)
-        self._handler.flush()
+        # Set the underlying store.
+        super(Response, Response).body.__set__(self, value)
 
     def close(self):
+        # Perform general clean-up and a final flush.
         super(Response, self).close()
-        self._handler.write(self._stream.getvalue())
-        self._handler.finish()
+
+        if self.asynchronous:
+            # Close the asynchronous queue and terminate the connection
+            # to the client.
+            self._handler.finish()

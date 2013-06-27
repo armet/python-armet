@@ -3,35 +3,50 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 from armet import http
 import flask
-import io
 from flask.globals import current_app
 from werkzeug.wsgi import get_current_url, LimitedStream
-from importlib import import_module
+
+
+class RequestHeaders(http.request.Headers):
+
+    def __init__(self, handle):
+        #! Reference to the underlying request handle.
+        self._handle = handle
+
+        # Continue the initialization.
+        super(RequestHeaders, self).__init__()
+
+    def __getitem__(self, name):
+        return self._handle.headers[name]
+
+    def __iter__(self):
+        return (key for key, _ in self._handle.headers)
+
+    def __len__(self):
+        return len(self._handle.headers)
+
+    def __contains__(self, name):
+        return name in self._handle.headers
 
 
 class Request(http.Request):
 
-    class Headers(http.request.Headers):
-
-        def __getitem__(self, name):
-            return self._obj._handle.headers[name]
-
-        def __iter__(self):
-            return (key for key, _ in self._obj._handle.headers)
-
-        def __len__(self):
-            return len(self._obj._handle.headers)
-
-        def __contains__(self, name):
-            return name in self._obj._handle.headers
-
     def __init__(self, *args, **kwargs):
+        # Elide the thread-safe request copy and the global bottle.request.
         request = flask.request
         async = kwargs['asynchronous']
         self._handle = request if not async else flask.Request(request.environ)
-        kwargs.update(method=self._handle.method)
+
+        # Initialize the request headers.
+        self.headers = RequestHeaders(self._handle)
+
+        # Set the method and body of the request.
+        body = LimitedStream(request.input_stream, len(self)).read()
+        kwargs.update(body=body)
+        kwargs.update(method=request.method)
+
+        # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
-        self._stream = LimitedStream(self._handle.input_stream, len(self))
 
     @property
     def protocol(self):
@@ -39,10 +54,8 @@ class Request(http.Request):
 
     @property
     def mount_point(self):
-        if self.path:
-            return self._handle.path.rsplit(self.path)[0]
-
-        return self._handle.path
+        path = self._handle.path
+        return path.rsplit(self.path)[0] if self.path else path
 
     @property
     def query(self):
@@ -55,82 +68,90 @@ class Request(http.Request):
     def uri(self):
         return get_current_url(self._handle.environ)
 
-    def _read(self, count=-1):
-        return self._stream.read(count)
 
-    def _readline(self, limit=-1):
-        return self._stream.readline(limit)
+class ResponseHeaders(http.response.Headers):
 
-    def _readlines(self, hint=-1):
-        return self._stream.readlines(hint)
+    def __init__(self, response, handle):
+        #! Reference to the response object.
+        self._response = response
+
+        #! Reference to the underlying response handle.
+        self._handle = handle
+
+        # Continue the initialization.
+        super(ResponseHeaders, self).__init__()
+
+    def __getitem__(self, name):
+        return self._handle.headers[name]
+
+    def __setitem__(self, name, value):
+        self._response.require_open()
+        self._handle.headers[self.normalize(name)] = value
+
+    def __contains__(self, name):
+        return name in self._handle.headers
+
+    def __delitem__(self, name):
+        self._response.require_open()
+        del self._handle.headers[name]
+
+    def __iter__(self):
+        return (key for key, _ in self._handle.headers)
+
+    def __len__(self):
+        return len(self._handle.headers)
 
 
 class Response(http.Response):
 
-    class Headers(http.response.Headers):
-
-        def __getitem__(self, name):
-            return self._obj._handle.headers[name]
-
-        def __setitem__(self, name, value):
-            self._obj._assert_open()
-            self._obj._handle.headers[self._normalize(name)] = value
-
-        def __contains__(self, name):
-            return name in self._obj._handle.headers
-
-        def __delitem__(self, name):
-            self._obj._assert_open()
-            del self._obj._handle.headers[name]
-
-        def __iter__(self):
-            return (key for key, _ in self._obj._handle.headers)
-
-        def __len__(self):
-            return len(self._obj._handle.headers)
-
     def __init__(self, *args, **kwargs):
+        # Construct and store a new response object.
         self._handle = current_app.response_class()
-        self._stream = io.BytesIO()
+
+        # Complete the initialization.
         super(Response, self).__init__(*args, **kwargs)
+
+        # If we're dealing with an asynchronous response, we need
+        # to have an asynchronous queue to give to WSGI.
         if self.asynchronous:
-            # If we're dealing with an asynchronous response, we need an
-            # asynchronous queue to give to WSGI.
-            self._queue = import_module('gevent.queue').Queue()
+            from gevent import queue
+            self._queue = queue.Queue()
+
+        # Initialize the response headers.
+        self.headers = ResponseHeaders(self, self._handle)
+
+    def __iter__(self):
+        # Return the asynchronous queue.
+        return self._queue
 
     @property
     def status(self):
         return self._handle.status_code
 
-    def clear(self):
-        super(Response, self).clear()
-        self._stream.truncate(0)
-        self._stream.seek(0)
-
     @status.setter
     def status(self, value):
-        self._assert_open()
+        self.require_open()
         self._handle.status_code = value
 
-    def tell(self):
-        return self._stream.tell() + len(self._handle.data)
+    @http.Response.body.setter
+    def body(self, value):
+        if value:
+            if self.asynchronous:
+                # Unset the underlying store.
+                super(Response, Response).body.__set__(self, None)
 
-    def _write(self, chunk):
-        self._stream.write(chunk)
+                # Write the chunk to the asynchronous queue.
+                self._queue.put(value)
+                return
 
-    def _flush(self):
-        if not self.asynchronous:
-            # Nothing needs to be done as the write stream is doubling as
-            # the output buffer.
-            return
-
-        # Write the buffer to the queue.
-        self._queue.put(self._stream.getvalue())
-        self._stream.truncate(0)
-        self._stream.seek(0)
+        # Set the underlying store.
+        super(Response, Response).body.__set__(self, value)
 
     def close(self):
+        # Perform general clean-up and a final flush.
         super(Response, self).close()
+
         if self.asynchronous:
-            # Close the queue and terminate the connection.
+            # Close the asynchronous queue and terminate the connection
+            # to the client.
             self._queue.put(StopIteration)

@@ -16,20 +16,15 @@ class URLSerializer(Serializer):
 
     media_types = media_types.URL
 
-    def __init__(self, *args, **kwargs):
-        super(URLSerializer, self).__init__(*args, **kwargs)
-
-        # Passed to urlencode.  This causes array values to automatically be
-        # expanded properly instead of causing crazy nested percent encoding.
-        self.doseq = kwargs.get('doseq', True)
-
     def serialize(self, obj=None):
-
+        # If we have nothing; serialize as an empty object.
         if obj is None:
             obj = {}
 
         try:
-            super(URLSerializer, self).serialize(urlencode(obj, self.doseq))
+            # Attempt to serialize the incoming object using the URL encoder.
+            return super(URLSerializer, self).serialize(urlencode(obj, True))
 
         except TypeError:
+            # Raise up our hands; we cannot serialize this.
             raise ValueError

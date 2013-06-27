@@ -124,118 +124,88 @@ class Headers(collections.MutableMapping, request.Headers):
         return self._sequence[name].reverse()
 
 
-class Response(six.with_metaclass(abc.ABCMeta)):
+class Response(object):
     """Describes the RESTful response abstraction.
     """
 
-    def __init__(self, request, asynchronous, *args, **kwargs):
-        #! The corresponding request object.
-        self._request = request
-
-        #! The response headers dictionary.
-        self._headers = self.Headers(self)
-
+    def __init__(self, asynchronous, *args, **kwargs):
         #! True if the response object is closed.
         self._closed = False
 
         #! True if the response object is streaming.
-        self._streaming = False
+        self.streaming = False
 
         #! True if we're asynchronous.
-        self._asynchronous = asynchronous
+        self.asynchronous = asynchronous
 
-        #! Clear the response of all pre-initialized values.
-        self.clear()
+        #! Default the status code to OK.
+        self.status = client.OK
 
         #! A reference to the bound resource; this is set in the resource
         #! view method after traversal.
-        self._Resource = None
+        self._resource = None
 
-    @property
-    def Resource(self):
-        """Retrieves a reference to the bound resource object."""
-        if self._Resource is None:
-            raise exceptions.InvalidOperation(
-                'Request object not bound to a resource.')
+        #! Explicit declaration of character encoding to use when
+        #! writing data to the response body.
+        #! Defaults to parsing content-type and determining encoding
+        #! via the standard rules.
+        self._encoding = None
 
-        return self._Resource
+        #! The underlying file stream to write incoming data to.
+        self._stream = io.BytesIO()
 
-    @property
-    def request(self):
-        """Retrieves a reference to the corresponding request object."""
-        return self._request
+        #! The content chunk to return to the client.
+        self._body = None
 
-    def _assert_open(self):
-        self._assert_not_closed()
-        if self.streaming:
-            raise exceptions.InvalidOperation('Response is streaming.')
-
-    def _assert_not_closed(self):
+    def require_not_closed(self):
+        """Raises an exception if the response is closed."""
         if self.closed:
             raise exceptions.InvalidOperation('Response is closed.')
 
-    @property
-    def headers(self):
-        """Retrieves the response headers dictionary."""
-        return self._headers
+    def require_open(self):
+        """Raises an exception if the response is not open."""
+        self.require_not_closed()
+        if self.streaming:
+            raise exceptions.InvalidOperation('Response is streaming.')
 
     @property
-    def asynchronous(self):
-        """True if we're being handled asynchronously."""
-        return self._asynchronous
-
-    @abc.abstractproperty
     def status(self):
         """Gets the status code of the response."""
+        raise NotImplementedError()
 
     @status.setter
     def status(self, value):
-        """Sets the status code of the response.
-        """
+        """Sets the status code of the response."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
-    def clear(self):
-        """Clears the response object of all values."""
-        self._assert_not_closed()
-        self.status = client.OK
-        self._headers.clear()
+    @property
+    def body(self):
+        """Returns the current value of the response body."""
+        return self._body
 
-    def isatty(self):
-        """Return True if the stream is interactive."""
-        return False
-
-    def readable(self):
-        """Return True if the stream can be read from."""
-        return False
-
-    def writable(self):
-        """Return True if the stream supports writing."""
-        return True
-
-    def seekable(self):
-        """Return True if the stream supports random access.
+    @body.setter
+    def body(self, value):
+        """Sets the response body to the passed value.
 
         @note
-            Response objects do not support random access. However, python
-            dictates that if this returns `False`, `self.tell()` must throw
-            an `IOError`. So this returns `True` and both `seek` and
-            `truncate` throw IOError.
+            During asynchronous or streaming responses, remember that
+            the `body` property refers to the portion of the response *not*
+            sent to the client.
         """
-        return True
+        self._body = value
 
-    def seek(self, *args, **kwargs):
-        """Response objects do not support random access."""
-        raise io.UnsupportedOperation()
+    def bind(self, resource):
+        """Binds this to the passed resource object.
 
-    def truncate(self, *args, **kwargs):
-        """Response objects do not support random access."""
-        raise io.UnsupportedOperation()
+        @sa armet.http.request.Request.bind
+        """
+        self._resource = resource
 
     @property
     def encoding(self):
-        if hasattr(self, '__encoding'):
+        if self._encoding is not None:
             # Encoding has been set manually.
-            return self.__encoding
+            return self._encoding
 
         # Get the `Content-Type` header, if available.
         content_type = self.headers.get('Content-Type')
@@ -253,14 +223,21 @@ class Response(six.with_metaclass(abc.ABCMeta)):
     @encoding.setter
     def encoding(self, value):
         # Explicitly set the character encoding to use.
-        self.__encoding = value
+        self._encoding = value
 
     @abc.abstractmethod
     def close(self):
         """Flush and close the stream.
+
+        This is called automatically by the base resource on resources
+        unless the resource is operating asynchronously; in that case,
+        this method MUST be called in order to signal the end of the request.
+        If not the request will simply hang as it is waiting for some
+        thread to tell it to return to the client.
         """
-        # We can't close the stream if we're already closed.
-        self._assert_not_closed()
+
+        # Ensure we're not closed.
+        self.require_not_closed()
 
         if self.streaming or self.asynchronous:
             # We're streaming or asynchronous; flush out the current buffer.
@@ -281,20 +258,19 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         """True if the stream is closed."""
         return self._closed
 
-    @abc.abstractmethod
     def tell(self):
-        """Return the current stream position."""
+        """Return the current stream position.
 
-    @abc.abstractmethod
-    def _write(self, chunk):
-        """Writes the given byte string chunk to the output buffer.
+        This does not include data that has been flushed or set directly
+        on the body.
         """
+        return self._stream.tell() + len(self._body or '')
 
-    def write(self, content, serialize=False, format=None):
-        """Writes the given content to the output buffer.
+    def write(self, chunk, serialize=False, format=None):
+        """Writes the given chunk to the output buffer.
 
-        @param[in] content
-            Either a byte array, a unicode string, or a generator. If `content`
+        @param[in] chunk
+            Either a byte array, a unicode string, or a generator. If `chunk`
             is a generator then calling `self.write(<generator>)` is
             equivalent to:
 
@@ -311,64 +287,49 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             A specific format to serialize in; if provided, no detection is
             done. If not provided, the accept header (as well as the URL
             extension) is looked at to determine an appropriate serializer.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._write` instead.
         """
-        # Ensure we do not write a closed response.
-        self._assert_not_closed()
 
-        if content is None:
-            # There is nothing here..
+        # Ensure we're not closed.
+        self.require_not_closed()
+
+        if chunk is None:
+            # There is nothing here.
             return
 
-        if serialize:
-            # Forward to the serializer to serialize the content
+        if serialize or format is not None:
+            # Forward to the serializer to serialize the chunk
             # before it gets written to the response.
-            self.serialize(content, format=format)
+            self.serialize(chunk, format=format)
             return  # `serialize` invokes write(...)
 
-        if type(content) is six.binary_type:
+        if type(chunk) is six.binary_type:
             # If passed a byte string, we hope the user encoded it properly.
-            self._write(content)
+            self._stream.write(chunk)
 
-        elif isinstance(content, six.string_types):
-            # If passed a string, we can encode it for the user.
+        elif isinstance(chunk, six.string_types):
             encoding = self.encoding
-            if encoding:
-                content = content.encode(encoding)
+            if encoding is not None:
+                # If passed a string, we can encode it for the user.
+                chunk = chunk.encode(encoding)
+
+            else:
+                # Bail; we don't have an encoding.
+                raise exceptions.InvalidOperation(
+                    'Attempting to write textual data without an encoding.')
 
             # Write the encoded data into the byte stream.
-            self._write(content)
+            self._stream.write(chunk)
+
+        elif isinstance(chunk, collections.Iterable):
+            # If passed some kind of iterator, attempt to recurse into
+            # oblivion.
+            for section in chunk:
+                self.write(section)
 
         else:
-            try:
-                # If passed some kind of iterator, attempt to recurse into
-                # oblivion.
-                for chunk in content:
-                    self.write(chunk)
-
-            except TypeError:
-                # Apparently we didn't get an iterator..
-                # Try and blindly cast this and write it.
-                self.write(str(content))
-
-    def writelines(self, lines, serialize=False, format=None):
-        """
-        Write a list of lines to the stream.
-        Line separators are not added.
-
-        @param[in] serialize
-            True to serialize the lines in a determined serializer.
-
-        @param[in] format
-            A specific format to serialize in; if provided, no detection is
-            done. If not provided, the accept header (as well as the URL
-            extension) is looked at to determine an appropriate serializer.
-        """
-        for line in lines:
-            self.write(line, serialize=serialize, format=format)
+            # Bail; we have no idea what to do with this.
+            raise exceptions.InvalidOperation(
+                'Attempting to write something not recognized.')
 
     def serialize(self, data, format=None):
         """Serializes the data into this response using a serializer.
@@ -385,11 +346,7 @@ class Response(six.with_metaclass(abc.ABCMeta)):
             A tuple of the serialized text and an instance of the
             serializer used.
         """
-        return self.Resource.serialize(data, self, self.request, format)
-
-    @abc.abstractmethod
-    def _flush(self):
-        """Flush the write buffers of the stream."""
+        return self._resource.serialize(data, response=self, format=format)
 
     def flush(self):
         """Flush the write buffers of the stream.
@@ -398,56 +355,47 @@ class Response(six.with_metaclass(abc.ABCMeta)):
         the transport layer, initiating the HTTP/1.1 response. This initiates
         a streaming response. If the `Content-Length` header is not given
         then the chunked `Transfer-Encoding` is applied.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._flush` instead.
         """
-        self._assert_not_closed()
-        self._flush()
-        self._streaming = True
 
-    @property
-    def streaming(self):
-        """True if the stream is currently streaming content to the client.
+        # Ensure we're not closed.
+        self.require_not_closed()
 
-        A response object is considered `streaming` directly after the
-        first invocation of `flush`. When a response object
-        becomes `streaming`, the `response` object may only be written to.
-        Any attempt to modify the headers or the status of the response
-        will result in a `TypeError`.
+        # Pull out the accumulated chunk.
+        chunk = self._stream.getvalue()
+        self._stream.truncate(0)
+        self._stream.seek(0)
+
+        # Append the chunk to the body.
+        self.body = chunk if (self._body is None) else (self._body + chunk)
+
+        if self.asynchronous:
+            # We are now streaming because we're asynchronous.
+            self.streaming = True
+
+    def send(self, *args, **kwargs):
+        """Writes the passed chunk and flushes it to the client."""
+        self.write(*args, **kwargs)
+        self.flush()
+
+    def end(self, *args, **kwargs):
         """
-        return self._streaming
+        Writes the passed chunk, flushes it to the client,
+        and terminates the connection.
+        """
+        self.send(*args, **kwargs)
+        self.close()
 
     def __getitem__(self, name):
-        """Retrieves a header with the passed name.
-
-        @param[in] name
-            The case-insensitive name of the header to retrieve.
-        """
-        return self._headers[name]
+        """Retrieves a header with the passed name."""
+        return self.headers[name]
 
     def __setitem__(self, name, value):
-        """Stores a header with the passed name.
-
-        @param[in] name
-            The name to store the header as. This is passed through
-            `Headers.normalize` before storing on the response.
-
-        @param[in] value
-            The value to store for the header; for multi-valued headers,
-            this can be a comma-separated list of values.
-        """
-        self._headers[name] = value
+        """Stores a header with the passed name."""
+        self.headers[name] = value
 
     def __delitem__(self, name):
-        """Removes a header with the passed name.
-
-        @param[in] name
-            The case-insensitive name of the header to remove
-            from the response.
-        """
-        del self._headers
+        """Removes a header with the passed name."""
+        del self.headers
 
     def __len__(self):
         """Retrieves the actual length of the response."""
@@ -455,53 +403,53 @@ class Response(six.with_metaclass(abc.ABCMeta)):
 
     def __contains__(self, name):
         """Tests if the passed header exists in the response."""
-        return name in self._headers
+        return name in self.headers
 
     def append(self, name, value):
         """Add a value to the end of the list for the named header."""
-        return self._headers.append(name, value)
+        return self.headers.append(name, value)
 
     def extend(self, name, values):
         """Extend the list for the named header by appending all values."""
-        return self._headers.extend(name, values)
+        return self.headers.extend(name, values)
 
     def insert(self, name, index, value):
         """Insert a value at the passed index in the named header."""
-        return self._headers.insert(index, value)
+        return self.headers.insert(index, value)
 
     def remove(self, name, value):
         """
         Remove the first item with the passed value from the
         list for the named header.
         """
-        return self._headers.remove(name, value)
+        return self.headers.remove(name, value)
 
     def popvalue(self, name, index=None):
         """Remove the item at the given position in the named header list."""
-        return self._headers.popvalue(name, index)
+        return self.headers.popvalue(name, index)
 
     def index(self, name, value):
         """
         Return the index in the list of the first item whose value is x in
         the values of the named header.
         """
-        return self._headers.index(name, value)
+        return self.headers.index(name, value)
 
     def count(self, name, value):
         """
         Return the number of times a value appears in the list of the values
         of the named header.
         """
-        return self._headers.count(name, value)
+        return self.headers.count(name, value)
 
     def sort(self, name):
         """Sort the items of the list, in place."""
-        return self._headers.sort(name)
+        return self.headers.sort(name)
 
     def reverse(self, name):
         """Reverse the elements of the list, in place."""
-        return self._headers.reverse(name)
+        return self.headers.reverse(name)
 
     def getlist(self, name):
         """Retrieves the passed header as a sequence of its values."""
-        return self._headers.getlist(name)
+        return self.headers.getlist(name)

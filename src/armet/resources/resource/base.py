@@ -4,7 +4,6 @@ import logging
 import six
 import collections
 import mimeparse
-import traceback
 from armet import http, utils
 
 
@@ -19,6 +18,10 @@ class Resource(object):
         resources. Derive from `armet.resources.Resource` (defined in
         the `__init__.py`).
     """
+
+    #! Instantiated options class; contains all merged properties
+    #! from the class hierarchy's Meta classes.
+    meta = None
 
     @classmethod
     def redirect(cls, request, response):
@@ -71,57 +74,32 @@ class Resource(object):
             return cls.redirect(request, response)
 
         try:
-            # arguments = cls.parse(request.path)
-            # cls = cls.traverse(arguments)
-
-            # Bind the request and response to the resource class object.
-            request._Resource = response._Resource = cls
-
             # Instantiate the resource.
             obj = cls(request, response)
 
-            # Initiate the dispatch cycle.
+            # Bind the request and response objects to the constructed
+            # resource.
+            request.bind(obj)
+            response.bind(obj)
+
+            # Initiate the dispatch cycle and handle its result on
+            # synchronous requests.
             result = obj.dispatch()
+
             if not response.asynchronous:
                 # There is several things that dispatch is allowed to return.
-                if result is None:
-                    # If there was no result from dispatch; just
-                    # close the response.
-                    response.close()
-
-                elif isinstance(result, six.string_types):
-                    # If `chunk` is some kind of string; just write it out
-                    # and close the response.
-                    response.write(result)
-                    response.close()
-
-                elif isinstance(result, collections.Iterable):
-                    # This should be some kind of iterable, perhaps
-                    # a generator.
-                    def stream():
-                        # Iterate and yield the chunks to the network
-                        # stream.
-                        for chunk in result:
-                            if chunk:
-                                # Write the chunk and flush.
-                                response.write(chunk)
-                                response.flush()
-
-                            # Yield control to the connector to further
-                            # do whatever it needs to do.
-                            yield
-
-                        # Close the response.
-                        response.close()
-
-                    # Return our streaming method.
-                    return stream()
+                if (isinstance(result, collections.Iterable) and
+                        not isinstance(result, six.string_types)):
+                    # Return the stream generator.
+                    return cls.stream(response, result)
 
                 else:
-                    # We've got something here; naively coerce this to
-                    # a binary string.
-                    response.write(six.binary_type(result))
-                    response.close()
+                    # Leave it up to the response to throw or write whatever
+                    # we got back.
+                    response.end(result)
+                    if response.body:
+                        # Return the body if there was any set.
+                        return response.body
 
         except http.exceptions.BaseHTTPException as e:
             # Something that we can handle and return properly happened.
@@ -140,20 +118,58 @@ class Resource(object):
 
         except Exception:
             # Something unexpected happened.
-
             # Log error message to the logger.
             logger.exception('Internal server error')
 
             # Write a debug message for the client.
             if not response.streaming and not response.closed:
-                response.clear()
                 response.status = http.client.INTERNAL_SERVER_ERROR
-                if cls.meta.debug:
-                    # We're debugging; write the traceback.
-                    response['Content-Type'] = 'text/plain'
-                    response.write(traceback.format_exc())
-
+                response.headers.clear()
                 response.close()
+
+    @classmethod
+    def stream(cls, response, sequence):
+        """
+        Helper method used in conjunction with the view handler to
+        stream responses to the client.
+        """
+        # Construct the iterator and run the sequence once in order
+        # to capture any headers and status codes set.
+        iterator = iter(sequence)
+        data = {'chunk': next(iterator)}
+        response.streaming = True
+
+        def streamer():
+            # Iterate through the iterator and yield its content
+            while True:
+                if response.asynchronous:
+                    # Yield our current chunk.
+                    yield data['chunk']
+
+                else:
+                    # Write the chunk to the response
+                    response.send(data['chunk'])
+
+                    # Yield its body
+                    yield response.body
+
+                    # Unset the body.
+                    response.body = None
+
+                try:
+                    # Get the next chunk.
+                    data['chunk'] = next(iterator)
+
+                except StopIteration:
+                    # Get out of the loop.
+                    break
+
+            if not response.asynchronous:
+                # Close the response.
+                response.close()
+
+        # Return the streaming function.
+        return streamer()
 
     def __init__(self, request, response):
         """Initialize; store the given request and response objects."""

@@ -2,6 +2,9 @@
 from __future__ import absolute_import, unicode_literals, division
 import json
 from armet import http
+import unittest
+import six
+from sys import platform
 from .base import BaseResourceTest
 
 
@@ -43,7 +46,7 @@ class TestResourceGet(BaseResourceTest):
         response, content = self.client.request('/api/streaming/')
         data = content.decode('utf-8')
 
-        assert response.status == 418
+        assert response.status == 412
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
@@ -56,7 +59,7 @@ class TestResourceGet(BaseResourceTest):
     #     response, content = self.client.request('/api/async/')
     #     data = content.decode('utf-8')
 
-    #     assert response.status == 418
+    #     assert response.status == 412
     #     assert response.get('content-type') == 'text/plain'
     #     assert data == 'Hello'
 
@@ -67,6 +70,6 @@ class TestResourceGet(BaseResourceTest):
     #     response, content = self.client.request('/api/async-stream/')
     #     content = content.decode('utf-8')
 
-    #     assert response.status == 418
+    #     assert response.status == 412
     #     assert response.get('content-type') == 'text/plain'
     #     assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'

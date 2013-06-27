@@ -1,11 +1,11 @@
  ☐ connectors: http
-     ☐ wsgiref (default) @0.3.0
+     ☐ wsgiref (default) @0.4.0
      ✔ Django @done (13-04-23 15:26)
      ✔ Flask @done (13-04-23 15:26)
      ✔ bottle @done (13-04-23 15:26)
      ☐ web2py
-     ☐ werkzeug @0.3.0
-     ☐ pyramid @0.3.0
+     ☐ werkzeug @0.4.0
+     ☐ pyramid @0.4.0
      ☐ tornado @0.4.0
      ☐ twisted @0.4.0
      ✔ cyclone @done (13-04-23 15:26)

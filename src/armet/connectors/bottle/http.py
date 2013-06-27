@@ -1,34 +1,39 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet import http
-# from six.moves import cStringIO as StringIO
-import io
 import bottle
-from importlib import import_module
+
+
+class RequestHeaders(http.request.Headers):
+
+    def __getitem__(self, name):
+        return bottle.request.headers[name]
+
+    def __iter__(self):
+        return iter(bottle.request.headers)
+
+    def __len__(self):
+        return len(bottle.request.headers)
+
+    def __contains__(self, name):
+        return name in bottle.request.headers
 
 
 class Request(http.Request):
 
-    class Headers(http.request.Headers):
-
-        def __getitem__(self, name):
-            return bottle.request.headers[name]
-
-        def __iter__(self):
-            return iter(bottle.request.headers)
-
-        def __len__(self):
-            return len(bottle.request.headers)
-
-        def __contains__(self, name):
-            return name in bottle.request.headers
-
     def __init__(self, *args, **kwargs):
+        # Initialize the request headers.
+        self.headers = RequestHeaders()
+
+        # Set the method and body of the request.
         request = bottle.request
-        async = kwargs['asynchronous']
-        self._handle = request.copy() if async else request
-        self._stream = io.BytesIO(self._handle.body.read())
-        kwargs.update(method=bottle.request.method)
+        kwargs.update(body=request.body.read())
+        kwargs.update(method=request.method)
+
+        # Elide the thread-safe request copy and the global bottle.request.
+        self._handle = request.copy() if kwargs['asynchronous'] else request
+
+        # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
 
     @property
@@ -37,10 +42,8 @@ class Request(http.Request):
 
     @property
     def mount_point(self):
-        if self.path:
-            return self._handle.path.rsplit(self.path)[0]
-
-        return self._handle.path
+        path = self._handle.path
+        return path.rsplit(self.path)[0] if self.path else path
 
     @property
     def query(self):
@@ -50,50 +53,64 @@ class Request(http.Request):
     def uri(self):
         return self._handle.url
 
-    def _read(self, count=-1):
-        return self._stream.read(count)
 
-    def _readline(self, limit=-1):
-        return self._stream.readline(limit)
+class ResponseHeaders(http.response.Headers):
 
-    def _readlines(self, hint=-1):
-        return self._stream.readlines(hint)
+    def __init__(self, response, handle):
+        #! Reference to the response object.
+        self._response = response
+
+        #! Reference to the underlying response handle.
+        self._handle = handle
+
+        # Continue the initialization.
+        super(ResponseHeaders, self).__init__()
+
+    def __setitem__(self, name, value):
+        self._response.require_open()
+        self._handle.headers[self.normalize(name)] = value
+
+    def __getitem__(self, name):
+        return self._handle.headers[name]
+
+    def __contains__(self, name):
+        return name in self._handle.headers
+
+    def __delitem__(self, name):
+        self._response.require_open()
+        del self._handle.headers[name]
+
+    def __len__(self):
+        return len(self._handle.headers)
+
+    def __iter__(self):
+        return iter(self._handle.headers)
 
 
 class Response(http.Response):
 
-    class Headers(http.response.Headers):
-
-        def __setitem__(self, name, value):
-            self._obj._assert_open()
-            self._obj._handle.headers[self._normalize(name)] = value
-
-        def __getitem__(self, name):
-            return self._obj._handle.headers[name]
-
-        def __contains__(self, name):
-            return name in self._obj._handle.headers
-
-        def __delitem__(self, name):
-            self._obj._assert_open()
-            del self._obj._handle.headers[name]
-
-        def __len__(self):
-            return len(self._obj._handle.headers)
-
-        def __iter__(self):
-            return iter(self._obj._handle.headers)
-
     def __init__(self, *args, **kwargs):
-        self._stream = io.BytesIO()
+        # Elide the thread-safe response copy and the global bottle.response.
         self._handle = bottle.response
+
+        # Complete the initialization.
         super(Response, self).__init__(*args, **kwargs)
+
+        # If we're dealing with an asynchronous response, we need
+        # to have a thread-safe response handle as well as an
+        # asynchronous queue to give to WSGI.
         if self.asynchronous:
-            # If we're dealing with an asynchronous response, we need
-            # to have a thread-safe response handle as well as an
-            # asynchronous queue to give to WSGI.
+            from gevent import queue
+
             self._handle = self._handle.copy()
-            self._queue = import_module('gevent.queue').Queue()
+            self._queue = queue.Queue()
+
+        # Initialize the response headers.
+        self.headers = ResponseHeaders(self, self._handle)
+
+    def __iter__(self):
+        # Return the asynchronous queue.
+        return self._queue
 
     @property
     def status(self):
@@ -101,37 +118,33 @@ class Response(http.Response):
 
     @status.setter
     def status(self, value):
-        self._assert_open()
+        self.require_open()
         self._handle.status = value
 
-    def clear(self):
-        super(Response, self).clear()
-        self._stream.truncate(0)
-        self._stream.seek(0)
+    @http.Response.body.setter
+    def body(self, value):
+        if value:
+            if not self.streaming:
+                # Point the response handle to our constructed response.
+                bottle.response.status = self.status
+                bottle.response.headers.update(self.headers)
 
-    def tell(self):
-        return self._stream.tell() + len(self._handle.body)
+            if self.asynchronous:
+                # Unset the underlying store.
+                super(Response, Response).body.__set__(self, None)
 
-    def _write(self, chunk):
-        self._stream.write(chunk)
+                # Write the chunk to the asynchronous queue.
+                self._queue.put(value)
+                return
 
-    def _push(self):
-        # Point the response handle to our constructed response.
-        bottle.response.status = self.status
-        bottle.response.headers.update(self.headers)
-
-    def _flush(self):
-        if not self.asynchronous:
-            # Nothing more to do as the write buffer is the output buffer.
-            return
-
-        # Write the buffer to the queue.
-        self._queue.put(self._stream.getvalue())
-        self._stream.truncate(0)
-        self._stream.seek(0)
+        # Set the underlying store.
+        super(Response, Response).body.__set__(self, value)
 
     def close(self):
+        # Perform general clean-up and a final flush.
         super(Response, self).close()
+
         if self.asynchronous:
-            # Close the queue and terminate the connection.
+            # Close the asynchronous queue and terminate the connection
+            # to the client.
             self._queue.put(StopIteration)

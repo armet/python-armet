@@ -4,7 +4,6 @@ from django.conf import urls
 from django.views.decorators import csrf
 from armet import utils
 from armet.http import exceptions
-from importlib import import_module
 from . import http
 
 
@@ -17,58 +16,23 @@ class Resource(object):
         async = cls.meta.asynchronous
         path = kwargs.get('path') or ''
         request = http.Request(django_request, path=path, asynchronous=async)
-        response = http.Response(request, asynchronous=async)
+        response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
-        if response.asynchronous:
+        if async:
             # Defer the view to pass of control.
-            view = super(Resource, cls).view
-            import_module('gevent').spawn(view, request, response)
+            import gevent
+            gevent.spawn(super(Resource, cls).view, request, response)
 
-            # Construct the iterator and run the sequence once.
-            iterator = iter(response._queue)
-            content = next(iterator)
-
-            def stream():
-                # Yield our initial data.
-                yield content
-
-                # Iterate through the generator and yield its content
-                # to the network stream.
-                for chunk in iterator:
-                    # Yield what we currently have in the buffer; if any.
-                    yield chunk
-
-            # Configure the streamer and return it
-            response._handle.content = stream()
+            # Construct and return the generator response.
+            response._handle.content = cls.stream(response, response)
             return response._handle
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
 
-        # If we got anything back; it is some kind of generator.
-        if result is not None:
-            # Construct the iterator and run the sequence once.
-            iterator = iter(result)
-            next(iterator)
-
-            def stream():
-                # Iterate through the generator and yield its content
-                # to the network stream.
-                for _ in iterator:
-                    # Yield what we currently have in the buffer; if any.
-                    yield response._stream.getvalue()
-
-                    # Remove what we have in the buffer.
-                    response._stream.truncate(0)
-                    response._stream.seek(0)
-
-            # Configure the streamer and return it
-            response._handle.content = stream()
-            return response._handle
-
         # Configure the response and return it.
-        response._handle.content = response._stream.getvalue()
+        response._handle.content = result
         return response._handle
 
     @utils.classproperty

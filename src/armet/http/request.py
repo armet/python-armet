@@ -6,7 +6,6 @@ import string
 import io
 import collections
 import mimeparse
-from armet.exceptions import InvalidOperation
 
 
 class Headers(collections.Mapping):
@@ -35,15 +34,12 @@ class Headers(collections.Mapping):
             self[name] = value = self.headers._Header(self, name)
             return value
 
-    def __init__(self, obj):
-        #! Reference to the request / response object.
-        self._obj = obj
-
+    def __init__(self):
         #! Internal store of the multi-valued headers as lists.
         self._sequence = self._Sequence(self)
 
     @staticmethod
-    def _normalize(name):
+    def normalize(name):
         """Normalizes the case of the passed name to be Http-Header-Case."""
         return str(string.capwords(name, '-'))
 
@@ -86,120 +82,72 @@ class Headers(collections.Mapping):
         return self._sequence[name]
 
 
-class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
+class Request(six.Iterator):
     """Describes the RESTful request abstraction.
     """
 
-    def __init__(self, path, method, asynchronous, *args, **kwargs):
+    def __init__(self, body, path, method, asynchronous, *args, **kwargs):
+        #! The body of the request.
+        self.body = body
+
+        #! A file interface over the body of the request.
+        self._stream = io.BytesIO(self.body)
+
         #! The captured path of the request, after the mount point.
         #! Example: GET /api/poll/23 => '/23'
-        self._path = path
+        self.path = path
 
         #! True if we're asynchronous.
-        self._asynchronous = asynchronous
-
-        #! The request headers dictionary.
-        self._headers = self.Headers(self)
-
-        # Build a dictionary of cookies from the request headers.
-        self._cookies = {}
-        cookies = self._headers.get('cookie')
-        if cookies:
-            for cookie in cookies.split(';'):
-                name, value = cookie.strip().split('=')
-                self._cookies[name] = value
+        self.asynchronous = asynchronous
 
         # Determine the actual HTTP method; apply the override header.
         override = self.headers.get('X-Http-Method-Override')
         if override:
             # Passed method was overriden; store override.
-            self._method = override.upper()
+            self.method = override.upper()
 
         else:
             # Passed method is the actual method.
-            self._method = method.upper()
+            self.method = method.upper()
 
         #! A reference to the bound resource; this is set in the resource
         #! view method after traversal.
-        self._Resource = None
+        self._resource = None
+
+    def bind(self, resource):
+        """Binds this to the passed resource object.
+
+        This is used so that the request and response classes can access
+        metadata and configuration on the resource handling this request
+        so helper methods on the request and response like `serialize` work
+        in full knowledge of configuration supplied to the resource.
+        """
+        self._resource = resource
 
     @property
-    def Resource(self):
-        """Retrieves a reference to the bound resource object."""
-        if self._Resource is None:
-            raise InvalidOperation('Request object not bound to a resource.')
-
-        return self._Resource
-
-    @property
-    def asynchronous(self):
-        """True if we're being handled asynchronously."""
-        return self._asynchronous
-
-    @property
-    def method(self):
-        """Retrieves the HTTP upper-cased method of the request (eg. GET)."""
-        return self._method
-
-    @property
-    def headers(self):
-        """Retrieves the immutable request headers dictionary."""
-        return self._headers
-
-    @property
-    def cookies(self):
-        """Retrieves the immutable request headers dictionary."""
-        return self._cookies
-
-    @abc.abstractproperty
     def protocol(self):
         """Retrieves the upper-cased version of the protocol (eg. HTTP)."""
+        raise NotImplementedError()
 
     @property
     def host(self):
         """Retrieves the hostname, normally from the `Host` header."""
         return self.headers.get('Host') or '127.0.0.1'
 
-    @abc.abstractproperty
+    @property
     def mount_point(self):
         """Retrieves the mount point portion of the path of this request."""
+        raise NotImplementedError()
 
     @property
-    def path(self):
-        """Retrieves the path of the request, after the mount point."""
-        return self._path
-
-    @abc.abstractproperty
     def query(self):
         """Retrieves the text after the first ? in the path."""
+        raise NotImplementedError()
 
-    @abc.abstractproperty
+    @property
     def uri(self):
         """Returns the complete URI of the request."""
-
-    def close(self):
-        """Request streams cannot be closed."""
-        raise io.UnsupportedOperation()
-
-    def closed(self):
-        """True if the stream is closed."""
-        return False
-
-    def isatty(self):
-        """Return True if the stream is interactive."""
-        return False
-
-    def readable(self):
-        """Return True if the stream can be read from."""
-        return True
-
-    def writable(self):
-        """Return True if the stream supports writing."""
-        return False
-
-    def seekable(self):
-        """Return True if the stream supports random access."""
-        return False
+        raise NotImplementedError()
 
     @property
     def encoding(self):
@@ -221,12 +169,26 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             default = 'utf-8' if ptype == 'application' else 'iso-8859-1'
             return params.get('charset', default)
 
-    @abc.abstractmethod
-    def _read(self, count=-1):
+    def _coerce(self, chunk, deserialize, format):
         """
-        Read and return up to `count` bytes or characters (depending on
-        the value of `self.encoding`).
+        Coerce the chunk into a text type using the encoding or python data
+        using a deserializer.
         """
+
+        if not chunk:
+            # Chunk was empty; return an empty string.
+            return ''
+
+        if type(chunk) is six.binary_type:
+            # If received a byte string; decode it.
+            chunk = chunk.decode(self.encoding)
+
+        if deserialize or format is not None:
+            # Deserialize the chunk using the passed format.
+            chunk, _ = self._resource.deserialize(chunk, format=format)
+
+        # Whatever else we were passed; return it.
+        return chunk
 
     def read(self, count=-1, deserialize=False, format=None):
         """
@@ -241,34 +203,10 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             A specific format to deserialize in; if provided, no detection is
             done. If not provided, the content-type header is looked at to
             determine an appropriate deserializer.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._read` instead.
         """
-        # Perform the initial read.
-        content = self._read(count)
+        return self._coerce(self._stream.read(count), deserialize, format)
 
-        if not content:
-            # Content was empty; return an empty string.
-            return ''
-
-        if type(content) is six.binary_type:
-            # If received a byte string; decode it.
-            content = content.decode(self.encoding)
-
-        if deserialize:
-            # Deserialize the content using the passed format.
-            content, _ = self.Resource.deserialize(content, self, format)
-
-        # Whatever else we were passed; return it.
-        return content
-
-    @abc.abstractmethod
-    def _readline(self, limit=-1):
-        """Read and return one line from the stream."""
-
-    def readline(self, limit=-1, deserialize=False, format=None):
+    def readline(self, count=-1, deserialize=False, format=None):
         """Read and return one line from the stream.
 
         @param[in] deserialize
@@ -284,56 +222,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             This is not the method that connectors will override; refer to
             `self._readline` instead.
         """
-        # Perform the initial read.
-        content = self._readline(limit)
-
-        if type(content) is six.binary_type:
-            # If received a byte string; decode it.
-            content = content.decode(self.encoding)
-
-        if deserialize:
-            # Deserialize the content using the passed format.
-            content, _ = self.Resource.deserialize(content, self, format)
-
-        # Whatever else we were passed; return it.
-        return content
-
-    @abc.abstractmethod
-    def _readlines(self, hint=-1):
-        """Read and return a list of lines from the stream."""
-
-    def readlines(self, hint=-1, deserialize=False, format=None):
-        """Read and return a list of lines from the stream.
-
-        @param[in] deserialize
-            True to deserialize the resultant text using a determiend format
-            or the passed format.
-
-        @param[in] format
-            A specific format to deserialize in; if provided, no detection is
-            done. If not provided, the content-type header is looked at to
-            determine an appropriate deserializer.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._readlines` instead.
-        """
-        # Perform the initial read; iterate through its lines.
-        content = self._readlines(hint)
-        for index, value in content:
-            if type(value) is six.binary_type:
-                # If received a byte string; decode it.
-                value = value.decode(self.encoding)
-
-                if deserialize:
-                    # Deserialize the content using the passed format.
-                    value, _ = self.Resource.deserialize(value, self, format)
-
-                # Mutate the line list.
-                content[index] = value
-
-        # Return our decoded content.
-        return content
+        return self._coerce(self._stream.readline(count), deserialize, format)
 
     def deserialize(self, format=None):
         """Deserializes the request body using a determined deserializer.
@@ -347,7 +236,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
             A tuple of the deserialized data and an instance of the
             deserializer used.
         """
-        return self.Resource.deserialize(self.read(), self, format)
+        return self._resource.deserialize(self.read(), format=format)
 
     def __iter__(self):
         """File-like objects are implicitly iterators."""
@@ -358,6 +247,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         line = self.readline()
         if line:
             return line
+
         raise StopIteration()
 
     def __len__(self):
@@ -366,11 +256,7 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
         return int(length) if length else 0
 
     def __getitem__(self, name):
-        """Retrieves a header with the passed name.
-
-        @param[in] name
-            The case-insensitive name of the header to retrieve.
-        """
+        """Retrieves a header with the passed name."""
         return self.headers[name]
 
     def get(self, name, default=None):
@@ -379,8 +265,8 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
 
     def getlist(self, name):
         """
-        Retrieves a the multi-valued list of
-        the header with the passed name.
+        Retrieves a the multi-valued list of the header with
+        the passed name.
         """
         return self.headers.getlist(name)
 
@@ -399,16 +285,3 @@ class Request(six.with_metaclass(abc.ABCMeta, six.Iterator)):
     def items(self):
         """Return a new view of the headers."""
         return self.headers.items()
-
-    if not six.PY3:
-        def iterkeys(self):
-            """Return a new view of the header names."""
-            return self.headers.iterkeys()
-
-        def itervalues(self):
-            """Return a new view of the header values."""
-            return self.headers.itervalues()
-
-        def iteritems(self):
-            """Return a new view of the headers."""
-            return self.headers.iteritems()

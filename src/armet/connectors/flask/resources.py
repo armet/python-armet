@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
+import collections
+import six
 import flask
 from werkzeug.routing import BaseConverter
 from . import http
-from importlib import import_module
 
 
 class RegexConverter(BaseConverter):
@@ -28,65 +29,35 @@ class Resource(object):
         # Construct request and response wrappers.
         async = cls.meta.asynchronous
         request = http.Request(path=path, asynchronous=async)
-        response = http.Response(request, asynchronous=async)
+        response = http.Response(asynchronous=async)
 
         # Defer the execution thread if we're running asynchronously.
-        if response.asynchronous:
+        if async:
             # Defer the view to pass of control.
-            view = super(Resource, cls).view
-            import_module('gevent').spawn(view, request, response)
+            import gevent
+            gevent.spawn(super(Resource, cls).view, request, response)
 
-            # Construct the iterator and run the sequence once.
-            iterator = iter(response._queue)
-            content = next(iterator)
-
-            def stream():
-                # Yield our initial data.
-                yield content
-
-                # Iterate through the generator and yield its content
-                # to the network stream.
-                for chunk in iterator:
-                    # Yield what we currently have in the buffer; if any.
-                    yield chunk
-
-            # Configure the streamer and return it
-            response._handle.response = stream()
+            # Construct and return the generator response.
+            response._handle.response = cls.stream(response, response)
             return response._handle
 
         # Pass control off to the resource handler.
         result = super(Resource, cls).view(request, response)
 
-        # If we got anything back; it is some kind of generator.
-        if result is not None:
-            # Construct the iterator and run the sequence once.
-            iterator = iter(result)
-            next(iterator)
-
-            def stream():
-                # Iterate through the generator and yield its content
-                # to the network stream.
-                for chunk in iterator:
-                    # Yield what we currently have in the buffer; if any.
-                    yield response._stream.getvalue()
-
-                    # Remove what we have in the buffer.
-                    response._stream.truncate(0)
-                    response._stream.seek(0)
-
-            # Configure the streamer and return it
-            response._handle.response = stream()
+        if (isinstance(result, collections.Iterable) and
+                not isinstance(result, six.string_types)):
+            # Construct and return the generator response.
+            response._handle.response = result
             return response._handle
 
         # Configure the response and return it.
-        response._handle.data = response._stream.getvalue()
+        response._handle.data = result
         return response._handle
 
     @classmethod
     def mount(cls, url, app=None):
         # Generate a name to use to mount this resource.
-        name = '{}.{}'.format(cls.__module__, cls.__name__)
-        name = '{}:{}:{}'.format('armet', name, cls.meta.name)
+        name = '{}:{}:{}'.format('armet', cls.__module__, cls.meta.name)
 
         # If application is not provided; make use of the app context.
         if app is None:
