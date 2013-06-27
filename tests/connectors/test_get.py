@@ -2,9 +2,10 @@
 from __future__ import absolute_import, unicode_literals, division
 import json
 from armet import http
+import pytest
 import unittest
 import six
-from sys import platform
+import platform
 from .base import BaseResourceTest
 
 
@@ -50,10 +51,9 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
+    @pytest.mark.skipif("sys.version_info >= (3, 0)")
+    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
     def test_async(self, connectors):
-        if six.PY3 and platform.python_implementation() == 'PyPy':
-            raise unittest.SkipTest('gevent not available for this platform')
-
         response, content = self.client.request('/api/async/')
         data = content.decode('utf-8')
 
@@ -61,10 +61,9 @@ class TestResourceGet(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'Hello'
 
+    @pytest.mark.skipif("sys.version_info >= (3, 0)")
+    @pytest.mark.skipif("platform.python_implementation == 'PyPy'")
     def test_async_stream(self, connectors):
-        if six.PY3 and platform.python_implementation() == 'PyPy':
-            raise unittest.SkipTest('gevent not available for this platform')
-
         response, content = self.client.request('/api/async-stream/')
         content = content.decode('utf-8')
 
