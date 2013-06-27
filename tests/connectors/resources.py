@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import sys
 from armet import resources
-from importlib import import_module
+# from importlib import import_module
 
 # Request the generic models module inserted by the test runner.
 models = sys.modules['tests.connectors.models']

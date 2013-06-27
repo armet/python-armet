@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import six
 import json
-import unittest
 from armet import http
 from .base import BaseResourceTest
 
