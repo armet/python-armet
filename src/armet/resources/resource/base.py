@@ -335,7 +335,7 @@ class Resource(object):
         raise http.exceptions.NotAcceptable(available)
 
     @classmethod
-    def _facilitate_cross_domain_request(cls, request, response):
+    def _process_cross_domain_request(cls, request, response):
         """Facilitate Cross-Origin Requests (CORs).
         """
 
@@ -430,7 +430,7 @@ class Resource(object):
         # Facilitate CORS by applying various headers.
         # This must be done on every request.
         # TODO: Provide cross_domain configuration that turns this off.
-        self._facilitate_cross_domain_request(request, response)
+        self._process_cross_domain_request(request, response)
 
         # Route the HTTP/1.1 request to an appropriate method.
         return self.route(request, response)
