@@ -52,7 +52,7 @@ class TestResourceGet(BaseResourceTest):
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
     @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation == 'PyPy'")
+    @skipif("__import__('platform').python_implementation() == 'PyPy'")
     def test_async(self, connectors):
         response, content = self.client.request('/api/async/')
         data = content.decode('utf-8')
@@ -62,7 +62,7 @@ class TestResourceGet(BaseResourceTest):
         assert data == 'Hello'
 
     @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation == 'PyPy'")
+    @skipif("__import__('platform').python_implementation() == 'PyPy'")
     def test_async_stream(self, connectors):
         response, content = self.client.request('/api/async-stream/')
         content = content.decode('utf-8')
@@ -88,7 +88,7 @@ class TestResourceGet(BaseResourceTest):
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
     @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation == 'PyPy'")
+    @skipif("__import__('platform').python_implementation() == 'PyPy'")
     def test_lightweight_async(self, connectors):
         response, content = self.client.request('/api/lightweight-async/')
         data = content.decode('utf-8')
