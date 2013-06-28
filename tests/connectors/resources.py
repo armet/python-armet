@@ -17,7 +17,8 @@ __all__ = [
     'lightweight_streaming',
     'lightweight_async',
     'LeftResource',
-    'RightResource'
+    'RightResource',
+    'echo'
 ]
 
 
@@ -101,21 +102,21 @@ class AsyncStreamResource(resources.Resource):
         spawn(self.meta.connectors, streamer)
 
 
-@armet.resource(method='GET')
+@armet.resource(methods='GET')
 def lightweight(request, response):
     response.status = 412
     response['Content-Type'] = 'text/plain'
     response.write('Hello')
 
 
-@armet.resource(method='POST')
+@armet.resource(methods='POST')
 def lightweight(request, response):
     response.status = 414
     response['Content-Type'] = 'text/plain'
     response.write('Hello POST')
 
 
-@armet.resource(method='GET')
+@armet.resource(methods='GET')
 def lightweight_streaming(request, response):
     response.status = 412
     response['Content-Type'] = 'text/plain'
@@ -135,7 +136,7 @@ def lightweight_streaming(request, response):
 
 
 @armet.asynchronous
-@armet.resource(method='GET')
+@armet.resource(methods='GET')
 def lightweight_async(request, response):
     def writer():
         response.status = 412
@@ -180,3 +181,12 @@ class RightResource(resources.Resource):
     def get(self):
         # Do nothing.
         pass
+
+
+@armet.resource(methods='POST')
+def echo(request, response):
+    # Read in the given data in the given format.
+    data = request.read(deserialize=True)
+
+    # Write out the parsed data in the requested format.
+    response.write(data, serialize=True)

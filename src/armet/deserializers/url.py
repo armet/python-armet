@@ -27,12 +27,22 @@ class URLDeserializer(Deserializer):
             # URL decoder.
             data = OrderedDict()
             for name, value in parse_qsl(text, keep_blank_values=True):
-                name = name.decode(encoding)
+                # Ensure values are properly decoded if neccessary.
+                if isinstance(value, six.binary_type):
+                    value = value.decode(encoding)
+
+                if isinstance(name, six.binary_type):
+                    name = name.decode(encoding)
+
+                # Initialize the array.
                 if name not in data:
                     data[name] = []
-                data[name].append(value.decode(encoding))
+
+                # Append the data value.
+                data[name].append(value)
+
             return data
 
-        except AttributeError:
+        except AttributeError as ex:
             # Something went wront internally; bad input.
             raise ValueError

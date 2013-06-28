@@ -77,7 +77,7 @@ def resource(**kwargs):
         if name is None:
             name = utils.dasherize(function.__name__)
 
-        methods = kwargs.pop('method', None)
+        methods = kwargs.pop('methods', None)
         if isinstance(methods, six.string_types):
             # Tuple-ify the method if we got just a string.
             methods = methods,
