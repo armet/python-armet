@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import flask
+import bottle
 import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
 from .utils import force_import_module
@@ -10,17 +10,19 @@ def http_setup(connectors, host, port, callback):
     # Install the WSGI interception layer.
     install()
 
-    # Flask is pretty straightforward.
+    # Bottle is pretty straightforward.
     # We just need to push an application context.
-    application = flask.Flask(__name__)
-    application.debug = True
+    application = bottle.Bottle(__name__)
+
+    # Ensure we're debugging.
+    bottle.debug(True)
 
     # Invoke the callback if we got one.
     if callback:
         callback()
 
     # Then import the resources; iterate and mount each one.
-    module = force_import_module('tests.connectors.resources')
+    module = force_import_module('tests.armet.connectors.resources')
     for name in module.__all__:
         getattr(module, name).mount(r'/api/', application)
 

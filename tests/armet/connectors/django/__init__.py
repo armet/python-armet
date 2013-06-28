@@ -5,7 +5,7 @@ import wsgi_intercept
 from wsgi_intercept.httplib2_intercept import install
 
 # Setup the environment variables.
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.armet.connectors.django.settings'
 
 from .models import Poll
 
@@ -16,7 +16,8 @@ __all__ = [
 
 def http_setup(connectors, host, port, callback):
     # Setup the environment variables.
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
+    os.environ['DJANGO_SETTINGS_MODULE'] = (
+        'tests.armet.connectors.django.settings')
 
     # Invoke the callback if we got one.
     if callback:
@@ -39,7 +40,8 @@ def http_teardown(host, port):
 
 def model_setup():
     # Setup the environment variables.
-    os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.connectors.django.settings'
+    os.environ['DJANGO_SETTINGS_MODULE'] = (
+        'tests.armet.connectors.django.settings')
 
     # Initialize the database and create all models.
     from django.db import connections, DEFAULT_DB_ALIAS

@@ -44,7 +44,7 @@ def http_setup(connectors, host, port, callback):
         reactor.callFromThread(callback)
 
     # Then import the resources; iterate and mount each one.
-    module = force_import_module('tests.connectors.resources')
+    module = force_import_module('tests.armet.connectors.resources')
     for name in module.__all__:
         getattr(module, name).mount(r'^/api', application)
 
