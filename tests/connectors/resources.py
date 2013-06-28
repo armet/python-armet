@@ -108,6 +108,13 @@ def lightweight(request, response):
     response.write('Hello')
 
 
+@armet.resource(method='POST')
+def lightweight(request, response):
+    response.status = 414
+    response['Content-Type'] = 'text/plain'
+    response.write('Hello POST')
+
+
 @armet.resource(method='GET')
 def lightweight_streaming(request, response):
     response.status = 412

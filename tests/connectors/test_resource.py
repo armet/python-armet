@@ -23,3 +23,17 @@ class TestResource(BaseResourceTest):
 
         # Reset the configuration
         armet.use.config = old
+
+    def test_connectorless_abstract_resource(self, connectors):
+        # Unset configuration.
+        old = armet.use.config
+        armet.use.config = {}
+
+        class Resource(resources.Resource):
+            class Meta:
+                abstract = True
+
+        assert Resource.meta.abstract
+
+        # Reset the configuration
+        armet.use.config = old

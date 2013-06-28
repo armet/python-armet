@@ -2,11 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import json
 from armet import http
-import pytest
 from .base import BaseResourceTest
-
-# Shortcut to the skipif marker.
-skipif = pytest.mark.skipif
 
 
 class TestResourceGet(BaseResourceTest):
@@ -42,57 +38,3 @@ class TestResourceGet(BaseResourceTest):
         assert isinstance(data, dict)
         assert (data['question'] ==
                 'What one question would you add to this survey?')
-
-    def test_streaming(self, connectors):
-        response, content = self.client.request('/api/streaming/')
-        data = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
-
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_async(self, connectors):
-        response, content = self.client.request('/api/async/')
-        data = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'Hello'
-
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_async_stream(self, connectors):
-        response, content = self.client.request('/api/async-stream/')
-        content = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
-
-    def test_lightweight(self, connectors):
-        response, content = self.client.get('/api/lightweight/')
-        data = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'Hello'
-
-    def test_lightweight_streaming(self, connectors):
-        response, content = self.client.request('/api/lightweight-streaming/')
-        data = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
-
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_lightweight_async(self, connectors):
-        response, content = self.client.request('/api/lightweight-async/')
-        data = content.decode('utf-8')
-
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'Hello'
