@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from cyclone import web
-from twisted.internet import reactor
+from twisted.internet import reactor, threads
 from threading import Thread
 from .utils import force_import_module
 
@@ -55,4 +55,4 @@ def http_setup(connectors, host, port, callback):
 
 def http_teardown(host, port):
     # Stop listening on that port.
-    reactor.callFromThread(_socket.loseConnection)
+    threads.blockingCallFromThread(reactor, _socket.loseConnection)

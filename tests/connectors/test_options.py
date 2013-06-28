@@ -14,7 +14,7 @@ class TestResourceOptions(BaseResourceTest):
         cls.left_origin = 'http://10.0.0.1'
         cls.default_method = 'GET'
 
-    def test_origin_header(self):
+    def test_origin_header(self, connectors):
         # Check an endpoint with a specific origin.
         # Try with no Origin request.
         # Should just send back 200.
@@ -107,14 +107,14 @@ class TestResourceOptions(BaseResourceTest):
 
         # Should probably check that we're getting the correct methods back.
 
-    def test_access_control_allow_headers(self):
+    def test_access_control_allow_headers(self, connectors):
         """Test the Access-Control-Allow-Headers header."""
         self.access_control_headers('Access-Control-Allow-Headers')
 
-    def test_access_control_allow_methods(self):
+    def test_access_control_allow_methods(self, connectors):
         """Test the Access-Control-Allow-Methods header."""
         self.access_control_headers('Access-Control-Allow-Methods')
 
-    def test_access_control_allow_origin(self):
+    def test_access_control_allow_origin(self, connectors):
         """Test the Access-Control-Allow-Origin header."""
         self.access_control_headers('Access-Control-Allow-Origin')
