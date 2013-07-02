@@ -31,7 +31,7 @@ class MethodNotAllowed(BaseHTTPException):
 
     def __init__(self, allowed):
         super(MethodNotAllowed, self).__init__(
-            headers={'Allowed': ', '.join(allowed)})
+            headers={'Allow': ', '.join(allowed)})
 
 
 class NotAcceptable(BaseHTTPException):
