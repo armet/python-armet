@@ -359,7 +359,7 @@ class TimezoneAttribute(Attribute):
 
     def __init__(self, *args, **kwargs):
         # Ensure we have support.
-        if parse_datetime is None:
+        if pytz is None:
             raise exceptions.ImproperlyConfigured(
                 'Use of the timezone attribute requires pytz')
 
