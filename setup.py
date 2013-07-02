@@ -61,7 +61,7 @@ if sys.version_info[0] == 2:
 
 setup(
     name='armet',
-    version='0.3.0',
+    version='0.3.1',
     description='Clean and modern framework for creating RESTful APIs.',
     author='Concordus Applications',
     author_email='support@concordusapps.com',
