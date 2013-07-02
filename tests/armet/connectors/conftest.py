@@ -8,8 +8,6 @@ def pytest_generate_tests(metafunc):
     # arrangement.
     http = connectors.http
     model = connectors.model
-    # scenarios = [[{'http': x}] for x in http]
-    # ids = list(http)
     scenarios = [[{'http': x, 'model': y}] for x in http for y in model]
     ids = ['{}:{}'.format(x, y) for x in http for y in model]
 
