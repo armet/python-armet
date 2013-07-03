@@ -6,6 +6,7 @@ import string
 import io
 import collections
 import mimeparse
+from six.moves import http_cookies
 
 
 class Headers(collections.Mapping):
@@ -113,6 +114,11 @@ class Request(six.Iterator):
         else:
             # Passed method is the actual method.
             self.method = method.upper()
+
+        #! Cookie jar full of python morsel objects that represent the
+        #! cookies that were sent with the request.
+        self.cookies = http_cookies.SimpleCookie()
+        self.cookies.load(self.get('Cookie', ''))
 
         #! A reference to the bound resource; this is set in the resource
         #! view method after traversal.

@@ -18,7 +18,8 @@ __all__ = [
     'lightweight_async',
     'LeftResource',
     'RightResource',
-    'echo'
+    'echo',
+    'cookie'
 ]
 
 
@@ -190,3 +191,9 @@ def echo(request, response):
 
     # Write out the parsed data in the requested format.
     response.write(data, serialize=True)
+
+
+@armet.resource(methods='GET')
+def cookie(request, response):
+    response['Content-Type'] = 'text/plain'
+    response.write(request.cookies['blue'].value)

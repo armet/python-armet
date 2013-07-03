@@ -123,3 +123,17 @@ class TestResourceLightweight(BaseResourceTest):
         assert response.status == 412
         assert response.get('content-type') == 'text/plain'
         assert data == 'Hello'
+
+
+class TestResourceCookie(BaseResourceTest):
+
+    def test_send_and_check(self, connectors):
+        response, content = self.client.request(
+            path='/api/cookie/',
+            headers={'Cookie': 'blue=color'})
+
+        data = content.decode('utf-8')
+
+        assert response.status == 200
+        assert response.get('content-type') == 'text/plain'
+        assert data == 'color'
