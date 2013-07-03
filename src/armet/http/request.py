@@ -117,8 +117,10 @@ class Request(six.Iterator):
 
         #! Cookie jar full of python morsel objects that represent the
         #! cookies that were sent with the request.
+        text = self.get('Cookie')
         self.cookies = http_cookies.SimpleCookie()
-        self.cookies.load(self.get('Cookie', ''))
+        if text:
+            self.cookies.load(str(text))
 
         #! A reference to the bound resource; this is set in the resource
         #! view method after traversal.
