@@ -401,29 +401,30 @@ class Resource(object):
         handing complete control of the result to a function with the
         same name as the request method.
         """
-        # TODO: Assert authentication and attempt to get a valid user object.
-        # self.user = user = None
-        # for auth in self.meta.authentication:
-        #     user = auth.authenticate(self)
-        #     if user is False:
-        #         # Authentication protocol failed to authenticate;
-        #         # pass the baton.
-        #         continue
+        # Assert authentication and attempt to get a valid user object.
+        request.user = user = None
 
-        #     if user is None and not auth.allow_anonymous:
-        #         # Authentication protocol determined the user is
-        #         # unauthenticated.
-        #         auth.unauthenticated()
+        for auth in self.meta.authentication:
+            user = auth.authenticate(self)
+            if user is False:
+                # Authentication protocol failed to authenticate;
+                # pass the baton.
+                continue
 
-        #     # Authentication protocol determined the user is indeed
-        #     # authenticated (or not); Store the user for later reference.
-        #     self.user = user
-        #     break
+            if user is None and not auth.allow_anonymous:
+                # Authentication protocol determined the user is
+                # unauthenticated.
+                auth.unauthenticated()
 
-        # if not user and not auth.allow_anonymous:
-        #     # No authenticated user found and protocol doesn't allow
-        #     # anonymous users.
-        #     auth.unauthenticated()
+            # Authentication protocol determined the user is indeed
+            # authenticated (or not); Store the user for later reference.
+            request.user = user
+            break
+
+        if not user and not auth.allow_anonymous:
+            # No authenticated user found and protocol doesn't allow
+            # anonymous users.
+            auth.unauthenticated()
 
         # TODO: Assert accessibiltiy of the resource in question.
 
