@@ -123,10 +123,12 @@ class Resource(object):
                 # Write the exception body if present and close
                 # the response.
                 # TODO: Use the plain-text encoder.
-                cls.serialize(e.content, response, format='json')
+                response.send(e.content, serialize=True, format='json')
 
-            # Terminate the connection.
+            # Terminate the connection and return the body.
             response.close()
+            if response.body:
+                return response.body
 
         except Exception:
             # Something unexpected happened.

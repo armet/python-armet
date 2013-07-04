@@ -243,15 +243,14 @@ class Response(object):
         # Ensure we're not closed.
         self.require_not_closed()
 
-        if self.streaming or self.asynchronous:
-            # We're streaming or asynchronous; flush out the current buffer.
-            self.flush()
-
-        else:
+        if not self.streaming or self.asynchronous:
             # We're not streaming, auto-write content-length if not
             # already set.
             if 'Content-Length' not in self.headers:
                 self.headers['Content-Length'] = self.tell()
+
+        # Flush out the current buffer.
+        self.flush()
 
         # We're done with the response; inform the HTTP connector
         # to close the response stream.
