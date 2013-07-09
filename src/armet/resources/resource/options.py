@@ -97,7 +97,8 @@ class ResourceOptions(object):
         #! @code
         #! from armet import resources
         #! class Resource(resources.Resource):
-        #!     connectors = {'http': 'django'}
+        #!     class Meta:
+        #!         connectors = {'http': 'django'}
         #! @endcode
         #!
         #! Connectors may also be specified as full paths to the connector
@@ -107,7 +108,8 @@ class ResourceOptions(object):
         #! @code
         #! from armet import resources
         #! class Resource(resources.Resource):
-        #!     connectors = {'http': 'some.other.place'}
+        #!     class Meta:
+        #!         connectors = {'http': 'some.other.place'}
         #! @endcode
         self.connectors = connectors = _merge(meta, 'connectors', bases, {})
 
@@ -121,6 +123,22 @@ class ResourceOptions(object):
                 if '.' not in connector:
                     # Shortname, prepend base.
                     connectors[key] = 'armet.connectors.{}'.format(connector)
+
+        #! Additional options to handle and merge into the meta object
+        #! at the class object level.
+        #!
+        #! This should be a simple set/list/tuple of options.
+        #!
+        #! @code
+        #! from armet import resources
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         options = {'color', 'plant'}
+        #! @endcode
+        self.options = options = _merge(meta, 'options', bases, {})
+        for name in options:
+            # Pull out each option and stick it on the meta.
+            setattr(name, meta.get(name))
 
         #! Trailing slash handling.
         #! The value indicates which URI is the canonical URI and the
