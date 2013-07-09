@@ -13,6 +13,7 @@ def http_setup(connectors, host, port, callback):
     # Bottle is pretty straightforward.
     # We just need to push an application context.
     application = bottle.Bottle(__name__)
+    application.catchall = False
 
     # Ensure we're debugging.
     bottle.debug(True)
@@ -24,6 +25,7 @@ def http_setup(connectors, host, port, callback):
     # Then import the resources; iterate and mount each one.
     module = force_import_module('tests.armet.connectors.resources')
     for name in module.__all__:
+        # import ipdb; ipdb.set_trace()
         getattr(module, name).mount(r'/api/', application)
 
     # Enable the WSGI interception layer.

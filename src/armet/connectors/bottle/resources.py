@@ -17,13 +17,13 @@ class Resource(object):
         if async:
             # Defer the view to pass of control.
             import gevent
-            gevent.spawn(super(Resource, cls).view, request, response)
+            gevent.spawn(super(cls.__base__, cls).view, request, response)
 
             # Construct and return a streamer.
             return cls.stream(response, response)
 
         # Pass control off to the resource handler.
-        return super(Resource, cls).view(request, response)
+        return super(cls.__base__, cls).view(request, response)
 
     @classmethod
     def mount(cls, url='/', application=None):

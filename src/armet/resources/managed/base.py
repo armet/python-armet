@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import logging
-import re
 from armet import http
 from armet.resources.resource import base
 
@@ -238,8 +237,13 @@ class ManagedResource(base.Resource):
         # Ensure we're allowed to read the resource.
         self.assert_operations('read')
 
-        # Delegate to `read` to retrieve the items.
-        items = self.read()
+        try:
+            # Delegate to `read` to retrieve the items.
+            items = self.read()
+
+        except AttributeError:
+            # No read method defined.
+            raise http.exceptions.NotImplemented()
 
         if self.slug is not None and not items:
             # Requested a specific resource but nothing is returned.
@@ -248,54 +252,54 @@ class ManagedResource(base.Resource):
         # Build the response object.
         self.make_response(items)
 
-    def read(self):
-        """Retrieves data to be displayed; called via GET.
+    # def read(self):
+    #     """Retrieves data to be displayed; called via GET.
 
-        @returns
-            Either a single object or an iterable of objects to be encoded
-            and returned to the client.
-        """
-        # There is no default behavior.
-        raise http.exceptions.NotImplemented()
+    #     @returns
+    #         Either a single object or an iterable of objects to be encoded
+    #         and returned to the client.
+    #     """
+    #     # There is no default behavior.
+    #     raise http.exceptions.NotImplemented()
 
-    def create(self, data):
-        """Creates the object that is being requested; via POST or PUT.
+    # def create(self, data):
+    #     """Creates the object that is being requested; via POST or PUT.
 
-        @param[in] data
-            The data to create the object with.
+    #     @param[in] data
+    #         The data to create the object with.
 
-        @returns
-            The object that has been created; or, None, to indicate that no
-            object was created.
-        """
-        # There is no default behavior.
-        raise http.exceptions.NotImplemented()
+    #     @returns
+    #         The object that has been created; or, None, to indicate that no
+    #         object was created.
+    #     """
+    #     # There is no default behavior.
+    #     raise http.exceptions.NotImplemented()
 
-    def update(self, obj, data):
-        """Updates the object that is being requested; via PATCH or PUT.
+    # def update(self, obj, data):
+    #     """Updates the object that is being requested; via PATCH or PUT.
 
-        @param[in] obj
-            The objects represented by the current request; the results of
-            invoking `self.read()`.
+    #     @param[in] obj
+    #         The objects represented by the current request; the results of
+    #         invoking `self.read()`.
 
-        @param[in] data
-            The data to update the object with.
+    #     @param[in] data
+    #         The data to update the object with.
 
-        @returns
-            The object that has been updated.
-        """
-        # There is no default behavior.
-        raise http.exceptions.NotImplemented()
+    #     @returns
+    #         The object that has been updated.
+    #     """
+    #     # There is no default behavior.
+    #     raise http.exceptions.NotImplemented()
 
-    def destroy(self, obj):
-        """Destroy the passed object (or objects).
+    # def destroy(self, obj):
+    #     """Destroy the passed object (or objects).
 
-        @param[in] obj
-            The objects represented by the current request; the results of
-            invoking `self.read()`.
+    #     @param[in] obj
+    #         The objects represented by the current request; the results of
+    #         invoking `self.read()`.
 
-        @returns
-            Nothing.
-        """
-        # There is no default behavior.
-        raise http.exceptions.NotImplemented()
+    #     @returns
+    #         Nothing.
+    #     """
+    #     # There is no default behavior.
+    #     raise http.exceptions.NotImplemented()

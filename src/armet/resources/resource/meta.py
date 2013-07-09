@@ -27,35 +27,29 @@ class ResourceBase(type):
     #! Connectors to instantiate and mixin to the inheritance.
     connectors = ['http']
 
-    def __instancecheck__(cls, instance):
-        return cls.__subclasscheck__(type(instance))
+    def __getattribute__(self, name):
+        if name == 'connectors' or name.startswith('__'):
+            # Return immediately.
+            return super(ResourceBase, self).__getattribute__(name)
 
-    def __subclasscheck__(cls, sub):
-        mro = sub.mro()
-        if cls in mro:
-            return True
-        return any(b in mro for b in cls.__bases__)
+        # Attempt to get the attribute from a connector.
+        connectors = self.__dict__.get('connectors')
+        if connectors and isinstance(connectors[0], type):
+            for connector in self.connectors:
+                attr = connector.__dict__.get(name)
+                if attr is not None:
+                    # Found attribute.
+                    if hasattr(attr, '__get__'):
+                        # This has a descriptor; wrap it to use the
+                        # current cls.
+                        return attr.__get__(None, self)
+                        # return lambda *a, **kw: attr.__get__(self, *a, **kw)
 
-    # def mro(cls):
-    #     mro = super(ResourceBase, cls).mro()
-    #     if mro[0].__name__.startswith('armet.connector:'):
-    #         # Re-order the mro; don't worry this is cached on the
-    #         # class object as __mro__ by python internals.
-    #         # Just so we're clear. Because of the way connectors work;
-    #         # it happens that two classes in the mro contain references
-    #         # to the methods so that by calling `super` python jumps to
-    #         # the next one in the chain (thus engulfing itself in an
-    #         # inifinite loop). This simply swaps the order of the two
-    #         # so that supers go the actual base class rather than loop.
-    #         resource = mro[0].__bases__[-1]
-    #         index = mro.index(resource)
-    #         mro.insert(index, mro.pop(0))
-    #         mro.remove(resource)
-    #         mro.insert(0, resource)
-    #         return mro
+                    # Return a normal attribute.
+                    return attr
 
-    #     # Return the normal mro.
-    #     return mro
+        # Found nothing; continue as normal.
+        return super(ResourceBase, self).__getattribute__(name)
 
     @classmethod
     def _is_resource(cls, name, bases):
@@ -117,19 +111,8 @@ class ResourceBase(type):
         # Gather and construct the options object.
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
 
-        # Remove connector layer from base classes.
-        new_bases = []
-        for base in bases:
-            if base.__name__.startswith('armet.connector:'):
-                # This is a connector wrapper; unwrap it.
-                new_bases.append(base.__bases__[-1])
-            else:
-                # Not a connector wrapped object; just append it.
-                new_bases.append(base)
-        new_bases = tuple(new_bases)
-
         # Construct the class object.
-        self = super(ResourceBase, cls).__new__(cls, name, new_bases, attrs)
+        self = super(ResourceBase, cls).__new__(cls, name, bases, attrs)
 
         # Generate a serializer map that maps media ranges to serializer
         # names.
@@ -155,7 +138,7 @@ class ResourceBase(type):
 
         # Iterate through the available connectors.
         iterator = six.iteritems(meta.connectors)
-        connectors = []
+        self.connectors = connectors = []
         cmap = CONNECTORS
         for key, ref in iterator:
             options = utils.import_module(cmap[key]['options'][0].format(ref))
@@ -175,11 +158,5 @@ class ResourceBase(type):
                     # Found a connector class for this connector
                     connectors.append(klass)
 
-        # Mix all the connector types together.
-        connectors.append(self)
-        connectors = tuple(connectors)
-        name = 'armet.connector:{}'.format(name)
-        combined = type(str(name), connectors, {})
-
         # Return the constructed instance.
-        return combined
+        return self

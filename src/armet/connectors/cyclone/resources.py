@@ -61,7 +61,7 @@ class Resource(object):
         handler._auto_finish = not response.asynchronous
 
         # Pass control off to the resource handler.
-        result = super(Resource, cls).view(request, response)
+        result = super(cls.__base__, cls).view(request, response)
 
         # If we got anything back; it is some kind of generator.
         if not response.asynchronous and result is not None:

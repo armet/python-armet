@@ -21,7 +21,9 @@ __all__ = [
     'echo',
     'cookie',
     'DirectResource',
-    # 'IndirectResource'
+    'IndirectResource',
+    'ModelDirectResource',
+    'ModelIndirectResource',
 ]
 
 
@@ -208,3 +210,36 @@ class DirectResource(resources.Resource):
 
     def get(self, request, response):
         response.write(b'42')
+
+
+class ModelDirectResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Poll
+
+    def route(self, request, response):
+        return super(ModelDirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'42')
+
+
+class IndirectResource(DirectResource):
+
+    def route(self, request, response):
+        return super(IndirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'84')
+
+
+class ModelIndirectResource(ModelDirectResource):
+
+    class Meta:
+        model = models.Poll
+
+    def route(self, request, response):
+        return super(ModelIndirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'84')

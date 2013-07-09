@@ -46,6 +46,28 @@ class Resource(object):
         # Return our constructed instance.
         return obj
 
+    def __getattribute__(self, name):
+        if name.startswith('__') or name == 'connectors':
+            # Bail early.
+            return super(Resource, self).__getattribute__(name)
+
+        # Attempt to get the attribute from a connector.
+        if self.connectors and isinstance(self.connectors[0], type):
+            for connector in self.connectors:
+                attr = connector.__dict__.get(name)
+                if attr is not None:
+                    # Found attribute.
+                    if hasattr(attr, '__get__'):
+                        # This has a descriptor; wrap it to use the
+                        # current cls.
+                        return attr.__get__(self)
+
+                    # Return a normal attribute.
+                    return attr
+
+        # We can't find anything; continue as normal.
+        return super(Resource, self).__getattribute__(name)
+
     @classmethod
     def redirect(cls, request, response):
         """Redirect to the canonical URI for this resource."""

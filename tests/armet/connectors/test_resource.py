@@ -47,17 +47,20 @@ class TestResolution(BaseResourceTest):
         assert response.status == 200
         assert content.decode('utf8') == '42'
 
-    # isinstance with direct inheritance from resources.Resource
-    # isinstance with direct inheritance from resources.ModelResource
-    # isinstance with indirect inheritance from resources.Resource
-    # isinstance with indirect inheritance from resources.ModelResource
-    # issubclass with direct inheritance from resources.Resource
-    # issubclass with direct inheritance from resources.ModelResource
-    # issubclass with indirect inheritance from resources.Resource
-    # issubclass with indirect inheritance from resources.ModelResource
-    # super on direct inheritance from resources.Resource
-    # super on direct inheritance from resources.ModelResource
-    # super on indirect inheritance from resources.Resource
-    # super on indirect inheritance from resources.ModelResource
+    def test_super_direct_model_resource(self, connectors):
+        response, content = self.client.get('/api/model-direct/')
 
-    pass
+        assert response.status == 200
+        assert content.decode('utf8') == '42'
+
+    def test_super_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/indirect/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == '84'
+
+    def test_super_indirect_model_resource(self, connectors):
+        response, content = self.client.get('/api/model-indirect/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == '84'

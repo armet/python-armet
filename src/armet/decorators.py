@@ -32,7 +32,7 @@ class route:
         if not hasattr(resource, 'mount'):
             raise ImproperlyConfigured(
                 'The {} resource doesn\'t have a `mount` method.'.format(
-                resource.meta.name))
+                    resource.meta.name))
 
         # Hook up the resource at the mount point.
         resource.mount(*self.args)

@@ -9,9 +9,11 @@ class TestResourceGet(BaseResourceTest):
 
     def test_list(self):
         response, content = self.client.request('/api/poll/')
-        data = json.loads(content.decode('utf-8'))
 
         assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf-8'))
+
         assert isinstance(data, list)
         assert len(data) == 100
         assert data[0]['question'] == 'Are you an innie or an outie?'

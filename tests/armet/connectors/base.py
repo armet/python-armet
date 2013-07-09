@@ -21,10 +21,15 @@ class BaseResourceTest(object):
         # Initialize the test client.
         cls.client = test.Client(cls.host, cls.port)
 
-    @pytest.fixture(autouse=True, scope='session')
+    @pytest.fixture(autouse=True, scope='class')
     def initialize(self, request, connectors):
         # Install the WSGI interception layer.
         install()
+
+        # Unload django.
+        for module in list(sys.modules.keys()):
+            if module and 'django' in module:
+                del sys.modules[module]
 
         # Reset and clear all global cache in armet.
         from armet import decorators

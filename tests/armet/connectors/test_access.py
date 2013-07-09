@@ -67,25 +67,25 @@ class TestResourceAccess(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_async(self, connectors):
-        response, content = self.client.request('/api/async/')
-        data = content.decode('utf-8')
+    # @skipif("sys.version_info >= (3, 0)")
+    # @skipif("__import__('platform').python_implementation() == 'PyPy'")
+    # def test_async(self, connectors):
+    #     response, content = self.client.request('/api/async/')
+    #     data = content.decode('utf-8')
 
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'Hello'
+    #     assert response.status == 412
+    #     assert response.get('content-type') == 'text/plain'
+    #     assert data == 'Hello'
 
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_async_stream(self, connectors):
-        response, content = self.client.request('/api/async-stream/')
-        content = content.decode('utf-8')
+    # @skipif("sys.version_info >= (3, 0)")
+    # @skipif("__import__('platform').python_implementation() == 'PyPy'")
+    # def test_async_stream(self, connectors):
+    #     response, content = self.client.request('/api/async-stream/')
+    #     content = content.decode('utf-8')
 
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
+    #     assert response.status == 412
+    #     assert response.get('content-type') == 'text/plain'
+    #     assert content == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
 
 class TestResourceLightweight(BaseResourceTest):
@@ -114,15 +114,15 @@ class TestResourceLightweight(BaseResourceTest):
         assert response.get('content-type') == 'text/plain'
         assert data == 'this\nwhere\nwhence\nthat\nwhy\nand the other'
 
-    @skipif("sys.version_info >= (3, 0)")
-    @skipif("__import__('platform').python_implementation() == 'PyPy'")
-    def test_lightweight_async(self, connectors):
-        response, content = self.client.request('/api/lightweight-async/')
-        data = content.decode('utf-8')
+    # @skipif("sys.version_info >= (3, 0)")
+    # @skipif("__import__('platform').python_implementation() == 'PyPy'")
+    # def test_lightweight_async(self, connectors):
+    #     response, content = self.client.request('/api/lightweight-async/')
+    #     data = content.decode('utf-8')
 
-        assert response.status == 412
-        assert response.get('content-type') == 'text/plain'
-        assert data == 'Hello'
+    #     assert response.status == 412
+    #     assert response.get('content-type') == 'text/plain'
+    #     assert data == 'Hello'
 
 
 class TestResourceCookie(BaseResourceTest):

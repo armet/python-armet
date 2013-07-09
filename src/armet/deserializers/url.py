@@ -43,6 +43,6 @@ class URLDeserializer(Deserializer):
 
             return data
 
-        except AttributeError as ex:
+        except AttributeError:
             # Something went wront internally; bad input.
             raise ValueError
