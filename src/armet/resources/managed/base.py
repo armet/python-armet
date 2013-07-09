@@ -114,7 +114,7 @@ class ManagedResource(base.Resource):
         result = super(ManagedResource, cls).parse(path)
         if result:
             # Found something; parse the result.
-            resource, data = result
+            resource, data, end = result
 
             # Normalize the list arguments.
             for sep, name in (('.', 'extensions'), (':', 'directives')):
@@ -125,7 +125,7 @@ class ManagedResource(base.Resource):
                     data[name] = []
 
             # Reset the result.
-            result = resource, data
+            result = resource, data, end
 
         # Return what we got.
         return result

@@ -20,7 +20,7 @@ class ParseTestCase(unittest.TestCase):
 
     def request(self, url):
         # Execute the parse method.
-        _, arguments = self.Resource.parse(url)
+        _, arguments, _ = self.Resource.parse(url)
 
         # Assert that we got enough of them.
         assert 'slug' in arguments

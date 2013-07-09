@@ -191,13 +191,13 @@ class Resource(object):
             match = re.match(pattern, path)
             if match is not None:
                 # Found something.
-                return resource, match.groupdict()
+                return resource, match.groupdict(), match.string[match.end():]
 
         # No patterns at all; return unsuccessful.
         return None if not cls.meta.patterns else False
 
     @classmethod
-    def traverse(cls, request):
+    def traverse(cls, request, params=None):
         """Traverses down the path and determines the accessed resource.
 
         This makes use of the patterns array to implement simple traversal.
@@ -209,11 +209,31 @@ class Resource(object):
             # No parsing was requested; no-op.
             return cls, {}
 
-        # Partition out the result.
-        resource, params = result
+        elif not result:
+            # Parsing failed; raise 404.
+            raise http.exceptions.NotFound()
 
-        # Return the resource object and any additional parameters
-        return cls, params
+        # Partition out the result.
+        resource, data, rest = result
+
+        if params:
+            # Append params to data.
+            data.update(params)
+
+        if resource is None:
+            # No traversal; return parameters.
+            return cls, data
+
+        # Modify the path appropriately.
+        if data.get('path') is not None:
+            request.path = data.pop('path')
+
+        elif rest is not None:
+            request.path = rest
+
+        # Send us through traversal again.
+        result = resource.traverse(request, params=data)
+        return result
 
     @classmethod
     def stream(cls, response, sequence):

@@ -34,7 +34,6 @@ _socket = None
 
 
 def http_setup(connectors, host, port, callback):
-    # Flask is pretty straightforward.
     # We just need to push an application context.
     application = web.Application(debug=True)
 
