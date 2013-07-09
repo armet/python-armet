@@ -71,6 +71,11 @@ class ResourceOptions(object):
                 # Something went wrong; just use the class name
                 self.name = name
 
+        elif callable(self.name):
+            # If name is callable; pass in the class name and use what
+            # we got back.
+            self.name = self.name(name)
+
         #! True if the resource is expected to operate asynchronously.
         #!
         #! The side-effect of setting this to True is that returning from
