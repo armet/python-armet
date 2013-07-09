@@ -36,26 +36,26 @@ class ResourceBase(type):
             return True
         return any(b in mro for b in cls.__bases__)
 
-    def mro(cls):
-        mro = super(ResourceBase, cls).mro()
-        if mro[0].__name__.startswith('armet.connector:'):
-            # Re-order the mro; don't worry this is cached on the
-            # class object as __mro__ by python internals.
-            # Just so we're clear. Because of the way connectors work;
-            # it happens that two classes in the mro contain references
-            # to the methods so that by calling `super` python jumps to
-            # the next one in the chain (thus engulfing itself in an
-            # inifinite loop). This simply swaps the order of the two
-            # so that supers go the actual base class rather than loop.
-            resource = mro[0].__bases__[-1]
-            index = mro.index(resource)
-            mro.insert(index, mro.pop(0))
-            mro.remove(resource)
-            mro.insert(0, resource)
-            return mro
+    # def mro(cls):
+    #     mro = super(ResourceBase, cls).mro()
+    #     if mro[0].__name__.startswith('armet.connector:'):
+    #         # Re-order the mro; don't worry this is cached on the
+    #         # class object as __mro__ by python internals.
+    #         # Just so we're clear. Because of the way connectors work;
+    #         # it happens that two classes in the mro contain references
+    #         # to the methods so that by calling `super` python jumps to
+    #         # the next one in the chain (thus engulfing itself in an
+    #         # inifinite loop). This simply swaps the order of the two
+    #         # so that supers go the actual base class rather than loop.
+    #         resource = mro[0].__bases__[-1]
+    #         index = mro.index(resource)
+    #         mro.insert(index, mro.pop(0))
+    #         mro.remove(resource)
+    #         mro.insert(0, resource)
+    #         return mro
 
-        # Return the normal mro.
-        return mro
+    #     # Return the normal mro.
+    #     return mro
 
     @classmethod
     def _is_resource(cls, name, bases):

@@ -19,7 +19,9 @@ __all__ = [
     'LeftResource',
     'RightResource',
     'echo',
-    'cookie'
+    'cookie',
+    'DirectResource',
+    # 'IndirectResource'
 ]
 
 
@@ -197,3 +199,12 @@ def echo(request, response):
 def cookie(request, response):
     response['Content-Type'] = 'text/plain'
     response.write(request.cookies['blue'].value)
+
+
+class DirectResource(resources.Resource):
+
+    def route(self, request, response):
+        return super(DirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'42')

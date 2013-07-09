@@ -37,3 +37,27 @@ class TestResource(BaseResourceTest):
 
         # Reset the configuration
         armet.use.config = old
+
+
+class TestResolution(BaseResourceTest):
+
+    def test_super_direct_resource(self, connectors):
+        response, content = self.client.get('/api/direct/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == '42'
+
+    # isinstance with direct inheritance from resources.Resource
+    # isinstance with direct inheritance from resources.ModelResource
+    # isinstance with indirect inheritance from resources.Resource
+    # isinstance with indirect inheritance from resources.ModelResource
+    # issubclass with direct inheritance from resources.Resource
+    # issubclass with direct inheritance from resources.ModelResource
+    # issubclass with indirect inheritance from resources.Resource
+    # issubclass with indirect inheritance from resources.ModelResource
+    # super on direct inheritance from resources.Resource
+    # super on direct inheritance from resources.ModelResource
+    # super on indirect inheritance from resources.Resource
+    # super on indirect inheritance from resources.ModelResource
+
+    pass

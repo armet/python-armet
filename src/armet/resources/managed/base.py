@@ -18,6 +18,19 @@ class ManagedResource(base.Resource):
         the `__init__.py`).
     """
 
+    class Meta:
+        # The managed resource access pattern.
+        # Traversal is handled a bit more dyanmically than allowed with
+        # the simple pattern syntax.
+        patterns = [
+            r'^'
+            r'(?:\:(?P<directives>[^/\(\)]*))?'
+            r'(?:\((?P<query>[^/]*)\))?'
+            r'(?:/(?P<slug>[^/]+?))?'
+            r'(?:/(?P<path>.+?))??'
+            r'(?:\.(?P<extensions>[^/]+?))??/??$'
+        ]
+
     #! An ordered dictionary of attributes that are gathered from both
     #! the metaclass and attributes defined directly on the resource.
     #!
@@ -69,62 +82,77 @@ class ManagedResource(base.Resource):
     #! requested. None if a list is being requested.
     slug = None
 
-    def __new__(cls, request, response):
-        # Parse any arguments out of the path.
-        arguments = cls.parse(request.path)
+    # def __new__(cls, request, response):
+    #     # Parse any arguments out of the path.
+    #     arguments = cls.parse(request.path)
 
-        # Traverse down the path and determine to resource we're actually
-        # accessing.
-        cls = cls.traverse(arguments)
+    #     # Traverse down the path and determine to resource we're actually
+    #     # accessing.
+    #     cls = cls.traverse(arguments)
 
-        # Actually construct the resource and return the instance.
-        obj = super(ManagedResource, cls).__new__(cls)
+    #     # Actually construct the resource and return the instance.
+    #     obj = super(ManagedResource, cls).__new__(cls)
 
-        # Update our instance dictionary with the arugments from `parse`.
-        # Note that this adds the 'directives', 'query', 'slug', 'path', and
-        # 'extensions' attributes.
-        obj.__dict__.update(**arguments)
+    #     # Update our instance dictionary with the arugments from `parse`.
+    #     # Note that this adds the 'directives', 'query', 'slug', 'path', and
+    #     # 'extensions' attributes.
+    #     obj.__dict__.update(**arguments)
 
-        # Return our constructed instance.
-        return obj
-
-    @classmethod
-    def traverse(cls, arguments):
-        """Traverses down the path and determines the accessed resource."""
-        # TODO: Implement resource traversal.
-        return cls
+    #     # Return our constructed instance.
+    #     return obj
 
     #! Precompiled regular expression used to parse out the path.
-    _parse_pattern = re.compile(
-        r'^'
-        r'(?:\:(?P<directives>[^/\(\)]*))?'
-        r'(?:\((?P<query>[^/]*)\))?'
-        r'(?:/(?P<slug>[^/]+?))?'
-        r'(?:/(?P<path>.+?))??'
-        r'(?:\.(?P<extensions>[^/]+?))??/??$')
+    # _parse_pattern = re.compile(
+    #     r'^'
+    #     r'(?:\:(?P<directives>[^/\(\)]*))?'
+    #     r'(?:\((?P<query>[^/]*)\))?'
+    #     r'(?:/(?P<slug>[^/]+?))?'
+    #     r'(?:/(?P<path>.+?))??'
+    #     r'(?:\.(?P<extensions>[^/]+?))??/??$')
 
     @classmethod
-    def parse(cls, path=''):
-        """Parses out parameters and separates them out of the path."""
-        # Apply the compiled regex.
-        arguments = re.match(cls._parse_pattern, path).groupdict()
+    def parse(cls, path):
+        result = super(ManagedResource, cls).parse(path)
+        if result:
+            # Found something; parse the result.
+            resource, data = result
 
-        # Explode the list arguments; they should be represented as
-        # empty arrays and not None.
-        if arguments['extensions']:
-            arguments['extensions'] = arguments['extensions'].split('.')
+            # Normalize the list arguments.
+            for sep, name in (('.', 'extensions'), (':', 'directives')):
+                if data[name]:
+                    data[name] = data[name].split(sep)
 
-        else:
-            arguments['extensions'] = []
+                else:
+                    data[name] = []
 
-        if arguments['directives']:
-            arguments['directives'] = arguments['directives'].split(':')
+            # Reset the result.
+            result = resource, data
 
-        else:
-            arguments['directives'] = []
+        # Return what we got.
+        return result
 
-        # Return the arguments
-        return arguments
+    # @classmethod
+    # def parse(cls, path=''):
+    #     """Parses out parameters and separates them out of the path."""
+    #     # Apply the compiled regex.
+    #     arguments = re.match(cls._parse_pattern, path).groupdict()
+
+    #     # Explode the list arguments; they should be represented as
+    #     # empty arrays and not None.
+    #     if arguments['extensions']:
+    #         arguments['extensions'] = arguments['extensions'].split('.')
+
+    #     else:
+    #         arguments['extensions'] = []
+
+    #     if arguments['directives']:
+    #         arguments['directives'] = arguments['directives'].split(':')
+
+    #     else:
+    #         arguments['directives'] = []
+
+    #     # Return the arguments
+    #     return arguments
 
     @property
     def allowed_operations(self):

@@ -139,11 +139,61 @@ class ResourceOptions(object):
         #! class Resource(resources.Resource):
         #!     class Meta:
         #!         options = {'color', 'plant'}
+        #!
         #! @endcode
         self.options = options = _merge(meta, 'options', bases, {})
         for name in options:
             # Pull out each option and stick it on the meta.
-            setattr(name, meta.get(name))
+            setattr(self, name, meta.get(name))
+
+        #! Regular-expression patterns to apply to the request path
+        #! and pull arguments and traversal out of it.
+        #!
+        #! @code
+        #! from armet import resources
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         patterns = [
+        #!             # Match nothing after the resource name.
+        #!             r'^$',
+        #!
+        #!             # Match a slug after the resource name.
+        #!             r'^/(?P<slug>[^/]+)/?$',
+        #!         ]
+        #!
+        #! @endcode
+        #!
+        #! Named parameters get auto-attached to `self` on the resource
+        #! instance.
+        #!
+        #! This may be a list of lists/tuples as well to indicate simple
+        #! traversal.
+        #!
+        #! @code
+        #! from armet import resources
+        #! class Resource(resources.Resource):
+        #!     class Meta:
+        #!         patterns = [
+        #!             # Match nothing and don't traverse.
+        #!             (None, r'^$'),
+        #!
+        #!             # Match the word 'user' and traverse.
+        #!             # The remainder of the path is taken or
+        #!             # the named gruop, "path" (if the whole path was
+        #!             # matched) or the last-matched group (if none are
+        #!             # named "path")
+        #!             (UserResource, r'^/user'),
+        #!         ]
+        #!
+        #! @endcode
+        self.patterns = meta.get('patterns', [])
+        for index, pattern in enumerate(self.patterns):
+            # Coerce simple form.
+            if isinstance(pattern, six.string_types):
+                pattern = (None, pattern)
+
+            # Compile the expression.
+            self.patterns[index] = (pattern[0], re.compile(pattern[1]))
 
         #! Trailing slash handling.
         #! The value indicates which URI is the canonical URI and the

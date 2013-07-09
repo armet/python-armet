@@ -7,9 +7,20 @@ from armet import resources
 
 class ParseTestCase(unittest.TestCase):
 
+    def setUp(self):
+        super(ParseTestCase, self).setUp()
+
+        # Construct a resource.
+        class Resource(resources.ManagedResource):
+            class Meta:
+                abstract = True
+
+        # Store the resource
+        self.Resource = Resource
+
     def request(self, url):
         # Execute the parse method.
-        arguments = resources.ManagedResource.parse(url)
+        _, arguments = self.Resource.parse(url)
 
         # Assert that we got enough of them.
         assert 'slug' in arguments
