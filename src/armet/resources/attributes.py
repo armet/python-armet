@@ -292,7 +292,7 @@ class _TemporalAttribute(object):
         raise ValueError('Invalid date/time or in an invalid format.')
 
 
-class DateAttribute(Attribute, _TemporalAttribute):
+class DateAttribute(_TemporalAttribute, Attribute):
 
     type = datetime.date
 
@@ -304,7 +304,7 @@ class DateAttribute(Attribute, _TemporalAttribute):
         return value
 
 
-class TimeAttribute(Attribute, _TemporalAttribute):
+class TimeAttribute(_TemporalAttribute, Attribute):
 
     type = datetime.time
 
@@ -316,7 +316,7 @@ class TimeAttribute(Attribute, _TemporalAttribute):
         return value
 
 
-class DateTimeAttribute(Attribute, _TemporalAttribute):
+class DateTimeAttribute(_TemporalAttribute, Attribute):
     type = datetime.datetime
 
 
