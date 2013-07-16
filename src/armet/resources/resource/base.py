@@ -51,6 +51,11 @@ class Resource(object):
             # Bail early.
             return super(Resource, self).__getattribute__(name)
 
+        # Attempt to get the attribute from self first.
+        if name in self.__dict__ or name in type(self).__dict__:
+            # Return the attribute normally.
+            return super(Resource, self).__getattribute__(name)
+
         # Attempt to get the attribute from a connector.
         if self.connectors and isinstance(self.connectors[0], type):
             for connector in self.connectors:
