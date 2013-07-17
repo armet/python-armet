@@ -217,11 +217,10 @@ class ModelDirectResource(resources.ModelResource):
     class Meta:
         model = models.Poll
 
+    question = resources.TextAttribute('question')
+
     def route(self, request, response):
         return super(ModelDirectResource, self).route(request, response)
-
-    def get(self, request, response):
-        response.write(b'42')
 
 
 class IndirectResource(DirectResource):
@@ -238,8 +237,5 @@ class ModelIndirectResource(ModelDirectResource):
     class Meta:
         model = models.Poll
 
-    def route(self, request, response):
-        return super(ModelIndirectResource, self).route(request, response)
-
-    def get(self, request, response):
-        response.write(b'84')
+    def read(self):
+        return super(ModelIndirectResource, self).read()

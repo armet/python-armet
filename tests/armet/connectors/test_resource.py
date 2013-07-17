@@ -3,6 +3,7 @@ import armet
 from armet import exceptions, resources
 from .base import BaseResourceTest
 import pytest
+import json
 
 
 class TestResource(BaseResourceTest):
@@ -51,7 +52,10 @@ class TestResolution(BaseResourceTest):
         response, content = self.client.get('/api/model-direct/')
 
         assert response.status == 200
-        assert content.decode('utf8') == '42'
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data[0]['question'] == 'Are you an innie or an outie?'
 
     def test_super_indirect_resource(self, connectors):
         response, content = self.client.get('/api/indirect/')
@@ -63,4 +67,7 @@ class TestResolution(BaseResourceTest):
         response, content = self.client.get('/api/model-indirect/')
 
         assert response.status == 200
-        assert content.decode('utf8') == '84'
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data[0]['question'] == 'Are you an innie or an outie?'

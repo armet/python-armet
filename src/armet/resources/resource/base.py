@@ -6,6 +6,7 @@ import six
 import collections
 import mimeparse
 from armet import http, utils
+from ..utils import connect, classconnect
 
 
 logger = logging.getLogger(__name__)
@@ -492,8 +493,13 @@ class Resource(object):
             response['Access-Control-Allow-Headers'] = allowed_headers
 
     def __init__(self, request, response):
+        # Store the request and response objects on self.
         self.request = request
         self.response = response
+
+        # Initialize the connectors.
+        for connector in self.connectors:
+            connector.__init__.__get__(self)()
 
     def dispatch(self, request, response):
         """Entry-point of the dispatch cycle for this resource.
@@ -576,3 +582,13 @@ class Resource(object):
         # All CORS handling is done for every HTTP/1.1 method.
         # No more handling is neccesary; set the response to 200 and return.
         response.status = http.client.OK
+
+    get = connect('get')
+
+    post = connect('post')
+
+    put = connect('put')
+
+    delete = connect('delete')
+
+    mount = classconnect('mount')

@@ -29,12 +29,9 @@ class ModelResource(object):
     #     # Let the base resource prepare us.
     #     super(ModelResource, self).__init__(*args, **kwargs)
 
-    def dispatch(self, request, response):
+    def __init__(self):
         # Instantiate a session using our session object.
         self.session = self.meta.Session()
-
-        # Continue on the with request.
-        return super(type(self).__base__, self).dispatch(request, response)
 
     @classmethod
     def _filter_segment(cls, model, path, operation, values, attr):
