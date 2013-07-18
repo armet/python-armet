@@ -104,12 +104,16 @@ class Attribute(object):
                 return descriptor.__set__
 
         if issubclass(cls, collections.Mapping):
-            def setter(o, v, n=path): o[n] = v
+            def setter(o, v, n=path):
+                o[n] = v
+
             return setter
 
         # No alternative; let's pretend this will work (which it will
         # most of the time).
-        def setter(o, v, n=path): o.__dict__[n] = v
+        def setter(o, v, n=path):
+            o.__dict__[n] = v
+
         return setter
 
     def get(self, target, parent=False):

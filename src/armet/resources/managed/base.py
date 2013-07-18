@@ -156,9 +156,9 @@ class ManagedResource(base.Resource):
                 # Run the attribute through its prepare cycle.
                 obj[name] = attribute.prepare(
                     # Optional preparation cycle on the resource.
-                    self.preparers[name](self, item,
+                    self.preparers[name](
                         # Retrieves the value from the object.
-                        attribute.get(item)))
+                        self, item, attribute.get(item)))
 
         # Return the resultant object.
         return obj
@@ -240,8 +240,6 @@ class ManagedResource(base.Resource):
         if self.slug is not None:
             # Don't know what to do an item access.
             raise http.exceptions.NotImplemented()
-
-        import ipdb; ipdb.set_trace()
 
         # Ensure we're allowed to create a resource.
         self.assert_operations('create')

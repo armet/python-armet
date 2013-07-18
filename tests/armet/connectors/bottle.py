@@ -25,7 +25,6 @@ def http_setup(connectors, host, port, callback):
     # Then import the resources; iterate and mount each one.
     module = force_import_module('tests.armet.connectors.resources')
     for name in module.__all__:
-        # import ipdb; ipdb.set_trace()
         getattr(module, name).mount(r'/api/', application)
 
     # Enable the WSGI interception layer.

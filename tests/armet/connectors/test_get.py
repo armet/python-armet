@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import pytest
 import json
 from armet import http
 from .base import BaseResourceTest
@@ -41,6 +40,7 @@ class TestResourceGet(BaseResourceTest):
         assert isinstance(data, dict)
         assert (data['question'] ==
                 'What one question would you add to this survey?')
+
 
 class TestResourceQuery(BaseResourceTest):
 

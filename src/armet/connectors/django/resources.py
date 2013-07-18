@@ -7,7 +7,6 @@ from django.conf import urls
 from django.db.models import Q
 from django.views.decorators import csrf
 from armet import utils
-from armet.http import exceptions
 from . import http
 from armet.query import parser, Query, QuerySegment, constants
 
