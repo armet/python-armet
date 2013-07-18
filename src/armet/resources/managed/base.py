@@ -165,8 +165,8 @@ class ManagedResource(base.Resource):
 
     def clean(self, data):
         if not data:
-            # If no data; return nothing.
-            return None
+            # If no data; return an empty object.
+            return {}
 
         if (not isinstance(data, six.string_types)
                 and isinstance(data, Sequence)):
@@ -240,6 +240,8 @@ class ManagedResource(base.Resource):
         if self.slug is not None:
             # Don't know what to do an item access.
             raise http.exceptions.NotImplemented()
+
+        import ipdb; ipdb.set_trace()
 
         # Ensure we're allowed to create a resource.
         self.assert_operations('create')

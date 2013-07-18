@@ -113,7 +113,9 @@ class ModelResource(object):
         # Iterate through all attributes and set each one.
         for name, attribute in six.iteritems(self.attributes):
             # Set each one on the target.
-            attribute.set(target, data.get(name))
+            value = data.get(name)
+            if value is not None:
+                attribute.set(target, value)
 
         # Add the target to the session.
         self.session.add(target)
