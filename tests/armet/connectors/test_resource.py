@@ -40,6 +40,159 @@ class TestResource(BaseResourceTest):
         armet.use.config = old
 
 
+class TestAllowed(BaseResourceTest):
+
+    def test_http_allowed_methods(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                http_allowed_methods = 'GET',
+
+        meta = Resource.meta
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+    def test_http_allowed_methods_to_operations(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                http_allowed_methods = 'GET',
+
+        meta = Resource.meta
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+        assert 'read' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+        assert 'read' in meta.allowed_operations
+
+    def test_allowed_operations(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                allowed_operations = 'read',
+
+        meta = Resource.meta
+
+        assert 'read' in meta.allowed_operations
+        assert 'read' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+
+    def test_allowed_operations_to_methods(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                allowed_operations = 'read',
+
+        meta = Resource.meta
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+        assert 'read' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+        assert 'read' in meta.allowed_operations
+
+    def test_allowed_methods_list(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                http_allowed_methods = 'GET',
+
+                http_list_allowed_methods = 'PUT',
+
+        meta = Resource.meta
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' not in meta.http_list_allowed_methods
+        assert 'PUT' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+    def test_allowed_methods_list_to_operations(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                http_allowed_methods = 'GET',
+
+                http_list_allowed_methods = 'PUT',
+
+        meta = Resource.meta
+
+        assert 'read' in meta.allowed_operations
+        assert 'read' not in meta.list_allowed_operations
+        assert 'update' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' not in meta.http_list_allowed_methods
+        assert 'PUT' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+    def test_allowed_operations_list(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                allowed_operations = 'read',
+
+                list_allowed_operations = 'update',
+
+        meta = Resource.meta
+
+        assert 'read' in meta.allowed_operations
+        assert 'read' not in meta.list_allowed_operations
+        assert 'update' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+
+    def test_allowed_operations_list_to_methods(self):
+
+        class Resource(resources.ModelResource):
+
+            class Meta:
+                abstract = True
+
+                allowed_operations = 'read',
+
+                list_allowed_operations = 'update',
+
+        meta = Resource.meta
+
+        assert 'read' in meta.allowed_operations
+        assert 'read' not in meta.list_allowed_operations
+        assert 'update' in meta.list_allowed_operations
+        assert 'read' in meta.detail_allowed_operations
+
+        assert 'GET' in meta.http_allowed_methods
+        assert 'GET' not in meta.http_list_allowed_methods
+        assert 'PUT' in meta.http_list_allowed_methods
+        assert 'GET' in meta.http_detail_allowed_methods
+
+
 class TestResolution(BaseResourceTest):
 
     def test_super_direct_resource(self, connectors):

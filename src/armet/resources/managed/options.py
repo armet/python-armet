@@ -25,8 +25,8 @@ def _method_to_operation(method):
 
 def _methods_to_operations(methods):
     operations = set()
-    for method in operations:
-        operations = operations.union(_method_to_operation(method))
+    for method in methods:
+        operations.update(_method_to_operation(method))
 
     return operations
 
@@ -48,7 +48,7 @@ def _operation_to_method(operation):
 def _operations_to_methods(operations):
     methods = set(['HEAD', 'OPTIONS'])
     for operation in operations:
-        methods = methods.union(_operation_to_method(operation))
+        methods.update(_operation_to_method(operation))
 
     return methods
 
