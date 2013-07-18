@@ -11,6 +11,7 @@ before_install:
 # Install python dependencies
 install:
   - 'travis_retry pip install -q -e ".[test]" --use-mirrors'
+  - 'travis_retry pip install coveralls --use-mirrors'
 
 # Blacklist legacy branches as they don't have operating tests
 branches:
@@ -20,3 +21,4 @@ branches:
 
 # Run tests
 script: 'py.test --pep8 --cov armet'
+after_success: 'coveralls'
