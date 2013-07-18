@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
+import six
 import collections
 import operator
 from six.moves import map, reduce
@@ -104,3 +105,40 @@ class ModelResource(object):
 
         # Return the queryset.
         return queryset.all() if self.slug is None else queryset.first()
+
+    def create(self, data):
+        # Instantiate a new target.
+        target = self.meta.model()
+
+        # Iterate through all attributes and set each one.
+        for name, attribute in six.iteritems(self.attributes):
+            # Set each one on the target.
+            attribute.set(target, data.get(name))
+
+        # Add the target to the session.
+        self.session.add(target)
+
+        # Commit the session.
+        self.session.commit()
+
+        # Return the target.
+        return target
+
+    def update(self, target, data):
+        # Iterate through all attributes and set each one.
+        for name, attribute in six.iteritems(self.attributes):
+            # Set each one on the target.
+            attribute.set(target, data.get(name))
+
+        # Commit the session.
+        self.session.commit()
+
+    def destroy(self):
+        # Grab the existing target.
+        target = self.read()
+
+        # Remove the object from the session.
+        self.session.delete(target)
+
+        # Commit the session.
+        self.session.commit()

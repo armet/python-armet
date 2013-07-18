@@ -45,5 +45,13 @@ class ManagedResourceBase(ResourceBase):
                 prepare = lambda self, obj, value: value
             preparers[key] = prepare
 
+        # Cache access to the attribute clean cycle.
+        self.cleaners = cleaners = {}
+        for key in attributes:
+            clean = getattr(self, 'clean_{}'.format(key), None)
+            if not clean:
+                clean = lambda self, value: value
+            cleaners[key] = clean
+
         # Return the constructed class object.
         return self

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import operator
+import six
 from six.moves import map, reduce
 from django.conf import urls
 from django.db.models import Q
@@ -118,3 +119,34 @@ class ModelResource(object):
 
         # Return the entire queryset.
         return list(queryset.all())
+
+    def create(self, data):
+        # Instantiate a new target.
+        target = self.meta.model()
+
+        # Iterate through all attributes and set each one.
+        for name, attribute in six.iteritems(self.attributes):
+            # Set each one on the target.
+            attribute.set(target, data.get(name))
+
+        # Save the target.
+        target.save()
+
+        # Return the target.
+        return target
+
+    def update(self, target, data):
+        # Iterate through all attributes and set each one.
+        for name, attribute in six.iteritems(self.attributes):
+            # Set each one on the target.
+            attribute.set(target, data.get(name))
+
+        # Save the target.
+        target.save()
+
+    def destroy(self):
+        # Grab the existing target.
+        target = self.read()
+
+        # Destroy the target.
+        target.delete()

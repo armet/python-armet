@@ -54,14 +54,15 @@ class Attribute(object):
             # Explode the path into segments.
             self._segments = path.split('.')
 
-            # Initialize the accessors array.
-            self._accessors = []
+            # Initialize the getters and setters.
+            self._getters = []
+            self._setter = None
 
     def clone(self):
         # Construct a new this.
         return self.__class__(**self.__dict__)
 
-    def _make_accessor(self, path, cls, instance):
+    def _make_getter(self, path, cls, instance):
         # Attempt to get an unbound class property
         # that may be a descriptor.
         obj = getattr(cls, path, None)
@@ -87,43 +88,86 @@ class Attribute(object):
         # most of the time).
         return lambda o, n=path: o.__dict__.get(n)
 
-    def get(self, value):
+    def _make_setter(self, path, cls, instance):
+        # Attempt to get an unbound class property
+        # that may be a descriptor.
+        obj = getattr(cls, path, None)
+        if obj is not None:
+            if hasattr(obj, '__set__'):
+                # This has a data descriptor.
+                return lambda o, v, s=obj.__set__: s(o, v)
+
+        else:
+            # Check for another kind of descriptor.
+            descriptor = cls.__dict__.get(path)
+            if descriptor and hasattr(descriptor, '__set__'):
+                return descriptor.__set__
+
+        if issubclass(cls, collections.Mapping):
+            def setter(o, v, n=path): o[n] = v
+            return setter
+
+        # No alternative; let's pretend this will work (which it will
+        # most of the time).
+        def setter(o, v, n=path): o.__dict__[n] = v
+        return setter
+
+    def get(self, target, parent=False):
         """Retrieves the value of this attribute from the passed object."""
         if not self.path:
             # If we do not have a path; we cannot automatically
             # resolve our value; return nothing.
             return None
 
-        for accessor in self._accessors:
+        for getter in self._getters[:-1 if parent else None]:
             # Iterate and resolve the attribute path.
-            value = accessor(value)
+            target = getter(target)
 
-        if self._segments and value is not None:
+        if self._segments and target is not None:
             # Value isn't none and we still have additional segments left
-            # to resolve into accessors.
+            # to resolve into getters.
             while self._segments:
-                if value is None:
+                if target is None:
                     # We no longer have a value to use to attempt
                     # to resolve additional segments; bail for now.
                     break
 
                 # Remove any path segments that have been resolved
-                # into accessors.
+                # into getters.
                 segment = self._segments.pop(0)
 
-                # Build the accessor corresponding to this path
+                # Build the getter corresponding to this path
                 # segment.
-                accessor = self._make_accessor(
-                    segment, value.__class__, value)
+                getter = self._make_getter(
+                    segment, target.__class__, target)
 
-                # Append the accessor.
-                self._accessors.append(accessor)
+                # Append the getter.
+                self._getters.append(getter)
 
-                # Utilize the accessor now.
-                value = accessor(value)
+                if self._segments or not parent:
+                    # Utilize the getter now.
+                    target = getter(target)
 
         # Return what has been accessed.
-        return value
+        return target
+
+    def set(self, target, value):
+        """Stores the value on the passed target."""
+        if not self.path:
+            # If we do not have a path; we cannot automatically
+            # resolve our value; do nothing.
+            return
+
+        # Iterate and resolve the parent of our target.
+        parent = self.get(target, parent=True)
+
+        if self._setter is None:
+            # Resolve our setter if needed.
+            self._setter = self._make_setter(
+                self.path.split('.')[-1], parent.__class__, parent)
+
+        # Set the target.
+        self._setter(parent, value)
 
     def prepare(self, value):
         """Prepares the value for serialization."""
