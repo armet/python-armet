@@ -58,7 +58,7 @@ class Resource(object):
     @classmethod
     def mount(cls, url, app=None):
         # Generate a name to use to mount this resource.
-        name = '{}:{}:{}'.format('armet', cls.__module__, cls.meta.name)
+        name = 'armet' + cls.__module__ + cls.meta.name + url
 
         # If application is not provided; make use of the app context.
         if app is None:

@@ -55,13 +55,8 @@ class StreamingResource(resources.Resource):
 
 
 def spawn(connectors, function):
-    if 'cyclone' in connectors['http']:
-        from twisted.internet import reactor
-        reactor.callLater(0, function)
-
-    else:
-        import gevent
-        gevent.spawn(function)
+    import gevent
+    gevent.spawn(function)
 
 
 class AsyncResource(resources.Resource):

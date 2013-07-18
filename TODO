@@ -8,12 +8,10 @@
      ☐ pyramid @0.4.0
      ☐ tornado @0.4.0
      ☐ twisted @0.4.0
-     ✔ cyclone @done (13-04-23 15:26)
 
  ☐ connectors: asynchronous @0.3.0
      ☐ threading (default) @0.3.0
      ☐ gevent @0.3.0
-     ☐ twisted (required for {http: twisted / cyclone}) @0.3.0
      ☐ tornado (required for {http: tornado}) @0.4.0
 
  ☐ connectors: model @0.4.0

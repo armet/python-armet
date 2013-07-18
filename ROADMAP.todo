@@ -1,0 +1,14 @@
+Bugs:
+    - OPTIONS should not check authentication
+
+- POST (create) on model resources
+- PUT (update) on model resources
+- DELETE (destroy) on model resources
+- Composable API
+- Slug (allow to be a string and default to 'id')
+- Relationships (armet.resources.Relationship)
+- 1st-class directives (armet.Directive)
+- HEAD
+
+Tests:
+    - Queries on model resources

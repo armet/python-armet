@@ -39,16 +39,6 @@ test_dependencies = (
 
 
 if sys.version_info[0] == 2:
-    # Test dependencies for python 2.x only.
-    test_dependencies += (
-        # Twisted is an event-driven networking engine written in Python.
-        'twisted',
-
-        # Cyclone is a web server framework for Python that implements
-        # the Tornado API as a Twisted protocol.
-        'cyclone',
-    )
-
     if platform.python_implementation() != 'PyPy':
         # Test dependencies that don't apply for python 2.x.
         test_dependencies += (
