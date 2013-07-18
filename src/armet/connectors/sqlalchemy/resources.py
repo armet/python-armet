@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import collections
 import operator
+from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
 
@@ -17,6 +18,17 @@ class ModelResourceOptions(object):
                 'the SQLAlchemy model connector.')
 
 
+# Build an operator map to use for sqlalchemy.
+OPERATOR_MAP = {
+    constants.OPERATOR_EQUAL[0]: operator.eq,
+    constants.OPERATOR_IEQUAL[0]: lambda x, y: x.ilike(y),
+    constants.OPERATOR_LT[0]: operator.lt,
+    constants.OPERATOR_GT[0]: operator.gt,
+    constants.OPERATOR_LTE[0]: operator.le,
+    constants.OPERATOR_GTE[0]: operator.ge,
+}
+
+
 class ModelResource(object):
     """Specializes the RESTFul model resource protocol for SQLAlchemy.
 
@@ -25,145 +37,70 @@ class ModelResource(object):
         ModelResource from `armet.resources` and derive from that.
     """
 
-    # def __init__(self, *args, **kwargs):
-    #     # Let the base resource prepare us.
-    #     super(ModelResource, self).__init__(*args, **kwargs)
-
     def __init__(self):
-        # Instantiate a session using our session object.
+        # Establish a session using our session type object.
         self.session = self.meta.Session()
 
-    @classmethod
-    def _filter_segment(cls, model, path, operation, values, attr):
-        expression = None
-        segment = path.pop(0)
+    def filter_segment(self, segment):
+        # Get the associated column for the initial path.
+        path = segment.path.pop(0)
+        col = self.meta.model.__dict__[path]
 
-        # Get the associated column.
-        col = model.__dict__[segment]
+        # Resolve the inner-most path segment.
+        if segment.path:
+            return col.has(self.filter_segment(segment))
 
-        # Do we have any path segments left?
-        if path:
-            # We need to evaluate these inner-outer.
-            expression = cls._filter_segment(
-                col.property.mapper.class_, path,
-                operation, values,
-                attr)
+        # Determine the operator.
+        op = OPERATOR_MAP[segment.operator]
 
-            # Apply the expression.
-            return col.has(expression)
+        # Apply the operator to the values and return the expression
+        return reduce(operator.or_, map(lambda x: op(col, x), segment.values))
 
-        # Determine the operation.
-        if operation == constants.OPERATOR_EQUAL[0]:
-            op = operator.eq
-
-        elif operation == constants.OPERATOR_IEQUAL[0]:
-            if issubclass(attr.type, bool):
-                # Doesn't make sense for :iequal to work anyway
-                # on booleans.
-                op = operator.eq
-
-            else:
-                op = lambda x, y: x.ilike(y)
-
-        elif operation == constants.OPERATOR_ISNULL[0]:
-            op = lambda x, y: (x.is_(None)) if y else (~x.is_(None))
-
-        elif operation == constants.OPERATOR_LT[0]:
-            op = operator.lt
-
-        elif operation == constants.OPERATOR_GT[0]:
-            op = operator.gt
-
-        elif operation == constants.OPERATOR_LTE[0]:
-            op = operator.le
-
-        elif operation == constants.OPERATOR_GTE[0]:
-            op = operator.ge
-
-        elif operation == constants.OPERATOR_REGEX[0]:
-            # TODO: We need to do something.. this only really works in
-            #   mysql; wtf does django do?
-            op = lambda x, y: x.op('REGEXP')(y)
-
-        for index, value in enumerate(values):
-            value = attr.try_clean(value)
-            if index:
-                # Not the first one; OR it against the
-                # existing expression.
-                expression |= op(col, value)
-            expression = op(col, value)
-
-        # Return the constructed expression.
-        return expression
-
-    @classmethod
-    def _filter(cls, segments, clause=None, last=None, attribute=None):
-        # Set some process variables.
-        clause = clause
-        last = last
-
+    def filter(self, query, queryset):
         # Iterate through each query segment.
-        for segment in segments:
-            if isinstance(segment, collections.Iterable):
-                # This is a nested query.
-                expression = cls._filter(segment)
+        clause = None
+        last = None
+        for seg in query.segments:
+            # Get the attribute in question.
+            attribute = self.attributes[seg.path[0]]
 
-            else:
-                # Munge the initial path segment through the
-                # attribute dictionary.
-                attr = attribute
-                if attr is None:
-                    attr = cls.attributes[segment.path[0]]
-                    del segment.path[0]
-                    segment.path[0:0] = attr.path.split('.')
+            # Replace the initial path segment with the expanded
+            # attribute path.
+            del seg.path[0]
+            seg.path[0:0] = attribute.path.split('.')
 
-                # Construct an expression.
-                expression = cls._filter_segment(
-                    cls.meta.model, segment.path,
-                    segment.operator, segment.values, attr)
+            # Construct the clause from the segment.
+            q = self.filter_segment(seg)
 
-            if last:
-                # Combine the clause with the current expression using the
-                # last combinator.
-                clause = last.combinator(clause, expression)
-                last = segment
+            # Combine the segment with the last.
+            clause = last.combinator(clause, q) if last is not None else q
+            last = seg
 
-            else:
-                # The first clause; set it.
-                clause = expression
-                last = segment
-
-        # Return the constructed clause.
-        return clause
+        # Filter by the constructed clause.
+        return queryset.filter(clause).distinct()
 
     def read(self):
-        # Initialize the query to the model manager.
-        obj = self.session.query(self.meta.model)
+        # Initialize the query to the model.
+        queryset = self.session.query(self.meta.model)
 
-        # Check if we need to filter the query object in some way.
         query = None
         if self.slug is not None:
-            # Manually construct a query that would represent a query by
-            # the slug.
+            # This is an item-access (eg. GET /<name>/:slug); ignore the
+            # query string and generate a query-object based on the slug.
             query = Query(segments=[QuerySegment(
                 path=self.meta.slug.path.split('.'),
                 operator=constants.OPERATOR_EQUAL[0],
                 values=[self.slug])])
 
-            # Apply and return the resultant item.
-            clause = self._filter(query.segments, attribute=self.meta.slug)
-            return obj.filter(clause).first()
-
         elif self.request.query:
-            # The request has a query (eg. GET /poll?...).
-            # Send it off to the query string parser and then
-            # off to the filterer to construct the appropriate expression
-            # and filter our queryable.
+            # This is a list-access; use the query string and construct
+            # a query object from it.
             query = parser.parse(self.request.query)
 
-            # Apply and return the resultant items.
-            clause = self._filter(query.segments)
-            return obj.filter(clause).distinct().all()
+        # Determine if we need to filter the queryset in some way; and if so,
+        # filter it.
+        if query is not None:
+            queryset = self.filter(query, queryset)
 
-        # Evaluate and return all items.
-        return obj.all()
+        # Return the queryset.
+        return queryset.all() if self.slug is None else queryset.first()
