@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import operator
+from functools import partial
 from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
@@ -54,7 +55,7 @@ class ModelResource(object):
         op = OPERATOR_MAP[segment.operator]
 
         # Apply the operator to the values and return the expression
-        return reduce(operator.or_, map(lambda x: op(col, x), segment.values))
+        return reduce(operator.or_, map(partial(op, col), segment.values))
 
     def filter(self, query, queryset):
         # Iterate through each query segment.
