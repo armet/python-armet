@@ -30,6 +30,46 @@ OPERATOR_MAP = {
 }
 
 
+def build_segment(model, segment):
+    # Get the associated column for the initial path.
+    path = segment.path.pop(0)
+    col = model.__dict__[path]
+
+    # Resolve the inner-most path segment.
+    if segment.path:
+        return col.has(self.filter_segment(segment))
+
+    # Determine the operator.
+    op = OPERATOR_MAP[segment.operator]
+
+    # Apply the operator to the values and return the expression
+    return reduce(operator.or_, map(partial(op, col), segment.values))
+
+
+def build_clause(query, attributes, model):
+    # Iterate through each query segment.
+    clause = None
+    last = None
+    for seg in query.segments:
+        # Get the attribute in question.
+        attribute = attributes[seg.path[0]]
+
+        # Replace the initial path segment with the expanded
+        # attribute path.
+        del seg.path[0]
+        seg.path[0:0] = attribute.path.split('.')
+
+        # Construct the clause from the segment.
+        q = build_segment(model, seg)
+
+        # Combine the segment with the last.
+        clause = last.combinator(clause, q) if last is not None else q
+        last = seg
+
+    # Return the constructed clause.
+    return clause
+
+
 class ModelResource(object):
     """Specializes the RESTFul model resource protocol for SQLAlchemy.
 
@@ -42,42 +82,8 @@ class ModelResource(object):
         # Establish a session using our session type object.
         self.session = self.meta.Session()
 
-    def filter_segment(self, segment):
-        # Get the associated column for the initial path.
-        path = segment.path.pop(0)
-        col = self.meta.model.__dict__[path]
-
-        # Resolve the inner-most path segment.
-        if segment.path:
-            return col.has(self.filter_segment(segment))
-
-        # Determine the operator.
-        op = OPERATOR_MAP[segment.operator]
-
-        # Apply the operator to the values and return the expression
-        return reduce(operator.or_, map(partial(op, col), segment.values))
-
-    def filter(self, query, queryset):
-        # Iterate through each query segment.
-        clause = None
-        last = None
-        for seg in query.segments:
-            # Get the attribute in question.
-            attribute = self.attributes[seg.path[0]]
-
-            # Replace the initial path segment with the expanded
-            # attribute path.
-            del seg.path[0]
-            seg.path[0:0] = attribute.path.split('.')
-
-            # Construct the clause from the segment.
-            q = self.filter_segment(seg)
-
-            # Combine the segment with the last.
-            clause = last.combinator(clause, q) if last is not None else q
-            last = seg
-
-        # Filter by the constructed clause.
+    def filter(self, clause, queryset):
+        # Filter the queryset by the passed clause.
         return queryset.filter(clause).distinct()
 
     def read(self):
@@ -101,7 +107,8 @@ class ModelResource(object):
         # Determine if we need to filter the queryset in some way; and if so,
         # filter it.
         if query is not None:
-            queryset = self.filter(query, queryset)
+            clause = build_clause(query, self.attributes, self.meta.model)
+            queryset = self.filter(clause, queryset)
 
         # Return the queryset.
         return queryset.all() if self.slug is None else queryset.first()

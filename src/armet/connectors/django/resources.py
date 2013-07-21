@@ -60,32 +60,37 @@ OPERATOR_MAP = {
 }
 
 
+def build_clause(query, attributes):
+    # Iterate through each query segment.
+    clause = None
+    last = None
+    for seg in query.segments:
+        # Get the attribute in question.
+        attribute = attributes[seg.path[0]]
+
+        # Replace the initial path segment with the expanded
+        # attribute path.
+        del seg.path[0]
+        seg.path[0:0] = attribute.path.split('.')
+
+        # Build the path from the segment.
+        path = '__'.join(seg.path) + OPERATOR_MAP[seg.operator]
+
+        # Construct a Q-object from the segment.
+        q = reduce(operator.or_, map(lambda x: Q((path, x)), seg.values))
+
+        # Combine the segment with the last.
+        clause = last.combinator(clause, q) if last is not None else q
+        last = seg
+
+    # Return the constructed clause.
+    return clause
+
+
 class ModelResource(object):
 
-    def filter(self, query, queryset):
-        # Iterate through each query segment.
-        clause = None
-        last = None
-        for seg in query.segments:
-            # Get the attribute in question.
-            attribute = self.attributes[seg.path[0]]
-
-            # Replace the initial path segment with the expanded
-            # attribute path.
-            del seg.path[0]
-            seg.path[0:0] = attribute.path.split('.')
-
-            # Build the path from the segment.
-            path = '__'.join(seg.path) + OPERATOR_MAP[seg.operator]
-
-            # Construct a Q-object from the segment.
-            q = reduce(operator.or_, map(lambda x: Q((path, x)), seg.values))
-
-            # Combine the segment with the last.
-            clause = last.combinator(clause, q) if last is not None else q
-            last = seg
-
-        # Filter by the constructed clause.
+    def filter(self, clause, queryset):
+        # Filter the queryset by the passed clause.
         return queryset.filter(clause).distinct()
 
     def read(self):
@@ -109,7 +114,8 @@ class ModelResource(object):
         # Determine if we need to filter the queryset in some way; and if so,
         # filter it.
         if query is not None:
-            queryset = self.filter(query, queryset)
+            clause = build_clause(query, self.attributes)
+            queryset = self.filter(clause, queryset)
 
         if self.slug is not None:
             # Attempt to return just the single result we should have.
