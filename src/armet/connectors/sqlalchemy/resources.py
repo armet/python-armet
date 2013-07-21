@@ -113,7 +113,7 @@ class ModelResource(object):
 
         # Filter the queryset by asserting authorization.
         queryset = self.meta.authorization.filter(
-            'read', self.request.user, self, queryset)
+            self.request.user, 'read', self, queryset)
 
         # Return the queryset.
         return queryset.all() if self.slug is None else queryset.first()
@@ -131,7 +131,7 @@ class ModelResource(object):
 
         # Ensure the user is authorized to perform this action.
         authz = self.meta.authorization
-        if not authz.is_authorized('create', self.request.user, self, target):
+        if not authz.is_authorized(self.request.user, 'create', self, target):
             authz.unauthorized()
 
         # Add the target to the session.
@@ -151,7 +151,7 @@ class ModelResource(object):
 
         # Ensure the user is authorized to perform this action.
         authz = self.meta.authorization
-        if not authz.is_authorized('update', self.request.user, self, target):
+        if not authz.is_authorized(self.request.user, 'update', self, target):
             authz.unauthorized()
 
         # Commit the session.
@@ -163,7 +163,7 @@ class ModelResource(object):
 
         # Ensure the user is authorized to perform this action.
         authz = self.meta.authorization
-        if not authz.is_authorized('destroy', self.request.user, self, target):
+        if not authz.is_authorized(self.request.user, 'destroy', self, target):
             authz.unauthorized()
 
         # Remove the object from the session.
