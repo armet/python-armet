@@ -533,7 +533,8 @@ class Resource(object):
             # anonymous users.
             auth.unauthenticated()
 
-        # TODO: Assert accessibiltiy of the resource in question.
+        # Assert accessibiltiy of the resource in question.
+        self.require_accessibility(user, request.method)
 
         # Facilitate CORS by applying various headers.
         # This must be done on every request.
@@ -542,6 +543,13 @@ class Resource(object):
 
         # Route the HTTP/1.1 request to an appropriate method.
         return self.route(request, response)
+
+    def require_accessibility(self, user, method):
+        """Ensure we are allowed to access this resource."""
+        authz = self.meta.authorization
+        if not authz.is_accessible(user, method, self):
+            # User is not authorized; raise an appropriate message.
+            authz.unaccessible()
 
     def require_http_allowed_method(cls, request):
         """Ensure that we're allowed to use this HTTP method."""

@@ -117,6 +117,10 @@ class ModelResource(object):
             clause = build_clause(query, self.attributes)
             queryset = self.filter(clause, queryset)
 
+        # Filter the queryset by asserting authorization.
+        queryset = self.meta.authorization.filter(
+            'read', self.request.user, self, queryset)
+
         if self.slug is not None:
             # Attempt to return just the single result we should have.
             result = queryset.all()[:1]
@@ -136,6 +140,11 @@ class ModelResource(object):
             if value is not None:
                 attribute.set(target, value)
 
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('create', self.request.user, self, target):
+            authz.unauthorized()
+
         # Save the target.
         target.save()
 
@@ -148,12 +157,22 @@ class ModelResource(object):
             # Set each one on the target.
             attribute.set(target, data.get(name))
 
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('update', self.request.user, self, target):
+            authz.unauthorized()
+
         # Save the target.
         target.save()
 
     def destroy(self):
         # Grab the existing target.
         target = self.read()
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('destroy', self.request.user, self, target):
+            authz.unauthorized()
 
         # Destroy the target.
         target.delete()

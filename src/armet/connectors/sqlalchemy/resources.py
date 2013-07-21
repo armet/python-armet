@@ -106,9 +106,14 @@ class ModelResource(object):
 
         # Determine if we need to filter the queryset in some way; and if so,
         # filter it.
+        clause = None
         if query is not None:
             clause = build_clause(query, self.attributes, self.meta.model)
             queryset = self.filter(clause, queryset)
+
+        # Filter the queryset by asserting authorization.
+        queryset = self.meta.authorization.filter(
+            'read', self.request.user, self, queryset)
 
         # Return the queryset.
         return queryset.all() if self.slug is None else queryset.first()
@@ -123,6 +128,11 @@ class ModelResource(object):
             value = data.get(name)
             if value is not None:
                 attribute.set(target, value)
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('create', self.request.user, self, target):
+            authz.unauthorized()
 
         # Add the target to the session.
         self.session.add(target)
@@ -139,12 +149,22 @@ class ModelResource(object):
             # Set each one on the target.
             attribute.set(target, data.get(name))
 
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('update', self.request.user, self, target):
+            authz.unauthorized()
+
         # Commit the session.
         self.session.commit()
 
     def destroy(self):
         # Grab the existing target.
         target = self.read()
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized('destroy', self.request.user, self, target):
+            authz.unauthorized()
 
         # Remove the object from the session.
         self.session.delete(target)

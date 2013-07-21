@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import re
 import six
 from importlib import import_module
-from armet import utils, authentication
+from armet import utils, authentication, authorization
 from armet.exceptions import ImproperlyConfigured
 
 
@@ -332,3 +332,11 @@ class ResourceOptions(object):
         if self.authentication is None:
             # Default to a single instance of pass-through authentication.
             self.authentication = (authentication.Authentication(),)
+
+        #! The authorization protocol to attempt to use
+        #! to determine the if the user can access or is otherwise
+        #! authorized.
+        self.authorization = meta.get('authorization')
+        if self.authorization is None:
+            # Default is the pass-through authorization.
+            self.authorization = authorization.Authorization()
