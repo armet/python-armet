@@ -70,8 +70,7 @@ def build_clause(query, attributes):
 
         # Replace the initial path segment with the expanded
         # attribute path.
-        del seg.path[0]
-        seg.path[0:0] = attribute.path.split('.')
+        seg.path[0:1] = attribute.path.split('.')
 
         # Build the path from the segment.
         path = '__'.join(seg.path) + OPERATOR_MAP[seg.operator]

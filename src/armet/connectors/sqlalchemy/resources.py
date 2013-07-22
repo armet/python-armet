@@ -37,7 +37,7 @@ def build_segment(model, segment):
 
     # Resolve the inner-most path segment.
     if segment.path:
-        return col.has(self.filter_segment(segment))
+        return col.has(build_segment(col.property.mapper.class_, segment))
 
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
@@ -56,8 +56,7 @@ def build_clause(query, attributes, model):
 
         # Replace the initial path segment with the expanded
         # attribute path.
-        del seg.path[0]
-        seg.path[0:0] = attribute.path.split('.')
+        seg.path[0:1] = attribute.path.split('.')
 
         # Construct the clause from the segment.
         q = build_segment(model, seg)
