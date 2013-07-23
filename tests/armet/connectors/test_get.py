@@ -99,3 +99,23 @@ class TestResourceQuery(BaseResourceTest):
 
         question = data[0]['question']
         assert question == 'What one question would you add to this survey?'
+
+    def test_param_available_true(self, connectors):
+        response, content = self.client.request('/api/poll/?available=true')
+
+        assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert isinstance(data, list)
+        assert len(data) == 4
+
+    def test_param_available_false(self, connectors):
+        response, content = self.client.request('/api/poll/?available=false')
+
+        assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert isinstance(data, list)
+        assert len(data) == 4

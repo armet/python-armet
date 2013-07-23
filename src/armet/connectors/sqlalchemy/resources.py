@@ -19,10 +19,15 @@ class ModelResourceOptions(object):
                 'the SQLAlchemy model connector.')
 
 
+def iequal_helper(x, y):
+    # Boolean values should use op.eq
+    return operator.eq(x, y) if issubclass(type(y), bool) else x.ilike(y)
+
+
 # Build an operator map to use for sqlalchemy.
 OPERATOR_MAP = {
     constants.OPERATOR_EQUAL[0]: operator.eq,
-    constants.OPERATOR_IEQUAL[0]: lambda x, y: x.ilike(y),
+    constants.OPERATOR_IEQUAL[0]: iequal_helper,
     constants.OPERATOR_LT[0]: operator.lt,
     constants.OPERATOR_GT[0]: operator.gt,
     constants.OPERATOR_LTE[0]: operator.le,
@@ -30,7 +35,7 @@ OPERATOR_MAP = {
 }
 
 
-def build_segment(model, segment):
+def build_segment(model, segment, attr):
     # Get the associated column for the initial path.
     path = segment.path.pop(0)
     col = model.__dict__[path]
@@ -43,7 +48,9 @@ def build_segment(model, segment):
     op = OPERATOR_MAP[segment.operator]
 
     # Apply the operator to the values and return the expression
-    return reduce(operator.or_, map(partial(op, col), segment.values))
+    return reduce(operator.or_,
+                  map(partial(op, col),
+                      map(attr.try_clean, segment.values)))
 
 
 def build_clause(query, attributes, model):
@@ -59,7 +66,7 @@ def build_clause(query, attributes, model):
         seg.path[0:1] = attribute.path.split('.')
 
         # Construct the clause from the segment.
-        q = build_segment(model, seg)
+        q = build_segment(model, seg, attribute)
 
         # Combine the segment with the last.
         clause = last.combinator(clause, q) if last is not None else q

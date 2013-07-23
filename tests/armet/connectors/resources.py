@@ -158,6 +158,8 @@ class PollResource(resources.ModelResource):
 
     question = resources.TextAttribute('question')
 
+    available = resources.BooleanAttribute('available')
+
 
 class LeftResource(resources.Resource):
 

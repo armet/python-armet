@@ -72,11 +72,19 @@ def build_clause(query, attributes):
         # attribute path.
         seg.path[0:1] = attribute.path.split('.')
 
+        # Boolean's should use `exact` rather than `iexact`.
+        if attribute.type is bool:
+            op = '__exact'
+        else:
+            op = OPERATOR_MAP[seg.operator]
+
         # Build the path from the segment.
-        path = '__'.join(seg.path) + OPERATOR_MAP[seg.operator]
+        path = '__'.join(seg.path) + op
 
         # Construct a Q-object from the segment.
-        q = reduce(operator.or_, map(lambda x: Q((path, x)), seg.values))
+        q = reduce(operator.or_,
+                   map(lambda x: Q((path, x)),
+                       map(attribute.try_clean, seg.values)))
 
         # Combine the segment with the last.
         clause = last.combinator(clause, q) if last is not None else q
