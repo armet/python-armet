@@ -42,7 +42,8 @@ def build_segment(model, segment, attr):
 
     # Resolve the inner-most path segment.
     if segment.path:
-        return col.has(build_segment(col.property.mapper.class_, segment))
+        return col.has(build_segment(
+            col.property.mapper.class_, segment, attr))
 
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
