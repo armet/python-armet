@@ -509,7 +509,26 @@ class Resource(object):
         same name as the request method.
         """
         # Assert authentication and attempt to get a valid user object.
+        self.require_authentication(request)
+
+        # Assert accessibiltiy of the resource in question.
+        self.require_accessibility(request.user, request.method)
+
+        # Facilitate CORS by applying various headers.
+        # This must be done on every request.
+        # TODO: Provide cross_domain configuration that turns this off.
+        self._process_cross_domain_request(request, response)
+
+        # Route the HTTP/1.1 request to an appropriate method.
+        return self.route(request, response)
+
+    def require_authentication(self, request):
+        """Ensure we are authenticated."""
         request.user = user = None
+
+        if request.method == 'OPTIONS':
+            # Authentication should not be checked on an OPTIONS request.
+            return
 
         for auth in self.meta.authentication:
             user = auth.authenticate(self)
@@ -526,26 +545,19 @@ class Resource(object):
             # Authentication protocol determined the user is indeed
             # authenticated (or not); Store the user for later reference.
             request.user = user
-            break
+            return
 
         if not user and not auth.allow_anonymous:
             # No authenticated user found and protocol doesn't allow
             # anonymous users.
             auth.unauthenticated()
 
-        # Assert accessibiltiy of the resource in question.
-        self.require_accessibility(user, request.method)
-
-        # Facilitate CORS by applying various headers.
-        # This must be done on every request.
-        # TODO: Provide cross_domain configuration that turns this off.
-        self._process_cross_domain_request(request, response)
-
-        # Route the HTTP/1.1 request to an appropriate method.
-        return self.route(request, response)
-
     def require_accessibility(self, user, method):
         """Ensure we are allowed to access this resource."""
+        if method == 'OPTIONS':
+            # Authorization should not be checked on an OPTIONS request.
+            return
+
         authz = self.meta.authorization
         if not authz.is_accessible(user, method, self):
             # User is not authorized; raise an appropriate message.
