@@ -126,7 +126,7 @@ def _method_to_operation(method):
         return set(['update', 'create'])
 
     if method == 'DELETE':
-        return set(['destory'])
+        return set(['destroy'])
 
 
 def _methods_to_operations(methods):
