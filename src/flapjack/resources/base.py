@@ -29,7 +29,7 @@ class Base(six.with_metaclass(meta.Resource)):
     http_list_allowed_methods = None
 
     #! List of allowed HTTP methods (on accessing a specific resource).
-    http_detail_allowed_methods = None 
+    http_detail_allowed_methods = None
 
     #! List of method names that we understand but do not neccesarily support.
     http_method_names = (
@@ -557,11 +557,11 @@ class Base(six.with_metaclass(meta.Resource)):
 
         try:
             path = path.replace(urlresolvers.get_script_prefix(), '/')
-            
+
             # Attempt to resolve the path normally.
             resolution = resolve(path)
             resource = resolution.func.__self__(
-                    request=request, 
+                    request=request,
                     method=method,
                     identifier=resolution.kwargs['id'],
                     components=components
@@ -831,7 +831,7 @@ class Base(six.with_metaclass(meta.Resource)):
                 return response
 
     def delete(self, obj=None):
-        # Set our status initially so `destory` can change it
+        # Set our status initially so `destroy` can change it
         self.status = constants.NO_CONTENT
 
         if self.identifier is None:
