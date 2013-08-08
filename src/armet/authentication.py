@@ -10,12 +10,16 @@ import base64
 
 class Authentication(object):
 
-    def __init__(self, **kwargs):
-        """Initialize authentication protocol; establish parameters."""
+    #! Whether returning `None` from `authenticate` indicates
+    #! unauthenticated; or, simply no authenticated user.
+    allow_anonymous = True
 
-        #! Whether returning `None` from `authenticate` indicates
-        #! unauthenticated; or, simply no authenticated user.
-        self.allow_anonymous = kwargs.get('allow_anonymous', True)
+    def __init__(self, **kwargs):
+        """Initialize authentication protocol; establish parameters.
+        """
+
+        # Allow overriding class attributes.
+        self.__dict__.update(kwargs)
 
     def authenticate(self, resource):
         """Gets the a user if they are authenticated; else None.
@@ -73,9 +77,7 @@ class HeaderAuthentication(Authentication):
 
 class BasicAuthentication(HeaderAuthentication):
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault('allow_anonymous', False)
-        super(BasicAuthentication, self).__init__(**kwargs)
+    allow_anonymous = False
 
     def can_authenticate(self, method):
         # Determine if we can authenticate.
