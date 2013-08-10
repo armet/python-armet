@@ -21,7 +21,7 @@ class Authentication(object):
         # Allow overriding class attributes.
         self.__dict__.update(kwargs)
 
-    def authenticate(self, resource):
+    def authenticate(self, request):
         """Gets the a user if they are authenticated; else None.
 
         @retval False    Unable to authenticate.
@@ -40,7 +40,7 @@ class Authentication(object):
 
 class HeaderAuthentication(Authentication):
 
-    def can_authenticate(self, method):
+    def can_authenticate(self, request, method):
         # Determine if we can authenticate.
         return False
 
@@ -48,16 +48,16 @@ class HeaderAuthentication(Authentication):
         # Decode credentials.
         return text,
 
-    def get_user(self, *args, **kwargs):
+    def get_user(self, request, method, *args):
         """
         Callback that is invoked when a user is attempting to be
         authenticated with a set of credentials.
         """
         return None
 
-    def authenticate(self, resource):
+    def authenticate(self, request):
         # Retrieve the authorization header.
-        header = resource.request.headers.get('Authorization')
+        header = request.headers.get('Authorization')
 
         try:
             # Split the authorization header into method and credentials.
@@ -67,19 +67,19 @@ class HeaderAuthentication(Authentication):
             # Strange format in the header.
             return False
 
-        if not self.can_authenticate(method):
+        if not self.can_authenticate(request, method):
             # Not the right kind of authentication.
             return False
 
         # Retreive and return the user object.
-        return self.get_user(resource, *self.get_credentials(text))
+        return self.get_user(request, method, *self.get_credentials(text))
 
 
 class BasicAuthentication(HeaderAuthentication):
 
     allow_anonymous = False
 
-    def can_authenticate(self, method):
+    def can_authenticate(self, request, method):
         # Determine if we can authenticate.
         return method.lower() == 'basic'
 

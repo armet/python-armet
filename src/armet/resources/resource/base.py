@@ -60,7 +60,7 @@ class Resource(object):
         # Attempt to get the attribute from a connector.
         if self.connectors and isinstance(self.connectors[0], type):
             for connector in self.connectors:
-                attr = connector.__dict__.get(name)
+                attr = getattr(connector, name, None)
                 if attr is not None:
                     # Found attribute.
                     if hasattr(attr, '__get__'):
@@ -96,6 +96,7 @@ class Resource(object):
         response.close()
 
     @classmethod
+    @profile
     def view(cls, request, response):
         """
         Entry-point of the request / response cycle; Handles resource creation
@@ -531,7 +532,7 @@ class Resource(object):
             return
 
         for auth in self.meta.authentication:
-            user = auth.authenticate(self)
+            user = auth.authenticate(request)
             if user is False:
                 # Authentication protocol failed to authenticate;
                 # pass the baton.

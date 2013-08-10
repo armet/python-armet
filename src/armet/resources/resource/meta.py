@@ -27,6 +27,7 @@ class ResourceBase(type):
     #! Connectors to instantiate and mixin to the inheritance.
     connectors = ['http']
 
+    @profile
     def __getattribute__(self, name):
         if name == 'connectors' or name.startswith('__'):
             # Return immediately.
