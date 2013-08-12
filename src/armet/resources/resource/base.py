@@ -47,33 +47,6 @@ class Resource(object):
         # Return our constructed instance.
         return obj
 
-    def __getattribute__(self, name):
-        if name.startswith('__') or name == 'connectors':
-            # Bail early.
-            return super(Resource, self).__getattribute__(name)
-
-        # Attempt to get the attribute from self first.
-        if name in self.__dict__ or name in type(self).__dict__:
-            # Return the attribute normally.
-            return super(Resource, self).__getattribute__(name)
-
-        # Attempt to get the attribute from a connector.
-        if self.connectors and isinstance(self.connectors[0], type):
-            for connector in self.connectors:
-                attr = getattr(connector, name, None)
-                if attr is not None:
-                    # Found attribute.
-                    if hasattr(attr, '__get__'):
-                        # This has a descriptor; wrap it to use the
-                        # current cls.
-                        return attr.__get__(self)
-
-                    # Return a normal attribute.
-                    return attr
-
-        # We can't find anything; continue as normal.
-        return super(Resource, self).__getattribute__(name)
-
     @classmethod
     def redirect(cls, request, response):
         """Redirect to the canonical URI for this resource."""
@@ -496,10 +469,6 @@ class Resource(object):
         # Store the request and response objects on self.
         self.request = request
         self.response = response
-
-        # Initialize the connectors.
-        for connector in self.connectors:
-            connector.__init__.__get__(self)()
 
     def dispatch(self, request, response):
         """Entry-point of the dispatch cycle for this resource.

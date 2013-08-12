@@ -27,29 +27,34 @@ class ResourceBase(type):
     #! Connectors to instantiate and mixin to the inheritance.
     connectors = ['http']
 
-    def __getattribute__(self, name):
-        if name == 'connectors' or name.startswith('__'):
-            # Return immediately.
-            return super(ResourceBase, self).__getattribute__(name)
+    def mro(self):
+        # Retrieve the normal MRO.
+        mro = super(ResourceBase, self).mro()
 
-        # Attempt to get the attribute from a connector.
-        connectors = self.__dict__.get('connectors')
-        if connectors and isinstance(connectors[0], type):
-            for connector in self.connectors:
-                attr = connector.__dict__.get(name)
-                if attr is not None:
-                    # Found attribute.
-                    if hasattr(attr, '__get__'):
-                        # This has a descriptor; wrap it to use the
-                        # current cls.
-                        return attr.__get__(None, self)
-                        # return lambda *a, **kw: attr.__get__(self, *a, **kw)
+        # Attempt to resolve a list of connectors.
+        meta = self.__dict__.get('meta')
+        if meta:
+            cmap = CONNECTORS
+            for key, ref in six.iteritems(meta.connectors):
+                name = cmap[key]['resource'][0].format(ref)
+                module = utils.import_module(name)
+                if module:
+                    klass = getattr(module, cmap[key]['resource'][1], None)
+                    if klass:
+                        # Found a connector class for this connector.
 
-                    # Return a normal attribute.
-                    return attr
+                        # Find where in the MRO it should go.
+                        # It needs to go directly after the resource base
+                        # for which it is a connector for.
+                        for index, cls in enumerate(mro):
+                            if key in getattr(cls, 'connectors', []):
+                                break
 
-        # Found nothing; continue as normal.
-        return super(ResourceBase, self).__getattribute__(name)
+                        # Insert the connector class.
+                        mro.insert(index, klass)
+
+        # Return the constructed MRO.
+        return mro
 
     @classmethod
     def _is_resource(cls, name, bases):
@@ -137,10 +142,8 @@ class ResourceBase(type):
                 del meta.connectors[key]
 
         # Iterate through the available connectors.
-        iterator = six.iteritems(meta.connectors)
-        self.connectors = connectors = []
         cmap = CONNECTORS
-        for key, ref in iterator:
+        for key, ref in six.iteritems(meta.connectors):
             options = utils.import_module(cmap[key]['options'][0].format(ref))
             if options:
                 options = getattr(options, cmap[key]['options'][1], None)
@@ -150,13 +153,6 @@ class ResourceBase(type):
                     # available options.
                     options_instance = options(metadata, name, base_meta)
                     meta.__dict__.update(**options_instance.__dict__)
-
-            module = utils.import_module(cmap[key]['resource'][0].format(ref))
-            if module:
-                klass = getattr(module, cmap[key]['resource'][1], None)
-                if klass:
-                    # Found a connector class for this connector
-                    connectors.append(klass)
 
         # Return the constructed instance.
         return self
