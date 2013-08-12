@@ -85,9 +85,30 @@ class ModelResource(object):
         ModelResource from `armet.resources` and derive from that.
     """
 
-    def __init__(self):
-        # Establish a session using our session type object.
-        self.session = self.meta.Session()
+    def route(self, *args, **kwargs):
+        # Establish a session.
+        self.session = session = self.meta.Session()
+
+        try:
+            # Continue on with the cycle.
+            result = super(type(self).__base__, self).route(*args, **kwargs)
+
+            # Commit the session.
+            session.commit()
+
+            # Return the result.
+            return result
+
+        except:
+            # Something occurred; rollback the session.
+            session.rollback()
+
+            # Re-raise the exception.
+            raise
+
+        finally:
+            # Close the session.
+            session.close()
 
     def filter(self, clause, queryset):
         # Filter the queryset by the passed clause.
@@ -144,9 +165,6 @@ class ModelResource(object):
         # Add the target to the session.
         self.session.add(target)
 
-        # Commit the session.
-        self.session.commit()
-
         # Return the target.
         return target
 
@@ -161,9 +179,6 @@ class ModelResource(object):
         if not authz.is_authorized(self.request.user, 'update', self, target):
             authz.unauthorized()
 
-        # Commit the session.
-        self.session.commit()
-
     def destroy(self):
         # Grab the existing target.
         target = self.read()
@@ -175,6 +190,3 @@ class ModelResource(object):
 
         # Remove the object from the session.
         self.session.delete(target)
-
-        # Commit the session.
-        self.session.commit()
