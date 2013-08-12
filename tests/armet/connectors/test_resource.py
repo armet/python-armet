@@ -224,3 +224,39 @@ class TestResolution(BaseResourceTest):
         data = json.loads(content.decode('utf8'))
 
         assert data[0]['question'] == 'Are you an innie or an outie?'
+
+    def test_super_twice_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/twice-indirect/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == '84'
+
+    def test_super_twice_indirect_model_resource(self, connectors):
+        response, content = self.client.get('/api/model-twice-indirect/')
+
+        assert response.status == 200
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data[0]['question'] == 'Are you an innie or an outie?'
+
+    def test_super_thrice_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/thrice-indirect/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == '84'
+
+    def test_super_thrice_indirect_model_resource(self, connectors):
+        response, content = self.client.get('/api/model-thrice-indirect/')
+
+        assert response.status == 200
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data[0]['question'] == 'Are you an innie or an outie?'
+
+    def test_mixin_resource(self, connectors):
+        response, content = self.client.get('/api/mixin/')
+
+        assert response.status == 200
+        assert content.decode('utf8') == 'Hello'

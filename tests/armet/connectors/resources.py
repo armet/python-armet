@@ -21,9 +21,14 @@ __all__ = [
     'echo',
     'cookie',
     'DirectResource',
-    'IndirectResource',
     'ModelDirectResource',
+    'IndirectResource',
     'ModelIndirectResource',
+    'TwiceIndirectResource',
+    'ModelTwiceIndirectResource',
+    'ThriceIndirectResource',
+    'ModelThriceIndirectResource',
+    'MixinResource'
 ]
 
 
@@ -236,3 +241,57 @@ class ModelIndirectResource(ModelDirectResource):
 
     def read(self):
         return super(ModelIndirectResource, self).read()
+
+
+class TwiceIndirectResource(IndirectResource):
+
+    def route(self, request, response):
+        return super(TwiceIndirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'84')
+
+
+class ModelTwiceIndirectResource(ModelIndirectResource):
+
+    class Meta:
+        model = models.Poll
+
+    def read(self):
+        return super(ModelTwiceIndirectResource, self).read()
+
+
+class ThriceIndirectResource(IndirectResource):
+
+    def route(self, request, response):
+        return super(ThriceIndirectResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(b'84')
+
+
+class ModelThriceIndirectResource(ModelIndirectResource):
+
+    class Meta:
+        model = models.Poll
+
+    def read(self):
+        return super(ModelThriceIndirectResource, self).read()
+
+
+class ExtraStuff(object):
+
+    def dispatch(self, *args):
+        self.content = b'Hello'
+        return super(ExtraStuff, self).dispatch(*args)
+
+
+class MixinResource(ExtraStuff, IndirectResource):
+
+    content = b'World'
+
+    def route(self, request, response):
+        return super(MixinResource, self).route(request, response)
+
+    def get(self, request, response):
+        response.write(self.content)

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import bottle
 from . import http
+from armet import utils
 
 
 class Resource(object):
@@ -17,13 +18,13 @@ class Resource(object):
         if async:
             # Defer the view to pass of control.
             import gevent
-            gevent.spawn(super(cls.__base__, cls).view, request, response)
+            gevent.spawn(utils.super(Resource, cls).view, request, response)
 
             # Construct and return a streamer.
             return cls.stream(response, response)
 
         # Pass control off to the resource handler.
-        return super(cls.__base__, cls).view(request, response)
+        return utils.super(Resource, cls).view(request, response)
 
     @classmethod
     def mount(cls, url='/', application=None):

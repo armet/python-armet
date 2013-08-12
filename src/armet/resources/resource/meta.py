@@ -19,6 +19,10 @@ CONNECTORS = {
 }
 
 
+#! Set of connector classes.
+connector_set = set()
+
+
 class ResourceBase(type):
 
     #! Options class to use to expand options.
@@ -28,8 +32,17 @@ class ResourceBase(type):
     connectors = ['http']
 
     def mro(self):
+        if not self._is_resource(self.__name__, self.__bases__):
+            # Not a resource; perform the normal MRO.
+            return super(ResourceBase, self).mro()
+
         # Retrieve the normal MRO.
         mro = super(ResourceBase, self).mro()
+
+        # Remove all connectors from the mro.
+        for cls in list(mro):
+            if cls in connector_set:
+                mro.remove(cls)
 
         # Attempt to resolve a list of connectors.
         meta = self.__dict__.get('meta')
@@ -50,8 +63,11 @@ class ResourceBase(type):
                             if key in getattr(cls, 'connectors', []):
                                 break
 
+                        # Let us forever know this is a connector class.
+                        connector_set.add(klass)
+
                         # Insert the connector class.
-                        mro.insert(index, klass)
+                        mro.insert(index + 1, klass)
 
         # Return the constructed MRO.
         return mro
