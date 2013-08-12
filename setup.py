@@ -16,6 +16,9 @@ test_dependencies = (
     # Ensure test coverage.
     'pytest-cov',
 
+    # Benchmarking.
+    'pytest-bench',
+
     # Installs a WSGI application that intercepts requests made to a hostname
     # and port combination for testing.
     'wsgi_intercept == 0.6.0',

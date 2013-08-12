@@ -96,7 +96,6 @@ class Resource(object):
         response.close()
 
     @classmethod
-    @profile
     def view(cls, request, response):
         """
         Entry-point of the request / response cycle; Handles resource creation

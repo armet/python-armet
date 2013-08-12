@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import unittest
 import json
 import six
 from armet import serializers
+from pytest import mark, raises
 
 
-class SerializerTestCase(unittest.TestCase):
+def serialize(cls, data):
+    content = cls.serialize(data)
+    if content and isinstance(content, six.binary_type):
+        content = content.decode('utf8')
+
+    return content
+
+
+class TestSerializer:
 
     media_type = None
 
@@ -17,12 +25,11 @@ class SerializerTestCase(unittest.TestCase):
         cls.serializer = cls.Serializer()
 
     def serialize(self, data):
-        self.content = self.serializer.serialize(data)
-        if self.content and isinstance(self.content, six.binary_type):
-            self.content = self.content.decode('utf8')
+        self.content = serialize(self.serializer, data)
 
 
-class JSONSerializerTestCase(SerializerTestCase):
+@mark.bench('serialize', iterations=10000)
+class TestJSONSerializer(TestSerializer):
 
     media_type = 'application/json'
 
@@ -69,17 +76,19 @@ class JSONSerializerTestCase(SerializerTestCase):
         assert self.content == '[0,1,2,3,4,5,6,7,8,9]'
 
 
-class URLSerializerTestCase(SerializerTestCase):
+class TestURLSerializer(TestSerializer):
 
     media_type = 'application/x-www-form-urlencoded'
 
     Serializer = serializers.URLSerializer
 
+    @mark.bench('serialize', iterations=10000)
     def test_none(self):
         self.serialize(None)
 
         assert self.content == ''
 
+    @mark.bench('serialize', iterations=10000)
     def test_nested(self):
         self.serialize({"foo": [1, 2, 3]})
 
@@ -87,8 +96,10 @@ class URLSerializerTestCase(SerializerTestCase):
 
     def test_impossible(self):
         data = [{"foo": "bar"}, {"bar": "baz"}]
-        self.assertRaises(ValueError, self.serialize, data)
+        with raises(ValueError):
+            self.serialize(data)
 
+    @mark.bench('serialize', iterations=10000)
     def test_tuple(self):
         self.serialize([('foo', 'bar'), ('bar', 'baz')])
 

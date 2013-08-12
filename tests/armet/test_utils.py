@@ -1,37 +1,47 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import unittest
 from armet import utils
+from pytest import mark
 
 
-class ExtendTestCase(unittest.TestCase):
+@mark.bench('utils.cons', number=1000000)
+class TestConstruction:
 
     def test_mapping(self):
-        value = {'x': 10, 'y': 20}
-        value = utils.cons(value, {'z': 15})
+        lhs = {'x': 10, 'y': 20}
+        rhs = {'z': 15}
+
+        value = utils.cons(lhs, rhs)
 
         assert value == {'x': 10, 'y': 20, 'z': 15}
 
     def test_list(self):
-        value = [10, 20]
-        value = utils.cons(value, [15])
+        lhs = [10, 20]
+        rhs = [15]
+
+        value = utils.cons(lhs, rhs)
 
         assert value == [10, 20, 15]
 
     def test_scalar(self):
-        value = [10, 20]
-        value = utils.cons(value, 15)
+        lhs = [10, 20]
+        rhs = 15
+
+        value = utils.cons(lhs, rhs)
 
         assert value == [10, 20, 15]
 
     def test_string(self):
-        value = ['10', 20]
-        value = utils.cons(value, '15')
+        lhs = ['10', 20]
+        rhs = '15'
+
+        value = utils.cons(lhs, rhs)
 
         assert value == ['10', 20, '15']
 
 
-class DasherizeTestCase(unittest.TestCase):
+@mark.bench('utils.dasherize', number=1000000)
+class TestDasherize:
 
     def test_word(self):
         assert utils.dasherize('word') == 'word'
