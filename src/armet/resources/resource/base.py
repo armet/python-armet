@@ -6,7 +6,6 @@ import six
 import collections
 import mimeparse
 from armet import http, utils
-from ..utils import connect, classconnect
 
 
 logger = logging.getLogger(__name__)
