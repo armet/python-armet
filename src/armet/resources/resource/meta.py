@@ -49,6 +49,9 @@ class ResourceBase(type):
         if meta:
             cmap = CONNECTORS
             for key, ref in six.iteritems(meta.connectors):
+                if key not in self.connectors:
+                    continue
+
                 name = cmap[key]['resource'][0].format(ref)
                 module = utils.import_module(name)
                 if module:
@@ -64,10 +67,13 @@ class ResourceBase(type):
                                 break
 
                         # Let us forever know this is a connector class.
-                        connector_set.add(klass)
+                        connector_mro = set(klass.__mro__) - set(mro)
+                        connector_set.update(connector_mro)
 
                         # Insert the connector class.
-                        mro.insert(index + 1, klass)
+                        for cls in connector_mro:
+                            index += 1
+                            mro.insert(index, cls)
 
         # Return the constructed MRO.
         return mro

@@ -17,10 +17,10 @@ class ModelResource(base.ManagedResource):
         the `__init__.py`).
     """
 
-    read = connect('read')
+    # read = connect('read')
 
-    create = connect('create')
+    # create = connect('create')
 
-    update = connect('update')
+    # update = connect('update')
 
-    destroy = connect('destroy')
+    # destroy = connect('destroy')

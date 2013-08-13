@@ -571,13 +571,3 @@ class Resource(object):
         # All CORS handling is done for every HTTP/1.1 method.
         # No more handling is neccesary; set the response to 200 and return.
         response.status = http.client.OK
-
-    get = connect('get')
-
-    post = connect('post')
-
-    put = connect('put')
-
-    delete = connect('delete')
-
-    mount = classconnect('mount')
