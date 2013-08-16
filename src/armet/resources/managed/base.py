@@ -204,7 +204,7 @@ class ManagedResource(base.Resource):
         # A slug exists; this is being accessed as an item.
         return self.meta.http_detail_allowed_methods
 
-    def assert_http_allowed_methods(self, request):
+    def require_http_allowed_method(self, request):
         # No super call as the following replaces it by checking
         # only against the more specific `list_*` or `detail_*` http
         # allowed methods.
