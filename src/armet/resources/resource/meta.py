@@ -67,13 +67,13 @@ class ResourceBase(type):
                                 break
 
                         # Let us forever know this is a connector class.
-                        connector_mro = set(klass.__mro__) - set(mro)
-                        connector_set.update(connector_mro)
+                        connector_set.update(set(klass.__mro__) - set(mro))
 
                         # Insert the connector class.
-                        for cls in connector_mro:
-                            index += 1
-                            mro.insert(index, cls)
+                        for cls in klass.__mro__:
+                            if cls not in mro:
+                                index += 1
+                                mro.insert(index, cls)
 
         # Return the constructed MRO.
         return mro
