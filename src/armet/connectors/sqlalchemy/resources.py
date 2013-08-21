@@ -21,8 +21,11 @@ class ModelResourceOptions(object):
 
 
 def iequal_helper(x, y):
-    # Boolean values should use op.eq
-    return operator.eq(x, y) if issubclass(type(y), bool) else x.ilike(y)
+    # String values should use ILIKE queries.
+    if isinstance(type(y), six.string_types):
+        return x.ilike(y)
+    else:
+        return operator.eq(x, y)
 
 
 # Build an operator map to use for sqlalchemy.
