@@ -4,6 +4,7 @@ import collections
 import abc
 import six
 import mimeparse
+import weakref
 import io
 from armet import exceptions
 from . import request, client
@@ -203,7 +204,11 @@ class Response(object):
 
         @sa armet.http.request.Request.bind
         """
-        self._resource = resource
+        self._resource = weakref.proxy(resource)
+
+    @property
+    def resource(self):
+        return self._resource
 
     @property
     def encoding(self):

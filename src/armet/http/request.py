@@ -6,6 +6,7 @@ import string
 import io
 import collections
 import mimeparse
+import weakref
 from six.moves import http_cookies
 
 
@@ -134,7 +135,11 @@ class Request(six.Iterator):
         so helper methods on the request and response like `serialize` work
         in full knowledge of configuration supplied to the resource.
         """
-        self._resource = resource
+        self._resource = weakref.proxy(resource)
+
+    @property
+    def resource(self):
+        return self._resource
 
     @property
     def protocol(self):
