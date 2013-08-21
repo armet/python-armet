@@ -1,4 +1,5 @@
 # python-armet 
+[![Stories in Ready](https://badge.waffle.io/armet/python-armet.png)](http://waffle.io/armet/python-armet)
 [![Build Status](https://travis-ci.org/armet/python-armet.png)](https://travis-ci.org/armet/python-armet)
 [![Coverage Status](https://coveralls.io/repos/armet/python-armet/badge.png?branch=master)](https://coveralls.io/r/armet/python-armet?branch=master)
 [![PyPi Version](https://pypip.in/v/armet/badge.png)](https://pypi.python.org/pypi/armet)
