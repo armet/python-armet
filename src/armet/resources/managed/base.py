@@ -185,13 +185,8 @@ class ManagedResource(base.Resource):
         # Ensure we're allowed to read the resource.
         self.assert_operations('read')
 
-        try:
-            # Delegate to `read` to retrieve the items.
-            items = self.read()
-
-        except AttributeError:
-            # No read method defined.
-            raise http.exceptions.NotImplemented()
+        # Delegate to `read` to retrieve the items.
+        items = self.read()
 
         if self.slug is not None and not items:
             # Requested a specific resource but nothing is returned.
@@ -212,13 +207,8 @@ class ManagedResource(base.Resource):
         # Deserialize and clean the incoming object.
         data = self.clean(self.request.read(deserialize=True))
 
-        try:
-            # Delegate to `create` to create the item.
-            item = self.create(data)
-
-        except AttributeError:
-            # No read method defined.
-            raise http.exceptions.NotImplemented()
+        # Delegate to `create` to create the item.
+        item = self.create(data)
 
         # Build the response object.
         self.make_response(item, status=http.client.CREATED)
@@ -229,13 +219,8 @@ class ManagedResource(base.Resource):
             # Mass-PUT is not implemented.
             raise http.exceptions.NotImplemented()
 
-        try:
-            # Check if the resource exists.
-            target = self.read()
-
-        except AttributeError:
-            # No read method defined.
-            raise http.exceptions.NotImplemented()
+        # Check if the resource exists.
+        target = self.read()
 
         # Deserialize and clean the incoming object.
         data = self.clean(self.request.read(deserialize=True))
@@ -259,13 +244,8 @@ class ManagedResource(base.Resource):
             # Ensure we're allowed to create the resource.
             self.assert_operations('create')
 
-            try:
-                # Delegate to `create` to create the item.
-                target = self.create(data)
-
-            except AttributeError:
-                # No read method defined.
-                raise http.exceptions.NotImplemented()
+            # Delegate to `create` to create the item.
+            target = self.create(data)
 
             # Build the response object.
             self.make_response(target, status=http.client.CREATED)
@@ -279,13 +259,8 @@ class ManagedResource(base.Resource):
         # Ensure we're allowed to destroy a resource.
         self.assert_operations('destroy')
 
-        try:
-            # Delegate to `destroy` to destroy the item.
-            self.destroy()
-
-        except AttributeError:
-            # No read method defined.
-            raise http.exceptions.NotImplemented()
+        # Delegate to `destroy` to destroy the item.
+        self.destroy()
 
         # Build the response object.
         self.make_response(status=http.client.NO_CONTENT)
