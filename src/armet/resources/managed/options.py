@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from ..resource import options
 import collections
 import six
-from armet.resources.attributes import Attribute, IntegerAttribute
+from armet.attributes import Attribute
 
 
 def _method_to_operation(method):
@@ -58,22 +58,6 @@ class ManagedResourceOptions(options.ResourceOptions):
     def __init__(self, meta, name, data, bases):
         # Initalize base resource options.
         super(ManagedResourceOptions, self).__init__(meta, name, data, bases)
-
-        #! Additional attributes to include in addition to those defined
-        #! directly in the resource. This is meant for defining fields
-        #! with names that conflict with names used in the resource as
-        #! methods. This could be used exclusively; it's a matter of
-        #! preference.
-        self.include = include = meta.get('include', {})
-        if not isinstance(include, collections.Mapping):
-            # This is a list, tuple, etc. but not a dictionary.
-            self.include = {name: Attribute() for name in include}
-
-        else:
-            # This is a dictionary; normalize it.
-            for key, value in six.iteritems(include):
-                if value is None or isinstance(value, six.string_types):
-                    include[key] = Attribute(value)
 
         #! List of allowed operations.
         #! Resource operations are meant to generalize and blur the
@@ -169,4 +153,5 @@ class ManagedResourceOptions(options.ResourceOptions):
             # The slug defaults to `id`; which on most model engines
             # is the primary key. This is as good as a default as any I
             # suppose.
-            self.slug = IntegerAttribute('id')
+            # self.slug = IntegerAttribute('id')
+            pass

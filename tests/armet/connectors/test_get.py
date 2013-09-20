@@ -20,7 +20,7 @@ class TestResourceGet(BaseResourceTest):
         assert (data[-1]['question'] ==
                 'What one question would you add to this survey?')
 
-    def test_not_found(self, connectors):
+    def test_get_not_found(self, connectors):
         response, _ = self.client.get('/api/poll/101/')
 
         assert response.status == http.client.NOT_FOUND

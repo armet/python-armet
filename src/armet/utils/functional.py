@@ -27,3 +27,14 @@ def cons(collection, value):
         collection.append(value)
 
     return collection
+
+
+def compose(*functions):
+
+    def composed(x):
+        for func in functions:
+            x = func(x)
+
+        return x
+
+    return composed

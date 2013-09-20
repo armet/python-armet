@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import collections
-from armet.resources.attributes import Attribute
+from armet.attributes import Attribute
 from ..resource.meta import ResourceBase
 from . import options
 
@@ -30,10 +30,9 @@ class ManagedResourceBase(ResourceBase):
             if isinstance(attribute, Attribute):
                 attributes[index] = attribute
 
-        # Append include directives here
-        attributes.update(self.meta.include)
-
         # Ensure all attributes are unique instances.
+        # This is done so that when attributes are resolved; the resolution
+        # cache does not clobber base resources (for inherited attributes).
         for attr in attributes:
             attributes[attr] = attributes[attr].clone()
 

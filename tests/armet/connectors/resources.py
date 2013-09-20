@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import sys
 import armet
-from armet import resources
+from armet import resources, attributes
 
 # Request the generic models module inserted by the test runner.
 models = sys.modules['tests.armet.connectors.models']
@@ -157,13 +157,13 @@ class PollResource(resources.ModelResource):
     class Meta:
         model = models.Poll
 
-        slug = resources.IntegerAttribute('id')
+        slug = attributes.IntegerAttribute('id')
 
-    id = resources.IntegerAttribute('id')
+    id = attributes.IntegerAttribute('id')
 
-    question = resources.TextAttribute('question')
+    question = attributes.TextAttribute('question')
 
-    available = resources.BooleanAttribute('available')
+    available = attributes.BooleanAttribute('available')
 
 
 class LeftResource(resources.Resource):
@@ -219,7 +219,7 @@ class ModelDirectResource(resources.ModelResource):
     class Meta:
         model = models.Poll
 
-    question = resources.TextAttribute('question')
+    question = attributes.TextAttribute('question')
 
     def route(self, request, response):
         return super(ModelDirectResource, self).route(request, response)

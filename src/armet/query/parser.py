@@ -3,6 +3,8 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 from six.moves import cStringIO as StringIO
 import operator
+import collections
+from functools import reduce
 from itertools import chain
 from . import constants
 
@@ -25,7 +27,7 @@ OPERATOR_SYMBOL_MAP = dict((v, k) for k, v in constants.OPERATORS if v)
 OPERATOR_KEYWORDS = set(k for k, _ in constants.OPERATORS)
 
 
-class Query(object):
+class Query(collections.Sequence):
     """Represents a complete query expression.
     """
 
@@ -33,33 +35,29 @@ class Query(object):
         #! The various query segments.
         self.segments = [] if segments is None else segments
 
+    def __getitem__(self, index):
+        return self.segments[index]
+
+    def __len__(self):
+        return len(self.segments)
+
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
-        """Format the query for debugging purposes.
-        """
-
         o = StringIO()
-        for index, segment in enumerate(self.segments):
-            o.write('(')
 
-            if segment.negated:
-                o.write('not ')
+        o.write('(')
 
-            o.write('"{}"'.format('.'.join(segment.path)))
+        for index, segment in enumerate(self):
 
-            if segment.values:
-                o.write(' :{}'.format(segment.operator))
+            o.write(str(segment))
 
-            for jndex, value in enumerate(segment.values):
-                if jndex:
-                    o.write(' OR')
-
-                o.write(" '{}'".format(value))
-
-            o.write(')')
-
-            if (index + 1) < len(self.segments):
-                comb = 'AND' if segment.combinator == operator.and_ else 'OR'
+            if index + 1 < len(self):
+                comb = '&' if segment.combinator == operator.and_ else '|'
                 o.write(' {} '.format(comb))
+
+        o.write(')')
 
         return o.getvalue()
 
@@ -138,6 +136,28 @@ class QuerySegment(object):
         #! The combinator that is used to combine this and the next
         #! query.
         self.combinator = kwargs.get('combinator', operator.and_)
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        """
+        Format this query segment in a human-readable representation
+        intended for debugging.
+        """
+
+        o = StringIO()
+
+        if self.negated:
+            o.write('not ')
+
+        o.write('.'.join(self.path))
+
+        if self.values:
+            o.write(' :%s ' % self.operator)
+
+        o.write(' | '.join(map(repr, self.values)))
+        return o.getvalue()
 
 
 def _parse_operator(segment, iterator):
