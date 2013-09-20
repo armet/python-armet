@@ -99,6 +99,41 @@ class Attribute(object):
         # Return our resolved value.
         return target
 
+    def set(self, target, value):
+        """Set the value of this attribute for the passed object.
+        """
+
+        if self.path is None:
+            # There is no path defined on this resource.
+            # We can do no magic to set the value.
+            self.set = lambda *a: None
+            return None
+
+        if self._segments:
+            # Attempt to resolve access to this attribute.
+            self.get(target)
+
+        if self._segments:
+            # Attribute is not fully resolved; an interim segment is null.
+            return
+
+        # Resolve access to the parent object.
+        # For a single-segment path this will effectively be a no-op.
+        parent_getter = compose(*self._getters[:-1])
+        target = parent_getter(target)
+
+        # Make the setter.
+        func = self._make_setter(self.path.split('.')[-1], target.__class__)
+
+        # Apply the setter now.
+        func(target, value)
+
+        # Replace this function with the constructed setter.
+        def setter(self, target, value):
+            func(parent_getter(target), value)
+
+        self.set = setter
+
     def prepare(self, value):
         """Prepare the value for serialization and presentation to the client.
         """
@@ -141,7 +176,7 @@ class Attribute(object):
 
         # Check for much better hidden descriptor.
         obj = class_.__dict__.get(segment)
-        if obj and hasattr(obj, '__get__'):
+        if obj is not None and hasattr(obj, '__get__'):
             return lambda target, x=obj.__get__: x(target, class_)
 
         # Check for item access (for a dictionary).
@@ -161,4 +196,41 @@ class Attribute(object):
 
         raise RuntimeError(
             'unable to resolve attribute access for %r on %r' % (
+                segment, class_))
+
+    def _make_setter(self, segment, class_):
+
+        # Attempt to resolve a data descriptor.
+        obj = getattr(class_, segment, None)
+        if obj is not None:
+            if hasattr(obj, '__set__'):
+                def setter(target, value, x=obj.__set__):
+                    x(target, value)
+
+                return setter
+
+        # Check for much better hidden descriptor.
+        obj = class_.__dict__.get(segment)
+        if obj is not None and hasattr(obj, '__set__'):
+            def setter(target, value, x=obj.__set__):
+                x(target, value)
+
+            return setter
+
+        # Check for item access (for a dictionary).
+        if hasattr(class_, '__getitem__'):
+            def setter(target, value):
+                target[segment] = value
+
+            return setter
+
+        # Check for attribute access.
+        if hasattr(class_, '__dict__'):
+            def setter(target, value):
+                target.__dict__[segment] = value
+
+            return setter
+
+        raise RuntimeError(
+            'unable to resolve attribute setter for %r on %r' % (
                 segment, class_))
