@@ -63,6 +63,19 @@ class ManagedResource(base.Resource):
                 else:
                     data[name] = []
 
+            # if data.get('slug'):
+            #     try:
+            #         # Differentiate between a slug and a path.
+            #         value = cls.meta.slug.try_clean(data['slug'])
+
+            #     except ValueError:
+            #         value = None
+
+            #     if value is None:
+            #         # Slug is doing path traversal.
+            #         data['path'] = data['slug']
+            #         data['slug'] = None
+
             # Reset the result.
             result = resource, data, end
 
@@ -99,8 +112,13 @@ class ManagedResource(base.Resource):
             # No data; return nothing.
             return None
 
-        if (not isinstance(data, six.string_types)
-                and isinstance(data, Sequence)):
+        if self.path:
+            # Ensure we are dealing with only one segment.
+            if '/' in self.path:
+                raise http.exceptions.NotFound()
+
+        if (isinstance(data, Sequence)
+                and not isinstance(data, six.string_types)):
             # Attempt to prepare each item of the iterable (as long as
             # we're not a string or some sort of mapping).
             for index, value in enumerate(data):
@@ -111,7 +129,27 @@ class ManagedResource(base.Resource):
         # Prepare just the singular value and return.
         return self.item_prepare(data)
 
+    def attribute_prepare(self, name, attribute, item):
+        # Run the attribute through its prepare cycle.
+        return attribute.prepare(
+            # Optional preparation cycle on the resource.
+            self.preparers[name](
+                # Retrieves the value from the object.
+                self, item, attribute.get(item)))
+
     def item_prepare(self, item):
+        # Check for a path first.
+        if self.path:
+            attribute = self.attributes.get(self.path)
+            if attribute is None:
+                raise http.exceptions.NotFound()
+
+            if not attribute.read:
+                raise http.exceptions.Forbidden()
+
+            # Prepare and return the attribute.
+            return self.attribute_prepare(self.path, attribute, item)
+
         # Initialize the object that hold the resultant item.
         obj = {}
 
@@ -119,11 +157,7 @@ class ManagedResource(base.Resource):
         for name, attribute in self.attributes.items():
             if attribute.include:
                 # Run the attribute through its prepare cycle.
-                obj[name] = attribute.prepare(
-                    # Optional preparation cycle on the resource.
-                    self.preparers[name](
-                        # Retrieves the value from the object.
-                        self, item, attribute.get(item)))
+                obj[name] = self.attribute_prepare(name, attribute, item)
 
         # Return the resultant object.
         return obj
@@ -133,8 +167,8 @@ class ManagedResource(base.Resource):
             # If no data; return an empty object.
             return {}
 
-        if (not isinstance(data, six.string_types)
-                and isinstance(data, Sequence)):
+        if (isinstance(data, Sequence)
+                and not isinstance(data, six.string_types)):
             # Attempt to clean each item of the iterable (as long as
             # we're not a string or some sort of mapping).
             for index, value in enumerate(data):
@@ -151,11 +185,10 @@ class ManagedResource(base.Resource):
 
         # Iterate through the attributes and build the object from the item.
         for name, attribute in self.attributes.items():
-            if attribute.include:
-                # Run the attribute through its prepare cycle.
-                obj[name] = self.cleaners[name](
-                    # Micro preparation cycle on the attribute object.
-                    self, attribute.clean(item.get(name)))
+            # Run the attribute through its clean cycle.
+            obj[name] = self.cleaners[name](
+                # Micro preparation cycle on the attribute object.
+                self, attribute.clean(item.get(name)))
 
         # Return the resultant object.
         return obj
@@ -190,7 +223,15 @@ class ManagedResource(base.Resource):
 
         if self.slug is not None and not items:
             # Requested a specific resource but nothing is returned.
-            raise http.exceptions.NotFound()
+
+            # Attempt to resolve by changing what we understand as
+            # a slug to a path.
+            self.path = self.slug
+            self.slug = None
+
+            # Attempt to retreive the resource again.
+            self.get(request, response)
+            return
 
         # Build the response object.
         self.make_response(items)

@@ -50,6 +50,7 @@ class BaseResourceTest(object):
 
             # Add the models module so that it can be generically imported.
             sys.modules[prefix + 'models'] = model
+            request.cls.models = model
 
         # Initialize the http access layer.
         http = import_module(prefix + connectors['http'])

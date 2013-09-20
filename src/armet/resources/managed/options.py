@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 from ..resource import options
 import collections
 import six
-from armet.attributes import Attribute
+from armet.attributes import Attribute, IntegerAttribute
 
 
 def _method_to_operation(method):
@@ -153,5 +153,4 @@ class ManagedResourceOptions(options.ResourceOptions):
             # The slug defaults to `id`; which on most model engines
             # is the primary key. This is as good as a default as any I
             # suppose.
-            # self.slug = IntegerAttribute('id')
-            pass
+            self.slug = IntegerAttribute('id')

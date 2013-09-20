@@ -28,7 +28,9 @@ __all__ = [
     'ModelTwiceIndirectResource',
     'ThriceIndirectResource',
     'ModelThriceIndirectResource',
-    'MixinResource'
+    'MixinResource',
+    'PollExcludeResource',
+    'PollUnreadResource',
 ]
 
 
@@ -295,3 +297,12 @@ class MixinResource(ExtraStuff, IndirectResource):
 
     def get(self, request, response):
         response.write(self.content)
+
+
+class PollExcludeResource(PollResource):
+
+    question = attributes.TextAttribute('question', include=False)
+
+class PollUnreadResource(PollResource):
+
+    question = attributes.TextAttribute('question', read=False)

@@ -129,7 +129,7 @@ class Attribute(object):
         func(target, value)
 
         # Replace this function with the constructed setter.
-        def setter(self, target, value):
+        def setter(target, value):
             func(parent_getter(target), value)
 
         self.set = setter
@@ -149,8 +149,12 @@ class Attribute(object):
         return value
 
     def try_clean(self, value):
-        # TODO: Remove usage of this in query builder.
-        return self.clean(value)
+        try:
+            # TODO: Remove usage of this in query builder.
+            return self.clean(value)
+
+        except (ValueError, AssertionError):
+            return None
 
     def clone(self):
         """Construct an identical attribute.

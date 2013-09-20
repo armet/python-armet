@@ -119,3 +119,26 @@ class TestResourceQuery(BaseResourceTest):
 
         assert isinstance(data, list)
         assert len(data) == 4
+
+
+
+class TestResourceTraversal(BaseResourceTest):
+
+    def test_item_attribute(self):
+        response, content = self.client.request('/api/poll/1/question/')
+
+        assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert data[0] == 'Are you an innie or an outie?'
+
+    def test_list_attribute(self):
+        response, content = self.client.request('/api/poll/question/')
+
+        assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert data[0] == 'Are you an innie or an outie?'
+        assert data[-1] == 'What one question would you add to this survey?'
