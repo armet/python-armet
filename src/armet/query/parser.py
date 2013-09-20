@@ -4,7 +4,6 @@ import six
 from six.moves import cStringIO as StringIO
 import operator
 import collections
-from functools import reduce
 from itertools import chain
 from . import constants
 

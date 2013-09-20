@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from ..resource import options
-import collections
-import six
-from armet.attributes import Attribute, IntegerAttribute
+from armet.attributes import IntegerAttribute
 
 
 def _method_to_operation(method):

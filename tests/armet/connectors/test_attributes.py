@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import sys
 import json
-from armet import http, resources, attributes
+from armet import http
 from .base import BaseResourceTest
-
-# Request the generic models module inserted by the test runner.
-# models = sys.modules['tests.armet.connectors.models']
 
 
 class TestResourceAttributeProperties(BaseResourceTest):

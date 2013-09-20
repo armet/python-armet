@@ -121,7 +121,6 @@ class TestResourceQuery(BaseResourceTest):
         assert len(data) == 4
 
 
-
 class TestResourceTraversal(BaseResourceTest):
 
     def test_item_attribute(self):

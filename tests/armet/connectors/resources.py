@@ -303,6 +303,7 @@ class PollExcludeResource(PollResource):
 
     question = attributes.TextAttribute('question', include=False)
 
+
 class PollUnreadResource(PollResource):
 
     question = attributes.TextAttribute('question', read=False)
