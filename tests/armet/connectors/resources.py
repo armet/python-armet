@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import sys
 import armet
-from armet import resources, attributes
+from armet import resources, attributes, exceptions
 
 # Request the generic models module inserted by the test runner.
 models = sys.modules['tests.armet.connectors.models']
@@ -32,6 +32,7 @@ __all__ = [
     'MixinResource',
     'PollExcludeResource',
     'PollUnreadResource',
+    'PollValidResource',
 ]
 
 
@@ -318,3 +319,27 @@ class PollExcludeResource(PollResource):
 class PollUnreadResource(PollResource):
 
     question = attributes.TextAttribute('question', read=False)
+
+
+class PollValidResource(PollResource):
+
+    votes = attributes.IntegerAttribute('votes')
+
+    def clean_votes(self, value):
+        assert value > 0, 'Must be greater than 0.'
+        assert value < 51, 'Must be less than 51.'
+        return value
+
+    def clean_question(self, value):
+        errors = []
+
+        if len(value) <= 15:
+            errors.append('Must be more than 15 characters.')
+
+        if value.find('?') == -1:
+            errors.append('Must have at least one question mark.')
+
+        if errors:
+            raise exceptions.ValidationError(*errors)
+
+        return value

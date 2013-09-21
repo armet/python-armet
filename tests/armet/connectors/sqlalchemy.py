@@ -27,6 +27,8 @@ class Poll(Base):
 
     available = sa.Column(sa.Boolean)
 
+    votes = sa.Column(sa.Integer)
+
 
 def _load_fixture(filename):
     """

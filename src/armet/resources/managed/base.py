@@ -4,6 +4,7 @@ import six
 import logging
 from collections import Sequence
 from armet import http
+from armet.exceptions import ValidationError
 from armet.resources.resource import base
 
 
@@ -81,6 +82,12 @@ class ManagedResource(base.Resource):
 
         # Return what we got.
         return result
+
+    def __init__(self, *args, **kwargs):
+        super(ManagedResource, self).__init__(*args, **kwargs)
+
+        #! Map of errors that have occurred in the clean cycle.
+        self._errors = {}
 
     @property
     def allowed_operations(self):
@@ -162,10 +169,29 @@ class ManagedResource(base.Resource):
         # Return the resultant object.
         return obj
 
+    def _clean(self, data):
+        # Wrap clean so that it can be extended and have validation
+        # errors properly handled.
+
+        try:
+            data = self.clean(data)
+
+        except AssertionError as ex:
+            self._errors['__all__'] = [str(ex)]
+
+        except ValidationError as ex:
+            self._errors['__all__'] = ex.errors
+
+        if self._errors:
+            # Collect errors and raise a BadRequest message to the client.
+            raise http.exceptions.BadRequest(self._errors)
+
+        return data
+
     def clean(self, data):
         if not data:
-            # If no data; return an empty object.
-            return {}
+            # If no data; just alias it to an empty dictionary.
+            data = {}
 
         if (isinstance(data, Sequence)
                 and not isinstance(data, six.string_types)):
@@ -180,17 +206,29 @@ class ManagedResource(base.Resource):
         return self.item_clean(data)
 
     def item_clean(self, item):
-        # Initialize the object that hold the resultant item.
+        # Iterate through the attributes and build the object from the item.
         obj = {}
 
-        # Iterate through the attributes and build the object from the item.
         for name, attribute in self.attributes.items():
-            # Run the attribute through its clean cycle.
-            obj[name] = self.cleaners[name](
-                # Micro preparation cycle on the attribute object.
-                self, attribute.clean(item.get(name)))
+            value = item.get(name)
 
-        # Return the resultant object.
+            if value is not None:
+                try:
+                    # Run the attribute through its clean cycle.
+                    value = self.cleaners[name](
+                        # Micro preparation cycle on the attribute object.
+                        self, attribute.clean(value))
+
+                except AssertionError as ex:
+                    self._errors[name] = [str(ex)]
+                    value = None
+
+                except ValidationError as ex:
+                    self._errors[name] = ex.errors
+                    value = None
+
+            obj[name] = value
+
         return obj
 
     @property
@@ -246,7 +284,7 @@ class ManagedResource(base.Resource):
         self.assert_operations('create')
 
         # Deserialize and clean the incoming object.
-        data = self.clean(self.request.read(deserialize=True))
+        data = self._clean(self.request.read(deserialize=True))
 
         # Delegate to `create` to create the item.
         item = self.create(data)
@@ -264,7 +302,7 @@ class ManagedResource(base.Resource):
         target = self.read()
 
         # Deserialize and clean the incoming object.
-        data = self.clean(self.request.read(deserialize=True))
+        data = self._clean(self.request.read(deserialize=True))
 
         if target is not None:
             # Ensure we're allowed to update the resource.
