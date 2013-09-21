@@ -121,7 +121,11 @@ class ManagedResource(base.Resource):
             return data
 
         # Prepare just the singular value and return.
-        return self.item_prepare(data)
+        data = self.item_prepare(data)
+        if data is None:
+            raise http.exceptions.NotFound()
+
+        return data
 
     def attribute_prepare(self, name, attribute, item):
         # Run the attribute through its prepare cycle.
@@ -141,11 +145,7 @@ class ManagedResource(base.Resource):
             if not attribute.read:
                 raise http.exceptions.Forbidden()
 
-            data = self.attribute_prepare(self.path, attribute, item)
-            if data is None:
-                raise http.exceptions.NotFound()
-
-            return data
+            return self.attribute_prepare(self.path, attribute, item)
 
         # Initialize the object that hold the resultant item.
         obj = {}
@@ -259,8 +259,6 @@ class ManagedResource(base.Resource):
 
             # Attempt to retreive the resource again.
             items = self.read()
-            if not items:
-                raise http.exceptions.NotFound()
 
         # Build the response object.
         self.make_response(items)

@@ -4,8 +4,6 @@
 
  - Removed deprecated `include` resource option for declaring attributes.
 
- - Changed `slug` resource option to a string that maps to an existing attribute by their name.
-
  - Moved attributes out of `armet.resources`. `armet.resources.*Attribute` becomes `armet.attributes.*Attribute`.
 
  - Facilitate properties defined for attributes:
@@ -24,3 +22,5 @@
  - Added `name` parameter to attributes to override name in resource model (normally derived from the python name).
 
  - Added simple path traversal for attributes (eg. `GET /path/attribute` or `GET /path/slug/attribute`).
+
+ - Changed `slug` resource option to a string that maps to an existing attribute by their name.
