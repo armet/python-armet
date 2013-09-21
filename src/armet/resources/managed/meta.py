@@ -30,11 +30,13 @@ class ManagedResourceBase(ResourceBase):
             if isinstance(attribute, Attribute):
                 attributes[index] = attribute
 
-        # Ensure all attributes are unique instances.
+        # Ensure all attributes are unique instances and assign names.
         # This is done so that when attributes are resolved; the resolution
         # cache does not clobber base resources (for inherited attributes).
         for attr in attributes:
             attributes[attr] = attributes[attr].clone()
+            if not attributes[attr].name:
+                attributes[attr].name = attr
 
         # Cache access to the attribute preparation cycle.
         self.preparers = preparers = {}

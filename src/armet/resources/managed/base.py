@@ -154,7 +154,8 @@ class ManagedResource(base.Resource):
         for name, attribute in self.attributes.items():
             if attribute.include:
                 # Run the attribute through its prepare cycle.
-                obj[name] = self.attribute_prepare(name, attribute, item)
+                obj[attribute.name] = self.attribute_prepare(
+                    name, attribute, item)
 
         # Return the resultant object.
         return obj
@@ -200,7 +201,7 @@ class ManagedResource(base.Resource):
         obj = {}
 
         for name, attribute in self.attributes.items():
-            value = item.get(name)
+            value = item.get(attribute.name)
 
             try:
                 # Check if this attribute is writeable.
@@ -222,11 +223,11 @@ class ManagedResource(base.Resource):
                         raise ValidationError('Must be provided.')
 
             except AssertionError as ex:
-                self._errors[name] = [str(ex)]
+                self._errors[attribute.name] = [str(ex)]
                 value = None
 
             except ValidationError as ex:
-                self._errors[name] = ex.errors
+                self._errors[attribute.name] = ex.errors
                 value = None
 
             obj[name] = value

@@ -36,6 +36,7 @@ __all__ = [
     'PollNoNullResource',
     'PollRequiredResource',
     'PollValidResource',
+    'PollNamedResource',
 ]
 
 
@@ -337,6 +338,11 @@ class PollNoNullResource(PollResource):
 class PollRequiredResource(PollResource):
 
     question = attributes.TextAttribute('question', required=True)
+
+
+class PollNamedResource(PollResource):
+
+    question = attributes.TextAttribute('question', name='superQuestion')
 
 
 class PollValidResource(PollResource):

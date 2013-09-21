@@ -110,3 +110,17 @@ class TestResourceAttributeProperties(BaseResourceTest):
         data = json.loads(content.decode('utf8'))
 
         assert data['question'] == ['Must be provided.']
+
+    def test_name(self):
+        data = {'superQuestion': 'something', 'id': 1}
+        body = json.dumps(data)
+        response, content = self.client.put(
+            path='/api/poll-named/1/', body=body,
+            headers={'Content-Type': 'application/json'})
+
+        assert response.status == http.client.OK
+
+        data = json.loads(content.decode('utf8'))
+
+        assert 'superQuestion' in data
+        assert data['superQuestion'] == 'something'
