@@ -151,4 +151,4 @@ class ManagedResourceOptions(options.ResourceOptions):
             # The slug defaults to `id`; which on most model engines
             # is the primary key. This is as good as a default as any I
             # suppose.
-            self.slug = IntegerAttribute('id')
+            self.slug = 'id'

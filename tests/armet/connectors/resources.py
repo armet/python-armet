@@ -175,7 +175,7 @@ class PollResource(resources.ModelResource):
     class Meta:
         model = models.Poll
 
-        slug = attributes.IntegerAttribute('id')
+        slug = 'id'
 
     id = attributes.IntegerAttribute('id')
 
@@ -236,6 +236,8 @@ class ModelDirectResource(resources.ModelResource):
 
     class Meta:
         model = models.Poll
+
+    id = attributes.IntegerAttribute('id')
 
     question = attributes.TextAttribute('question')
 

@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import collections
+from armet.exceptions import ImproperlyConfigured
 from armet.attributes import Attribute
 from ..resource.meta import ResourceBase
 from . import options
@@ -37,6 +38,15 @@ class ManagedResourceBase(ResourceBase):
             attributes[attr] = attributes[attr].clone()
             if not attributes[attr].name:
                 attributes[attr].name = attr
+
+        # Resolve the slug reference to an attribute.
+        if self.meta.slug not in attributes:
+            if not self.meta.abstract:
+                raise ImproperlyConfigured(
+                    'slug must reference an existing attribute')
+
+        else:
+            self.meta.slug = attributes[self.meta.slug]
 
         # Cache access to the attribute preparation cycle.
         self.preparers = preparers = {}
