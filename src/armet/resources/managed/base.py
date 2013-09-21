@@ -64,19 +64,6 @@ class ManagedResource(base.Resource):
                 else:
                     data[name] = []
 
-            # if data.get('slug'):
-            #     try:
-            #         # Differentiate between a slug and a path.
-            #         value = cls.meta.slug.try_clean(data['slug'])
-
-            #     except ValueError:
-            #         value = None
-
-            #     if value is None:
-            #         # Slug is doing path traversal.
-            #         data['path'] = data['slug']
-            #         data['slug'] = None
-
             # Reset the result.
             result = resource, data, end
 
@@ -154,8 +141,11 @@ class ManagedResource(base.Resource):
             if not attribute.read:
                 raise http.exceptions.Forbidden()
 
-            # Prepare and return the attribute.
-            return self.attribute_prepare(self.path, attribute, item)
+            data = self.attribute_prepare(self.path, attribute, item)
+            if data is None:
+                raise http.exceptions.NotFound()
+
+            return data
 
         # Initialize the object that hold the resultant item.
         obj = {}
@@ -268,8 +258,9 @@ class ManagedResource(base.Resource):
             self.slug = None
 
             # Attempt to retreive the resource again.
-            self.get(request, response)
-            return
+            items = self.read()
+            if not items:
+                raise http.exceptions.NotFound()
 
         # Build the response object.
         self.make_response(items)
