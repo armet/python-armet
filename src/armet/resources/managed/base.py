@@ -202,20 +202,32 @@ class ManagedResource(base.Resource):
         for name, attribute in self.attributes.items():
             value = item.get(name)
 
-            if value is not None:
-                try:
+            try:
+                # Check if this attribute is writeable.
+                if not attribute.write:
+                    raise ValidationError('Attribute is read-only.')
+
+                if value is not None:
                     # Run the attribute through its clean cycle.
                     value = self.cleaners[name](
                         # Micro preparation cycle on the attribute object.
                         self, attribute.clean(value))
 
-                except AssertionError as ex:
-                    self._errors[name] = [str(ex)]
-                    value = None
+                # Ensure that we don't have a null or it is provided.
+                if value is None:
+                    if name in item and not attribute.null:
+                        raise ValidationError('Must not be null.')
 
-                except ValidationError as ex:
-                    self._errors[name] = ex.errors
-                    value = None
+                    if name not in item and attribute.required:
+                        raise ValidationError('Must be provided.')
+
+            except AssertionError as ex:
+                self._errors[name] = [str(ex)]
+                value = None
+
+            except ValidationError as ex:
+                self._errors[name] = ex.errors
+                value = None
 
             obj[name] = value
 

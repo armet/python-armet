@@ -72,29 +72,41 @@ class TestResourceAttributeProperties(BaseResourceTest):
 
         assert data['question'] == 'Is anybody really out there?'
 
-    # def test_not_write(self):
-    #     data = {'id': 123, 'question': 'Is anybody really out there?'}
-    #     body = json.dumps(data)
-    #     response, content = self.client.put(
-    #         path='/api/poll-unwrite/1/', body=body,
-    #         headers={'Content-Type': 'application/json'})
+    def test_not_write(self):
+        data = {'id': 123, 'question': 'Is anybody really out there?'}
+        body = json.dumps(data)
+        response, content = self.client.put(
+            path='/api/poll-unwrite/1/', body=body,
+            headers={'Content-Type': 'application/json'})
 
-    #     assert response.status == http.client.FORBIDDEN
+        assert response.status == http.client.BAD_REQUEST
 
-    # def test_no_null(self):
-    #     data = {'question': None}
-    #     body = json.dumps(data)
-    #     response, content = self.client.put(
-    #         path='/api/poll-no-null/1/', body=body,
-    #         headers={'Content-Type': 'application/json'})
+        data = json.loads(content.decode('utf8'))
 
-    #     assert response.status == http.client.FORBIDDEN
+        assert data['question'] == ['Attribute is read-only.']
 
-    # def test_required(self):
-    #     data = {}
-    #     body = json.dumps(data)
-    #     response, content = self.client.put(
-    #         path='/api/poll-required/1/', body=body,
-    #         headers={'Content-Type': 'application/json'})
+    def test_no_null(self):
+        data = {'question': None}
+        body = json.dumps(data)
+        response, content = self.client.put(
+            path='/api/poll-no-null/1/', body=body,
+            headers={'Content-Type': 'application/json'})
 
-    #     assert response.status == http.client.FORBIDDEN
+        assert response.status == http.client.BAD_REQUEST
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data['question'] == ['Must not be null.']
+
+    def test_required(self):
+        data = {}
+        body = json.dumps(data)
+        response, content = self.client.put(
+            path='/api/poll-required/1/', body=body,
+            headers={'Content-Type': 'application/json'})
+
+        assert response.status == http.client.BAD_REQUEST
+
+        data = json.loads(content.decode('utf8'))
+
+        assert data['question'] == ['Must be provided.']

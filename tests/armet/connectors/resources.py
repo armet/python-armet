@@ -32,6 +32,9 @@ __all__ = [
     'MixinResource',
     'PollExcludeResource',
     'PollUnreadResource',
+    'PollUnwriteResource',
+    'PollNoNullResource',
+    'PollRequiredResource',
     'PollValidResource',
 ]
 
@@ -319,6 +322,21 @@ class PollExcludeResource(PollResource):
 class PollUnreadResource(PollResource):
 
     question = attributes.TextAttribute('question', read=False)
+
+
+class PollUnwriteResource(PollResource):
+
+    question = attributes.TextAttribute('question', write=False)
+
+
+class PollNoNullResource(PollResource):
+
+    question = attributes.TextAttribute('question', null=False)
+
+
+class PollRequiredResource(PollResource):
+
+    question = attributes.TextAttribute('question', required=True)
 
 
 class PollValidResource(PollResource):
