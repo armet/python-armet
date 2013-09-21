@@ -226,7 +226,7 @@ class ManagedResource(base.Resource):
 
             # Attempt to resolve by changing what we understand as
             # a slug to a path.
-            self.path = self.slug
+            self.path = self.path + self.slug if self.path else self.slug
             self.slug = None
 
             # Attempt to retreive the resource again.

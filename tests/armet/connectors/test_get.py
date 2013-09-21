@@ -132,6 +132,16 @@ class TestResourceTraversal(BaseResourceTest):
 
         assert data[0] == 'Are you an innie or an outie?'
 
+    def test_item_attribute_not_found(self):
+        response, content = self.client.request('/api/poll/1/blah/')
+
+        assert response.status == http.client.NOT_FOUND
+
+    def test_item_attribute_not_found_path(self):
+        response, content = self.client.request('/api/poll/1/question/blah/')
+
+        assert response.status == http.client.NOT_FOUND
+
     def test_list_attribute(self):
         response, content = self.client.request('/api/poll/question/')
 
@@ -141,3 +151,13 @@ class TestResourceTraversal(BaseResourceTest):
 
         assert data[0] == 'Are you an innie or an outie?'
         assert data[-1] == 'What one question would you add to this survey?'
+
+    def test_list_attribute_not_found(self):
+        response, content = self.client.request('/api/poll/blah/')
+
+        assert response.status == http.client.NOT_FOUND
+
+    def test_list_attribute_not_found_path(self):
+        response, content = self.client.request('/api/poll/question/blah/')
+
+        assert response.status == http.client.NOT_FOUND

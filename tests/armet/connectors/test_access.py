@@ -23,6 +23,14 @@ class TestResourceAccess(BaseResourceTest):
         uri = 'http://{}:{}/api/simple/'.format(self.host, self.port)
         assert response.get('location') == uri
 
+    def test_redirect_trailing(self, connectors):
+        response, _ = self.client.get('/api/simple-trailing/')
+
+        assert response.status == http.client.MOVED_PERMANENTLY
+
+        uri = 'http://{}:{}/api/simple-trailing'.format(self.host, self.port)
+        assert response.get('location') == uri
+
     # NOTE: The below test fails in flask / werkzeug and I don't want
     #   to add crazy hacks to make it work.
     # <https://github.com/mitsuhiko/werkzeug/issues/402>

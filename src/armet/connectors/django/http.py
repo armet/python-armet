@@ -73,7 +73,7 @@ class Request(http.Request):
     @property
     def mount_point(self):
         path = self._handle.path
-        return path.rsplit(self.path)[0] if self.path else path
+        return path[:path.rfind(self.path)] if self.path else path
 
     @property
     def query(self):

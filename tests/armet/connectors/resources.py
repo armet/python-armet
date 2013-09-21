@@ -9,6 +9,7 @@ models = sys.modules['tests.armet.connectors.models']
 
 __all__ = [
     'SimpleResource',
+    'SimpleTrailingResource',
     'PollResource',
     'StreamingResource',
     'AsyncResource',
@@ -35,6 +36,16 @@ __all__ = [
 
 
 class SimpleResource(resources.Resource):
+
+    def get(self, request, response):
+        # Do nothing and return nothing.
+        pass
+
+
+class SimpleTrailingResource(resources.Resource):
+
+    class Meta:
+        trailing_slash = False
 
     def get(self, request, response):
         # Do nothing and return nothing.
