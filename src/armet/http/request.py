@@ -202,7 +202,7 @@ class Request(six.Iterator):
 
         if deserialize or format is not None:
             # Deserialize the chunk using the passed format.
-            chunk, _ = self._resource.deserialize(chunk, format=format)
+            chunk, _ = self._resource.deserialize(text=chunk, format=format)
 
         # Whatever else we were passed; return it.
         return chunk
@@ -253,7 +253,7 @@ class Request(six.Iterator):
             A tuple of the deserialized data and an instance of the
             deserializer used.
         """
-        return self._resource.deserialize(self.read(), format=format)
+        return self._resource.deserialize(self, format=format)
 
     def __iter__(self):
         """File-like objects are implicitly iterators."""

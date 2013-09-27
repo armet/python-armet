@@ -258,16 +258,17 @@ class Resource(object):
         return streamer()
 
     @utils.boundmethod
-    def deserialize(self, text, request=None, format=None):
+    def deserialize(self, request=None, text=None, format=None):
         """Deserializes the text using a determined deserializer.
-
-        @param[in] text
-            The text to be deserialized.
 
         @param[in] request
             The request object to pull information from; normally used to
             determine the deserialization format (when `format` is
             not provided).
+
+        @param[in] text
+            The text to be deserialized. Can be left blank and the
+            request will be read.
 
         @param[in] format
             A specific format to deserialize in; if provided, no detection is
@@ -314,7 +315,8 @@ class Resource(object):
                 # Attempt to deserialize the data using the determined
                 # deserializer.
                 deserializer = Deserializer()
-                return deserializer.deserialize(text), deserializer
+                data = deserializer.deserialize(request=request, text=text)
+                return data, deserializer
 
             except ValueError:
                 # Failed to deserialize the data.

@@ -10,7 +10,12 @@ class JSONDeserializer(Deserializer):
 
     media_types = media_types.JSON
 
-    def deserialize(self, text, encoding='utf8'):
+    def deserialize(self, request=None, text=None, encoding='utf8'):
+
+        if text is None:
+            # Read in the text from the request.
+            text = request.read()
+
         # Ensure the text is decoded.
         if isinstance(text, six.binary_type):
             text = text.decode(encoding)

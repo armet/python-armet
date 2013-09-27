@@ -17,7 +17,12 @@ class URLDeserializer(Deserializer):
 
     media_types = media_types.URL
 
-    def deserialize(self, text, encoding='utf8'):
+    def deserialize(self, request=None, text=None, encoding='utf8'):
+
+        if text is None:
+            # Read in the text from the request.
+            text = request.read()
+
         # Ensure we don't attempt to deserialize nothing.
         if text is None:
             raise ValueError

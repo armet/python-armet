@@ -49,7 +49,7 @@ class TestResourceEcho(BaseResourceTest):
 
         assert response.status == http.client.OK
 
-        data = self.deserializers[out_format].deserialize(content)
+        data = self.deserializers[out_format].deserialize(text=content)
 
         assert data == self.body
 

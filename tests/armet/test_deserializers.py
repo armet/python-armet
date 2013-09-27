@@ -13,15 +13,12 @@ class DeserializerTestCase(unittest.TestCase):
         cls.deserializer = cls.Deserializer()
 
     def deserialize(self, text):
-        self.data = self.deserializer.deserialize(text)
+        self.data = self.deserializer.deserialize(text=text)
 
 
 class JSONDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.JSONDeserializer
-
-    def test_none(self):
-        self.assertRaises(ValueError, self.deserialize, None)
 
     def test_scalar(self):
         self.assertRaises(ValueError, self.deserialize, 124)
@@ -59,9 +56,6 @@ class JSONDeserializerTestCase(DeserializerTestCase):
 class URLDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.URLDeserializer
-
-    def test_none(self):
-        self.assertRaises(ValueError, self.deserialize, None)
 
     def test_scalar(self):
         self.assertRaises(ValueError, self.deserialize, 124)
