@@ -25,9 +25,8 @@ class Request(http.Request):
         # Initialize the request headers.
         self.headers = RequestHeaders()
 
-        # Set the method and body of the request.
+        # Set the method of the request.
         request = bottle.request
-        kwargs.update(body=request.body.read())
         kwargs.update(method=request.method)
 
         # Elide the thread-safe request copy and the global bottle.request.
@@ -35,6 +34,9 @@ class Request(http.Request):
 
         # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
+
+    def _read(self):
+        return self._handle.body.read()
 
     @property
     def protocol(self):

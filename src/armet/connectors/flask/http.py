@@ -40,13 +40,14 @@ class Request(http.Request):
         # Initialize the request headers.
         self.headers = RequestHeaders(self._handle)
 
-        # Set the method and body of the request.
-        body = LimitedStream(request.input_stream, len(self)).read()
-        kwargs.update(body=body)
+        # Set the method of the request.
         kwargs.update(method=request.method)
 
         # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
+
+    def _read(self):
+        return self._handle.stream.read()
 
     @property
     def protocol(self):

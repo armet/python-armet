@@ -92,13 +92,7 @@ class Request(six.Iterator):
     #! set by the dervied class to an instance of a derived Headers class.
     headers = None
 
-    def __init__(self, body, path, method, asynchronous, *args, **kwargs):
-        #! The body of the request.
-        self.body = body
-
-        #! A file interface over the body of the request.
-        self._stream = io.BytesIO(self.body)
-
+    def __init__(self, path, method, asynchronous, *args, **kwargs):
         #! The captured path of the request, after the mount point.
         #! Example: GET /api/poll/23 => '/23'
         self.path = path
@@ -186,60 +180,39 @@ class Request(six.Iterator):
             default = 'utf-8' if ptype == 'application' else 'iso-8859-1'
             return params.get('charset', default)
 
-    def _coerce(self, chunk, deserialize, format):
+    def _read(self):
+        """Read and return the request data.
+
+        @note Connectors should override this method.
         """
-        Coerce the chunk into a text type using the encoding or python data
-        using a deserializer.
+        return None
+
+    def read(self, deserialize=False, format=None):
+        """Read and return the request data.
+
+        @param[in] deserialize
+            True to deserialize the resultant text using a determiend format
+            or the passed format.
+
+        @param[in] format
+            A specific format to deserialize in; if provided, no detection is
+            done. If not provided, the content-type header is looked at to
+            determine an appropriate deserializer.
         """
 
-        if not chunk:
-            # Chunk was empty; return an empty string.
+        if deserialize:
+            data, _ = self.deserialize(format=format)
+            return data
+
+        content = self._read()
+
+        if not content:
             return ''
 
-        if type(chunk) is six.binary_type:
-            # If received a byte string; decode it.
-            chunk = chunk.decode(self.encoding)
+        if type(content) is six.binary_type:
+            content = content.decode(self.encoding)
 
-        if deserialize or format is not None:
-            # Deserialize the chunk using the passed format.
-            chunk, _ = self._resource.deserialize(text=chunk, format=format)
-
-        # Whatever else we were passed; return it.
-        return chunk
-
-    def read(self, count=-1, deserialize=False, format=None):
-        """
-        Read and return up to `count` bytes or characters (depending on
-        the value of `self.encoding`).
-
-        @param[in] deserialize
-            True to deserialize the resultant text using a determiend format
-            or the passed format.
-
-        @param[in] format
-            A specific format to deserialize in; if provided, no detection is
-            done. If not provided, the content-type header is looked at to
-            determine an appropriate deserializer.
-        """
-        return self._coerce(self._stream.read(count), deserialize, format)
-
-    def readline(self, count=-1, deserialize=False, format=None):
-        """Read and return one line from the stream.
-
-        @param[in] deserialize
-            True to deserialize the resultant text using a determiend format
-            or the passed format.
-
-        @param[in] format
-            A specific format to deserialize in; if provided, no detection is
-            done. If not provided, the content-type header is looked at to
-            determine an appropriate deserializer.
-
-        @note
-            This is not the method that connectors will override; refer to
-            `self._readline` instead.
-        """
-        return self._coerce(self._stream.readline(count), deserialize, format)
+        return content
 
     def deserialize(self, format=None):
         """Deserializes the request body using a determined deserializer.
@@ -254,18 +227,6 @@ class Request(six.Iterator):
             deserializer used.
         """
         return self._resource.deserialize(self, format=format)
-
-    def __iter__(self):
-        """File-like objects are implicitly iterators."""
-        return self
-
-    def __next__(self):
-        """Iterate over the lines of the request."""
-        line = self.readline()
-        if line:
-            return line
-
-        raise StopIteration()
 
     def __len__(self):
         """Returns the length of the request body, if known."""

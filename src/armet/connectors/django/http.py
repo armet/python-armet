@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 from django.http import HttpResponse
 from armet import http
+from io import BytesIO
 import re
 
 
@@ -59,12 +60,17 @@ class Request(http.Request):
         # Initialize the request headers.
         self.headers = RequestHeaders(request)
 
-        # Set the method and body of the request.
-        kwargs.update(body=request.body)
+        # Store a stream of the request.
+        self._stream = BytesIO(request.body)
+
+        # Set the method of the request.
         kwargs.update(method=self._handle.method)
 
         # Continue the initialization.
         super(Request, self).__init__(*args, **kwargs)
+
+    def _read(self):
+        return self._stream.read()
 
     @property
     def protocol(self):
