@@ -204,11 +204,11 @@ class ManagedResource(base.Resource):
             value = item.get(attribute.name)
 
             try:
-                # Check if this attribute is writeable.
-                if not attribute.write:
-                    raise ValidationError('Attribute is read-only.')
-
                 if value is not None:
+                    # Check if this attribute is writeable.
+                    if not attribute.write:
+                        raise ValidationError('Attribute is read-only.')
+
                     # Run the attribute through its clean cycle.
                     value = self.cleaners[name](
                         # Micro preparation cycle on the attribute object.

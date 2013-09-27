@@ -5,6 +5,7 @@ from .primitive import BooleanAttribute, TextAttribute, IntegerAttribute
 from .temporal import TimeAttribute, DateAttribute, DateTimeAttribute
 from .uuid import UUIDAttribute
 from .timezone import TimezoneAttribute
+from .decimal import DecimalAttribute
 
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     'DateAttribute',
     'DateTimeAttribute',
     'UUIDAttribute',
-    'TimezoneAttribute'
+    'TimezoneAttribute',
+    'DecimalAttribute'
 ]
