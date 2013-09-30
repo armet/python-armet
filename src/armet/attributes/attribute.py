@@ -74,7 +74,7 @@ class Attribute(object):
             target = func(target)
 
         # Are their segments remaining to make a getter for?
-        if self._segments:
+        while self._segments:
             if target is None:
                 # No more getters can be made.
                 return None
