@@ -32,6 +32,9 @@ class _TemporalAttribute(Attribute):
         super(_TemporalAttribute, self).__init__(*args, **kwargs)
 
     def prepare(self, value):
+        if not value:
+            return None
+
         # Serialize as ISO format.
         return value.isoformat()
 
@@ -94,4 +97,3 @@ class TimeAttribute(_TemporalAttribute, Attribute):
 class DateTimeAttribute(_TemporalAttribute, Attribute):
 
     type = datetime.datetime
-
