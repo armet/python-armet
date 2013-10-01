@@ -1,4 +1,4 @@
-## 0.4.0 (unreleased)
+## 0.4.0
 
  - Catch assertions and value errors during the attribute cleaning cycle and send the messages back as a serialized 400 response to the client.
 
