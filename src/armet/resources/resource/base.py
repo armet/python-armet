@@ -466,6 +466,12 @@ class Resource(object):
         if allowed_headers:
             response['Access-Control-Allow-Headers'] = allowed_headers
 
+        # Step 10
+        # Add any exposed headers.
+        exposed_headers = ', '.join(cls.meta.http_exposed_headers)
+        if exposed_headers:
+            response['Access-Control-Expose-Headers'] = exposed_headers
+
     def __init__(self, request, response):
         # Store the request and response objects on self.
         self.request = request

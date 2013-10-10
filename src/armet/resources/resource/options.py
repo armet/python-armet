@@ -228,6 +228,17 @@ class ResourceOptions(object):
                 'Origin'
             )
 
+        #! List of exposed HTTP headers.
+        #! This is used only to show headers to the client.
+        self.http_exposed_headers = meta.get('http_exposed_headers')
+        if self.http_exposed_headers is None:
+            self.http_exposed_headers = (
+                'Content-Type',
+                'Authorization',
+                'Accept',
+                'Origin'
+            )
+
         #! List of allowed HTTP origins.
         #! This is used to request or prevent CORS requests.
         #! No CORS requests will be allowed, at-all, unless this
