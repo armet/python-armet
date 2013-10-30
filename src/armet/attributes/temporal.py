@@ -56,7 +56,7 @@ class _TemporalAttribute(Attribute):
             # TODO: List this somewhere as an optional dep.
             from parsedatetime import parsedatetime as pdt
             c = pdt.Constants()
-            c.BirthdayEpoch = 80 # TODO: Figure out what this is.
+            c.BirthdayEpoch = 80  # TODO: Figure out what this is.
             p = pdt.Calendar(c)
             result = p.parse(value)
             if result[1] != 0:

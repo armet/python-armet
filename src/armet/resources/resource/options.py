@@ -5,6 +5,7 @@ import six
 from importlib import import_module
 from armet import utils, authentication, authorization
 from armet.exceptions import ImproperlyConfigured
+from armet import connectors as included_connectors
 
 
 def _merge(options, name, bases, default=None):
@@ -125,8 +126,8 @@ class ResourceOptions(object):
         for key in connectors:
             connector = connectors[key]
             if isinstance(connector, six.string_types):
-                if '.' not in connector:
-                    # Shortname, prepend base.
+                if connector in getattr(included_connectors, key):
+                    # Included shortname; prepend base.
                     connectors[key] = 'armet.connectors.{}'.format(connector)
 
         #! Additional options to handle and merge into the meta object
