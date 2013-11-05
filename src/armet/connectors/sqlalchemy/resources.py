@@ -184,6 +184,9 @@ class ModelResource(object):
         if not authz.is_authorized(self.request.user, 'update', self, target):
             authz.unauthorized()
 
+        # Flush the target and expire attributes.
+        self.session.flush()
+
     def destroy(self):
         # Grab the existing target.
         target = self.read()
