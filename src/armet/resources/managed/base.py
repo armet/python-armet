@@ -160,9 +160,13 @@ class ManagedResource(base.Resource):
         # Return the resultant object.
         return obj
 
-    def _clean(self, data):
+    def _clean(self, target, data):
         # Wrap clean so that it can be extended and have validation
         # errors properly handled.
+
+        # HACK: Replace this later with passing item down through clean(...) --
+        # however this is to fix a bug and should not break the API.
+        self.__target = target
 
         try:
             data = self.clean(data)
@@ -205,14 +209,16 @@ class ManagedResource(base.Resource):
 
             try:
                 if value is not None:
-                    # Check if this attribute is writeable.
-                    if not attribute.write:
-                        raise ValidationError('Attribute is read-only.')
-
                     # Run the attribute through its clean cycle.
                     value = self.cleaners[name](
                         # Micro preparation cycle on the attribute object.
                         self, attribute.clean(value))
+
+                    # Check if this attribute is writeable.
+                    if not attribute.write:
+                        if (not self.__target
+                                or attribute.get(self.__target) != value):
+                            raise ValidationError('Attribute is read-only.')
 
                 # Ensure that we don't have a null or it is provided.
                 if value is None:
@@ -286,7 +292,7 @@ class ManagedResource(base.Resource):
         self.assert_operations('create')
 
         # Deserialize and clean the incoming object.
-        data = self._clean(self.request.read(deserialize=True))
+        data = self._clean(None, self.request.read(deserialize=True))
 
         # Delegate to `create` to create the item.
         item = self.create(data)
@@ -304,7 +310,7 @@ class ManagedResource(base.Resource):
         target = self.read()
 
         # Deserialize and clean the incoming object.
-        data = self._clean(self.request.read(deserialize=True))
+        data = self._clean(target, self.request.read(deserialize=True))
 
         if target is not None:
             # Ensure we're allowed to update the resource.

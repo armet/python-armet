@@ -73,7 +73,7 @@ class TestResourceAttributeProperties(BaseResourceTest):
         assert data['question'] == 'Is anybody really out there?'
 
     def test_not_write(self):
-        data = {'id': 123, 'question': 'Is anybody really out there?'}
+        data = {'id': 123, 'question': 'gr9uer0gn2w'}
         body = json.dumps(data)
         response, content = self.client.put(
             path='/api/poll-unwrite/1/', body=body,
@@ -84,6 +84,15 @@ class TestResourceAttributeProperties(BaseResourceTest):
         data = json.loads(content.decode('utf8'))
 
         assert data['question'] == ['Attribute is read-only.']
+
+    def test_not_write_same(self):
+        data = {'id': 1, 'question': 'Is anybody really out there?'}
+        body = json.dumps(data)
+        response, content = self.client.put(
+            path='/api/poll-unwrite/1/', body=body,
+            headers={'Content-Type': 'application/json'})
+
+        assert response.status == http.client.OK
 
     def test_no_null(self):
         data = {'question': None}
