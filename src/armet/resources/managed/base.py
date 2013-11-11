@@ -279,6 +279,11 @@ class ManagedResource(base.Resource):
             # Attempt to retreive the resource again.
             items = self.read()
 
+            # Ensure that if we have a slug and still no items that a 404
+            # is rasied appropriately.
+            if not items:
+                raise http.exceptions.NotFound()
+
         # Build the response object.
         self.make_response(items)
 
