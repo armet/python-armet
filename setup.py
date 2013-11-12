@@ -3,6 +3,7 @@
 from setuptools import setup, find_packages
 import sys
 import platform
+from imp import load_source
 
 
 # Required test dependencies.
@@ -54,7 +55,7 @@ if sys.version_info[0] == 2:
 
 setup(
     name='armet',
-    version='0.4.7',
+    version=load_source('', 'armet/_version.py').__version__,
     description='Clean and modern framework for creating RESTful APIs.',
     author='Concordus Applications',
     author_email='support@concordusapps.com',
