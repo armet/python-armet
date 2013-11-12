@@ -19,7 +19,7 @@ class DeserializerTestCase(unittest.TestCase):
         self.data = self.deserializer.deserialize(text=text)
 
 
-@mark.bench('self.deserialize', iterations=1000)
+@mark.bench('self.deserialize', iterations=10000)
 class JSONDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.JSONDeserializer
@@ -72,7 +72,7 @@ class JSONDeserializerTestCase(DeserializerTestCase):
             # ],
         }
 
-        payload = [payload_item] * 1000
+        payload = [payload_item] * 100
 
         text = json.dumps(payload, ensure_ascii=False)
 
@@ -81,7 +81,7 @@ class JSONDeserializerTestCase(DeserializerTestCase):
         assert self.data == payload
 
 
-@mark.bench('self.deserialize', iterations=1000)
+@mark.bench('self.deserialize', iterations=10000)
 class URLDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.URLDeserializer

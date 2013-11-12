@@ -2,8 +2,10 @@
 from __future__ import absolute_import, unicode_literals, division
 import unittest
 from armet.query import parser, constants
+from pytest import mark
 
 
+@mark.bench('parser.parse', iterations=10000)
 class QueryTestCase(unittest.TestCase):
 
     def parse(self, text):

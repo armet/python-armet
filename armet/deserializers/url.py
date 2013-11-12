@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import six
-from collections import OrderedDict
 from .base import Deserializer
 from armet import media_types
 
@@ -30,7 +29,7 @@ class URLDeserializer(Deserializer):
         try:
             # Attempt to desserialize the URL using the
             # URL decoder.
-            data = OrderedDict()
+            data = {}
             for name, value in parse_qsl(text, keep_blank_values=True):
                 # Ensure values are properly decoded if neccessary.
                 if isinstance(value, six.binary_type):

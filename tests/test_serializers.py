@@ -25,7 +25,7 @@ class TestSerializer:
         self.content = content
 
 
-@mark.bench('self.serializer.serialize', iterations=1000)
+@mark.bench('self.serializer.serialize', iterations=10000)
 class TestJSONSerializer(TestSerializer):
 
     media_type = 'application/json'
@@ -88,14 +88,14 @@ class TestJSONSerializer(TestSerializer):
             ],
         }
 
-        payload = [payload_item] * 1000
+        payload = [payload_item] * 100
 
         self.serialize(payload)
 
         assert self.content == json.dumps(payload, ensure_ascii=False)
 
 
-@mark.bench('self.serializer.serialize', iterations=1000)
+@mark.bench('self.serializer.serialize', iterations=10000)
 class TestURLSerializer(TestSerializer):
 
     media_type = 'application/x-www-form-urlencoded'

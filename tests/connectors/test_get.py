@@ -3,8 +3,11 @@ from __future__ import absolute_import, unicode_literals, division
 import json
 from armet import http
 from .base import BaseResourceTest
+from pytest import mark
+from armet.resources import ModelResource
 
 
+@mark.bench('self.client.request', iterations=1000)
 class TestResourceGet(BaseResourceTest):
 
     def test_list(self):
@@ -42,6 +45,7 @@ class TestResourceGet(BaseResourceTest):
                 'What one question would you add to this survey?')
 
 
+@mark.bench('self.client.request', iterations=1000)
 class TestResourceQuery(BaseResourceTest):
 
     def test_param_eq_one(self, connectors):
@@ -121,6 +125,7 @@ class TestResourceQuery(BaseResourceTest):
         assert len(data) == 4
 
 
+@mark.bench('self.client.request', iterations=1000)
 class TestResourceTraversal(BaseResourceTest):
 
     def test_item_attribute(self):

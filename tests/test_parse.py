@@ -3,8 +3,10 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 import unittest
 from armet import resources
+from pytest import mark
 
 
+@mark.bench('self.Resource.parse', iterations=10000)
 class ParseTestCase(unittest.TestCase):
 
     def setUp(self):
