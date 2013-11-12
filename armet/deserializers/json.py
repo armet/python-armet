@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import six
-import json
-# import ujson as json
+import ujson as json
 from .base import Deserializer
 from armet import media_types
 
