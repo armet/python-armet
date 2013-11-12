@@ -6,7 +6,8 @@ from armet import resources
 from pytest import mark
 
 
-@mark.bench('self.Resource.parse', iterations=10000)
+# @mark.bench('self.Resource.parse', iterations=10000)
+@mark.bench('self.request', iterations=10000)
 class ParseTestCase(unittest.TestCase):
 
     def setUp(self):
