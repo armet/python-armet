@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import unittest
+import uuid
 from armet import deserializers
+import ujson as json
+from pytest import mark
 
 
 class DeserializerTestCase(unittest.TestCase):
@@ -16,6 +19,7 @@ class DeserializerTestCase(unittest.TestCase):
         self.data = self.deserializer.deserialize(text=text)
 
 
+@mark.bench('self.deserialize', iterations=1000)
 class JSONDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.JSONDeserializer
@@ -52,7 +56,32 @@ class JSONDeserializerTestCase(DeserializerTestCase):
 
         assert self.data == {"x": [1, 2], "y": "bob"}
 
+    def test_large(self):
+        payload_item = {
+            'organization': uuid.uuid4().hex,
+            'user': uuid.uuid4().hex,
+            'id': uuid.uuid4().hex,
+            'is_active': False,
+            'is_pending': True,
+            # 'members': [
+            #     {
+            #         'id': uuid.uuid4().hex,
+            #         'organization': uuid.uuid4().hex,
+            #         'is_dead': False
+            #     }
+            # ],
+        }
 
+        payload = [payload_item] * 1000
+
+        text = json.dumps(payload, ensure_ascii=False)
+
+        self.deserialize(text.encode('utf8'))
+
+        assert self.data == payload
+
+
+@mark.bench('self.deserialize', iterations=1000)
 class URLDeserializerTestCase(DeserializerTestCase):
 
     Deserializer = deserializers.URLDeserializer

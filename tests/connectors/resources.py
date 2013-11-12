@@ -5,7 +5,7 @@ import armet
 from armet import resources, attributes, exceptions
 
 # Request the generic models module inserted by the test runner.
-models = sys.modules['tests.armet.connectors.models']
+models = sys.modules['tests.connectors.models']
 
 __all__ = [
     'SimpleResource',

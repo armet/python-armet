@@ -1,17 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import json
+import ujson as json
 import six
+import uuid
 from armet import serializers
 from pytest import mark, raises
-
-
-def serialize(cls, data):
-    content = cls.serialize(data)
-    if content and isinstance(content, six.binary_type):
-        content = content.decode('utf8')
-
-    return content
 
 
 class TestSerializer:
@@ -25,10 +18,14 @@ class TestSerializer:
         cls.serializer = cls.Serializer()
 
     def serialize(self, data):
-        self.content = serialize(self.serializer, data)
+        content = self.serializer.serialize(data)
+        if content and isinstance(content, six.binary_type):
+            content = content.decode('utf8')
+
+        self.content = content
 
 
-@mark.bench('serialize', iterations=10000)
+@mark.bench('self.serializer.serialize', iterations=1000)
 class TestJSONSerializer(TestSerializer):
 
     media_type = 'application/json'
@@ -75,20 +72,41 @@ class TestJSONSerializer(TestSerializer):
 
         assert self.content == '[0,1,2,3,4,5,6,7,8,9]'
 
+    def test_large(self):
+        payload_item = {
+            'organization': uuid.uuid4().hex,
+            'user': uuid.uuid4().hex,
+            'id': uuid.uuid4().hex,
+            'is_active': False,
+            'is_pending': True,
+            'members': [
+                {
+                    'id': uuid.uuid4().hex,
+                    'organization': uuid.uuid4().hex,
+                    'is_dead': False
+                }
+            ],
+        }
 
+        payload = [payload_item] * 1000
+
+        self.serialize(payload)
+
+        assert self.content == json.dumps(payload, ensure_ascii=False)
+
+
+@mark.bench('self.serializer.serialize', iterations=1000)
 class TestURLSerializer(TestSerializer):
 
     media_type = 'application/x-www-form-urlencoded'
 
     Serializer = serializers.URLSerializer
 
-    @mark.bench('serialize', iterations=10000)
     def test_none(self):
         self.serialize(None)
 
         assert self.content == ''
 
-    @mark.bench('serialize', iterations=10000)
     def test_nested(self):
         self.serialize({"foo": [1, 2, 3]})
 
@@ -99,7 +117,6 @@ class TestURLSerializer(TestSerializer):
         with raises(ValueError):
             self.serialize(data)
 
-    @mark.bench('serialize', iterations=10000)
     def test_tuple(self):
         self.serialize([('foo', 'bar'), ('bar', 'baz')])
 

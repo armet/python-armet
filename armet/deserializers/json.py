@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import json
+# import ujson as json
 from .base import Deserializer
 from armet import media_types
 
@@ -11,7 +12,6 @@ class JSONDeserializer(Deserializer):
     media_types = media_types.JSON
 
     def deserialize(self, request=None, text=None, encoding='utf8'):
-
         if text is None:
             # Read in the text from the request.
             text = request.read()

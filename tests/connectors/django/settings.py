@@ -44,7 +44,7 @@ LANGUAGE_CODE = 'en-us'
 SITE_ID = 1
 
 # URL configuration.
-ROOT_URLCONF = 'tests.armet.connectors.django.urls'
+ROOT_URLCONF = 'tests.connectors.django.urls'
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
@@ -121,7 +121,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'tests.armet.connectors.django'
+    'tests.connectors.django'
 )
 
 # A sample logging configuration. The only tangible logging

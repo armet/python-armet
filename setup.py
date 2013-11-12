@@ -71,6 +71,9 @@ setup(
 
         # For parsing accept and content-type headers
         'python-mimeparse',
+
+        # Ultra fast JSON encoder and decoder for Python.
+        'ujson'
     ),
     extras_require={
         'test': test_dependencies

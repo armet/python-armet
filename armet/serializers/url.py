@@ -19,7 +19,7 @@ class URLSerializer(Serializer):
     def serialize(self, obj=None):
         # If we have nothing; serialize as an empty object.
         if obj is None:
-            obj = {}
+            return ''
 
         try:
             # Attempt to serialize the incoming object using the URL encoder.

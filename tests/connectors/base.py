@@ -41,7 +41,7 @@ class BaseResourceTest(object):
         # Re-initialize the configuration.
         armet.use(connectors=connectors, debug=True)
 
-        prefix = 'tests.armet.connectors.'
+        prefix = 'tests.connectors.'
         callback = None
         if 'model' in connectors:
             # Initialize the database access layer.
