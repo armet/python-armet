@@ -186,7 +186,7 @@ class ModelResource(object):
 
         # Flush the target and expire attributes.
         self.session.flush()
-        
+
         # Refresh the target object to avoid inconsistencies with storage.
         self.session.expire(target)
 
