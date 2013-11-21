@@ -166,3 +166,33 @@ class TestResourceTraversal(BaseResourceTest):
         response, content = self.client.request('/api/poll/question/blah/')
 
         assert response.status == http.client.NOT_FOUND
+
+
+@mark.bench('self.client.request', iterations=1000)
+class TestResourcePagination(BaseResourceTest):
+
+    def test_get_range(self):
+        response, content = self.client.request(
+            path='/api/poll/',
+            headers={
+                'range': 'items=10-20'})
+
+        assert response.status == http.client.PARTIAL_CONTENT
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert len(data) == 11
+        assert data[0]['question'] == 'Are you superstitious?'
+
+    def test_get_single(self):
+        response, content = self.client.request(
+            path='/api/poll/',
+            headers={
+                'range': 'items=10'})
+
+        assert response.status == http.client.PARTIAL_CONTENT
+
+        data = json.loads(content.decode('utf-8'))
+
+        assert len(data) == 1
+        assert data[0]['question'] == 'Are you superstitious?'

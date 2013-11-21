@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 import logging
 from collections import Sequence, MutableSequence, Iterable
-from armet import http
+from armet import http, pagination
 from armet.exceptions import ValidationError
 from armet.resources.resource import base
 
@@ -89,7 +89,7 @@ class ManagedResource(base.Resource):
         if not set(args).issubset(self.allowed_operations):
             raise http.exceptions.Forbidden()
 
-    def make_response(self, data=None, status=http.client.OK):
+    def make_response(self, data=None):
         """Fills the response object from the passed data."""
         if data is not None:
             # Prepare the data for transmission.
@@ -97,9 +97,6 @@ class ManagedResource(base.Resource):
 
             # Encode the data using a desired encoder.
             self.response.write(data, serialize=True)
-
-        # Make sure that the status code is set.
-        self.response.status = status
 
     def prepare(self, data):
         if data is None:
@@ -288,6 +285,11 @@ class ManagedResource(base.Resource):
             if not items:
                 raise http.exceptions.NotFound()
 
+        if (isinstance(items, Iterable)
+                and not isinstance(items, six.string_types)):
+            # Paginate over the collection.
+            items = pagination.paginate(self.request, self.response, items)
+
         # Build the response object.
         self.make_response(items)
 
@@ -307,7 +309,8 @@ class ManagedResource(base.Resource):
         item = self.create(data)
 
         # Build the response object.
-        self.make_response(item, status=http.client.CREATED)
+        self.response.status = http.client.CREATED
+        self.make_response(item)
 
     def put(self, request, response):
         """Processes a `PUT` request."""
@@ -334,7 +337,7 @@ class ManagedResource(base.Resource):
                 raise http.exceptions.NotImplemented()
 
             # Build the response object.
-            self.make_response(target, status=http.client.OK)
+            self.make_response(target)
 
         else:
             # Ensure we're allowed to create the resource.
@@ -344,7 +347,8 @@ class ManagedResource(base.Resource):
             target = self.create(data)
 
             # Build the response object.
-            self.make_response(target, status=http.client.CREATED)
+            self.response.status = http.client.CREATED
+            self.make_response(target)
 
     def delete(self, request, response):
         """Processes a `DELETE` request."""
@@ -359,4 +363,5 @@ class ManagedResource(base.Resource):
         self.destroy()
 
         # Build the response object.
-        self.make_response(status=http.client.NO_CONTENT)
+        self.response.status = http.client.NO_CONTENT
+        self.make_response()

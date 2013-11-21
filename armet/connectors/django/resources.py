@@ -100,6 +100,10 @@ class ModelResource(object):
         # Filter the queryset by the passed clause.
         return queryset.filter(clause).distinct()
 
+    def count(self, queryset):
+        # Return the count of the queryset.
+        return len(queryset)
+
     def read(self):
         # Initialize the queryset to the model manager.
         queryset = self.meta.model.objects
