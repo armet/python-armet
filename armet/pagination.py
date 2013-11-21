@@ -68,10 +68,13 @@ def paginate(request, response, items):
 
     # Get the header
     header = request.headers.get('Range')
+    if not header:
+        # No range header; move along.
+        return items
 
     # do some validation
     prefix = RANGE_SPECIFIER + '='
-    if not header or not header.find(prefix) == 0:
+    if not header.find(prefix) == 0:
         # This is not using a range specifier that we understand
         raise exceptions.RequestedRangeNotSatisfiable()
 

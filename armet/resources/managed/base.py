@@ -286,7 +286,7 @@ class ManagedResource(base.Resource):
                 raise http.exceptions.NotFound()
 
         if (isinstance(items, Iterable)
-                and not isinstance(items, six.string_types)):
+                and not isinstance(items, six.string_types)) and items:
             # Paginate over the collection.
             items = pagination.paginate(self.request, self.response, items)
 
