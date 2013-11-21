@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import logging
-from collections import Sequence
+from collections import Sequence, MutableSequence, Iterable
 from armet import http
 from armet.exceptions import ValidationError
 from armet.resources.resource import base
@@ -111,8 +111,12 @@ class ManagedResource(base.Resource):
             if '/' in self.path:
                 raise http.exceptions.NotFound()
 
-        if (isinstance(data, Sequence)
+        if (isinstance(data, Iterable)
                 and not isinstance(data, six.string_types)):
+            # Resolve the sequence only if we need to.
+            if not isinstance(data, MutableSequence):
+                data = list(data)
+
             # Attempt to prepare each item of the iterable (as long as
             # we're not a string or some sort of mapping).
             for index, value in enumerate(data):

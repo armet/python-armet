@@ -148,7 +148,7 @@ class ModelResource(object):
             self.request.user, 'read', self, queryset)
 
         # Return the queryset.
-        return queryset.all() if self.slug is None else queryset.first()
+        return queryset if self.slug is None else queryset.first()
 
     def create(self, data):
         # Instantiate a new target.

@@ -134,7 +134,7 @@ class ModelResource(object):
             return result[0] if result else None
 
         # Return the entire queryset.
-        return list(queryset.all())
+        return queryset.all()
 
     def create(self, data):
         # Instantiate a new target.
