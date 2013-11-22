@@ -174,6 +174,9 @@ class ModelResource(object):
         self.session.add(target)
         self.session.flush()
 
+        # Refresh the target object to avoid inconsistencies with storage.
+        self.session.expire(target)
+
         # Return the target.
         return target
 
