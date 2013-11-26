@@ -162,6 +162,9 @@ class Response(object):
         #! The content chunk to return to the client.
         self._body = None
 
+        #! The length of the response.
+        self._length = 0
+
     def require_not_closed(self):
         """Raises an exception if the response is closed."""
         if self.closed:
@@ -267,12 +270,8 @@ class Response(object):
         return self._closed
 
     def tell(self):
-        """Return the current stream position.
-
-        This does not include data that has been flushed or set directly
-        on the body.
-        """
-        return self._stream.tell() + len(self._body or '')
+        """Return the current stream position."""
+        return self._length
 
     def write(self, chunk, serialize=False, format=None):
         """Writes the given chunk to the output buffer.
@@ -311,6 +310,9 @@ class Response(object):
             return  # `serialize` invokes write(...)
 
         if type(chunk) is six.binary_type:
+            # Update the stream length.
+            self._length += len(chunk)
+
             # If passed a byte string, we hope the user encoded it properly.
             self._stream.write(chunk)
 
@@ -324,6 +326,9 @@ class Response(object):
                 # Bail; we don't have an encoding.
                 raise exceptions.InvalidOperation(
                     'Attempting to write textual data without an encoding.')
+
+            # Update the stream length.
+            self._length += len(chunk)
 
             # Write the encoded data into the byte stream.
             self._stream.write(chunk)
@@ -408,6 +413,14 @@ class Response(object):
     def __len__(self):
         """Retrieves the actual length of the response."""
         return self.tell()
+
+    def __nonzero__(self):
+        """Test if the response is closed."""
+        return not self._closed
+
+    def __bool__(self):
+        """Test if the response is closed."""
+        return not self._closed
 
     def __contains__(self, name):
         """Tests if the passed header exists in the response."""
