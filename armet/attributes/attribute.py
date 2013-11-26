@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from armet.utils import compose
+from collections import defaultdict
+from functools import partial
 
 
 class Attribute(object):
@@ -47,25 +49,31 @@ class Attribute(object):
         self.path = path
         if self.path:
             # Explode the path into segments to iterate over in operations.
-            self._segments = path.split('.')
+            self._segments = defaultdict(lambda: self.path.split('.'))
 
         # Attributes use a lazy optimization process for attribute lookup
         # on the underlying data model. When an attribute is accessed
         # it builds and caches the operation action.
-        self._getters = []
+        self._getters = defaultdict(list)
 
-    def get(self, target):
-        """Retrieve the value of this attribute from the passed object.
-        """
+        # Attribute cache that is keyed on the type of the target object.
+        this = self
+        class GetResolver(dict):
 
+            def __missing__(self, key):
+                return partial(this._resolve_get, self, key.__class__)
+
+        self._get = GetResolver()
+
+    def _resolve_get(self, resolver, key, target):
         if self.path is None:
             # There is no path defined on this resource.
             # We can do no magic to get the value.
-            self.get = lambda *a: None
+            resolver[key] = lambda *a: None
             return None
 
         # Iterate and resolve each constructed getter.
-        for func in self._getters:
+        for func in self._getters[key]:
             if target is None:
                 # No more getters can be resolved.
                 return None
@@ -74,29 +82,37 @@ class Attribute(object):
             target = func(target)
 
         # Are their segments remaining to make a getter for?
-        while self._segments:
+        while self._segments[key]:
             if target is None:
                 # No more getters can be made.
                 return None
 
             # Fetch the next path segment.
-            segment = self._segments.pop(0)
+            segment = self._segments[key].pop(0)
 
             # Make and append the corresponding getter.
-            func = self._make_getter(segment, target.__class__)
-            self._getters.append(func)
+            func = self._make_getter(segment, key)
+            self._getters[key].append(func)
 
             # Resolve the getter.
             target = func(target)
 
         # Have we finished resolving the getters?
-        if not self._segments:
+        if not self._segments[key]:
             # Compose a replacement get function that just iterates over
             # the getters.
-            self.get = compose(*self._getters)
+            resolver[key] = compose(*self._getters[key])
 
         # Return our resolved value.
         return target
+
+    def get(self, target):
+        """Retrieve the value of this attribute from the passed object.
+        """
+
+        # Attempt to resolve an accessor for the specific target. Creates
+        # the accessor if not available.
+        return self._get[target](target)
 
     def set(self, target, value):
         """Set the value of this attribute for the passed object.
@@ -108,17 +124,17 @@ class Attribute(object):
             self.set = lambda *a: None
             return None
 
-        if self._segments:
+        if self._segments[target.__class__]:
             # Attempt to resolve access to this attribute.
             self.get(target)
 
-        if self._segments:
+        if self._segments[target.__class__]:
             # Attribute is not fully resolved; an interim segment is null.
             return
 
         # Resolve access to the parent object.
         # For a single-segment path this will effectively be a no-op.
-        parent_getter = compose(*self._getters[:-1])
+        parent_getter = compose(*self._getters[target.__class__][:-1])
         target = parent_getter(target)
 
         # Make the setter.
