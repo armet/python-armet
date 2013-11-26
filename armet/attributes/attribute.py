@@ -58,6 +58,7 @@ class Attribute(object):
 
         # Attribute cache that is keyed on the type of the target object.
         this = self
+
         class GetResolver(dict):
 
             def __missing__(self, key):
