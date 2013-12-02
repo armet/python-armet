@@ -47,7 +47,7 @@ class _TemporalAttribute(Attribute):
             # Attempt to use the dateutil library to parse.
             return parse_datetime(value, fuzzy=False)
 
-        except (ValueError, AttributeError):
+        except (TypeError, ValueError, AttributeError):
             # Not a strictly formatted date; return nothing.
             pass
 
