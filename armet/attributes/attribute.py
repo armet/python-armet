@@ -40,6 +40,11 @@ class Attribute(object):
         #! Override python name of the attribute.
         self.name = kwargs.get('name')
 
+        #! Flag to turn the set operation into a no-op.
+        # HACK: This is in-place in order to get around a bug I've encountered
+        #   until relationships are implemented.
+        self._set = kwargs.get('_set', True)
+
         #! The path reference of where to find this attribute on an
         #! item (eg. 'name' references the name key if the read method returns
         #! a dictionary.)
@@ -118,6 +123,9 @@ class Attribute(object):
     def set(self, target, value):
         """Set the value of this attribute for the passed object.
         """
+
+        if not self._set:
+            return
 
         if self.path is None:
             # There is no path defined on this resource.
