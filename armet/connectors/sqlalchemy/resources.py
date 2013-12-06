@@ -170,17 +170,17 @@ class ModelResource(object):
             if value is not None:
                 attribute.set(target, value)
 
-        # Ensure the user is authorized to perform this action.
-        authz = self.meta.authorization
-        if not authz.is_authorized(self.request.user, 'create', self, target):
-            authz.unauthorized()
-
         # Add the target to the session.
         self.session.add(target)
         self.session.flush()
 
         # Refresh the target object to avoid inconsistencies with storage.
         self.session.expire(target)
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized(self.request.user, 'create', self, target):
+            authz.unauthorized()
 
         # Return the target.
         return target
@@ -191,16 +191,16 @@ class ModelResource(object):
             # Set each one on the target.
             attribute.set(target, data.get(name))
 
-        # Ensure the user is authorized to perform this action.
-        authz = self.meta.authorization
-        if not authz.is_authorized(self.request.user, 'update', self, target):
-            authz.unauthorized()
-
         # Flush the target and expire attributes.
         self.session.flush()
 
         # Refresh the target object to avoid inconsistencies with storage.
         self.session.expire(target)
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized(self.request.user, 'update', self, target):
+            authz.unauthorized()
 
     def destroy(self):
         # Grab the existing target.
