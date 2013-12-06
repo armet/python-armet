@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
-import six
 from .attribute import Attribute
 import datetime
 from armet import exceptions
@@ -18,6 +17,7 @@ except ImportError:
 
 
 class _TemporalAttribute(Attribute):
+
     """Represents a temporal attribute, such as a date or time.
     """
 
@@ -78,8 +78,7 @@ class DateAttribute(_TemporalAttribute, Attribute):
         value = super(DateAttribute, self).clean(value)
         if value:
             # Constrain to just the date part.
-            value = value.date()
-        return value
+            return value.date()
 
 
 class TimeAttribute(_TemporalAttribute, Attribute):
@@ -90,8 +89,7 @@ class TimeAttribute(_TemporalAttribute, Attribute):
         value = super(TimeAttribute, self).clean(value)
         if value:
             # Constrain to just the date part.
-            value = value.time()
-        return value
+            return value.time()
 
 
 class DateTimeAttribute(_TemporalAttribute, Attribute):
