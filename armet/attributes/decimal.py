@@ -13,7 +13,7 @@ class DecimalAttribute(Attribute):
         if value is None:
             return None
 
-        return six.text_type(value)
+        return six.text_type(float(value))
 
     def clean(self, value):
         if isinstance(value, decimal.Decimal):
