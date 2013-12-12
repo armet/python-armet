@@ -42,7 +42,7 @@ OPERATOR_MAP = {
 def build_segment(model, segment, attr):
     # Get the associated column for the initial path.
     path = segment.path.pop(0)
-    col = model.__dict__[path]
+    col = getattr(model, path)
 
     # Resolve the inner-most path segment.
     if segment.path:
