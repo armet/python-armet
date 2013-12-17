@@ -31,53 +31,6 @@ class ResourceBase(type):
     #! Connectors to instantiate and mixin to the inheritance.
     connectors = ['http']
 
-    def mro(self):
-        if not self._is_resource(self.__name__, self.__bases__):
-            # Not a resource; perform the normal MRO.
-            return super(ResourceBase, self).mro()
-
-        # Retrieve the normal MRO.
-        mro = super(ResourceBase, self).mro()
-
-        # Remove all connectors from the mro.
-        for cls in list(mro):
-            if cls in connector_set:
-                mro.remove(cls)
-
-        # Attempt to resolve a list of connectors.
-        meta = self.__dict__.get('meta')
-        if meta:
-            cmap = CONNECTORS
-            for key, ref in six.iteritems(meta.connectors):
-                if key not in self.connectors:
-                    continue
-
-                name = cmap[key]['resource'][0].format(ref)
-                module = utils.import_module(name)
-                if module:
-                    klass = getattr(module, cmap[key]['resource'][1], None)
-                    if klass:
-                        # Found a connector class for this connector.
-
-                        # Find where in the MRO it should go.
-                        # It needs to go directly after the resource base
-                        # for which it is a connector for.
-                        for index, cls in enumerate(mro):
-                            if key in getattr(cls, 'connectors', []):
-                                break
-
-                        # Let us forever know this is a connector class.
-                        connector_set.update(set(klass.__mro__) - set(mro))
-
-                        # Insert the connector class.
-                        for cls in klass.__mro__:
-                            if cls not in mro:
-                                index += 1
-                                mro.insert(index, cls)
-
-        # Return the constructed MRO.
-        return mro
-
     @classmethod
     def _is_resource(cls, name, bases):
         if name == 'NewBase':
@@ -138,6 +91,34 @@ class ResourceBase(type):
         # Gather and construct the options object.
         meta = attrs['meta'] = cls.options(metadata, name, cur_meta, base_meta)
 
+        # Iterate through the available connectors.
+        cmap = CONNECTORS
+        for key, ref in six.iteritems(meta.connectors):
+            options = utils.import_module(cmap[key]['options'][0].format(ref))
+            if options:
+                options = getattr(options, cmap[key]['options'][1], None)
+                if options:
+                    # Available options to parse for this connector;
+                    # instantiate the options class and apply all
+                    # available options.
+                    options_instance = options(metadata, name, base_meta)
+                    meta.__dict__.update(**options_instance.__dict__)
+
+            # Attempt to resolve the connector.
+            module = utils.import_module(cmap[key]['resource'][0].format(ref))
+            if module:
+                class_ = getattr(module, cmap[key]['resource'][1], None)
+                if class_:
+                    # Found a connector class for this connector.
+                    # Attempt to "apply" the connector.
+                    for base in bases:
+                        if issubclass(base, class_):
+                            break
+
+                    else:
+                        # Mixin the class.
+                        bases = (class_,) + bases
+
         # Construct the class object.
         self = super(ResourceBase, cls).__new__(cls, name, bases, attrs)
 
@@ -162,19 +143,6 @@ class ResourceBase(type):
         for key in list(meta.connectors.keys()):
             if key not in cls.connectors:
                 del meta.connectors[key]
-
-        # Iterate through the available connectors.
-        cmap = CONNECTORS
-        for key, ref in six.iteritems(meta.connectors):
-            options = utils.import_module(cmap[key]['options'][0].format(ref))
-            if options:
-                options = getattr(options, cmap[key]['options'][1], None)
-                if options:
-                    # Available options to parse for this connector;
-                    # instantiate the options class and apply all
-                    # available options.
-                    options_instance = options(metadata, name, base_meta)
-                    meta.__dict__.update(**options_instance.__dict__)
 
         # Return the constructed instance.
         return self

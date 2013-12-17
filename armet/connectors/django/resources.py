@@ -26,14 +26,14 @@ class Resource(object):
         if async:
             # Defer the view to pass of control.
             import gevent
-            gevent.spawn(utils.super(Resource, cls).view, request, response)
+            gevent.spawn(super(Resource, cls).view, request, response)
 
             # Construct and return the generator response.
             response._handle.content = cls.stream(response, response)
             return response._handle
 
         # Pass control off to the resource handler.
-        result = utils.super(Resource, cls).view(request, response)
+        result = super(Resource, cls).view(request, response)
 
         # Configure the response and return it.
         response._handle.content = result

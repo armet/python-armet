@@ -6,7 +6,6 @@ from functools import partial
 from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
-from armet import utils
 
 
 class ModelResourceOptions(object):
@@ -100,7 +99,7 @@ class ModelResource(object):
 
         try:
             # Continue on with the cycle.
-            result = utils.super(ModelResource, self).route(*args, **kwargs)
+            result = super(ModelResource, self).route(*args, **kwargs)
 
             # Commit the session.
             session.commit()

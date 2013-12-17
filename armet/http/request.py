@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import abc
 import six
 import string
-import io
 import collections
 import mimeparse
 import weakref

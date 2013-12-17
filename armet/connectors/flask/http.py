@@ -4,7 +4,7 @@ import six
 from armet import http
 import flask
 from flask.globals import current_app
-from werkzeug.wsgi import get_current_url, LimitedStream
+from werkzeug.wsgi import get_current_url
 
 
 class RequestHeaders(http.request.Headers):

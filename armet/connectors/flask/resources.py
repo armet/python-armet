@@ -4,7 +4,6 @@ import collections
 import flask
 from werkzeug.routing import BaseConverter
 from . import http
-from armet import utils
 
 
 class RegexConverter(BaseConverter):
@@ -35,14 +34,14 @@ class Resource(object):
         if async:
             # Defer the view to pass of control.
             import gevent
-            gevent.spawn(utils.super(Resource, cls).view, request, response)
+            gevent.spawn(super(Resource, cls).view, request, response)
 
             # Construct and return the generator response.
             response._handle.response = cls.stream(response, response)
             return response._handle
 
         # Pass control off to the resource handler.
-        result = utils.super(Resource, cls).view(request, response)
+        result = super(Resource, cls).view(request, response)
 
         if isinstance(result, collections.Iterator):
             # Construct and return the generator response.
