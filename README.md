@@ -1,9 +1,8 @@
-# python-armet 
+# python-armet
 [![Stories in Ready](https://badge.waffle.io/armet/python-armet.png?label=ready)](http://waffle.io/armet/python-armet)
 [![Build Status](https://travis-ci.org/armet/python-armet.png)](https://travis-ci.org/armet/python-armet)
 [![Coverage Status](https://coveralls.io/repos/armet/python-armet/badge.png?branch=master)](https://coveralls.io/r/armet/python-armet?branch=master)
-[![PyPi Version](https://pypip.in/v/armet/badge.png)](https://pypi.python.org/pypi/armet)
-![PyPi Downloads](https://pypip.in/d/armet/badge.png)
+[![PyPI version](https://badge.fury.io/py/armet.png)](http://badge.fury.io/py/armet)
 > Clean and modern framework for creating RESTful APIs.
 
 **Armet** is a framework to facilitate the **quick** **creation**
