@@ -38,7 +38,7 @@ OPERATOR_MAP = {
 }
 
 
-def build_segment(model, segment, attr):
+def build_segment(model, segment, attr, clean):
     # Get the associated column for the initial path.
     path = segment.path.pop(0)
     col = getattr(model, path)
@@ -47,11 +47,11 @@ def build_segment(model, segment, attr):
     if segment.path:
         if col.impl.accepts_scalar_loader:
             return col.has(build_segment(
-                col.property.mapper.class_, segment, attr))
+                col.property.mapper.class_, segment, attr, clean))
 
         else:
             return col.any(build_segment(
-                col.property.mapper.class_, segment, attr))
+                col.property.mapper.class_, segment, attr, clean))
 
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
@@ -59,10 +59,10 @@ def build_segment(model, segment, attr):
     # Apply the operator to the values and return the expression
     return reduce(operator.or_,
                   map(partial(op, col),
-                      map(attr.try_clean, segment.values)))
+                      map(lambda x: clean(attr.try_clean(x)), segment.values)))
 
 
-def build_clause(query, attributes, model):
+def build_clause(resource, query, attributes, cleaners, model):
     # Iterate through each query segment.
     clause = None
     last = None
@@ -75,7 +75,8 @@ def build_clause(query, attributes, model):
         seg.path[0:1] = attribute.path.split('.')
 
         # Construct the clause from the segment.
-        q = build_segment(model, seg, attribute)
+        clean = partial(cleaners[attribute.name], resource)
+        q = build_segment(model, seg, attribute, clean)
 
         # Combine the segment with the last.
         clause = last.combinator(clause, q) if last is not None else q
@@ -132,7 +133,7 @@ class ModelResource(object):
 
         query = None
         if self.slug is not None:
-            # This is an item-access (eg. GET /<name>/:slug); ignore the
+            # This is an item-access (eg. GET //:slug); ignore the
             # query string and generate a query-object based on the slug.
             query = Query(segments=[QuerySegment(
                 path=self.meta.slug.path.split('.'),
@@ -148,7 +149,10 @@ class ModelResource(object):
         # filter it.
         clause = None
         if query is not None:
-            clause = build_clause(query, self.attributes, self.meta.model)
+            clause = build_clause(
+                self, query, self.attributes,
+                self.cleaners, self.meta.model)
+
             queryset = self.filter(clause, queryset)
 
         # Filter the queryset by asserting authorization.
