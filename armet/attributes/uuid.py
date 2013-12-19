@@ -1,16 +1,49 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 from .attribute import Attribute
+from armet import exceptions
 import uuid
+
+
+try:
+    import shortuuid
+
+except ImportError:
+    shortuuid = None
 
 
 class UUIDAttribute(Attribute):
 
     type = uuid.UUID
 
+    def __init__(self, *args, **kwargs):
+        super(UUIDAttribute, self).__init__(*args, **kwargs)
+
+        #! Encode and decode the UUID using 'shortuuid' (only if available).
+        self.short = kwargs.get('short')
+        if self.short is None or self.short:
+            if shortuuid is None:
+                if self.short is None:
+                    self.short = False
+
+                else:
+                    raise exceptions.ImproperlyConfigured(
+                        "Use of 'short' UUID attributes requires the "
+                        "'shortuuid' package.")
+
+            # Default to using short UUIDs if we have the package.
+            self.short = True
+
     def prepare(self, value):
-        # Serialize as the 16-digit hex representation.
-        return value.hex if value else value
+        if value is None:
+            return None
+
+        if self.short:
+            # Serialize as a 22-digit hex representation.
+            return shortuuid.encode(value)
+
+        # Serialize as the 32-digit hex representation.
+        return value.hex
 
     def clean(self, value):
         if value is None:
@@ -18,6 +51,14 @@ class UUIDAttribute(Attribute):
             return value
 
         try:
+            try:
+                if self.short:
+                    # Attempt to coerce the short UUID.
+                    return shortuuid.decode(value)
+
+            except ValueError:
+                pass
+
             # Attempt to coerce the UUID.
             return uuid.UUID(value)
 
