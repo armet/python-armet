@@ -25,6 +25,7 @@ class UUIDAttribute(Attribute):
             if shortuuid is None:
                 if self.short is None:
                     self.short = False
+                    return
 
                 else:
                     raise exceptions.ImproperlyConfigured(
