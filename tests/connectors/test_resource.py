@@ -260,3 +260,80 @@ class TestResolution(BaseResourceTest):
 
         assert response.status == 200
         assert content.decode('utf8') == 'Hello'
+
+
+class TestConnectorResolution(BaseResourceTest):
+
+    def test_direct_resource(self, connectors):
+        response, content = self.client.get('/api/direct-connector/')
+
+        assert response.status == 205
+        assert content.decode('utf8') == 'Hello World\n'
+
+    def test_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/indirect-connector/')
+
+        assert response.status == 205
+        assert content.decode('utf8') == 'Hello World\n'
+
+    def test_twice_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/twice-indirect-connector/')
+
+        assert response.status == 205
+        assert content.decode('utf8') == 'Hello World\n'
+
+    def test_thrice_indirect_resource(self, connectors):
+        response, content = self.client.get('/api/thrice-indirect-connector/')
+
+        assert response.status == 205
+        assert content.decode('utf8') == 'Hello World\n'
+
+    def test_direct_model_resource(self, connectors):
+        response, content = self.client.get('/api/direct-model-connector/')
+
+        assert response.status == 205
+        assert json.loads(content.decode('utf8')) == ['Hello', 'World']
+
+    def test_indirect_model_resource(self, connectors):
+        response, content = self.client.get('/api/indirect-model-connector/')
+
+        assert response.status == 205
+        assert json.loads(content.decode('utf8')) == ['Hello', 'World']
+
+    def test_twice_indirect_model_resource(self, connectors):
+        response, content = self.client.get(
+            '/api/twice-indirect-model-connector/')
+
+        assert response.status == 205
+        assert json.loads(content.decode('utf8')) == ['Hello', 'World']
+
+    def test_thrice_indirect_model_resource(self, connectors):
+        response, content = self.client.get(
+            '/api/thrice-indirect-model-connector/')
+
+        assert response.status == 205
+        assert json.loads(content.decode('utf8')) == ['Hello', 'World']
+
+    def test_direct_model_connector_mixin(self, connectors):
+        path = '/api/direct-model-connector-mixin/10/'
+        response, content = self.client.delete(path)
+
+        assert response.status == 402
+
+    def test_indirect_model_connector_mixin(self, connectors):
+        path = '/api/indirect-model-connector-mixin/10/'
+        response, content = self.client.delete(path)
+
+        assert response.status == 402
+
+    def test_twice_indirect_model_connector_mixin(self, connectors):
+        path = '/api/twice-indirect-model-connector-mixin/10/'
+        response, content = self.client.delete(path)
+
+        assert response.status == 402
+
+    def test_thrice_indirect_model_connector_mixin(self, connectors):
+        path = '/api/thrice-indirect-model-connector-mixin/10/'
+        response, content = self.client.delete(path)
+
+        assert response.status == 402

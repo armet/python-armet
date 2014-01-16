@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import sys
+import json
 import armet
 from armet import resources, attributes, exceptions
 
@@ -37,6 +38,18 @@ __all__ = [
     'PollRequiredResource',
     'PollValidResource',
     'PollNamedResource',
+    'DirectConnectorResource',
+    'IndirectConnectorResource',
+    'TwiceIndirectConnectorResource',
+    'ThriceIndirectConnectorResource',
+    'DirectModelConnectorResource',
+    'IndirectModelConnectorResource',
+    'TwiceIndirectModelConnectorResource',
+    'ThriceIndirectModelConnectorResource',
+    'DirectModelConnectorMixinResource',
+    'IndirectModelConnectorMixinResource',
+    'TwiceIndirectModelConnectorMixinResource',
+    'ThriceIndirectModelConnectorMixinResource',
 ]
 
 
@@ -369,3 +382,93 @@ class PollValidResource(PollResource):
             raise exceptions.ValidationError(*errors)
 
         return value
+
+
+class DirectConnectorResource(resources.Resource):
+
+    @classmethod
+    def view(cls, *args, **kwargs):
+        cls.status = 205
+        return super(DirectConnectorResource, cls).view(*args, **kwargs)
+
+    def get(self, request, response):
+        response.status = self.status
+        response.write(b'Hello World\n')
+
+
+class IndirectConnectorResource(DirectConnectorResource):
+    pass
+
+
+class TwiceIndirectConnectorResource(IndirectConnectorResource):
+    pass
+
+
+class ThriceIndirectConnectorResource(TwiceIndirectConnectorResource):
+    pass
+
+
+class DirectModelConnectorResource(resources.ModelResource):
+
+    class Meta:
+        model = models.Poll
+
+    id = attributes.IntegerAttribute('id')
+
+    def route(self, request, response):
+        response.status = 205
+        return super(DirectModelConnectorResource, self).route(
+            request, response)
+
+    def get(self, request, response):
+        response.write(json.dumps(self.read()).encode('utf8'))
+
+    def read(self):
+        return ['Hello', 'World']
+
+
+class IndirectModelConnectorResource(DirectModelConnectorResource):
+    pass
+
+
+class TwiceIndirectModelConnectorResource(IndirectModelConnectorResource):
+    pass
+
+
+class ThriceIndirectModelConnectorResource(
+        TwiceIndirectModelConnectorResource):
+    pass
+
+
+class DirectModelConnectorMixin(object):
+
+    def destroy(self):
+        self.response.status = 402
+        return None
+
+
+class DirectModelConnectorMixinResource(
+    DirectModelConnectorMixin, resources.ModelResource):
+
+    class Meta:
+        model = models.Poll
+
+    id = attributes.IntegerAttribute('id')
+
+    def delete(self, request, response):
+        self.response.status = 405
+        self.destroy()
+
+
+class IndirectModelConnectorMixinResource(DirectModelConnectorMixinResource):
+    pass
+
+
+class TwiceIndirectModelConnectorMixinResource(
+        IndirectModelConnectorMixinResource):
+    pass
+
+
+class ThriceIndirectModelConnectorMixinResource(
+        TwiceIndirectModelConnectorMixinResource):
+    pass
