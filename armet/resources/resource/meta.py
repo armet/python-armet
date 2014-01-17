@@ -2,21 +2,22 @@
 from __future__ import absolute_import, unicode_literals, division
 import six
 import armet
+from collections import OrderedDict
 from armet import utils
 from . import options
 
 
 #! Map of connector class objects in their connector modules.
-CONNECTORS = {
-    'http': {
+CONNECTORS = OrderedDict([
+    ('http', {
         'resource': ('{}.resources', 'Resource', 'resource.base',),
         'options': ('{}.resources', 'ResourceOptions',)
-    },
-    'model': {
+    }),
+    ('model', {
         'resource': ('{}.resources', 'ModelResource', 'model.base',),
         'options': ('{}.resources', 'ModelResourceOptions',)
-    }
-}
+    })
+])
 
 
 #! Set of connector classes.
@@ -35,6 +36,14 @@ def apply_connectors(meta, name, bases, metadata, base_meta):
     # connectors. You may have an inheritance chain of as many "abstract"
     # resources as warranted but as soon as a connector is supplied on a
     # non-abstract resource then that connector is "locked-in" so-to-speak.
+
+    # Order the connectors found in meta by the order declared above.
+    connectors = OrderedDict()
+    for key in reversed(CONNECTORS):
+        if key in meta.connectors:
+            connectors[key] = meta.connectors[key]
+
+    meta.connectors = connectors
 
     # Iterate through the declared connectors.
     cmap = CONNECTORS
@@ -81,35 +90,6 @@ def apply_connectors(meta, name, bases, metadata, base_meta):
             pass
 
     return tuple(new_bases)
-
-    # # Iterate through the available connectors.
-    # cmap = CONNECTORS
-    # for key, ref in six.iteritems(meta.connectors):
-    #     options = utils.import_module(cmap[key]['options'][0].format(ref))
-    #     if options:
-    #         options = getattr(options, cmap[key]['options'][1], None)
-    #         if options:
-    #             # Available options to parse for this connector;
-    #             # instantiate the options class and apply all
-    #             # available options.
-    #             options_instance = options(metadata, name, base_meta)
-    #             meta.__dict__.update(**options_instance.__dict__)
-
-    #     # Attempt to resolve the connector.
-    #     module = utils.import_module(cmap[key]['resource'][0].format(ref))
-    #     if module:
-    #         class_ = getattr(module, cmap[key]['resource'][1], None)
-    #         if class_:
-    #             # Found a connector class for this connector.
-    #             # Attempt to "apply" the connector.
-    #             for base in bases:
-    #                 if issubclass(base, class_):
-    #                     break
-
-    #             else:
-    #                 # Mixin the class.
-    #                 bases = (class_,) + bases
-
 
 
 class ResourceBase(type):
