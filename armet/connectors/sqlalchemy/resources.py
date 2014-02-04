@@ -3,9 +3,11 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 import operator
 from functools import partial
+from copy import deepcopy
 from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
+from sqlalchemy.exc import InvalidRequestError
 
 
 class ModelResourceOptions(object):
@@ -50,8 +52,15 @@ def build_segment(model, segment, attr, clean):
                 col.property.mapper.class_, segment, attr, clean))
 
         else:
-            return col.any(build_segment(
-                col.property.mapper.class_, segment, attr, clean))
+            try:
+                return col.any(build_segment(
+                    col.property.mapper.class_, deepcopy(segment),
+                    attr, clean))
+
+            except InvalidRequestError:
+                return col.has(build_segment(
+                    col.property.mapper.class_, deepcopy(segment),
+                    attr, clean))
 
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
