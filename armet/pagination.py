@@ -98,5 +98,5 @@ def paginate(request, response, items):
     response.headers['Accept-Ranges'] = RANGE_SPECIFIER
 
     # Splice and return the items.
-    items = items[start - 1:end]
+    items = items[start:end]
     return items
