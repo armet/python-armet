@@ -65,10 +65,17 @@ def build_segment(model, segment, attr, clean):
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
 
-    # Apply the operator to the values and return the expression
-    return reduce(operator.or_,
+    # Apply the operator to the values.
+    exp = reduce(operator.or_,
                   map(partial(op, col),
                       map(lambda x: clean(attr.try_clean(x)), segment.values)))
+
+    # Negate the expression (if needed)
+    if segment.negated:
+        exp = ~exp
+
+    # Return the expression
+    return exp
 
 
 def build_clause(resource, query, attributes, cleaners, model):
