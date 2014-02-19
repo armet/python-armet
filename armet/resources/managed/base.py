@@ -229,7 +229,7 @@ class ManagedResource(base.Resource):
                     if name not in item and attribute.required:
                         raise ValidationError('Must be provided.')
 
-            except AssertionError as ex:
+            except (AssertionError, ValueError) as ex:
                 self._errors[attribute.name] = [str(ex)]
                 value = None
 
