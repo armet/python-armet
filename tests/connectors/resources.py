@@ -448,7 +448,7 @@ class DirectModelConnectorMixin(object):
 
 
 class DirectModelConnectorMixinResource(
-    DirectModelConnectorMixin, resources.ModelResource):
+        DirectModelConnectorMixin, resources.ModelResource):
 
     class Meta:
         model = models.Poll
