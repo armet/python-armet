@@ -3,6 +3,7 @@ build/
 dist/
 *.pyc
 *.egg-info
+*.bak
 
 # Dotfiles
 .*
