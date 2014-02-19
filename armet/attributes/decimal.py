@@ -32,6 +32,6 @@ class DecimalAttribute(Attribute):
             # Attempt to coerce whatever we have as an int.
             return decimal.Decimal(value)
 
-        except ValueError:
+        except (ValueError, decimal.InvalidOperation):
             # Failed to do so.
             raise ValueError('Not a valid decimal value.')
