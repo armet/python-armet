@@ -77,7 +77,6 @@ def paginate(request, response, items):
     if not header.find(prefix) == 0:
         # This is not using a range specifier that we understand
         raise exceptions.RequestedRangeNotSatisfiable()
-
     else:
         # Chop the prefix off the header and parse it
         ranges = parse(header[len(prefix):])
@@ -86,7 +85,6 @@ def paginate(request, response, items):
     if len(ranges) > 1:
         raise exceptions.RequestedRangeNotSatisfiable(
             'Multiple ranges in a single request is not yet supported.')
-
     start, end = ranges[0]
 
     # Make sure the length is not higher than the total number allowed.
@@ -98,5 +96,5 @@ def paginate(request, response, items):
     response.headers['Accept-Ranges'] = RANGE_SPECIFIER
 
     # Splice and return the items.
-    items = items[start:end]
+    items = items[start:end + 1]
     return items

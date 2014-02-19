@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals, division
+
 import json
 from armet import http
 from .base import BaseResourceTest
 from pytest import mark
-from armet.resources import ModelResource
 
 
 @mark.bench('self.client.request', iterations=1000)
@@ -182,7 +181,7 @@ class TestResourcePagination(BaseResourceTest):
         data = json.loads(content.decode('utf-8'))
 
         assert len(data) == 11
-        assert data[0]['question'] == 'Are you superstitious?'
+        assert data[0]['question'] == 'What is your biggest pet peeve?'
 
     def test_get_single(self):
         response, content = self.client.request(
@@ -195,4 +194,4 @@ class TestResourcePagination(BaseResourceTest):
         data = json.loads(content.decode('utf-8'))
 
         assert len(data) == 1
-        assert data[0]['question'] == 'Are you superstitious?'
+        assert data[0]['question'] == 'What is your biggest pet peeve?'
