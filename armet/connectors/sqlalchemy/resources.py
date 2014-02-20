@@ -67,8 +67,8 @@ def build_segment(model, segment, attr, clean):
 
     # Apply the operator to the values.
     exp = reduce(operator.or_,
-                  map(partial(op, col),
-                      map(lambda x: clean(attr.try_clean(x)), segment.values)))
+                 map(partial(op, col),
+                     map(lambda x: clean(attr.try_clean(x)), segment.values)))
 
     # Negate the expression (if needed)
     if segment.negated:
