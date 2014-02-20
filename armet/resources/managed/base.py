@@ -222,11 +222,12 @@ class ManagedResource(base.Resource):
                             raise ValidationError('Attribute is read-only.')
 
                 # Ensure that we don't have a null or it is provided.
-                if value is None:
+                if value is None or (
+                        isinstance(value, six.string_types) and value == ''):
                     if name in item and not attribute.null:
                         raise ValidationError('Must not be null.')
 
-                    if name not in item and attribute.required:
+                    elif attribute.required:
                         raise ValidationError('Must be provided.')
 
             except (ValueError, AssertionError) as ex:
