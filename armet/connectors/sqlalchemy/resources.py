@@ -65,17 +65,10 @@ def build_segment(model, segment, attr, clean):
     # Determine the operator.
     op = OPERATOR_MAP[segment.operator]
 
-    # Apply the operator to the values.
-    exp = reduce(operator.or_,
-                 map(partial(op, col),
-                     map(lambda x: clean(attr.try_clean(x)), segment.values)))
-
-    # Negate the expression (if needed)
-    if segment.negated:
-        exp = ~exp
-
-    # Return the expression
-    return exp
+    # Apply the operator to the values and return the expression
+    return reduce(operator.or_,
+                  map(partial(op, col),
+                      map(lambda x: clean(attr.try_clean(x)), segment.values)))
 
 
 def build_clause(resource, query, attributes, cleaners, model):
@@ -171,12 +164,25 @@ class ModelResource(object):
 
             queryset = self.filter(clause, queryset)
 
-        # Filter the queryset by asserting authorization.
-        queryset = self.meta.authorization.filter(
-            self.request.user, 'read', self, queryset)
+        if self.slug is None:
+            # Filter the queryset by asserting authorization.
+            queryset = self.meta.authorization.filter(
+                self.request.user, 'read', self, queryset)
 
-        # Return the queryset.
-        return queryset if self.slug is None else queryset.first()
+            # Return the queryset.
+            return queryset
+
+        else:
+            # Get the item in question.
+            item = queryset.first()
+
+            # Ensure the user is authorized to perform this action.
+            authz = self.meta.authorization
+            if not authz.is_authorized(self.request.user, 'read', self, item):
+                authz.unauthorized()
+
+            # We're good, return the item.
+            return item
 
     def create(self, data):
         # Instantiate a new target.
