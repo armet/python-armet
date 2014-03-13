@@ -66,9 +66,16 @@ def build_segment(model, segment, attr, clean):
     op = OPERATOR_MAP[segment.operator]
 
     # Apply the operator to the values and return the expression
-    return reduce(operator.or_,
+    qs = reduce(operator.or_,
                   map(partial(op, col),
                       map(lambda x: clean(attr.try_clean(x)), segment.values)))
+
+    # Apply the negation.
+    if segment.negated:
+        qs = ~qs
+
+    # Return our query object.
+    return qs
 
 
 def build_clause(resource, query, attributes, cleaners, model):
