@@ -159,6 +159,17 @@ class QuerySegment(object):
         return o.getvalue()
 
 
+class QuerySegmentCombinator(object):
+    """
+    Represents the combination of 2 query segments `(x=y)&(y=z)`
+    """
+
+    def __init__(self, left, right, combinator=operator.and_):
+        self.left = left
+        self.right = right
+        self.combinator = combinator
+
+
 def _parse_operator(segment, iterator):
     """Parses the operator (eg. '==' or '<')."""
     stream = StringIO()
@@ -194,6 +205,113 @@ def _parse_operator(segment, iterator):
     return chain(character, iterator)
 
 
+def make_segment(self):
+    pass
+
+
+def reset_stringio(buf):
+    # This combination of functions happens way too often in here.
+    buf.truncate(0)
+    buf.seek(0)
+
+
+def split_segments(text, closing_paren=False):
+    """Return objects representing segments."""
+    buf = StringIO()
+
+    # The segments we're building, and the combinators used to combine them.
+    # Note that after this is complete, this should be true:
+    # len(segments) == len(combinators) + 1
+    # Thus we can understand the relationship between segments and combinators
+    # like so:
+    #  s1 (c1) s2 (c2) s3 (c3) where sN are segments and cN are combination
+    # functions.
+    # TODO: Figure out exactly where the querystring died and post cool
+    # error messages about it.
+    segments = []
+    combinators = []
+
+    # A flag dictating if the last character we processed was a group.
+    # This is used to determine if the next character (being a combinator)
+    # is allowed to
+    last_group = False
+
+    # The recursive nature of this function relies on keeping track of the
+    # state of iteration.  This iterator will be passed down to recursed calls.
+    iterator = iter(text)
+
+    for character in iterator:
+        if character in COMBINATORS:
+
+            # The string representation of our segment.
+            val = buf.getvalue()
+            reset_stringio(buf)
+
+            if not last_group and not len(val):
+                raise ValueError('Unexpected %s.' % character)
+
+            # When a group happens, the previous value is empty.
+            if len(val):
+                segments.append(parse_segment(val))
+
+            combinators.append(COMBINATORS[character])
+
+        elif character == constants.GROUP_BEGIN:
+            # Recursively go into the next group.
+
+            if buf.tell():
+                raise ValueError('Unexpected %s' % character)
+
+            segments.append(split_segments(text, True))
+
+        elif character == constants.GROUP_END:
+            # Build the segment for anything remaining, and then combine
+            # all the segments.
+            val = buf.getvalue()
+
+            # Check for unbalanced parens or an empty thing: foo=bar&();bar=baz
+            if not buf.tell() or not closing_paren:
+                raise ValueError('Unexpected %s' % character)
+
+            segments.append(parse_segment(val))
+            return combine(segments, combinators)
+
+        else:
+            buf.write(character)
+    else:
+        # Check and see if the iterator exited early (unbalanced parens)
+        if closing_paren:
+            raise ValueError('Expected %s.' % constants.GROUP_END)
+
+    # Everything completed normally, combine all the segments into one
+    # and return them.
+    return combine(segments, combinators)
+
+
+def combine(segments, combinators):
+    raise NotImplementedError
+
+
+# All of the equality operations sorted in terms of length, that way we can
+# short circuit parse_segment and come up with the longest possible equality
+SORTED_EQUALITY = reversed(sorted(constants.OPERATOR_EQUALITIES, key=len))
+
+
+def parse_segment_(text):
+    "we expect foo=bar"
+
+    for equals in SORTED_EQUALITY:
+        if equals in text:
+            key, value = text.split(equals, 1)  # noqa
+            operator = constants.OPERATOR_EQUALITY_MAP[equals]  # noqa
+            # TODO: do something with this.
+    else:
+        # TODO Implement directive-only attributes.
+        raise ValueError('Encountered a segment with no equality.')
+
+    # Return something.
+
+
 def parse_segment(text, combinator=constants.LOGICAL_AND):
     # Initialize a query segment.
     segment = QuerySegment()
@@ -202,8 +320,6 @@ def parse_segment(text, combinator=constants.LOGICAL_AND):
     iterator = iter(text)
     stream = StringIO()
 
-    # Iterate through the characters in the segment; one-by-one
-    # in order to perform one-pass parsing.
     for character in iterator:
 
         if (character == constants.NEGATION[1]
