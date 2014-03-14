@@ -27,7 +27,7 @@ class QueryTestCase(unittest.TestCase):
         assert item.values == ['bar']
 
     def test_binary(self):
-        item = self.parse(b'foo=bar').segments[0]
+        item = self.parse(b'foo=bar&(bar=baz);a=o')
 
         assert item.path == ['foo']
         assert item.values == ['bar']

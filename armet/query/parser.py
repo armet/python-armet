@@ -4,7 +4,7 @@ import six
 from six.moves import cStringIO as StringIO
 import operator
 import collections
-from itertools import chain
+import itertools
 from . import constants
 
 
@@ -26,85 +26,20 @@ OPERATOR_SYMBOL_MAP = dict((v, k) for k, v in constants.OPERATORS if v)
 OPERATOR_KEYWORDS = set(k for k, _ in constants.OPERATORS)
 
 
-class Query(collections.Sequence):
+# Make a reversed suffix map for convenient stringification.
+REVERSED_OPERATOR_SUFFIX_MAP = dict(
+    (v, k) for k, v in constants.OPERATOR_SUFFIX_MAP.items()
+)
+
+
+class Query(object):
     """Represents a complete query expression.
     """
 
-    def __init__(self, segments=None):
-        #! The various query segments.
-        self.segments = [] if segments is None else segments
-
-    def __getitem__(self, index):
-        return self.segments[index]
-
-    def __len__(self):
-        return len(self.segments)
-
-    def __repr__(self):
-        return str(self)
-
-    def __str__(self):
-        o = StringIO()
-
-        o.write('(')
-
-        for index, segment in enumerate(self):
-
-            o.write(str(segment))
-
-            if index + 1 < len(self):
-                comb = '&' if segment.combinator == operator.and_ else '|'
-                o.write(' {} '.format(comb))
-
-        o.write(')')
-
-        return o.getvalue()
-
-
-def parse(text, encoding='utf8'):
-    """Parse the querystring into a normalized form."""
-    # Initialize the query object.
-    query = Query()
-
-    # Decode the text if we got bytes.
-    if isinstance(text, six.binary_type):
-        text = text.decode(encoding)
-
-    # Iterate through the characters in the query string; one-by-one
-    # in order to perform one-pass parsing.
-    stream = StringIO()
-
-    for character in text:
-
-        # We want to stop reading the query and pass it off to someone
-        # when we reach a logical or grouping operator.
-        if character in (constants.LOGICAL_AND, constants.LOGICAL_OR):
-
-            if not stream.tell():
-                # There is no content in the stream; a logical operator
-                # was found out of place.
-                raise ValueError('Found `{}` out of place'.format(
-                    character))
-
-            # Parse the segment up till the combinator
-            segment = parse_segment(stream.getvalue(), character)
-            query.segments.append(segment)
-            stream.truncate(0)
-            stream.seek(0)
-
-        else:
-            # This isn't a special character, just roll with it.
-            stream.write(character)
-
-    # TODO: Throw some nonsense here if the query string ended with a
-    # & or ;, because that makes no sense.
-
-    if stream.tell():
-        # Append the remainder of the query string.
-        query.segments.append(parse_segment(stream.getvalue()))
-
-    # Return the constructed query object.
-    return query
+    def __init__(self, original, parsed):
+        # Keep a copy of the original querystring.
+        self.original = original
+        self.parsed = parsed
 
 
 class QuerySegment(object):
@@ -132,10 +67,6 @@ class QuerySegment(object):
         #! against. Only one has to match.
         self.values = kwargs.get('values', [])
 
-        #! The combinator that is used to combine this and the next
-        #! query.
-        self.combinator = kwargs.get('combinator', operator.and_)
-
     def __repr__(self):
         return str(self)
 
@@ -147,19 +78,23 @@ class QuerySegment(object):
 
         o = StringIO()
 
+        o.write('(')
+
         if self.negated:
             o.write('not ')
 
         o.write('.'.join(self.path))
 
         if self.values:
-            o.write(' :%s ' % self.operator)
+            o.write(' :%s ' % REVERSED_OPERATOR_SUFFIX_MAP[self.operator])
 
         o.write(' | '.join(map(repr, self.values)))
+
+        o.write(')')
         return o.getvalue()
 
 
-class QuerySegmentCombinator(object):
+class SegmentCombinator(object):
     """
     Represents the combination of 2 query segments `(x=y)&(y=z)`
     """
@@ -169,44 +104,30 @@ class QuerySegmentCombinator(object):
         self.right = right
         self.combinator = combinator
 
+    def __repr__(self):
+        return str(self)
 
-def _parse_operator(segment, iterator):
-    """Parses the operator (eg. '==' or '<')."""
-    stream = StringIO()
-    for character in iterator:
-        if character == constants.NEGATION[1]:
-            if stream.tell():
-                # Negation can only occur at the start of an operator.
-                raise ValueError('Unexpected negation.')
+    def __str__(self):
+        combinators = {
+            operator.and_: 'AND',
+            operator.or_: 'OR'
+        }
 
-            # We've been negated.
-            segment.negated = not segment.negated
-            continue
-
-        if (stream.getvalue() + character not in OPERATOR_SYMBOL_MAP and
-                stream.getvalue() + character not in OPERATOR_BEGIN_CHARS):
-            # We're no longer an operator.
-            break
-
-        # Expand the operator
-        stream.write(character)
-
-    # Check for existance.
-    text = stream.getvalue()
-    if text not in OPERATOR_SYMBOL_MAP:
-        # Doesn't exist because of a mis-placed negation in the middle
-        # of the path.
-        raise ValueError('Unexpected negation.')
-
-    # Set the found operator.
-    segment.operator = OPERATOR_SYMBOL_MAP[text]
-
-    # Return the remaining characters.
-    return chain(character, iterator)
+        return "{} {} {}".format(
+            str(self.left),
+            combinators[self.combinator],
+            str(self.right)
+        )
 
 
-def make_segment(self):
-    pass
+def parse(text, encoding='utf8'):
+    """Parse the querystring into a normalized form."""
+
+    # Decode the text if we got bytes.
+    if isinstance(text, six.binary_type):
+        text = text.decode(encoding)
+
+    return Query(text, split_segments(text))
 
 
 def reset_stringio(buf):
@@ -262,7 +183,12 @@ def split_segments(text, closing_paren=False):
             if buf.tell():
                 raise ValueError('Unexpected %s' % character)
 
-            segments.append(split_segments(text, True))
+            segments.append(split_segments(iterator, True))
+
+            # Flag that the last entry was a grouping, so that we don't panic
+            # when the next character is a logical combinator
+            last_group = True
+            continue
 
         elif character == constants.GROUP_END:
             # Build the segment for anything remaining, and then combine
@@ -277,11 +203,19 @@ def split_segments(text, closing_paren=False):
             return combine(segments, combinators)
 
         else:
+            if last_group:
+                raise ValueError('Unexpected %s' % character)
             buf.write(character)
+
+        last_group = False
     else:
         # Check and see if the iterator exited early (unbalanced parens)
         if closing_paren:
             raise ValueError('Expected %s.' % constants.GROUP_END)
+
+        if not last_group:
+            # Add the final segment.
+            segments.append(parse_segment(buf.getvalue()))
 
     # Everything completed normally, combine all the segments into one
     # and return them.
@@ -289,100 +223,71 @@ def split_segments(text, closing_paren=False):
 
 
 def combine(segments, combinators):
-    raise NotImplementedError
+    # We get [a,b,c] in segments and combinators that should be applied as
+    # [a(op)b, result(op)c]
+    operands = iter(segments)
+    operators = iter(combinators)
+    first = next(operands)
+    reducer = lambda x, y: SegmentCombinator(x, y, next(operators))
+    return six.moves.reduce(reducer, operands, first)
 
 
-# All of the equality operations sorted in terms of length, that way we can
-# short circuit parse_segment and come up with the longest possible equality
-SORTED_EQUALITY = reversed(sorted(constants.OPERATOR_EQUALITIES, key=len))
-
-
-def parse_segment_(text):
+def parse_segment(text):
     "we expect foo=bar"
 
-    for equals in SORTED_EQUALITY:
-        if equals in text:
-            key, value = text.split(equals, 1)  # noqa
-            operator = constants.OPERATOR_EQUALITY_MAP[equals]  # noqa
-            # TODO: do something with this.
-    else:
-        # TODO Implement directive-only attributes.
-        raise ValueError('Encountered a segment with no equality.')
+    # First we need to split the segment into key/value pairs.  This is done
+    # by attempting to split the sequence for each equality comparison.  Then
+    # discard any that did not split properly.  Then chose the smallest key
+    # (greedily chose the first comparator we encounter in the string)
+    # followed by the smallest value (greedily chose the largest comparator
+    # possible.)
 
-    # Return something.
-
-
-def parse_segment(text, combinator=constants.LOGICAL_AND):
-    # Initialize a query segment.
-    segment = QuerySegment()
-
-    # Construct an iterator over the segment text.
-    iterator = iter(text)
-    stream = StringIO()
-
-    for character in iterator:
-
-        if (character == constants.NEGATION[1]
-                and not stream.tell() and not segment.path):
-            # We've been negated.
-            segment.negated = not segment.negated
-            continue
-
-        if character in OPERATOR_BEGIN_CHARS:
-            # Found an operator; pull out what we can.
-            iterator = _parse_operator(segment, chain(character, iterator))
-
-            # We're done here; go to the value parser
-            break
-
-        if character == constants.SEP_PATH:
-            # A path separator, push the current stack into the path
-            segment.path.append(stream.getvalue())
-            stream.truncate(0)
-            stream.seek(0)
-
-            # Keep checking for more path segments.
-            continue
-
-        # Append the text to the stream
-        stream.write(character)
-
-    # Write any remaining information into the path.
-    segment.path.append(stream.getvalue())
-
-    # Attempt to normalize the path.
     try:
-        # The keyword 'not' can be the last item which
-        # negates this query.
-        if segment.path[-1] == constants.NEGATION[0]:
-            segment.negated = not segment.negated
-            segment.path.pop(-1)
+        # translate into [('=', 'foo=bar')]
+        equalities = zip(constants.OPERATOR_EQUALITIES, itertools.repeat(text))
+        # Translate into [('=', ['foo', 'bar'])]
+        equalities = map(lambda x: (x[0], x[1].split(x[0], 1)), equalities)
+        # Remove unsplit entries and translate into [('=': ['foo', 'bar'])]
+        # Note that the result from this stage is iterated over twice.
+        equalities = list(filter(lambda x: len(x[1]) > 1, equalities))
+        # Get the smallest key and use the length of that to remove other items
+        key_len = len(min((x[0] for x in equalities), key=len)[0])
+        equalities = filter(lambda x: len(x[0]) == key_len, equalities)
 
-        # The last keyword can explicitly state the operation; in which
-        # case the operator symbol **must** be `=`.
-        if segment.path[-1] in OPERATOR_KEYWORDS:
-            if segment.operator != constants.OPERATOR_IEQUAL[0]:
-                raise ValueError(
-                    'Explicit operations must use the `=` symbol.')
+        # Get the smallest value length. thus we have the earliest key and the
+        # smallest value.
+        op, (key, value) = min(equalities, key=lambda x: len(x[1]))
+    except ValueError:
+        # TODO Implement directive-only attributes.
+        raise ValueError('Encountered a segment with no equality')
 
-            segment.operator = segment.path.pop(-1)
+    # Begin building our query
+    q = QuerySegment()
 
-        # Make sure we still have a path left.
-        if not segment.path:
-            raise IndexError()
+    # Process negation.  This comes in both foo.not= and foo!= forms.
+    path = key.split(constants.SEP_PATH)
+    last = path[-1]
 
-    except IndexError:
-        # Ran out of path items after removing operations and negation.
-        raise ValueError('No path specified in {}'.format(text))
+    # Check for !=
+    if last.endswith(constants.OPERATOR_NEGATION):
+        last = last[:-1]
+        q.negated = not q.negated
 
-    # Values are not complicated (yet) so just slice and dice
-    # until we get a list of possible values.
-    segment.values = ''.join(iterator)
-    if segment.values:
-        segment.values = segment.values.split(constants.SEP_VALUE)
+    # Check for foo.not=
+    if last == constants.PATH_NEGATION:
+        path.pop(-1)
+        q.negated = not q.negated
 
-    # Set the combinator.
-    segment.combinator = COMBINATORS[combinator]
+    q.values = value.split(constants.SEP_VALUE)
 
-    # Return the constructed query segment.
-    return segment
+    # Check for suffixed operators (foo.gte=bar).  Prioritize suffixed
+    # entries over actual equality checks.
+    if path[-1] in constants.OPERATOR_SUFFIXES:
+        q.operator = constants.OPERATOR_SUFFIX_MAP[path[-1]]
+        path.pop(-1)
+    else:
+        q.operator = constants.OPERATOR_EQUALITY_MAP[op]
+
+    q.path = path
+
+    return q
