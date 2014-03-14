@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 from six.moves import cStringIO as StringIO
 import operator
-import collections
 import itertools
 from . import constants
 
@@ -92,6 +91,10 @@ class QuerySegment(object):
 
         o.write(')')
         return o.getvalue()
+
+
+class NoopQuerySegment(object):
+    """A query segment that doesn't perform an operation."""
 
 
 class SegmentCombinator(object):
@@ -232,8 +235,24 @@ def combine(segments, combinators):
     return six.moves.reduce(reducer, operands, first)
 
 
+def parse_directive(key):
+    """
+    Takes a key of type (foo:bar) and returns either the key and the
+    directive, or the key and None (for no directive.)
+    """
+    if constants.DIRECTIVE in key:
+        return key.split(constants.DIRECTIVE, 1)
+    else:
+        return key, None
+
+
 def parse_segment(text):
     "we expect foo=bar"
+
+    if not len(text):
+        return NoopQuerySegment()
+
+    q = QuerySegment()
 
     # First we need to split the segment into key/value pairs.  This is done
     # by attempting to split the sequence for each equality comparison.  Then
@@ -243,6 +262,7 @@ def parse_segment(text):
     # possible.)
 
     try:
+        # import ipdb; ipdb.set_trace()
         # translate into [('=', 'foo=bar')]
         equalities = zip(constants.OPERATOR_EQUALITIES, itertools.repeat(text))
         # Translate into [('=', ['foo', 'bar'])]
@@ -251,18 +271,23 @@ def parse_segment(text):
         # Note that the result from this stage is iterated over twice.
         equalities = list(filter(lambda x: len(x[1]) > 1, equalities))
         # Get the smallest key and use the length of that to remove other items
-        key_len = len(min((x[0] for x in equalities), key=len)[0])
-        equalities = filter(lambda x: len(x[0]) == key_len, equalities)
+        key_len = len(min((x[1][0] for x in equalities), key=len))
+        equalities = filter(lambda x: len(x[1][0]) == key_len, equalities)
 
         # Get the smallest value length. thus we have the earliest key and the
         # smallest value.
-        op, (key, value) = min(equalities, key=lambda x: len(x[1]))
+        op, (key, value) = min(equalities, key=lambda x: len(x[1][1]))
     except ValueError:
-        # TODO Implement directive-only attributes.
-        raise ValueError('Encountered a segment with no equality')
+        # Only the key exists.  See if there's a directive.
+        key, directive = parse_directive(text)
+        value = ''
+        op = constants.OPERATOR_EQUALITY_FALLBACK
+        if directive is None:
+            # import ipdb; ipdb.set_trace()
+            raise ValueError(
+                'Encountered a segment with neither directive nor equality.')
 
-    # Begin building our query
-    q = QuerySegment()
+        q.directive = directive
 
     # Process negation.  This comes in both foo.not= and foo!= forms.
     path = key.split(constants.SEP_PATH)
@@ -283,10 +308,20 @@ def parse_segment(text):
     # Check for suffixed operators (foo.gte=bar).  Prioritize suffixed
     # entries over actual equality checks.
     if path[-1] in constants.OPERATOR_SUFFIXES:
+
+        # The case where foo.gte<=bar, which obviously makes no sense.
+        if op not in constants.OPERATOR_FALLBACK:
+            raise ValueError(
+                'Both path-style operator and equality style operator '
+                'provided.  Please provide only a single style operator.')
+
         q.operator = constants.OPERATOR_SUFFIX_MAP[path[-1]]
         path.pop(-1)
     else:
         q.operator = constants.OPERATOR_EQUALITY_MAP[op]
+
+    if not len(path):
+        raise ValueError('No attribute navigation path provided.')
 
     q.path = path
 
