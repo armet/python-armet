@@ -97,7 +97,7 @@ class NoopQuerySegment(object):
     """A query segment that doesn't perform an operation."""
 
 
-class SegmentCombinator(object):
+class BinarySegmentCombinator(object):
     """
     Represents the combination of 2 query segments `(x=y)&(y=z)`
     """
@@ -121,6 +121,15 @@ class SegmentCombinator(object):
             combinators[self.combinator],
             str(self.right)
         )
+
+
+class UnarySegmentCombinator(object):
+    """
+    Represents a unary combination of 2 query segments. `!(x=y)`
+    """
+    def __init__(self, operand, operation=operator.not_):
+        self.operand = operand
+        self.operation = operation
 
 
 def parse(text, encoding='utf8'):
@@ -164,8 +173,15 @@ def split_segments(text, closing_paren=False):
     # state of iteration.  This iterator will be passed down to recursed calls.
     iterator = iter(text)
 
+    # Detection for exclamation points.  only matters for this situation:
+    # foo=bar&!(bar=baz)
+    last_negation = False
+
     for character in iterator:
         if character in COMBINATORS:
+
+            if last_negation:
+                buf.write(constants.OPERATOR_NEGATION)
 
             # The string representation of our segment.
             val = buf.getvalue()
@@ -186,7 +202,12 @@ def split_segments(text, closing_paren=False):
             if buf.tell():
                 raise ValueError('Unexpected %s' % character)
 
-            segments.append(split_segments(iterator, True))
+            seg = split_segments(iterator, True)
+
+            if last_negation:
+                seg = UnarySegmentCombinator(seg)
+
+            segments.append(seg)
 
             # Flag that the last entry was a grouping, so that we don't panic
             # when the next character is a logical combinator
@@ -205,11 +226,18 @@ def split_segments(text, closing_paren=False):
             segments.append(parse_segment(val))
             return combine(segments, combinators)
 
+        elif character == constants.OPERATOR_NEGATION and not buf.tell():
+            last_negation = True
+            continue
+
         else:
+            if last_negation:
+                buf.write(constants.OPERATOR_NEGATION)
             if last_group:
                 raise ValueError('Unexpected %s' % character)
             buf.write(character)
 
+        last_negation = False
         last_group = False
     else:
         # Check and see if the iterator exited early (unbalanced parens)
@@ -231,7 +259,7 @@ def combine(segments, combinators):
     operands = iter(segments)
     operators = iter(combinators)
     first = next(operands)
-    reducer = lambda x, y: SegmentCombinator(x, y, next(operators))
+    reducer = lambda x, y: BinarySegmentCombinator(x, y, next(operators))
     return six.moves.reduce(reducer, operands, first)
 
 
