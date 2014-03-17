@@ -51,47 +51,109 @@ class Resource(object):
 
 # Build an operator map to use for django.
 OPERATOR_MAP = {
-    constants.OPERATOR_EQUAL[0]: '__exact',
-    constants.OPERATOR_IEQUAL[0]: '__iexact',
-    constants.OPERATOR_LT[0]: '__lt',
-    constants.OPERATOR_GT[0]: '__gt',
-    constants.OPERATOR_LTE[0]: '__lte',
-    constants.OPERATOR_GTE[0]: '__gte',
+    constants.OPERATOR_EQUAL: '__exact',
+    constants.OPERATOR_IEQUAL: '__iexact',
+    constants.OPERATOR_LT: '__lt',
+    constants.OPERATOR_GT: '__gt',
+    constants.OPERATOR_LTE: '__lte',
+    constants.OPERATOR_GTE: '__gte',
+}
+
+# import ipdb; ipdb.set_trace()
+# Rewire the map.
+OPERATOR_MAP = dict(
+    (constants.OPERATOR_MAP[k], v) for k, v in OPERATOR_MAP.items()
+)
+
+
+def segment_query(seg, attributes):
+
+    # Get the attribute in question.
+    attribute = attributes[seg.path[0]]
+
+    # Replace the initial path segment with the expanded
+    # attribute path.
+    seg.path[0:1] = attribute.path.split('.')
+
+    # Boolean's should use `exact` rather than `iexact`.
+    if attribute.type is bool:
+        op = '__exact'
+    else:
+        op = OPERATOR_MAP[seg.operator]
+
+    # Build the path from the segment.
+    path = '__'.join(seg.path) + op
+
+    # Construct a Q-object from the segment.
+    return reduce(operator.or_,
+                  map(lambda x: Q((path, x)),
+                      map(attribute.try_clean, seg.values)))
+
+
+def noop_query(*args):
+    return Q()
+
+
+def unary_query(query, *args):
+    return query.operation(build_clause(query.operand, *args))
+
+
+def binary_query(query, *args):
+    return query.operation(
+        build_clause(query.left, *args),
+        build_clause(query.right, *args))
+
+
+CLAUSE_MAP = {
+    parser.NoopQuerySegment: noop_query,
+    parser.BinarySegmentCombinator: binary_query,
+    parser.UnarySegmentCombinator: unary_query,
+    parser.QuerySegment: segment_query,
 }
 
 
 def build_clause(query, attributes):
-    # Iterate through each query segment.
-    clause = None
-    last = None
-    for seg in query.segments:
-        # Get the attribute in question.
-        attribute = attributes[seg.path[0]]
+    class_ = type(query) if not isinstance(query, type) else query
+    fn = CLAUSE_MAP.get(class_)
+    if fn is not None:
+        return fn(query, attributes)
+    elif issubclass(class_, Query):
+        return build_clause(query.parsed, attributes)
+    else:
+        raise ValueError('Unable to translate query node %s' % str(query))
 
-        # Replace the initial path segment with the expanded
-        # attribute path.
-        seg.path[0:1] = attribute.path.split('.')
+# def build_clause(query, attributes):
+#     # Iterate through each query segment.
+#     clause = None
+#     last = None
+#     for seg in query.segments:
+#         # Get the attribute in question.
+#         attribute = attributes[seg.path[0]]
 
-        # Boolean's should use `exact` rather than `iexact`.
-        if attribute.type is bool:
-            op = '__exact'
-        else:
-            op = OPERATOR_MAP[seg.operator]
+#         # Replace the initial path segment with the expanded
+#         # attribute path.
+#         seg.path[0:1] = attribute.path.split('.')
 
-        # Build the path from the segment.
-        path = '__'.join(seg.path) + op
+#         # Boolean's should use `exact` rather than `iexact`.
+#         if attribute.type is bool:
+#             op = '__exact'
+#         else:
+#             op = OPERATOR_MAP[seg.operator]
 
-        # Construct a Q-object from the segment.
-        q = reduce(operator.or_,
-                   map(lambda x: Q((path, x)),
-                       map(attribute.try_clean, seg.values)))
+#         # Build the path from the segment.
+#         path = '__'.join(seg.path) + op
 
-        # Combine the segment with the last.
-        clause = last.combinator(clause, q) if last is not None else q
-        last = seg
+#         # Construct a Q-object from the segment.
+#         q = reduce(operator.or_,
+#                    map(lambda x: Q((path, x)),
+#                        map(attribute.try_clean, seg.values)))
 
-    # Return the constructed clause.
-    return clause
+#         # Combine the segment with the last.
+#         clause = last.combinator(clause, q) if last is not None else q
+#         last = seg
+
+#     # Return the constructed clause.
+#     return clause
 
 
 class ModelResource(object):
@@ -112,10 +174,14 @@ class ModelResource(object):
         if self.slug is not None:
             # This is an item-access (eg. GET /<name>/:slug); ignore the
             # query string and generate a query-object based on the slug.
-            query = Query(segments=[QuerySegment(
-                path=self.meta.slug.path.split('.'),
-                operator=constants.OPERATOR_EQUAL[0],
-                values=[self.slug])])
+            query = Query(
+                original=None,
+                parsed=QuerySegment(
+                    path=self.meta.slug.path.split('.'),
+                    operator=constants.OPERATOR_MAP[constants.OPERATOR_EQUAL],
+                    values=[self.slug]
+                )
+            )
 
         elif self.request.query:
             # This is a list-access; use the query string and construct
