@@ -100,6 +100,12 @@ class NoopQuerySegment(object):
     """A query segment that doesn't perform an operation.  For the purposes
     of binary and unary combinations, this should be treated as True"""
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "TRUE"
+
 
 class BinarySegmentCombinator(object):
     """
@@ -134,6 +140,12 @@ class UnarySegmentCombinator(object):
     def __init__(self, operand, operation=operator.not_):
         self.operand = operand
         self.operation = operation
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "{} {}".format('NOT', self.operand)
 
 
 def parse(text, encoding='utf8'):
