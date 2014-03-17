@@ -83,15 +83,22 @@ class QueryTestCase(unittest.TestCase):
                 assert not item.negated
                 assert item.values == ['true']
 
-    # def test_fusion(self):
-    #     """Test something from everything combined"""
-    #     q = ('the.rolling.stones.iregex.not:asc=sympathy,for,the,devil&'
-    #          '!guns.n.roses=paradise,city&queen:asc')
+    def test_fusion(self):
+        """Test something from everything combined"""
+        q = ('the.rolling.stones.iregex.not:asc=sympathy,for,the,devil;'
+             '!(guns.n.roses=paradise,city&queen:asc)')
 
-    #     # Don't care about the other ones, as they're testing the &
-    #     item = self.parse(q)
+        item = self.parse(q)
 
-    #     assert item.path == ['guns', 'n', 'roses']
-    #     assert item.operator == constants.OPERATOR_IEQUAL[0]
-    #     assert item.negated
-    #     assert item.values == ['paradise', 'city']
+        # I'm lazy and don't want to walk the tree, so lets just test the repr.
+        assert (repr(item) ==
+                "(the.rolling.stones.iregex.not:asc :iexact 'sympathy' "
+                "| 'for' | 'the' | 'devil') OR NOT (guns.n.roses :iexact "
+                "'paradise' | 'city') AND (queen :iexact '')")
+
+    def test_grouping(self):
+        item = self.parse('foo=bar&(a=b;b=c)')
+
+        assert item.left.path == ['foo']
+        assert item.right.left.path == ['a']
+        assert item.right.right.path == ['b']
