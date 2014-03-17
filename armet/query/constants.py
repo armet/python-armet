@@ -31,7 +31,16 @@ OPERATOR_ISNULL = 'isnull', None
 #! In-collection test
 OPERATOR_IN = 'in', None
 
+#! The fallback to use in the case that a more specific one isn't defined.
+OPERATOR_FALLBACK = OPERATOR_IEQUAL
+OPERATOR_SUFFIX_FALLBACK = OPERATOR_FALLBACK[0]
+OPERATOR_EQUALITY_FALLBACK = OPERATOR_FALLBACK[1]
+
 #! Operator map relating operations to python operations.
+# TODO: the values of the operator map are somewhat unwieldy to work with
+# perhaps the value stored in a Segment() type should instead be one of
+# the keys instead of the values.  The values just show a convenient thing
+# to work with in pythonland.
 OPERATOR_MAP = {
     OPERATOR_EQUAL: operator.eq,
     OPERATOR_IEQUAL: lambda x, y: x.lower() == y.lower(),
@@ -66,22 +75,14 @@ OPERATOR_EQUALITY_MAP = dict(
                OPERATOR_MAP.items())))
 
 #! Negation
-NEGATION = ('not', '!')
+PATH_NEGATION = 'not'
+OPERATOR_NEGATION = '!'
+
+NEGATION = (PATH_NEGATION, OPERATOR_NEGATION)
 
 #! Logical
 LOGICAL_AND = '&'
 LOGICAL_OR = ';'
-
-#! Equality map relating operations with python functions.
-# Note the missing regex comparison and logical comparisons translate to
-# bitwise.  This is because most ORMs overload & and | instead of `and`
-# and `or`, because you can't really overload those.
-PYTHON_MAP = {
-    NEGATION: operator.neg,
-    (LOGICAL_AND,): operator.and_,
-    (LOGICAL_OR,): operator.or_,
-}
-PYTHON_MAP.update(OPERATOR_MAP)
 
 #! Path separator
 SEP_PATH = '.'

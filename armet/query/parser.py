@@ -53,7 +53,10 @@ class QuerySegment(object):
         self.path = kwargs.get('path', [])
 
         #! This is the operator that is being applied to the attribute path.
-        self.operator = kwargs.get('operator', constants.OPERATOR_IEQUAL[0])
+        self.operator = kwargs.get(
+            'operator',
+            constants.OPERATOR_MAP[constants.OPERATOR_IEQUAL]
+        )
 
         #! Negation; if this operation has been negated.
         self.negated = kwargs.get('negated', False)
@@ -94,7 +97,8 @@ class QuerySegment(object):
 
 
 class NoopQuerySegment(object):
-    """A query segment that doesn't perform an operation."""
+    """A query segment that doesn't perform an operation.  For the purposes
+    of binary and unary combinations, this should be treated as True"""
 
 
 class BinarySegmentCombinator(object):
@@ -102,10 +106,10 @@ class BinarySegmentCombinator(object):
     Represents the combination of 2 query segments `(x=y)&(y=z)`
     """
 
-    def __init__(self, left, right, combinator=operator.and_):
+    def __init__(self, left, right, operation=operator.and_):
         self.left = left
         self.right = right
-        self.combinator = combinator
+        self.operation = operation
 
     def __repr__(self):
         return str(self)
@@ -118,7 +122,7 @@ class BinarySegmentCombinator(object):
 
         return "{} {} {}".format(
             str(self.left),
-            combinators[self.combinator],
+            combinators[self.operation],
             str(self.right)
         )
 
