@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, unicode_literals, division
 import unittest
+import six
 from armet.query import parser, constants
 from pytest import mark
 
@@ -91,7 +92,7 @@ class QueryTestCase(unittest.TestCase):
         item = self.parse(q)
 
         # I'm lazy and don't want to walk the tree, so lets just test the repr.
-        assert (repr(item) ==
+        assert (six.text_type(repr(item)) ==
                 "(the.rolling.stones.iregex.not:asc :iexact 'sympathy' "
                 "| 'for' | 'the' | 'devil') OR NOT (guns.n.roses :iexact "
                 "'paradise' | 'city') AND (queen :iexact '')")

@@ -90,7 +90,7 @@ class QuerySegment(object):
         if self.values:
             o.write(' :%s ' % REVERSED_OPERATOR_SUFFIX_MAP[self.operator])
 
-        o.write(' | '.join(map(repr, self.values)))
+        o.write(' | '.join(map(lambda x: "'{}'".format(str(x)), self.values)))
 
         o.write(')')
         return o.getvalue()
@@ -98,7 +98,9 @@ class QuerySegment(object):
 
 class NoopQuerySegment(object):
     """A query segment that doesn't perform an operation.  For the purposes
-    of binary and unary combinations, this should be treated as True"""
+    of binary and unary combinations, this should be treated as True.
+    A NoopQuerySegment should only be encountered when the entire query string
+    is missing."""
 
     def __repr__(self):
         return str(self)
