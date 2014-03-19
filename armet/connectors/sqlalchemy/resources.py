@@ -8,6 +8,7 @@ from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
 from sqlalchemy.exc import InvalidRequestError
+import sqlalchemy as sa
 
 
 class ModelResourceOptions(object):
@@ -31,13 +32,18 @@ def iequal_helper(x, y):
 
 # Build an operator map to use for sqlalchemy.
 OPERATOR_MAP = {
-    constants.OPERATOR_EQUAL[0]: operator.eq,
-    constants.OPERATOR_IEQUAL[0]: iequal_helper,
-    constants.OPERATOR_LT[0]: operator.lt,
-    constants.OPERATOR_GT[0]: operator.gt,
-    constants.OPERATOR_LTE[0]: operator.le,
-    constants.OPERATOR_GTE[0]: operator.ge,
+    constants.OPERATOR_EQUAL: operator.eq,
+    constants.OPERATOR_IEQUAL: iequal_helper,
+    constants.OPERATOR_LT: operator.lt,
+    constants.OPERATOR_GT: operator.gt,
+    constants.OPERATOR_LTE: operator.le,
+    constants.OPERATOR_GTE: operator.ge,
 }
+
+# Rewire the map.
+OPERATOR_MAP = dict(
+    (constants.OPERATOR_MAP[k], v) for k, v in OPERATOR_MAP.items()
+)
 
 
 def build_segment(model, segment, attr, clean):
@@ -67,8 +73,8 @@ def build_segment(model, segment, attr, clean):
 
     # Apply the operator to the values and return the expression
     qs = reduce(operator.or_,
-                  map(partial(op, col),
-                      map(lambda x: clean(attr.try_clean(x)), segment.values)))
+                map(partial(op, col),
+                    map(lambda x: clean(attr.try_clean(x)), segment.values)))
 
     # Apply the negation.
     if segment.negated:
@@ -78,28 +84,56 @@ def build_segment(model, segment, attr, clean):
     return qs
 
 
+def segment_query(resource, segment, attributes, cleaners, model):
+
+    attribute = attributes[segment.path[0]]
+
+    # Modify the segment's to reflect what the attribute was declared for.
+    segment.path[0:1] = attribute.path.split('.')
+
+    # Create a cleaner that can work here.
+    clean = partial(cleaners[attribute.name], resource)
+
+    # Dispatch to the recursive segment building function
+    return build_segment(model, segment, attribute, clean)
+
+
+def noop_query(*args):
+    return sa.sql.true()
+
+
+def unary_query(resource, query, *args):
+    return query.operation(build_clause(resource, query.operand, *args))
+
+
+def binary_query(resource, query, *args):
+    return query.operation(
+        build_clause(resource, query.left, *args),
+        build_clause(resource, query.right, *args))
+
+
+CLAUSE_MAP = {
+    parser.NoopQuerySegment: noop_query,
+    parser.BinarySegmentCombinator: binary_query,
+    parser.UnarySegmentCombinator: unary_query,
+    parser.QuerySegment: segment_query,
+}
+
+
 def build_clause(resource, query, attributes, cleaners, model):
-    # Iterate through each query segment.
-    clause = None
-    last = None
-    for seg in query.segments:
-        # Get the attribute in question.
-        attribute = attributes[seg.path[0]]
-
-        # Replace the initial path segment with the expanded
-        # attribute path.
-        seg.path[0:1] = attribute.path.split('.')
-
-        # Construct the clause from the segment.
-        clean = partial(cleaners[attribute.name], resource)
-        q = build_segment(model, seg, attribute, clean)
-
-        # Combine the segment with the last.
-        clause = last.combinator(clause, q) if last is not None else q
-        last = seg
-
-    # Return the constructed clause.
-    return clause
+    class_ = type(query) if not isinstance(query, type) else query
+    fn = CLAUSE_MAP.get(class_)
+    if fn is not None:
+        return fn(resource, query, attributes, cleaners, model)
+    elif issubclass(class_, Query):
+        return build_clause(
+            resource,
+            query.parsed,
+            attributes,
+            cleaners,
+            model)
+    else:
+        raise ValueError('Unable to translate query node %s' % str(query))
 
 
 class ModelResource(object):
@@ -151,10 +185,14 @@ class ModelResource(object):
         if self.slug is not None:
             # This is an item-access (eg. GET //:slug); ignore the
             # query string and generate a query-object based on the slug.
-            query = Query(segments=[QuerySegment(
-                path=self.meta.slug.path.split('.'),
-                operator=constants.OPERATOR_EQUAL[0],
-                values=[self.slug])])
+            query = Query(
+                original=None,
+                parsed=QuerySegment(
+                    path=self.meta.slug.path.split('.'),
+                    operator=constants.OPERATOR_MAP[constants.OPERATOR_EQUAL],
+                    values=[self.slug]
+                )
+            )
 
         elif self.request.query:
             # This is a list-access; use the query string and construct
