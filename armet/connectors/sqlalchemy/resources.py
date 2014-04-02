@@ -283,3 +283,59 @@ class ModelResource(object):
 
         # Remove the object from the session.
         self.session.delete(target)
+
+    def relate(self, target, other):
+        # Resolve the relationship key.
+        key = self.relationships[type(self)._related_models[type(other)]].key
+
+        # Grab the set_ in question.
+        set_ = getattr(target, key)
+
+        # Append the relationship.
+        set_.append(other)
+
+        # Flush the target and expire attributes.
+        self.session.flush()
+
+        # Refresh the target object to avoid inconsistencies with storage.
+        self.session.expire(target)
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized(self.request.user, 'update', self, target):
+            authz.unauthorized()
+
+    def unrelate(self, target, other):
+        # Resolve the relationship key.
+        key = self.relationships[type(self)._related_models[type(other)]].key
+
+        # Grab the set_ in question.
+        set_ = getattr(target, key)
+
+        # Append the relationship.
+        set_.remove(other)
+
+        # Flush the target and expire attributes.
+        self.session.flush()
+
+        # Refresh the target object to avoid inconsistencies with storage.
+        self.session.expire(target)
+
+        # Ensure the user is authorized to perform this action.
+        authz = self.meta.authorization
+        if not authz.is_authorized(self.request.user, 'update', self, target):
+            authz.unauthorized()
+
+    def read_related(self, target, resource, key):
+        # Grab the set_ in question.
+        set_ = getattr(target, key)
+
+        # Build the related items.
+        qs = set_
+
+        # Filter the queryset by asserting authorization.
+        qs = resource.meta.authorization.filter(
+            self.request.user, 'read', resource, qs)
+
+        # Return the queryset.
+        return qs

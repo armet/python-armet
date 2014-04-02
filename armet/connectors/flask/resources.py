@@ -81,3 +81,39 @@ class Resource(object):
         # Restore the flask environment.
         app.url_map.strict_slashes = strict_slashes
         app.url_map.converters['default'] = converter
+
+    def _request_read(self, path):
+        # Save the current request object.
+        _req = flask.request
+
+        # Build a new environ object.
+        env = dict(flask.request.environ)
+        env['PATH_INFO'] = path
+        env['METHOD'] = 'GET'
+
+        # Build and insert a new request object.
+        req = flask.Request(env)
+        flask.request = req
+
+        # Bind the url-map and pull out the
+        urls = flask.current_app.url_map.bind_to_environ(env)
+        endpoint, args = urls.match()
+
+        # Pull out the resource class.
+        cls = flask.current_app.view_functions[endpoint].__self__
+
+        # Construct a request wrapper.
+        request = http.Request(path=args['path'], asynchronous=False)
+
+        # Construct a resource object.
+        resource = cls(request=request, response=None)
+
+        # Perform the `read` request.
+        resource.require_authentication(resource.request)
+        result = resource.read()
+
+        # Restore the request object.
+        flask.request = _req
+
+        # Return what we read
+        return result

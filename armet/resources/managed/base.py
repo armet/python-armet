@@ -137,6 +137,13 @@ class ManagedResource(base.Resource):
                 self, item, attribute.get(item)))
 
     def item_prepare(self, item):
+        # If we are the root resource, clear the map.
+        if self.request._resource.__class__ is type(self):
+            self.request._embed_related.clear()
+
+        # We've started doing this one.
+        self.request._embed_related.add(type(self))
+
         # Check for a path first.
         if self.path:
             attribute = self.attributes.get(self.path)
@@ -157,6 +164,30 @@ class ManagedResource(base.Resource):
                 # Run the attribute through its prepare cycle.
                 obj[attribute.name] = self.attribute_prepare(
                     name, attribute, item)
+
+        # Iterate through the relationships and build their objects.
+        # FIXME: This should be opt-in
+        for key, relationship in self.relationships.items():
+            # If we did this one; skip
+            if relationship.resource in self.request._embed_related:
+                continue
+
+            # Say that we did this one.
+            self.request._embed_related.add(relationship.resource)
+
+            # Construct the related resource
+            related = relationship.resource(self.request, self.response)
+            # related.require_authentication(self.request)
+
+            # Get the related items.
+            related_items = self.read_related(
+                item, related, relationship.key)
+
+            # Prepare and add to the attribute.
+            obj[key] = related.prepare(related_items)
+
+        # We're done doing this one.
+        self.request._embed_related.remove(type(self))
 
         # Return the resultant object.
         return obj
@@ -362,6 +393,73 @@ class ManagedResource(base.Resource):
 
         # Delegate to `destroy` to destroy the item.
         self.destroy()
+
+        # Build the response object.
+        self.response.status = http.client.NO_CONTENT
+        self.make_response()
+
+    def _parse_link_headers(self, header):
+        # Collect all the passed link headers.
+        links = []
+        for link_header in header.split(','):
+            link = link_header.split(';')
+            attrs = {k.strip(): v for (k, v) in [
+                     x.split('=') for x in link[1:]]}
+            attrs['uri'] = link[0][1:-1]
+            links.append(attrs)
+
+        # Return the collected links.
+        return links
+
+    def link(self, request, response):
+        """Processes a `LINK` request.
+
+        A `LINK` request is asking to create a relation from the currently
+        represented URI to all of the `Link` request headers.
+        """
+        from armet.resources.managed.request import read
+
+        if self.slug is None:
+            # Mass-LINK is not implemented.
+            raise http.exceptions.NotImplemented()
+
+        # Get the current target.
+        target = self.read()
+
+        # Collect all the passed link headers.
+        links = self._parse_link_headers(request['Link'])
+
+        # Pull targets for each represented link.
+        for link in links:
+            # Delegate to a connector.
+            self.relate(target, read(self, link['uri']))
+
+        # Build the response object.
+        self.response.status = http.client.NO_CONTENT
+        self.make_response()
+
+    def unlink(self, request, response):
+        """Processes a `UNLINK` request.
+
+        A `UNLINK` request is asking to revoke a relation from the currently
+        represented URI to all of the `Link` request headers.
+        """
+        from armet.resources.managed.request import read
+
+        if self.slug is None:
+            # Mass-LINK is not implemented.
+            raise http.exceptions.NotImplemented()
+
+        # Get the current target.
+        target = self.read()
+
+        # Collect all the passed link headers.
+        links = self._parse_link_headers(request['Link'])
+
+        # Pull targets for each represented link.
+        for link in links:
+            # Delegate to a connector.
+            self.unrelate(target, read(self, link['uri']))
 
         # Build the response object.
         self.response.status = http.client.NO_CONTENT

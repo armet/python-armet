@@ -120,6 +120,9 @@ class Request(six.Iterator):
         #! view method after traversal.
         self._resource = None
 
+        # HACK: Initialize some context sets.
+        self._embed_related = set()
+
     def bind(self, resource):
         """Binds this to the passed resource object.
 

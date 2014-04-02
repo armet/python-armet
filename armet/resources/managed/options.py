@@ -33,7 +33,7 @@ def _operation_to_method(operation):
         return set(['GET'])
 
     if operation == 'update':
-        return set(['PUT', 'PATCH'])
+        return set(['PUT', 'PATCH', 'LINK', 'UNLINK'])
 
     if operation == 'create':
         return set(['PUT', 'PATCH', 'POST'])

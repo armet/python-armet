@@ -216,6 +216,8 @@ class ResourceOptions(object):
                 'PUT',
                 'PATCH',
                 'DELETE',
+                'LINK',
+                'UNLINK'
             )
 
         #! List of allowed HTTP headers.

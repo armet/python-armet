@@ -5,7 +5,9 @@ import collections
 from armet.exceptions import ImproperlyConfigured
 from armet.attributes import Attribute
 from ..resource.meta import ResourceBase
+from armet.relationship import Relationship
 from . import options
+import copy
 
 
 class ManagedResourceBase(ResourceBase):
@@ -63,6 +65,20 @@ class ManagedResourceBase(ResourceBase):
             if not clean:
                 clean = lambda self, value: value
             cleaners[key] = clean
+
+        # Collect all relationships and store them by their model key.
+        self.relationships = relationships = collections.OrderedDict()
+        for base in bases:
+            if getattr(base, 'relationships', None):
+                relationships.update(base.relationships)
+
+        for name, attr in six.iteritems(attrs):
+            if isinstance(attr, Relationship):
+                relationships[name] = attr
+
+        # Ensure all relationships are unique instances.
+        for attr in relationships:
+            relationships[attr] = copy.copy(relationships[attr])
 
         # Return the constructed class object.
         return self
