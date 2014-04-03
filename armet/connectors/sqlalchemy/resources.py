@@ -333,9 +333,10 @@ class ModelResource(object):
         # Build the related items.
         qs = set_
 
-        # Filter the queryset by asserting authorization.
-        qs = resource.meta.authorization.filter(
-            self.request.user, 'read', resource, qs)
+        if self.request.user:
+            # Filter the queryset by asserting authorization.
+            qs = resource.meta.authorization.filter(
+                self.request.user, 'read', resource, qs)
 
         # Return the queryset.
         return qs
