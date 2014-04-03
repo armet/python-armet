@@ -84,16 +84,18 @@ class Resource(object):
 
     def _request_read(self, path):
         # Save the current request object.
-        _req = flask.request
+        _req = flask.request._get_current_object()
 
         # Build a new environ object.
         env = dict(flask.request.environ)
         env['PATH_INFO'] = path
-        env['METHOD'] = 'GET'
+        env['REQUEST_METHOD'] = 'GET'
+        if 'HTTP_X_HTTP_METHOD_OVERRIDE' in env:
+            del env['HTTP_X_HTTP_METHOD_OVERRIDE']
 
         # Build and insert a new request object.
         req = flask.Request(env)
-        flask.request = req
+        flask._request_ctx_stack.top.request = req
 
         # Bind the url-map and pull out the
         urls = flask.current_app.url_map.bind_to_environ(env)
@@ -113,7 +115,7 @@ class Resource(object):
         result = resource.read()
 
         # Restore the request object.
-        flask.request = _req
+        flask._request_ctx_stack.top.request = _req
 
         # Return what we read
         return result
