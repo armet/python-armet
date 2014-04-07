@@ -187,14 +187,9 @@ class ManagedResource(base.Resource):
             obj[key] = related.prepare(related_items)
 
         # TODO: Remove all that we are.
-        print(self.request._embed_related)
         self.request._embed_related = {
             x for x in self.request._embed_related
                 if not isinstance(self, x)}
-
-        # for res_cls in self.request._embed_related:
-        #     if isinstance(self, res_cls):
-        #         self.request._embed_related.remove(res_cls)
 
         # Return the resultant object.
         return obj
