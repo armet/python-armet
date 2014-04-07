@@ -138,7 +138,7 @@ class ManagedResource(base.Resource):
 
     def item_prepare(self, item):
         # If we are the root resource, clear the map.
-        if self.request._resource.__class__ is type(self):
+        if isinstance(self, self.request._resource.__class__):
             self.request._embed_related.clear()
 
         # We've started doing this one.
@@ -186,8 +186,15 @@ class ManagedResource(base.Resource):
             # Prepare and add to the attribute.
             obj[key] = related.prepare(related_items)
 
-        # We're done doing this one.
-        self.request._embed_related.remove(type(self))
+        # TODO: Remove all that we are.
+        print(self.request._embed_related)
+        self.request._embed_related = {
+            x for x in self.request._embed_related
+                if not isinstance(self, x)}
+
+        # for res_cls in self.request._embed_related:
+        #     if isinstance(self, res_cls):
+        #         self.request._embed_related.remove(res_cls)
 
         # Return the resultant object.
         return obj

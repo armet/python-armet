@@ -7,6 +7,7 @@ from copy import deepcopy
 from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
 from armet.query import parser, Query, QuerySegment, constants
+from armet.http.exceptions import BadRequest
 from sqlalchemy.exc import InvalidRequestError
 import sqlalchemy as sa
 
@@ -284,9 +285,45 @@ class ModelResource(object):
         # Remove the object from the session.
         self.session.delete(target)
 
+    def _resolve_relation(self, target):
+        # Resolve the relationship key.
+        key = None
+        related = type(self)._related_models
+        res_clss = type(target),
+        while res_clss:
+            res_cls_next = []
+            for res_cls in res_clss:
+                print('check', res_cls, related)
+                if res_cls in related:
+                    print('key')
+                    key = self.relationships[related[res_cls]].key
+                    break
+
+                if res_cls.__bases__:
+                    res_cls_next.extend(res_cls.__bases__)
+
+            else:
+                # Nope; continue
+                res_clss = res_cls_next
+                continue
+
+            # Able to link
+            break
+
+        else:
+            # Not able to link
+            return None
+
+        # Able to link
+        return key
+
     def relate(self, target, other):
         # Resolve the relationship key.
-        key = self.relationships[type(self)._related_models[type(other)]].key
+        key = self._resolve_relation(other)
+        if not key:
+            raise BadRequest({
+                '__all__': "Unable to link a '%s' to a '%s'." % (
+                    type(target).__name__, type(other).__name__)})
 
         # Grab the set_ in question.
         set_ = getattr(target, key)
@@ -307,7 +344,11 @@ class ModelResource(object):
 
     def unrelate(self, target, other):
         # Resolve the relationship key.
-        key = self.relationships[type(self)._related_models[type(other)]].key
+        key = self._resolve_relation(other)
+        if not key:
+            raise BadRequest({
+                '__all__': "Unable to link a '%s' to a '%s'." % (
+                    type(target).__name__, type(other).__name__)})
 
         # Grab the set_ in question.
         set_ = getattr(target, key)
