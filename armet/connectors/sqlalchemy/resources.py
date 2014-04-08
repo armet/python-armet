@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals, division
 import six
 import operator
 from functools import partial
+from collections import Iterable
 from copy import deepcopy
 from six.moves import map, reduce
 from armet.exceptions import ImproperlyConfigured
@@ -241,6 +242,14 @@ class ModelResource(object):
             if value is not None:
                 attribute.set(target, value)
 
+        # Iterate through all write-able relations and set each one.
+        for name, relation in six.iteritems(self.relationships):
+            # Set each one on the target.
+            value = data.get(name)
+            if value is not None:
+                # FIXME: Use some deferred thing that is not `setattr`.
+                setattr(target, relation.key, value)
+
         # Add the target to the session.
         self.session.add(target)
         self.session.flush()
@@ -261,6 +270,12 @@ class ModelResource(object):
         for name, attribute in six.iteritems(self.attributes):
             # Set each one on the target.
             attribute.set(target, data.get(name))
+
+        # Iterate through all write-able relations and set each one.
+        for name, relation in six.iteritems(self.relationships):
+            # Set each one on the target.
+            # FIXME: Use some deferred thing that is not `setattr`.
+            setattr(target, relation.key, data.get(name))
 
         # Flush the target and expire attributes.
         self.session.flush()
@@ -374,10 +389,30 @@ class ModelResource(object):
         # Build the related items.
         qs = set_
 
-        if self.request.user:
-            # Filter the queryset by asserting authorization.
-            qs = resource.meta.authorization.filter(
-                self.request.user, 'read', resource, qs)
+        if isinstance(qs, Iterable):
+            if self.request.user:
+                # Filter the queryset by asserting authorization.
+                qs = resource.meta.authorization.filter(
+                    self.request.user, 'read', resource, qs)
+
+        else:
+            # Ensure we can access this.
+            authz = self.meta.authorization
+            if not authz.is_authorized(
+                    self.request.user, 'read', resource, qs):
+                authz.unauthorized()
 
         # Return the queryset.
         return qs
+
+    def clean_related(self, relation, value):
+        # Grab the model in question.
+        model = relation.resource.meta.model
+
+        # Attempt to build a query to `get` the model.
+        target = self.session.query(model).get(value)
+        if target is not None:
+            # Found a target from the value.
+            return target
+
+        # Found nothing.

@@ -189,7 +189,8 @@ class ManagedResource(base.Resource):
         # TODO: Remove all that we are.
         self.request._embed_related = {
             x for x in self.request._embed_related
-                if not isinstance(self, x)}
+            if not isinstance(self, x)
+        }
 
         # Return the resultant object.
         return obj
@@ -272,6 +273,22 @@ class ManagedResource(base.Resource):
                 value = None
 
             obj[name] = value
+
+        # Iterate through write-able relations
+        for name, relation in six.iteritems(self.relationships):
+            if relation.write:
+                value = item.get(name)
+                try:
+                    value = self.clean_related(relation, value)
+                    obj[name] = value
+
+                except (ValueError, AssertionError) as ex:
+                    self._errors[attribute.name] = [str(ex)]
+                    value = None
+
+                except ValidationError as ex:
+                    self._errors[attribute.name] = ex.errors
+                    value = None
 
         return obj
 
