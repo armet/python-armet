@@ -244,11 +244,12 @@ class ModelResource(object):
 
         # Iterate through all write-able relations and set each one.
         for name, relation in six.iteritems(self.relationships):
-            # Set each one on the target.
-            value = data.get(name)
-            if value is not None:
-                # FIXME: Use some deferred thing that is not `setattr`.
-                setattr(target, relation.key, value)
+            if relation.write:
+                # Set each one on the target.
+                value = data.get(name)
+                if value is not None:
+                    # FIXME: Use some deferred thing that is not `setattr`.
+                    setattr(target, relation.key, value)
 
         # Add the target to the session.
         self.session.add(target)
@@ -273,9 +274,10 @@ class ModelResource(object):
 
         # Iterate through all write-able relations and set each one.
         for name, relation in six.iteritems(self.relationships):
-            # Set each one on the target.
-            # FIXME: Use some deferred thing that is not `setattr`.
-            setattr(target, relation.key, data.get(name))
+            if relation.write:
+                # Set each one on the target.
+                # FIXME: Use some deferred thing that is not `setattr`.
+                setattr(target, relation.key, data.get(name))
 
         # Flush the target and expire attributes.
         self.session.flush()
