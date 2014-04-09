@@ -170,7 +170,6 @@ class ManagedResource(base.Resource):
             # FIXME: This should be opt-in
             for key, relationship in self.relationships.items():
                 # If we did this one; skip
-                print('key', key, self.request._embed_related)
                 if relationship.resource in self.request._embed_related:
                     continue
 
