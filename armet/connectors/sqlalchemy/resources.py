@@ -310,9 +310,7 @@ class ModelResource(object):
         while res_clss:
             res_cls_next = []
             for res_cls in res_clss:
-                print('check', res_cls, related)
                 if res_cls in related:
-                    print('key')
                     key = self.relationships[related[res_cls]].key
                     break
 
