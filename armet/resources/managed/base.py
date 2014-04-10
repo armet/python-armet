@@ -138,7 +138,7 @@ class ManagedResource(base.Resource):
 
     def item_prepare(self, item):
         # If we are the root resource, clear the map.
-        if isinstance(self, self.request._resource.__class__):
+        if type(self) == self.request._resource.__class__:
             self.request._embed_related.clear()
 
         # We've started doing this one.
@@ -165,7 +165,7 @@ class ManagedResource(base.Resource):
                 obj[attribute.name] = self.attribute_prepare(
                     name, attribute, item)
 
-        if isinstance(self, self.request._resource.__class__):
+        if type(self) == self.request._resource.__class__:
             # Iterate through the relationships and build their objects.
             # FIXME: This should be opt-in
             for key, relationship in self.relationships.items():
