@@ -223,6 +223,10 @@ class ModelResource(object):
             # Get the item in question.
             item = queryset.first()
 
+            # Sanity check to make sure some item was found.
+            if item is None:
+                return None
+
             # Ensure the user is authorized to perform this action.
             authz = self.meta.authorization
             if not authz.is_authorized(self.request.user, 'read', self, item):
