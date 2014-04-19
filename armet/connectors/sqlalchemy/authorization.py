@@ -6,7 +6,6 @@ from armet.exceptions import ImproperlyConfigured
 
 try:
     import shield
-    from shield.contrib.sqlalchemy import evaluate
 
 except ImportError:
     shield = None
@@ -33,14 +32,17 @@ class ShieldAuthorization(ManagedAuthorization):
             }
 
     def is_authorized(self, user, operation, resource, item):
-        expr = shield.has(
-            *self.permissions[operation], bearer=user, target=item)
-        return evaluate(expr, item)
+        return shield.has(
+            *self.permissions[operation],
+            bearer=user,
+            target=item,
+            session=self.session)
 
     def filter(self, user, operation, resource, iterable):
-        expr = shield.filter(
+        query = shield.filter(
             *self.permissions[operation],
-            bearer=user, target=resource.meta.model)
+            bearer=user,
+            target=resource.meta.model,
+            session=self.session)
 
-        clause = evaluate(expr, resource.meta.model)
-        return resource.filter(clause, iterable)
+        return resource.filter(query, iterable)
