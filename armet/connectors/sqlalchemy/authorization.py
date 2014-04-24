@@ -41,6 +41,7 @@ class ShieldAuthorization(ManagedAuthorization):
         query = shield.filter(
             *self.permissions[operation],
             bearer=user,
-            target=resource.meta.model)
+            target=resource.meta.model,
+            query=iterable)
 
         return query.distinct()

@@ -177,7 +177,8 @@ class ManagedResource(base.Resource):
                 self.request._embed_related.add(relationship.resource)
 
                 # Construct the related resource
-                related = relationship.resource(self.request, self.response)
+                related = relationship.resource(
+                    self.request, self.response)
                 # related.require_authentication(self.request)
 
                 # Get the related items.
