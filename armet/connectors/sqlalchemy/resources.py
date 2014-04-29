@@ -400,11 +400,12 @@ class ModelResource(object):
                     self.request.user, 'read', resource, qs)
 
         else:
-            # Ensure we can access this.
-            authz = self.meta.authorization
-            if not authz.is_authorized(
-                    self.request.user, 'read', resource, qs):
-                authz.unauthorized()
+            if self.request.user:
+                # Ensure we can access this.
+                authz = self.meta.authorization
+                if not authz.is_authorized(
+                        self.request.user, 'read', resource, qs):
+                    authz.unauthorized()
 
         # Return the queryset.
         return qs
