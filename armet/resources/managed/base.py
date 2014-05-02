@@ -165,41 +165,45 @@ class ManagedResource(base.Resource):
                 obj[attribute.name] = self.attribute_prepare(
                     name, attribute, item)
 
-        if self.slug is not None:
-            if type(self) == self.request._resource.__class__:
-                # Iterate through the relationships and build their objects.
-                # FIXME: This should be opt-in
-                for key, relationship in self.relationships.items():
-                    # If we did this one; skip
-                    if relationship.resource in self.request._embed_related:
-                        continue
+        if type(self) == self.request._resource.__class__:
+            # Iterate through the relationships and build their objects.
+            # FIXME: This should be opt-in
+            for key, relationship in self.relationships.items():
+                # If we did this one; skip
+                if relationship.resource in self.request._embed_related:
+                    continue
 
-                    # Say that we did this one.
-                    self.request._embed_related.add(relationship.resource)
+                # If we are in list access and this is not okay for
+                # lists then skip.
+                if self.slug is None and not relationship.list:
+                    continue
 
-                    # Construct the related resource
-                    related = relationship.resource(
-                        self.request, self.response)
-                    # related.require_authentication(self.request)
+                # Say that we did this one.
+                self.request._embed_related.add(relationship.resource)
 
-                    # Get the related items.
-                    related_items = self.read_related(
-                        item, related, relationship.key)
+                # Construct the related resource
+                related = relationship.resource(
+                    self.request, self.response)
+                # related.require_authentication(self.request)
 
-                    # Prepare and add to the attribute.
-                    obj[key] = related.prepare(related_items)
+                # Get the related items.
+                related_items = self.read_related(
+                    item, related, relationship.key)
 
-                    # Say that we're done with this one.
-                    self.request._embed_related = {
-                        x for x in self.request._embed_related
-                        if not issubclass(x, relationship.resource)
-                    }
+                # Prepare and add to the attribute.
+                obj[key] = related.prepare(related_items)
 
-                # TODO: Remove all that we are.
+                # Say that we're done with this one.
                 self.request._embed_related = {
                     x for x in self.request._embed_related
-                    if not isinstance(self, x)
+                    if not issubclass(x, relationship.resource)
                 }
+
+            # TODO: Remove all that we are.
+            self.request._embed_related = {
+                x for x in self.request._embed_related
+                if not isinstance(self, x)
+            }
 
         # Return the resultant object.
         return obj
