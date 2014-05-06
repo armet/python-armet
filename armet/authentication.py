@@ -84,6 +84,11 @@ class BasicAuthentication(HeaderAuthentication):
         return method.lower() == 'basic'
 
     def get_credentials(self, text):
-        # Decode credentials.
-        text = base64.b64decode(text.encode('utf8')).decode('utf8')
-        return text.split(':', 1)
+        try:
+            # Decode credentials.
+            text = base64.b64decode(text.encode('utf8')).decode('utf8')
+            return text.split(':', 1)
+
+        except base64.binascii.Error:
+            # Decoding error.
+            return None, None
