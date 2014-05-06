@@ -11,12 +11,12 @@ class Relationship(object):
     NOTE: The idea is to do eventual self-discovery of the resource argument.
     """
 
-    def __init__(self, key, resource, link=True, write=False, list=True):
+    def __init__(self, key, resource, link=True, write=False, list=False):
         self.key = key
         self._resource = resource
         self._resource_cls = None
         self.link = link
-        self.list = False
+        self.list = list
         self.write = write
 
     @property
