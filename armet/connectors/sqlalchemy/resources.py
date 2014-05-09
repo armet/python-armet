@@ -11,6 +11,7 @@ from armet.query import parser, Query, QuerySegment, constants
 from armet.http.exceptions import BadRequest
 from sqlalchemy.exc import InvalidRequestError
 import sqlalchemy as sa
+import functools
 
 
 class ModelResourceOptions(object):
@@ -24,22 +25,28 @@ class ModelResourceOptions(object):
                 'the SQLAlchemy model connector.')
 
 
-def iequal_helper(x, y):
-    # String values should use ILIKE queries.
-    if isinstance(type(y), six.string_types):
-        return x.ilike(y)
-    else:
-        return operator.eq(x, y)
+def ilike_helper(default):
+    """Helper function that performs an `ilike` query if a string value
+    is passed, otherwise the normal default operation."""
+    @functools.wraps(default)
+    def wrapped(x, y):
+        # String values should use ILIKE queries.
+        if isinstance(y, six.string_types):
+            return x.ilike("%" + y + "%")
+        else:
+            return default(x, y)
+    return wrapped
 
 
 # Build an operator map to use for sqlalchemy.
 OPERATOR_MAP = {
     constants.OPERATOR_EQUAL: operator.eq,
-    constants.OPERATOR_IEQUAL: iequal_helper,
+    constants.OPERATOR_IEQUAL: ilike_helper(operator.eq),
     constants.OPERATOR_LT: operator.lt,
     constants.OPERATOR_GT: operator.gt,
     constants.OPERATOR_LTE: operator.le,
     constants.OPERATOR_GTE: operator.ge,
+    constants.OPERATOR_ICONTAINS: ilike_helper(operator.contains),
 }
 
 # Rewire the map.

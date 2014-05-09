@@ -28,8 +28,8 @@ OPERATOR_REGEX = 'regex', '*='
 #! Null test
 OPERATOR_ISNULL = 'isnull', None
 
-#! In-collection test
-OPERATOR_IN = 'in', None
+#! Contains (x in y)
+OPERATOR_ICONTAINS = 'icontains', None
 
 #! The fallback to use in the case that a more specific one isn't defined.
 OPERATOR_FALLBACK = OPERATOR_IEQUAL
@@ -50,7 +50,7 @@ OPERATOR_MAP = {
     OPERATOR_GTE: operator.ge,
     OPERATOR_REGEX: lambda x, y: re.search(y, x),
     OPERATOR_ISNULL: lambda x: x is None,
-    OPERATOR_IN: operator.contains,
+    OPERATOR_ICONTAINS: operator.contains,
 }
 
 #! Operator set containing all operators.
