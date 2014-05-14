@@ -333,21 +333,21 @@ class ManagedResource(base.Resource):
         # Delegate to `read` to retrieve the items.
         items = self.read()
 
-        if self.slug is not None and not items:
-            # Requested a specific resource but nothing is returned.
+        # if self.slug is not None and not items:
+        #     # Requested a specific resource but nothing is returned.
 
-            # Attempt to resolve by changing what we understand as
-            # a slug to a path.
-            self.path = self.path + self.slug if self.path else self.slug
-            self.slug = None
+        #     # Attempt to resolve by changing what we understand as
+        #     # a slug to a path.
+        #     self.path = self.path + self.slug if self.path else self.slug
+        #     self.slug = None
 
-            # Attempt to retreive the resource again.
-            items = self.read()
+        #     # Attempt to retreive the resource again.
+        #     items = self.read()
 
-            # Ensure that if we have a slug and still no items that a 404
-            # is rasied appropriately.
-            if not items:
-                raise http.exceptions.NotFound()
+        # Ensure that if we have a slug and still no items that a 404
+        # is rasied appropriately.
+        if not items:
+            raise http.exceptions.NotFound()
 
         if (isinstance(items, Iterable)
                 and not isinstance(items, six.string_types)) and items:
