@@ -54,7 +54,8 @@ class _TemporalAttribute(Attribute):
         try:
             # Attempt to magic a date out of it.
             # TODO: List this somewhere as an optional dep.
-            from parsedatetime import parsedatetime as pdt
+            import parsedatetime as pdt
+            # from parsedatetime import parsedatetime as pdt
             c = pdt.Constants()
             c.BirthdayEpoch = 80  # TODO: Figure out what this is.
             p = pdt.Calendar(c)
