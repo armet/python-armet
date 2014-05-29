@@ -31,7 +31,7 @@ def ilike_helper(default):
     @functools.wraps(default)
     def wrapped(x, y):
         # String values should use ILIKE queries.
-        if isinstance(y, six.string_types):
+        if isinstance(y, six.string_types) and not isinstance(x.type, sa.Enum):
             return x.ilike("%" + y + "%")
         else:
             return default(x, y)
