@@ -307,32 +307,24 @@ def parse_segment(text):
     # followed by the smallest value (greedily chose the largest comparator
     # possible.)
 
-    try:
-        # import ipdb; ipdb.set_trace()
-        # translate into [('=', 'foo=bar')]
-        equalities = zip(constants.OPERATOR_EQUALITIES, itertools.repeat(text))
-        # Translate into [('=', ['foo', 'bar'])]
-        equalities = map(lambda x: (x[0], x[1].split(x[0], 1)), equalities)
-        # Remove unsplit entries and translate into [('=': ['foo', 'bar'])]
-        # Note that the result from this stage is iterated over twice.
-        equalities = list(filter(lambda x: len(x[1]) > 1, equalities))
-        # Get the smallest key and use the length of that to remove other items
-        key_len = len(min((x[1][0] for x in equalities), key=len))
-        equalities = filter(lambda x: len(x[1][0]) == key_len, equalities)
+    # translate into [('=', 'foo=bar')]
+    equalities = zip(constants.OPERATOR_EQUALITIES, itertools.repeat(text))
+    # Translate into [('=', ['foo', 'bar'])]
+    equalities = map(lambda x: (x[0], x[1].split(x[0], 1)), equalities)
+    # Remove unsplit entries and translate into [('=': ['foo', 'bar'])]
+    # Note that the result from this stage is iterated over twice.
+    equalities = list(filter(lambda x: len(x[1]) > 1, equalities))
+    # Get the smallest key and use the length of that to remove other items
+    key_len = len(min((x[1][0] for x in equalities), key=len))
+    equalities = filter(lambda x: len(x[1][0]) == key_len, equalities)
 
-        # Get the smallest value length. thus we have the earliest key and the
-        # smallest value.
-        op, (key, value) = min(equalities, key=lambda x: len(x[1][1]))
-    except ValueError:
-        # Only the key exists.  See if there's a directive.
-        key, directive = parse_directive(text)
-        value = ''
+    # Get the smallest value length. thus we have the earliest key and the
+    # smallest value.
+    op, (key, value) = min(equalities, key=lambda x: len(x[1][1]))
+
+    key, directive = parse_directive(key)
+    if directive:
         op = constants.OPERATOR_EQUALITY_FALLBACK
-        if directive is None:
-            # import ipdb; ipdb.set_trace()
-            raise ValueError(
-                'Encountered a segment with neither directive nor equality.')
-
         q.directive = directive
 
     # Process negation.  This comes in both foo.not= and foo!= forms.
