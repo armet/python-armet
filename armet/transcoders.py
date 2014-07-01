@@ -1,3 +1,4 @@
+import mimeparse
 
 
 class TranscoderRegistry:
@@ -7,18 +8,34 @@ class TranscoderRegistry:
         self.encoders = {}
         self.mime_types = {}
 
-    def find(self, *, mime_type=None, name=None):
+    def find(self, *, media_range=None, name=None, mime_type=None):
         # Attempt to find a compliant encoder given eitehr a mime_type or
-        # encoder name.  Prioritize the mime-type.
+        # encoder name.  Prioritize the mime-type, then name, then media_range.
 
         if mime_type is not None:
             return self.mime_types[mime_type]
         elif name is not None:
             return self.encoders[name]
+        elif media_range is not None:
+            return self.find_media_range(media_range)
 
-        raise TypeError('Either mime_type or name is required.')
+        raise TypeError(
+            'At least one parameter is required: '
+            'media_range, mime_type, name.')
 
-    def register(self, encoder, names, mime_types):
+    def find_media_range(self, media_range):
+        try:
+            found = mimeparse.best_match(self.mime_types.keys(), media_range)
+
+        except ValueError:
+            raise TypeError('Malformed media range.')
+
+        if found is None:
+            raise KeyError
+
+        return self.mime_types[found]
+
+    def register(self, encoder, names=[], mime_types=[]):
         # Register the transcoder provided in the global list of
         # transcoders.
 
