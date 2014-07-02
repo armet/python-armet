@@ -1,4 +1,4 @@
-from armet.transcoders import TranscoderRegistry
+from armet.codecs import CodecRegistry
 import pytest
 
 
@@ -10,9 +10,9 @@ class CounterExampleEncoder:
     pass
 
 
-class TestTranscoderRegistry:
+class TestCodecRegistry:
     def setup(self):
-        self.registry = TranscoderRegistry()
+        self.registry = CodecRegistry()
         self.registry.register(
             ExampleEncoder,
             names=['test', 'example'],
@@ -22,9 +22,6 @@ class TestTranscoderRegistry:
             CounterExampleEncoder,
             mime_types=['application/xbel+xml', 'example/xml'])
 
-    def teardown(self):
-        self.registry.purge(ExampleEncoder)
-
     def test_lookup_by_mime_type(self):
         mime = 'test/test'
         assert self.registry.find(mime_type=mime) is ExampleEncoder
@@ -33,14 +30,14 @@ class TestTranscoderRegistry:
         assert self.registry.find(mime_type=mime) is ExampleEncoder
 
     def test_lookup_by_media_range(self):
-        mime = 'text/*;q=0.5,*/*; q=0.1'
+        mime = 'example/*;q=0.5,*/*; q=0.1'
         assert self.registry.find(media_range=mime) is CounterExampleEncoder
 
         mime = 'test/*;q=0.5,*/*; q=0.1'
         assert self.registry.find(media_range=mime) is ExampleEncoder
 
     def test_malformed_media_range(self):
-        with pytest.raises(TypeError):
+        with pytest.raises(KeyError):
             self.registry.find(media_range='asdf')
 
     def test_lookup_by_name(self):

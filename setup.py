@@ -32,7 +32,7 @@ setup(
     url='http://github.com/armet/python-armet',
     packages=find_packages('.'),
     install_requires=[
-        'pytest',  # Testing!
+        'pytest',
         'python-mimeparse',
     ],
 )

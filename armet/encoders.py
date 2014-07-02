@@ -1,18 +1,9 @@
-from .transcoders import TranscoderRegistry
+from .codecs import CodecRegistry
 
 
 # Create our encoder registry and pull methods off it for easy access.
-registry = TranscoderRegistry()
+_registry = CodecRegistry()
 
-find = registry.find
-purge = registry.purge
-register = registry.register
-
-
-class Encoder:
-    """Base class for all encoders."""
-
-    def encode(self, data):
-        """Entrypoint for logic used to encode an entire block.
-        If a type is not encodable, a TypeError may be raised."""
-        raise NotImplementedError
+find = _registry.find
+remove = _registry.remove
+register = _registry.register
