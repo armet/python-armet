@@ -1,3 +1,4 @@
+from ._version import __version__
 from . import encoders, decoders, codecs  # flake8: noqa
 
 

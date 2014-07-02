@@ -15,7 +15,7 @@ class CodecRegistry:
     """
 
     def __init__(self):
-        self._encoders = {}
+        self._codecs = {}
         self._mime_types = {}
 
     def find(self, *, media_range=None, name=None, mime_type=None):
@@ -28,7 +28,7 @@ class CodecRegistry:
             return self._mime_types[mime_type]
 
         if name is not None:
-            return self._encoders[name]
+            return self._codecs[name]
 
         if media_range is not None:
             return self._find_media_range(media_range)
@@ -53,17 +53,32 @@ class CodecRegistry:
         """Register the transcoder provided in the global list of transcoders.
         """
 
-        self._encoders.update({x: encoder for x in names})
+        self._codecs.update({x: encoder for x in names})
         self._mime_types.update({x: encoder for x in mime_types})
 
-    def remove(self, encoder):
+    def remove(self, encoder=None, name=None, mime_type=None):
         """Remove the encoder from the global list of available encoders.
+
+        Attempts to match the encoder by name or mime_type if passed (but
+        prioritizes encoder if passed).
         """
 
-        for registry in (self._encoders, self._mime_types):
-            for name, test in list(registry.items()):
-                if encoder is test:
-                    del registry[name]
+        if encoder is not None:
+            for registry in (self._codecs, self._mime_types):
+                for name, test in list(registry.items()):
+                    if encoder is test:
+                        del registry[name]
+
+            return
+
+        elif name is not None:
+            encoder = self._codecs.get(name)
+
+        elif mime_type is not None:
+            encoder = self._mime_types.get(mime_type)
+
+        if encoder is not None:
+            self.remove(encoder)
 
 
 class Codec:
