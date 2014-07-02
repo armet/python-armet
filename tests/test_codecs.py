@@ -25,16 +25,15 @@ class TestCodecRegistry:
 
     def test_remove_by_object(self):
         self.registry.remove(ExampleEncoder)
-        assert pytest.raises(KeyError, self.registry.find, name="test")
+        pytest.raises(KeyError, self.registry.find, name="test")
 
     def test_remove_by_name(self):
         self.registry.remove(name="example")
-        assert pytest.raises(KeyError, self.registry.find, name="example")
+        pytest.raises(KeyError, self.registry.find, name="example")
 
     def test_remove_by_mime_type(self):
         self.registry.remove(mime_type="example/xml")
-        assert pytest.raises(KeyError, self.registry.find,
-                             mime_type="example/xml")
+        pytest.raises(KeyError, self.registry.find, mime_type="example/xml")
 
     def test_lookup_by_mime_type(self):
         mime = 'test/test'
@@ -59,9 +58,9 @@ class TestCodecRegistry:
         assert self.registry.find(name='example') is ExampleEncoder
 
     def test_lookup_failure(self):
-        assert pytest.raises(KeyError, self.registry.find, name='missing')
+        pytest.raises(KeyError, self.registry.find, name='missing')
         mime = 'application/missing;q=0.5'
-        assert pytest.raises(KeyError, self.registry.find, media_range=mime)
+        pytest.raises(KeyError, self.registry.find, media_range=mime)
 
     def test_lookup_bad_args(self):
         with pytest.raises(TypeError):
