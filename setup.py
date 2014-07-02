@@ -33,6 +33,8 @@ setup(
     packages=find_packages('.'),
     install_requires=[
         'pytest',
+        'pytest-pep8',
+        'pytest-cov',
         'python-mimeparse',
     ],
 )
