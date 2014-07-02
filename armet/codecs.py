@@ -11,8 +11,8 @@ class CodecRegistry:
 
     def find(self, *, media_range=None, name=None, mime_type=None):
         """
-        Attempt to find a compliant encoder given either a mime_type or
-        encoder name.  Prioritize the mime-type, then name, then media_range.
+        Attempt to find a compliant codec given either a mime_type or
+        codec name.  Prioritize the mime-type, then name, then media_range.
         """
 
         if mime_type is not None:
@@ -40,24 +40,24 @@ class CodecRegistry:
 
         return self._mime_types[found]
 
-    def register(self, encoder, names=(), mime_types=()):
+    def register(self, codec, names=(), mime_types=()):
         """Register the transcoder provided in the global list of transcoders.
         """
 
-        self._codecs.update({x: encoder for x in names})
-        self._mime_types.update({x: encoder for x in mime_types})
+        self._codecs.update({x: codec for x in names})
+        self._mime_types.update({x: codec for x in mime_types})
 
-    def remove(self, encoder=None, *, name=None, mime_type=None):
-        """Remove the encoder from the global list of available encoders.
+    def remove(self, codec=None, *, name=None, mime_type=None):
+        """Remove the codec from the global list of available codecs.
 
-        Attempts to match the encoder by name or mime_type if passed (but
-        prioritizes encoder if passed).
+        Attempts to match the codec by name or mime_type if passed (but
+        prioritizes codec if passed).
         """
 
-        if encoder is not None:
+        if codec is not None:
             for registry in (self._codecs, self._mime_types):
                 for name, test in list(registry.items()):
-                    if encoder is test:
+                    if codec is test:
                         del registry[name]
 
         if name is not None:
