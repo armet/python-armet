@@ -11,6 +11,7 @@ class CounterExampleEncoder:
 
 
 class TestCodecRegistry:
+
     def setup(self):
         self.registry = CodecRegistry()
         self.registry.register(
@@ -21,6 +22,19 @@ class TestCodecRegistry:
         self.registry.register(
             CounterExampleEncoder,
             mime_types=['application/xbel+xml', 'example/xml'])
+
+    def test_remove_by_object(self):
+        self.registry.remove(ExampleEncoder)
+        assert pytest.raises(KeyError, self.registry.find, name="test")
+
+    def test_remove_by_name(self):
+        self.registry.remove(name="example")
+        assert pytest.raises(KeyError, self.registry.find, name="example")
+
+    def test_remove_by_mime_type(self):
+        self.registry.remove(mime_type="example/xml")
+        assert pytest.raises(KeyError, self.registry.find,
+                             mime_type="example/xml")
 
     def test_lookup_by_mime_type(self):
         mime = 'test/test'
