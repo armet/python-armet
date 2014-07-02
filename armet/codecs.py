@@ -1,6 +1,15 @@
 import mimeparse
 
 
+def register_module(module, base):
+    """Used to register all the codecs in a module.
+    Invoke using the module and the base class to test inheritance against."""
+    for name in dir(module):
+        d = getattr(module, name)
+        if isinstance(d, type) and issubclass(d, base) and d is not base:
+            module.register(d, names=d.names, mime_types=d.mime_types)
+
+
 class CodecRegistry:
     """A registry used for registering and removing encoders and decoders.
     """
@@ -55,3 +64,31 @@ class CodecRegistry:
             for name, test in list(registry.items()):
                 if encoder is test:
                     del registry[name]
+
+
+class Codec:
+    """Generic base class for all Codec data.  This is a common class used
+    for both the encoder and decoder."""
+
+    # The preferred mime-type for this encoder.  This is reported in the
+    # Content-Type header when sending data to the client
+    preferred_mime_type = ''
+
+    # The mime-types that this encoder can work with, in no particular order.
+    mime_types = set()
+
+    # The common names that this encoder is known by.  This is used to
+    # determine encoders chosen based on file extension (/api/foo.json)
+    names = set()
+
+
+class URLCodec(Codec):
+
+    preferred_mime_type = 'application/x-www-form-urlencoded'
+
+    mime_types = {
+        preferred_mime_type}
+
+    names = {
+        'url',
+        'urlencoded'}

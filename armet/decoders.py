@@ -1,9 +1,38 @@
-from .codecs import CodecRegistry
+from . import codecs
+import urllib.parse
 
 
 # Create our encoder registry and pull methods off it for easy access.
-_registry = CodecRegistry()
+_registry = codecs.CodecRegistry()
 
 find = _registry.find
 remove = _registry.remove
 register = _registry.register
+
+
+class Decoder:
+
+    # The codec class for this decoder.  Note that the codec must provide
+    # mime_types and names.
+    _codec = codecs.Codec
+
+    @property
+    def mime_types(self):
+        return self._codec.mime_types
+
+    @property
+    def names(self):
+        return self._codec.names
+
+    def decode(self, data):
+        """Decode the data passed in, This function will raise a TypeError
+        if unable to parse or decode the data passed in."""
+        raise NotImplementedError
+
+
+class URLDecoder:
+
+    _codec = codecs.URLCodec
+
+    def decode(self, data):
+        return urllib.parse.parse_qs(data)
