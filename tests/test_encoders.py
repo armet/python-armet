@@ -15,12 +15,12 @@ class TestURLEncoder:
         self.encoder = encoders.find(name='url')()
 
     def test_encode_normal(self):
-        data = OrderedDict(
-            foo='bar',
-            bar='baz',
-            fiz='buzz')
+        data = OrderedDict((
+            ('foo', 'bar'),
+            ('bar', 'baz'),
+            ('fiz', 'buzz')))
 
-        expected = 'fiz=buzz&foo=bar&bar=baz'
+        expected = 'foo=bar&bar=baz&fiz=buzz'
 
         assert self.encoder.encode(data) == expected
 

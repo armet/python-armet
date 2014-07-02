@@ -1,4 +1,4 @@
-from . import codecs
+from . import codecs, utils
 import urllib.parse
 
 
@@ -16,11 +16,11 @@ class Decoder:
     # mime_types and names.
     _codec = codecs.Codec
 
-    @property
+    @utils.classproperty
     def mime_types(self):
         return self._codec.mime_types
 
-    @property
+    @utils.classproperty
     def names(self):
         return self._codec.names
 
