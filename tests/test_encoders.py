@@ -12,7 +12,7 @@ def test_encoders_api_methods():
 class TestURLEncoder:
 
     def setup(self):
-        self.encoder = encoders.find(name='url')()
+        self.encode = encoders.find(name='url')
 
     def test_encode_normal(self):
         data = OrderedDict((
@@ -22,8 +22,8 @@ class TestURLEncoder:
 
         expected = 'foo=bar&bar=baz&fiz=buzz'
 
-        assert self.encoder.encode(data) == expected
+        assert self.encode(data) == expected
 
     def test_unable_to_encode(self):
         with pytest.raises(TypeError):
-            self.encoder.encode([{'foo': 'bar'}])
+            self.encode([{'foo': 'bar'}])

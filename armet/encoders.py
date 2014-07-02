@@ -1,47 +1,25 @@
-from . import codecs, utils
+from .codecs import CodecRegistry
+from itertools import chain, repeat
+from urllib.parse import urlencode
 import urllib.parse
 
 
 # Create our encoder registry and pull methods off it for easy access.
-# Note that all encoders defined in armet.encoders are added to the registry
-# automatically.
-_registry = codecs.CodecRegistry()
+_registry = CodecRegistry()
 
 find = _registry.find
 remove = _registry.remove
 register = _registry.register
 
 
-class Encoder:
-    """The base class for armet's encoders."""
+class URLEncoder:
 
-    # The codec class for this encoder.  Note that the codec must provide
-    # preferred_mime_type, mime_types, and names in order for this to function
-    # properly.
-    _codec = None
+    @classmethod
+    def encode(cls, data):
+        try:
+            return urlencode(list(chain.from_iterable(
+                ((k, v),) if isinstance(v, str) else zip(repeat(k), v)
+                for k, v in data.items())))
 
-    @utils.classproperty
-    def preferred_mime_type(cls):
-        return cls._codec.preferred_mime_type
-
-    @utils.classproperty
-    def mime_types(cls):
-        return cls._codec.mime_types
-
-    @utils.classproperty
-    def names(cls):
-        return cls._codec.names
-
-    def encode(self, data):
-        """Encode the passed data and return the encoded version.
-        May raise a TypeError if unable to encode the type passed in.
-        """
-        raise NotImplementedError
-
-
-class URLEncoder(Encoder):
-
-    _codec = codecs.URLCodec
-
-    def encode(self, data):
-        return urllib.parse.urlencode(data)
+        except AttributeError as ex:
+            raise TypeError from ex

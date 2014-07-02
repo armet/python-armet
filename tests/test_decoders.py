@@ -11,7 +11,7 @@ def test_decoders_api_methods():
 class TestURLDecoder:
 
     def setup(self):
-        self.decoder = decoders.find(name='url')()
+        self.decode = decoders.find(name='url')
 
     def test_decode_normal(self):
         data = 'foo=bar&bar=baz&fiz=buzz'
@@ -21,8 +21,8 @@ class TestURLDecoder:
             'bar': 'baz',
             'fiz': 'buzz'}
 
-        assert self.decoder.decode(data) == expected
+        assert self.decode(data) == expected
 
-    def test_unable_to_decode(self):
+    def test_decode_object(self):
         with pytest.raises(TypeError):
-            self.decoder.decode([{'foo': 'bar'}])
+            self.decode([{'foo': 'bar'}])
