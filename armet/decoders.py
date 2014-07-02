@@ -1,5 +1,6 @@
 from .codecs import CodecRegistry
 import urllib.parse
+import json
 
 
 # Create our encoder registry and pull methods off it for easy access.
@@ -19,4 +20,14 @@ class URLDecoder:
             return {k: v[0] if len(v) == 1 else v for k, v in data.items()}
 
         except AttributeError as ex:
+            raise TypeError from ex
+
+
+class JSONDecoder:
+
+    @classmethod
+    def decode(cls, text):
+        try:
+            return json.loads(text)
+        except ValueError as ex:
             raise TypeError from ex

@@ -74,3 +74,26 @@ class URLCodec:
     mime_types = {preferred_mime_type}
 
     names = {'url'}
+
+
+class JSONCodec:
+
+    preferred_mime_type = 'application/json'
+
+    mime_types = {
+        preferred_mime_type,
+        # Offical; as per RFC 4627.
+        'application/json',
+
+        # Widely used (thanks <http://www.json.org/JSONRequest.html>.)
+        'application/jsonrequest',
+
+        # Miscellaneous mimetypes that are used frequently (incorrectly).
+        'application/x-json',
+        'text/json',
+
+        # Widely used (incorrectly) thanks to ruby.
+        'text/x-json',
+    }
+
+    names = {'json'}

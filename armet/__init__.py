@@ -9,11 +9,23 @@ __all__ = [
 
 
 # Register each encoder.
+# URL Encoder
 encoders.register(encoders.URLEncoder.encode,
                   names=codecs.URLCodec.names,
                   mime_types=codecs.URLCodec.mime_types)
 
+# JSON Encoder
+encoders.register(encoders.JSONEncoder.encode,
+                  names=codecs.JSONCodec.names,
+                  mime_types=codecs.JSONCodec.mime_types)
+
 # Register each decoder.
+# URL Decoder
 decoders.register(decoders.URLDecoder.decode,
                   names=codecs.URLCodec.names,
                   mime_types=codecs.URLCodec.mime_types)
+
+# JSON Decoder
+decoders.register(decoders.JSONDecoder.decode,
+                  names=codecs.JSONCodec.names,
+                  mime_types=codecs.JSONCodec.mime_types)
