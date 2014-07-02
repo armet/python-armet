@@ -17,12 +17,12 @@ class Decoder:
     _codec = codecs.Codec
 
     @utils.classproperty
-    def mime_types(self):
-        return self._codec.mime_types
+    def mime_types(cls):
+        return cls._codec.mime_types
 
     @utils.classproperty
-    def names(self):
-        return self._codec.names
+    def names(cls):
+        return cls._codec.names
 
     def decode(self, data):
         """Decode the data passed in, This function will raise a TypeError
@@ -30,7 +30,7 @@ class Decoder:
         raise NotImplementedError
 
 
-class URLDecoder:
+class URLDecoder(Decoder):
 
     _codec = codecs.URLCodec
 

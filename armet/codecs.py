@@ -39,13 +39,13 @@ class CodecRegistry:
 
     def _find_media_range(self, media_range):
         try:
+            # best_match returns empty string on failure to find a match.
+            # The correct KeyError will be thrown when attempting the lookup
+            # below.
             found = mimeparse.best_match(self._mime_types.keys(), media_range)
 
         except ValueError:
             raise KeyError('Malformed media range.')
-
-        if found is None:
-            raise KeyError
 
         return self._mime_types[found]
 

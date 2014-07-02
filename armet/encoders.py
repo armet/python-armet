@@ -18,19 +18,19 @@ class Encoder:
     # The codec class for this encoder.  Note that the codec must provide
     # preferred_mime_type, mime_types, and names in order for this to function
     # properly.
-    _codec = codecs.Codec
+    _codec = None
 
     @utils.classproperty
-    def preferred_mime_type(self):
-        return self._codec.preferred_mime_type
+    def preferred_mime_type(cls):
+        return cls._codec.preferred_mime_type
 
     @utils.classproperty
-    def mime_types(self):
-        return self._codec.mime_types
+    def mime_types(cls):
+        return cls._codec.mime_types
 
     @utils.classproperty
-    def names(self):
-        return self._codec.names
+    def names(cls):
+        return cls._codec.names
 
     def encode(self, data):
         """Encode the passed data and return the encoded version.
