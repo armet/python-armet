@@ -17,8 +17,32 @@
 # Stories
 > Using "user" in the general sense (no auth yet)
 
- - User creates a poll
- - User adds a choice to a poll
- - User removes a choice from a poll
- - User publishes a poll
- - User votes for a choice on a poll
+### User creates a poll
+
+```
+POST /poll
+```
+
+### User adds a choice to a poll
+
+```
+POST /poll/{id}/choice
+```
+
+### User removes a choice from a poll
+
+```
+DELETE /poll/{id}/choice/{id}
+```
+
+### User publishes a poll (?)
+
+```
+POST /poll/{id}/publish
+```
+
+### User votes for a choice on a poll
+
+```
+POST /poll/{id}/choice/{id}/vote
+```
