@@ -1,5 +1,6 @@
 from armet import decoders
 import pytest
+from pytest import mark
 import json
 
 
@@ -9,6 +10,7 @@ def test_decoders_api_methods():
     assert decoders.remove
 
 
+@mark.bench('self.decode', iterations=10000)
 class TestURLDecoder:
 
     def setup(self):
@@ -29,11 +31,13 @@ class TestURLDecoder:
             self.decode([{'foo': 'bar'}])
 
 
+@mark.bench('self.decode', iterations=10000)
 class TestJSONDecoder:
+
     def setup(self):
         self.decode = decoders.find(name='json')
 
-    def test_encode_normal(self):
+    def test_decode_normal(self):
         data = {
             'foo': 5,
             'bar': None,
@@ -42,7 +46,7 @@ class TestJSONDecoder:
 
         assert self.decode(json.dumps(data)) == data
 
-    def test_encode_failure(self):
+    def test_decode_failure(self):
         with pytest.raises(TypeError):
             self.decode('fail')
 
