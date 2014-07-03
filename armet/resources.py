@@ -1,5 +1,5 @@
 
-# NOTE: Should this that `Registry` thing we were talking about?
+# NOTE: Should this be that `Registry` thing we were talking about?
 _registry = {}
 
 
