@@ -90,15 +90,15 @@ class Api:
                 #       mime_type would be faster.
                 decode = decoders.find(media_range=content_type)
 
-            except KeyError:
-                # Failed to find a matching encoder.
-                start_response("415 Unsupported Media Type", [])
-                return [b""]
+                # Decode the incoming request data.
+                # TODO: We should likely be sending the proper charset
+                #       to ".decode(..)"
+                request_data = decode(request_raw_data.decode("utf-8"))
 
-            # Decode the incoming request data.
-            # TODO: We should likely be sending the proper charset
-            #       to ".decode(..)"
-            request_data = decode(request_raw_data.decode("utf-8"))
+            except (KeyError, TypeError):
+                # Failed to find a matching encoder.
+                start_response("415 UNSUPPORTED MEDIA TYPE", [])
+                return [b""]
 
         # Dispatch the request.
         response_data = route(request_data)
@@ -111,14 +111,14 @@ class Api:
         try:
             encode = encoders.find(media_range=media_range)
 
-        except KeyError:
+            # Encode the data.
+            response_text = encode(response_data)
+
+        except (KeyError, TypeError):
             # Failed to find a matching encoder.
-            start_response("406 Not Acceptable", [])
+            start_response("406 NOT ACCEPTABLE", [])
             return [b""]
 
-        # Encode the data.
-        response_text = encode(response_data)
-
         # Return a successful response.
-        start_response("200 Ok", [("Content-Type", "application/json")])
+        start_response("200 OK", [("Content-Type", "application/json")])
         return [response_text.encode("utf-8")]
