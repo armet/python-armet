@@ -35,6 +35,8 @@ setup(
         'pytest',
         'pytest-pep8',
         'pytest-cov',
+        'pytest-bench',
         'python-mimeparse',
+        'werkzeug'
     ],
 )

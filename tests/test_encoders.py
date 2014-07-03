@@ -1,6 +1,8 @@
 from armet import encoders
+import json
 from collections import OrderedDict
 import pytest
+from pytest import mark
 
 
 def test_encoders_api_methods():
@@ -9,6 +11,7 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
+@mark.bench('self.encode', iterations=10000)
 class TestURLEncoder:
 
     def setup(self):
@@ -29,9 +32,27 @@ class TestURLEncoder:
             self.encode([{'foo': 'bar'}])
 
 
+@mark.bench('self.encode', iterations=10000)
 class TestJSONEncoder:
+
     def setup(self):
         self.encode = encoders.find(name='json')
+
+    def test_encode_scalar(self):
+        data = False
+
+        assert self.encode(data) == "[false]"
+
+    def test_encode_null(self):
+        data = None
+
+        assert self.encode(data) == "[null]"
+
+    def test_encode_large_simple_list(self):
+        data = list(range(1, 10000))
+
+        text = self.encode(data)
+        assert json.loads(text) == data
 
     def test_encode_normal(self):
         data = OrderedDict([

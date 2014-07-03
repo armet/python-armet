@@ -1,6 +1,7 @@
 from .codecs import CodecRegistry
 from itertools import chain, repeat
 from urllib.parse import urlencode
+from collections import Iterable
 import json
 
 
@@ -31,6 +32,12 @@ class JSONEncoder:
 
     @classmethod
     def encode(cls, data):
+        # Ensure that the scalar data is wrapped in a list as
+        # a valid JSON document must be an object or a list.
+        # See: http://tools.ietf.org/html/rfc4627
+        if not isinstance(data, str) and not isinstance(data, Iterable):
+            data = [data]
+
         # Separators are used here to assert that no uneccesary spaces are
         # added to the json.
         return json.dumps(data, separators=(',', ':'))
