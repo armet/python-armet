@@ -21,12 +21,20 @@
 
 ```
 POST /poll
+
+{
+    "question": "...."
+}
 ```
 
 ### User adds a choice to a poll
 
 ```
 POST /poll/{id}/choice
+
+{
+    "text": "...."
+}
 ```
 
 ### User removes a choice from a poll
@@ -39,10 +47,26 @@ DELETE /poll/{id}/choice/{id}
 
 ```
 POST /poll/{id}/publish
+
+{
+    // No data needed
+}
+```
+
+```
+PATCH /poll/{id}
+
+{
+    "published": true
+}
 ```
 
 ### User votes for a choice on a poll
 
 ```
 POST /poll/{id}/choice/{id}/vote
+
+{
+    // No data needed
+}
 ```
