@@ -31,3 +31,10 @@ class JSONDecoder:
             return json.loads(text)
         except ValueError as ex:
             raise TypeError from ex
+
+
+class FormDecoder:
+
+    @classmethod
+    def decode(cls, text, boundary):
+        pass

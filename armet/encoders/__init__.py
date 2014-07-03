@@ -1,5 +1,5 @@
 from .general import register, remove, find, URLEncoder, JSONEncoder
-from .form import form_data as FormDataEncoder
+from .form import form_data as FormEncoder
 
 
 __all__ = [
@@ -8,5 +8,5 @@ __all__ = [
     find,
     URLEncoder,
     JSONEncoder,
-    FormDataEncoder,
+    FormEncoder,
 ]

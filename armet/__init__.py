@@ -20,7 +20,7 @@ encoders.register(encoders.JSONEncoder.encode,
                   mime_types=codecs.JSONCodec.mime_types)
 
 # FormData encoder
-encoders.register(encoders.FormDataEncoder,
+encoders.register(encoders.FormEncoder,
                   names=codecs.FormDataCodec.names,
                   mime_types=codecs.FormDataCodec.mime_types)
 
@@ -34,3 +34,8 @@ decoders.register(decoders.URLDecoder.decode,
 decoders.register(decoders.JSONDecoder.decode,
                   names=codecs.JSONCodec.names,
                   mime_types=codecs.JSONCodec.mime_types)
+
+# Form Decoder
+decoders.register(decoders.FormDecoder.decode,
+                  names=codecs.FormDataCodec.names,
+                  mime_types=codecs.FormDataCodec.mime_types)

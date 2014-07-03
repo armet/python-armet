@@ -45,3 +45,39 @@ class TestJSONDecoder:
     def test_encode_failure(self):
         with pytest.raises(TypeError):
             self.decode('fail')
+
+
+class TestFormDecoder:
+    def setup(self):
+        self.decode = decoders.find(name='form')
+
+    def test_decode_normal(self):
+        boundary = 'abc123'
+
+        data = (
+            b'--abc123\r\n'
+            b'Content-Disposition: form-data; name=foo\r\n'
+            b'\r\n'
+            b'bar\r\n'
+            b'--abc123\r\n'
+            b'Content-Disposition: form-data; name=bar\r\n'
+            b'\r\n'
+            b'baz\r\n'
+            b'--abc123\r\n'
+            b'Content-Disposition: form-data; name=fiz\r\n'
+            b'\r\n'
+            b'buzz\r\n'
+            b'--abc123\r\n'
+            b'Content-Disposition: form-data; name=fiz\r\n'
+            b'\r\n'
+            b'bang\r\n'
+            b'--abc123--'
+        )
+
+        expected = {
+            'foo': 'bar',
+            'bar': 'baz',
+            'fizz': ['buz', 'bang']
+        }
+
+        assert self.decode(data, boundary=boundary) == expected
