@@ -1,4 +1,4 @@
-from .codecs import CodecRegistry
+from armet.codecs import CodecRegistry
 from itertools import chain, repeat
 from urllib.parse import urlencode
 import json

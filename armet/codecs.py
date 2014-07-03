@@ -97,3 +97,12 @@ class JSONCodec:
     }
 
     names = {'json'}
+
+
+class FormDataCodec:
+
+    preferred_mime_type = 'multipart/form-data'
+
+    mime_types = {preferred_mime_type}
+
+    names = {'form'}
