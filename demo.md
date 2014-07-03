@@ -27,6 +27,27 @@ POST /poll
 }
 ```
 
+### User creates a poll with choices
+
+```
+POST /poll
+
+{
+    "question": "...",
+    "choice": [
+        {
+            "text": "...."
+        },
+        {
+            "text": "...."
+        },
+        {
+            "text": "...."
+        }
+    ]
+}
+```
+
 ### User adds a choice to a poll
 
 ```
