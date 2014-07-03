@@ -1,4 +1,4 @@
-from werkzeug.wrappers import BaseRequest
+from werkzeug.wrappers import BaseRequest, BaseResponse, ResponseStreamMixin
 
 
 class Request:
@@ -17,3 +17,7 @@ class Request:
     @property
     def headers(self):
         return self._handle.headers
+
+
+class Response(BaseResponse, ResponseStreamMixin):
+    """There really doesn't need to be anything here."""

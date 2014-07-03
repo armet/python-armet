@@ -78,12 +78,11 @@ class URLCodec:
 
 class JSONCodec:
 
+    # Offical; as per RFC 4627.
     preferred_mime_type = 'application/json'
 
     mime_types = {
         preferred_mime_type,
-        # Offical; as per RFC 4627.
-        'application/json',
 
         # Widely used (thanks <http://www.json.org/JSONRequest.html>.)
         'application/jsonrequest',

@@ -32,19 +32,24 @@ class Api:
         self._registry[name] = handler
 
     def __call__(self, environ, start_response):
-        # TODO: Figure out how the response wrapper works and use it
-        # TODO: We need a way to know the content-type here.. or the encoder
-        #       needs to handle pushing the content-type.
-
         # Create the request wrapper around the environ (to make this at
         # least half-way sane).
         request = http.Request(environ)
+        response = http.Response()
+
+        self.process(request, response)
+
+        return response(environ, start_response)
+
+    def process(self, request, response):
+        # TODO: We need a way to know the content-type here.. or the encoder
+        #       needs to handle pushing the content-type.
 
         # Return an empty 404 if were accessed at "/" (
         # we don't handle this yet).
         if request.path == "/":
-            start_response("404 Not Found", [])
-            return [b""]
+            response.status_code = 404
+            return
 
         try:
             # Attempt to find the resource through the initial path.
@@ -52,8 +57,8 @@ class Api:
 
         except KeyError:
             # Return a 404; we don't know what the resource is.
-            start_response("404 Not Found", [])
-            return [b""]
+            response.status_code = 404
+            return
 
         # Instantiate the resource class.
         resource = resource_cls(request=request)
@@ -68,8 +73,8 @@ class Api:
 
             except AttributeError:
                 # Method is not allowed on the resource.
-                start_response("405 Method Not Allowed", [])
-                return [b""]
+                response.status_code = 405
+                return
 
         # Read in the request data.
         # TODO: Think of a way to expose this (just "content" or "data")
@@ -80,8 +85,8 @@ class Api:
             content_type = request.headers.get("Content-Type")
             if not content_type:
                 # TODO: Handle content-type "detection"
-                start_response("415 Unsupported Media Type", [])
-                return [b""]
+                response.status_code = 415
+                return
 
             try:
                 # TODO: The content-type header could state more than just
@@ -97,8 +102,8 @@ class Api:
 
             except (KeyError, TypeError):
                 # Failed to find a matching encoder.
-                start_response("415 UNSUPPORTED MEDIA TYPE", [])
-                return [b""]
+                response.status_code = 415
+                return
 
         # Dispatch the request.
         response_data = route(request_data)
@@ -116,9 +121,11 @@ class Api:
 
         except (KeyError, TypeError):
             # Failed to find a matching encoder.
-            start_response("406 NOT ACCEPTABLE", [])
-            return [b""]
+            response.status_code = 406
+            return
 
         # Return a successful response.
-        start_response("200 OK", [("Content-Type", "application/json")])
-        return [response_text.encode("utf-8")]
+        response.status_code = 200
+        response.headers['Content-Type'] = 'application/json'
+        response.data = response_text
+        return
