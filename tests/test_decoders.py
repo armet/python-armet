@@ -81,7 +81,7 @@ class TestFormDecoder:
         expected = {
             'foo': 'bar',
             'bar': 'baz',
-            'fizz': ['buz', 'bang']
+            'fiz': ['buzz', 'bang']
         }
 
         assert self.decode(data, boundary=boundary) == expected
