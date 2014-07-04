@@ -37,11 +37,14 @@ class Api:
         request = http.Request(environ)
         response = http.Response()
 
-        self.process(request, response)
+        self.route(request, response)
 
         return response(environ, start_response)
 
-    def process(self, request, response):
+    def get_resource(self, path):
+        return self._registry[path]
+
+    def route(self, request, response):
         # TODO: We need a way to know the content-type here.. or the encoder
         #       needs to handle pushing the content-type.
 
@@ -53,7 +56,7 @@ class Api:
 
         try:
             # Attempt to find the resource through the initial path.
-            resource_cls = self._registry[request.path[1:]]
+            resource_cls = self.get_resource(request.path[1:])
 
         except KeyError:
             # Return a 404; we don't know what the resource is.
@@ -127,5 +130,5 @@ class Api:
         # Return a successful response.
         response.status_code = 200
         response.headers['Content-Type'] = 'application/json'
-        response.data = response_text
+        response.set_data(response_text)
         return
