@@ -8,9 +8,24 @@ import json
 class Encoder(codecs.Codec):
     """Wraps encoders to provide additonal decorator functionality."""
 
-    def __init__(self, fn, preferred_mime_type=None):
-        super().__init__(fn)
+    def __init__(self, *args, preferred_mime_type=None, **kwargs):
+        super().__init__(*args, **kwargs)
         self.preferred_mime_type = preferred_mime_type
+
+    @property
+    def preferred_mime_type(self):
+        mime = getattr(self, '_preferred_mime_type', None)
+        if not mime:
+            # Make an attempt to get a random preferred mime type.
+            # Fallback to plain text if no mimetypes were defined for this.
+            mime = next(iter(self.mime_types), 'text/plain')
+            self._preferred_mime_type = mime
+
+        return mime
+
+    @preferred_mime_type.setter
+    def preferred_mime_type_setter(self, value):
+        self._preferred_mime_type = value
 
 # Create our encoder registry and pull methods off it for easy access.
 _registry = codecs.CodecRegistry(Encoder)

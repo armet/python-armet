@@ -5,11 +5,20 @@ class Codec:
     """A wrapper for a codec entered into the CodecRegistry.
     """
 
-    def __init__(self, fn):
-        self._fn = fn
+    def __init__(self, fn, names, mime_types):
+        self.transcode = fn
+        self.names = names
+        self.mime_types = mime_types
 
     def __call__(self, *args, **kwargs):
-        return self._fn(*args, **kwargs)
+        return self.transcode(*args, **kwargs)
+
+    def __eq__(self, other):
+        # Assert that both the transcoding function and the other are of the
+        # same type.  So that we can even perform this comparison
+        if type(self.transcode) == type(other):
+            return self.transcode is other
+        return NotImplemented
 
 
 class CodecRegistry:
@@ -84,11 +93,11 @@ class CodecRegistry:
         """
 
         # Sanity check.
-        assert (len(names) or len(mime_types),
-                "Encoder/Decoder cannot be registered without at least one of "
-                "'names' or 'mime_types'")
+        assert len(names) or len(mime_types), (
+            "Encoder/Decoder cannot be registered without at least one of "
+            "'names' or 'mime_types'")
 
-        codec = self._Wrapper(codec_fn, **kwargs)
+        codec = self._Wrapper(codec_fn, names, mime_types **kwargs)
 
         self._codecs.update({x: codec for x in names})
         self._mime_types.update({x: codec for x in mime_types})
@@ -103,7 +112,7 @@ class CodecRegistry:
         if codec is not None:
             for registry in (self._codecs, self._mime_types):
                 for name, test in list(registry.items()):
-                    if codec is test:
+                    if codec == test:
                         del registry[name]
 
         if name is not None:

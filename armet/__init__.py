@@ -24,18 +24,18 @@ __all__ = [
 #                   names=codecs.FormDataCodec.names,
 #                   mime_types=codecs.FormDataCodec.mime_types)
 
-# Register each decoder.
-# URL Decoder
-decoders.register(decoders.URLDecoder.decode,
-                  names=codecs.URLCodec.names,
-                  mime_types=codecs.URLCodec.mime_types)
+# # Register each decoder.
+# # URL Decoder
+# decoders.register(decoders.URLDecoder.decode,
+#                   names=codecs.URLCodec.names,
+#                   mime_types=codecs.URLCodec.mime_types)
 
-# JSON Decoder
-decoders.register(decoders.JSONDecoder.decode,
-                  names=codecs.JSONCodec.names,
-                  mime_types=codecs.JSONCodec.mime_types)
+# # JSON Decoder
+# decoders.register(decoders.JSONDecoder.decode,
+#                   names=codecs.JSONCodec.names,
+#                   mime_types=codecs.JSONCodec.mime_types)
 
-# Form Decoder
-decoders.register(decoders.FormDecoder.decode,
-                  names=codecs.FormDataCodec.names,
-                  mime_types=codecs.FormDataCodec.mime_types)
+# # Form Decoder
+# decoders.register(decoders.FormDecoder.decode,
+#                   names=codecs.FormDataCodec.names,
+#                   mime_types=codecs.FormDataCodec.mime_types)

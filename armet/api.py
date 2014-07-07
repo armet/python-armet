@@ -117,10 +117,13 @@ class Api:
             media_range = "application/json"
 
         try:
-            encode = encoders.find(media_range=media_range)
+            encoder = encoders.find(media_range=media_range)
 
             # Encode the data.
-            response_text = encode(response_data)
+            # TODO: We should be detecting the proper charset and using that
+            # instead.
+            response.response = encoder(response_data, 'utf-8')
+            response.headers['Content-Type'] = encoder.preferred_mime_type
 
         except (KeyError, TypeError):
             # Failed to find a matching encoder.
@@ -129,6 +132,4 @@ class Api:
 
         # Return a successful response.
         response.status_code = 200
-        response.headers['Content-Type'] = 'application/json'
-        response.set_data(response_text)
         return

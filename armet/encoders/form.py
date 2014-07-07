@@ -1,6 +1,8 @@
 import uuid
 import collections
 from io import BytesIO
+from .general import register
+from armet.codecs import FormDataCodec
 
 
 def generate_boundary():
@@ -52,9 +54,10 @@ def segment_stream(cache, buf, segment_size=16*1024):
         yield value
 
 
-assert False, "Need to register this form encoder"
-
-
+@register(
+    names=FormDataCodec.names,
+    mime_types=FormDataCodec.mime_types,
+    preferred_mime_type=FormDataCodec.preferred_mime_type)
 def form_encoder(data, encoding):
     """Expects to recieve a data structure of the following form:
     {name: value, name: [value1, value2]}
