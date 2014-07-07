@@ -1,15 +1,19 @@
 from . import decoders, encoders, http
-import re
+from armet import utils
 
 
 def _dasherize(text):
-    # TODO: This could probably be optimized significantly.
-    text = text.strip()
-    text = re.sub(r'([A-Z])', r'-\1', text)
-    text = re.sub(r'[-_\s]+', r'-', text)
-    text = re.sub(r'^-', r'', text)
-    text = text.lower()
-    return text.strip()
+    # x = text[:-8]
+    x = text
+    final = ''
+    for item in x:
+        if item.isupper():
+            final += "-" + item.lower()
+        else:
+            final += item
+    if final[0] == "-":
+        final = final[1:]
+    return final
 
 
 class Api:
@@ -23,10 +27,11 @@ class Api:
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
-            name = _dasherize(handler.__name__)
+            name = utils._dasherize(handler.__name__)
 
             # Strip a trailing '-resource' from it
-            name = re.sub(r'-resource$', '', name)
+            if name.endswith("-resource"):
+                name = name[:-9]
 
         # Insert the handler into the registry.
         self._registry[name] = handler
