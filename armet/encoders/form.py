@@ -1,6 +1,6 @@
 import uuid
-from io import BytesIO
 import collections
+from io import BytesIO
 
 
 def generate_boundary():
@@ -30,7 +30,32 @@ def generate_encoder(encoding):
 # --AaB03x--
 
 
-def form_data(data, encoding='utf-8'):
+def segment_stream(cache, buf, segment_size=16*1024):
+    """Yields bytes in `segment_size` chunks from cache and then from buf.
+    Operates by writing buf to cache and cleaning it every once in a while.
+    Expects cache to be a BytesIO and buf to be a bytes.
+    """
+    while True:
+        size = cache.tell()
+        add = buf[:segment_size-size]
+        cache.write(add)
+
+        value = cache.getvalue()
+
+        # Reset the cache.
+        cache.truncate(0)
+        cache.seek(0)
+
+        if not len(value):
+            break
+
+        yield value
+
+
+assert False, "Need to register this form encoder"
+
+
+def form_encoder(data, encoding):
     """Expects to recieve a data structure of the following form:
     {name: value, name: [value1, value2]}
     """
@@ -69,7 +94,8 @@ def form_data(data, encoding='utf-8'):
             buf.write(bounds)
 
             # Write the contents.
-            buf.write(encode(entry))
+            # TODO: Make this stream the contents of entry
+            yield from segment_stream(buf, encode(entry))
 
             # Write the trailing newline
             buf.write(b'\r\n')
@@ -77,4 +103,4 @@ def form_data(data, encoding='utf-8'):
     # All done.
     buf.write(b'--' + boundary + b'--')
 
-    return buf.getvalue()
+    yield from segment_stream(buf, b'')

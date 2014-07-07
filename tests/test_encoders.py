@@ -12,6 +12,27 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
+class TestEncoderRegisterDecorator:
+
+    def test_encode(self, data, encoding):
+        pass
+
+    def test_register(self):
+
+        mime = 'application/test'
+        args = {
+            'name': ['test'],
+            'mime_types': [mime],
+            'preferred_mime_type': mime,
+        }
+
+        @encoders.register(**args)
+        def encoder_test(data, encoding='utf-8'):
+            return json.dumps(data).encode(encoding), {
+                'Content-Type': 'application/json'
+            }
+
+
 @mark.bench('self.encode', iterations=10000)
 class TestURLEncoder:
 

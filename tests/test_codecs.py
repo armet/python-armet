@@ -27,6 +27,12 @@ class TestCodecRegistry:
         self.registry.remove(ExampleEncoder)
         pytest.raises(KeyError, self.registry.find, name="test")
 
+    def test_register_nothing(self):
+        with pytest.raises(AssertionError):
+            @self.registry.register()
+            def test():
+                pass
+
     def test_remove_by_name(self):
         self.registry.remove(name="example")
         pytest.raises(KeyError, self.registry.find, name="example")

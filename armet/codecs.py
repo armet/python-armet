@@ -1,13 +1,32 @@
 import mimeparse
 
 
+class Codec:
+    """A wrapper for a codec entered into the CodecRegistry.
+    """
+
+    def __init__(self, fn):
+        self._fn = fn
+
+    def __call__(self, *args, **kwargs):
+        return self._fn(*args, **kwargs)
+
+
 class CodecRegistry:
     """A registry used for registering and removing encoders and decoders.
     """
 
-    def __init__(self):
+    def __init__(self, Wrapper=Codec):
+
+        # Codec registry.  Maps names to codecs
         self._codecs = {}
+
+        # Mime-type registry.  Maps mime-types to codecs
         self._mime_types = {}
+
+        # Codec wrapper constructor.  Returns a wrapped version of the codec
+        # Invoking the wrapper should invoke the codec.
+        self._Wrapper = Wrapper
 
     def find(self, *, media_range=None, name=None, mime_type=None):
         """
@@ -40,9 +59,36 @@ class CodecRegistry:
 
         return self._mime_types[found]
 
-    def register(self, codec, names=(), mime_types=()):
+    def register(self, names=(), mime_types=(), **kwargs):
+        """Register the transcoder provided in the global list of transcoders.
+        This is invoked as a decorator for the encoding function being
+        registered.
+
+        EX:
+
+        @register(names=['example'], mime_types=['example/example'])
+        def example_codec():
+            return dostuff()
+        """
+        def wrapper(fn):
+            # Register the function!
+            self._register(fn, names, mime_types, **kwargs)
+
+            # We can just return the encoder directly.
+            # We're only registering it.
+            return fn
+        return wrapper
+
+    def _register(self, codec_fn, names=(), mime_types=(), **kwargs):
         """Register the transcoder provided in the global list of transcoders.
         """
+
+        # Sanity check.
+        assert (len(names) or len(mime_types),
+                "Encoder/Decoder cannot be registered without at least one of "
+                "'names' or 'mime_types'")
+
+        codec = self._Wrapper(codec_fn, **kwargs)
 
         self._codecs.update({x: codec for x in names})
         self._mime_types.update({x: codec for x in mime_types})
