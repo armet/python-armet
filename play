@@ -1,0 +1,88 @@
+
+1. "client" sends "request" to "server"
+
+GET /poll
+Accept: application/json
+
+
+POST /poll
+Accept: application/json
+Content-Type: application/json
+{
+    "question": "wat"
+}
+
+-------------------------------------------------------------------------------
+
+[x] 2. determine the "resource" to use
+
+/poll/12/choice
+
+"poll" (slug=12)
+"choice"
+
+
+-------------------------------------------------------------------------------
+
+[ ] 3. require "authentication"
+
+The idea is that an "API" may require authentication as a whole or
+a "resource" may require a specific "kind" of authentication or allow
+an additional kind of authentication that would only work for that resource
+
+ - basic
+ - digest
+ - session
+ - bearer "token"
+
+-------------------------------------------------------------------------------
+
+[ ] 4. require "accessibilty"
+
+Is this "bearer" allowed to know this "resource" exists
+
+-------------------------------------------------------------------------------
+
+[ ] 5. require "method"
+
+Is this "bearer" (or in general is anyone) allowed to use this
+specific "method" (GET, POST, PUT, ..) on this resource.
+
+> raise 405
+
+-------------------------------------------------------------------------------
+
+[x] 6. "decoder" takes the textual data from the request body and converts it
+       into a usable python dict or list
+
+> raise 415
+
+-------------------------------------------------------------------------------
+
+[ ] 7. Create and run the resource "operation" that corresponds to the method
+       for only one resource
+
+"GET"
+
+/poll/5/choice
+
+>>> poll = resource_map["poll"](slug="5").read()
+>>> choice = resource_map["choice"](context={"poll": poll}).read()
+
+-------------------------------------------------------------------------------
+
+[ ] 8. require (or filter by) "authorization"
+
+-------------------------------------------------------------------------------
+
+[ ] 9. traverse and continue the chain (go back to 7 unless we're at the
+       final resource)
+
+-------------------------------------------------------------------------------
+
+[x] 10. take the response data and "encode" it using an encoder that the user
+        asked for (or the default encoder "json")
+
+===============================================================================
+
+[ ] Resource base class

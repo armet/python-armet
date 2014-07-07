@@ -32,13 +32,21 @@ class Api:
         self._registry[name] = handler
 
     def __call__(self, environ, start_response):
-        # Create the request wrapper around the environ (to make this at
-        # least half-way sane).
+        """Entry-point from the WSGI environment.
+
+        When a request comes in from a "client" this is the first place
+        it goes after it is received by the "server" (uWSGI, nginx, etc.).
+        """
+
+        # Create the request and response wrappers around the environ.
         request = http.Request(environ)
         response = http.Response()
 
+        # Route the request.. needs a better name for the function perhaps.
         self.route(request, response)
 
+        # Invoke the response wrapper to initiate the (possibly streaming)
+        # response.
         return response(environ, start_response)
 
     def get_resource(self, path):
@@ -53,6 +61,13 @@ class Api:
         if request.path == "/":
             response.status_code = 404
             return
+
+        # TODO: Parse URI and break up into
+        # /poll/3/choice    => ("poll", "3",  "choice")
+        # /poll/3           => ("poll", "3")
+        # /poll             => ("poll")
+
+        # TODO: Iterate through each pair in the sequence
 
         try:
             # Attempt to find the resource through the initial path.
