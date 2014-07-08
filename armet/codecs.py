@@ -97,7 +97,7 @@ class CodecRegistry:
             "Encoder/Decoder cannot be registered without at least one of "
             "'names' or 'mime_types'")
 
-        codec = self._Wrapper(codec_fn, names, mime_types **kwargs)
+        codec = self._Wrapper(codec_fn, names, mime_types, **kwargs)
 
         self._codecs.update({x: codec for x in names})
         self._mime_types.update({x: codec for x in mime_types})

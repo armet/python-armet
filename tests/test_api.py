@@ -11,8 +11,8 @@ class TestAPI(RequestTest):
         # Register a dummy encoder and decoder.
         self.codec = mock.MagicMock()
         self.codec.return_value = b'test'
-        encoders.register(self.codec, names=['test'], mime_types=['test/test'])
-        decoders.register(self.codec, names=['test'], mime_types=['test/test'])
+        encoders.register(names=['test'], mime_types=['test/test'])(self.codec)
+        decoders.register(names=['test'], mime_types=['test/test'])(self.codec)
 
     def test_route_resource(self):
         # Create and register some resources. to test api routing.

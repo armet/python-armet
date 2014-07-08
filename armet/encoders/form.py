@@ -40,6 +40,7 @@ def segment_stream(cache, buf, segment_size=16*1024):
     while True:
         size = cache.tell()
         add = buf[:segment_size-size]
+        buf = buf[segment_size-size:]
         cache.write(add)
 
         value = cache.getvalue()

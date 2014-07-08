@@ -4,6 +4,8 @@ from collections import OrderedDict
 import pytest
 from pytest import mark
 from unittest import mock
+from functools import reduce
+import operator
 
 
 def test_encoders_api_methods():
@@ -14,30 +16,44 @@ def test_encoders_api_methods():
 
 class TestEncoderRegisterDecorator:
 
-    def test_encode(self, data, encoding):
-        pass
-
     def test_register(self):
 
         mime = 'application/test'
         args = {
-            'name': ['test'],
+            'names': ['test'],
             'mime_types': [mime],
             'preferred_mime_type': mime,
         }
 
         @encoders.register(**args)
-        def encoder_test(data, encoding='utf-8'):
-            return json.dumps(data).encode(encoding), {
-                'Content-Type': 'application/json'
-            }
+        def encoder_test(data, encoding):
+            yield json.dumps(data).encode(encoding)
+
+        encoder = encoders.find(name='test')
+        assert encoder == encoder_test
+        assert encoder.preferred_mime_type == mime
+
+    def test_preferred_mime_type_fallback(self):
+        @encoders.register(names=['test'])
+        def encoder_test(data, encoding):
+            yield json.dumps(data).encode(encoding)
+
+        encoder = encoders.find(name='test')
+        assert encoder.preferred_mime_type == 'text/plain'
+
+
+class BaseEncoderTest:
+    def encode(self, data):
+        """Simple helper that makes encoder checking nicer."""
+        encoded = reduce(operator.add, self.encoder(data, 'utf-8'))
+        return encoded.decode('utf-8')
 
 
 @mark.bench('self.encode', iterations=10000)
-class TestURLEncoder:
+class TestURLEncoder(BaseEncoderTest):
 
     def setup(self):
-        self.encode = encoders.find(name='url')
+        self.encoder = encoders.find(name='url')
 
     def test_encode_normal(self):
         data = OrderedDict((
@@ -55,10 +71,10 @@ class TestURLEncoder:
 
 
 @mark.bench('self.encode', iterations=10000)
-class TestJSONEncoder:
+class TestJSONEncoder(BaseEncoderTest):
 
     def setup(self):
-        self.encode = encoders.find(name='json')
+        self.encoder = encoders.find(name='json')
 
     def test_encode_scalar(self):
         data = False
@@ -93,9 +109,9 @@ class TestJSONEncoder:
             self.encode({'foo': range(10)})
 
 
-class TestFormDataEncoder:
+class TestFormDataEncoder(BaseEncoderTest):
     def setup(self):
-        self.encode = encoders.find(name='form')
+        self.encoder = encoders.find(name='form')
 
     @mock.patch('armet.encoders.form.generate_boundary')
     def test_encode_normal(self, mocked):
@@ -108,23 +124,23 @@ class TestFormDataEncoder:
             ('fiz', ['buzz', 'bang'])))
 
         expected = (
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=foo\r\n'
-            b'\r\n'
-            b'bar\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=bar\r\n'
-            b'\r\n'
-            b'baz\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=fiz\r\n'
-            b'\r\n'
-            b'buzz\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=fiz\r\n'
-            b'\r\n'
-            b'bang\r\n'
-            b'--abc123--'
+            '--abc123\r\n'
+            'Content-Disposition: form-data; name=foo\r\n'
+            '\r\n'
+            'bar\r\n'
+            '--abc123\r\n'
+            'Content-Disposition: form-data; name=bar\r\n'
+            '\r\n'
+            'baz\r\n'
+            '--abc123\r\n'
+            'Content-Disposition: form-data; name=fiz\r\n'
+            '\r\n'
+            'buzz\r\n'
+            '--abc123\r\n'
+            'Content-Disposition: form-data; name=fiz\r\n'
+            '\r\n'
+            'bang\r\n'
+            '--abc123--'
         )
 
         assert self.encode(data) == expected

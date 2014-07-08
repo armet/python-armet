@@ -15,7 +15,7 @@ class Encoder(codecs.Codec):
     @property
     def preferred_mime_type(self):
         mime = getattr(self, '_preferred_mime_type', None)
-        if not mime:
+        if mime is None:
             # Make an attempt to get a random preferred mime type.
             # Fallback to plain text if no mimetypes were defined for this.
             mime = next(iter(self.mime_types), 'text/plain')
@@ -24,7 +24,7 @@ class Encoder(codecs.Codec):
         return mime
 
     @preferred_mime_type.setter
-    def preferred_mime_type_setter(self, value):
+    def preferred_mime_type(self, value):
         self._preferred_mime_type = value
 
 # Create our encoder registry and pull methods off it for easy access.
