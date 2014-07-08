@@ -17,7 +17,9 @@ class Codec:
         # Assert that both the transcoding function and the other are of the
         # same type.  So that we can even perform this comparison
         if type(self.transcode) == type(other):
-            return self.transcode is other
+            return self.transcode == other
+        elif isinstance(other, Codec):
+            return self.transcode == other.transcode
         return NotImplemented
 
 

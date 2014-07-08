@@ -41,6 +41,10 @@ class TestCodecRegistry:
         self.registry.remove(mime_type="example/xml")
         pytest.raises(KeyError, self.registry.find, mime_type="example/xml")
 
+    def test_remove_by_value(self):
+        self.registry.remove(ExampleEncoder)
+        pytest.raises(KeyError, self.registry.find, name='example')
+
     def test_lookup_by_mime_type(self):
         mime = 'test/test'
         assert self.registry.find(mime_type=mime) == ExampleEncoder
