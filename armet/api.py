@@ -1,15 +1,17 @@
 from . import decoders, encoders, http
-import re
+from armet import utils
 
 
 def _dasherize(text):
-    # TODO: This could probably be optimized significantly.
-    text = text.strip()
-    text = re.sub(r'([A-Z])', r'-\1', text)
-    text = re.sub(r'[-_\s]+', r'-', text)
-    text = re.sub(r'^-', r'', text)
-    text = text.lower()
-    return text.strip()
+    final = ''
+    for item in text:
+        if item.isupper():
+            final += "-" + item.lower()
+        else:
+            final += item
+    if final[0] == "-":
+        final = final[1:]
+    return final
 
 
 class Api:
@@ -23,22 +25,31 @@ class Api:
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
-            name = _dasherize(handler.__name__)
+            name = utils._dasherize(handler.__name__)
 
             # Strip a trailing '-resource' from it
-            name = re.sub(r'-resource$', '', name)
+            if name.endswith("-resource"):
+                name = name[:-9]
 
         # Insert the handler into the registry.
         self._registry[name] = handler
 
     def __call__(self, environ, start_response):
-        # Create the request wrapper around the environ (to make this at
-        # least half-way sane).
+        """Entry-point from the WSGI environment.
+
+        When a request comes in from a "client" this is the first place
+        it goes after it is received by the "server" (uWSGI, nginx, etc.).
+        """
+
+        # Create the request and response wrappers around the environ.
         request = http.Request(environ)
         response = http.Response()
 
+        # Route the request.. needs a better name for the function perhaps.
         self.route(request, response)
 
+        # Invoke the response wrapper to initiate the (possibly streaming)
+        # response.
         return response(environ, start_response)
 
     def get_resource(self, path):
@@ -53,6 +64,13 @@ class Api:
         if request.path == "/":
             response.status_code = 404
             return
+
+        # TODO: Parse URI and break up into
+        # /poll/3/choice    => ("poll", "3",  "choice")
+        # /poll/3           => ("poll", "3")
+        # /poll             => ("poll")
+
+        # TODO: Iterate through each pair in the sequence
 
         try:
             # Attempt to find the resource through the initial path.
