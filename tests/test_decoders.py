@@ -51,7 +51,9 @@ class TestJSONDecoder:
             self.decode('fail')
 
 
+@mark.bench('self.decode', iterations=10000)
 class TestFormDecoder:
+
     def setup(self):
         self.decode = decoders.find(name='form')
 

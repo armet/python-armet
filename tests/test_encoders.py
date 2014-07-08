@@ -72,41 +72,43 @@ class TestJSONEncoder:
             self.encode({'foo': range(10)})
 
 
+@mark.bench('self.encode', iterations=10000)
 class TestFormDataEncoder:
+
     def setup(self):
         self.encode = encoders.find(name='form')
 
-    @mock.patch('armet.encoders.form.generate_boundary')
-    def test_encode_normal(self, mocked):
-        # Assert that the mocked function always returns the same value.
-        mocked.return_value = 'abc123'
+    def test_encode_normal(self):
+        with mock.patch('armet.encoders.form.generate_boundary') as mocked:
+            # Assert that the mocked function always returns the same value.
+            mocked.return_value = 'abc123'
 
-        data = OrderedDict((
-            ('foo', 'bar'),
-            ('bar', 'baz'),
-            ('fiz', ['buzz', 'bang'])))
+            data = OrderedDict((
+                ('foo', 'bar'),
+                ('bar', 'baz'),
+                ('fiz', ['buzz', 'bang'])))
 
-        expected = (
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=foo\r\n'
-            b'\r\n'
-            b'bar\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=bar\r\n'
-            b'\r\n'
-            b'baz\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=fiz\r\n'
-            b'\r\n'
-            b'buzz\r\n'
-            b'--abc123\r\n'
-            b'Content-Disposition: form-data; name=fiz\r\n'
-            b'\r\n'
-            b'bang\r\n'
-            b'--abc123--'
-        )
+            expected = (
+                b'--abc123\r\n'
+                b'Content-Disposition: form-data; name=foo\r\n'
+                b'\r\n'
+                b'bar\r\n'
+                b'--abc123\r\n'
+                b'Content-Disposition: form-data; name=bar\r\n'
+                b'\r\n'
+                b'baz\r\n'
+                b'--abc123\r\n'
+                b'Content-Disposition: form-data; name=fiz\r\n'
+                b'\r\n'
+                b'buzz\r\n'
+                b'--abc123\r\n'
+                b'Content-Disposition: form-data; name=fiz\r\n'
+                b'\r\n'
+                b'bang\r\n'
+                b'--abc123--'
+            )
 
-        assert self.encode(data) == expected
+            assert self.encode(data) == expected
 
     def test_encode_failure(self):
         with pytest.raises(TypeError):
