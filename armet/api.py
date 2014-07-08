@@ -3,10 +3,8 @@ from armet import utils
 
 
 def _dasherize(text):
-    # x = text[:-8]
-    x = text
     final = ''
-    for item in x:
+    for item in text:
         if item.isupper():
             final += "-" + item.lower()
         else:
