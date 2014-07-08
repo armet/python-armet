@@ -1,13 +1,13 @@
 
-
 def dasherize(text):
-    x = text
-    final = ''
-    for item in x:
+    result = ''
+    for item in text:
         if item.isupper():
-            final += "-" + item.lower()
+            result += "-" + item.lower()
         else:
-            final += item
-    if final[0] == "-":
-        final = final[1:]
-    return final
+            result += item
+
+    if result[0] == "-":
+        result = result[1:]
+
+    return result

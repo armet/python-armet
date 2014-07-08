@@ -49,7 +49,7 @@ def segment_stream(cache, buf, segment_size=16*1024):
         cache.truncate(0)
         cache.seek(0)
 
-        if not len(value):
+        if not value:
             break
 
         yield value

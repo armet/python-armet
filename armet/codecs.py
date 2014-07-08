@@ -14,13 +14,14 @@ class Codec:
         return self.transcode(*args, **kwargs)
 
     def __eq__(self, other):
-        # Assert that both the transcoding function and the other are of the
-        # same type.  So that we can even perform this comparison
-        if self.transcode == other:
-            return self.transcode == other
-        elif isinstance(other, Codec):
-            return self.transcode == other.transcode
-        return NotImplemented
+        try:
+            # Compare our contained function with the passed function or
+            # the passed container's function.
+            return (self.transcode == other or
+                    self.transcode == other.transcode)
+
+        except AttributeError:
+            return NotImplemented
 
 
 class CodecRegistry:

@@ -1,5 +1,5 @@
-from armet.codecs import CodecRegistry
 import pytest
+from armet.codecs import CodecRegistry
 
 
 class ExampleEncoder:

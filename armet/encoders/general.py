@@ -10,22 +10,11 @@ class Encoder(codecs.Codec):
 
     def __init__(self, *args, preferred_mime_type=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Make an attempt to get a random preferred mime type.
+        # Fallback to plain text if no mimetypes were defined for this.
+        if preferred_mime_type is None:
+            preferred_mime_type = next(iter(self.mime_types), 'text/plain')
         self.preferred_mime_type = preferred_mime_type
-
-    @property
-    def preferred_mime_type(self):
-        mime = getattr(self, '_preferred_mime_type', None)
-        if mime is None:
-            # Make an attempt to get a random preferred mime type.
-            # Fallback to plain text if no mimetypes were defined for this.
-            mime = next(iter(self.mime_types), 'text/plain')
-            self._preferred_mime_type = mime
-
-        return mime
-
-    @preferred_mime_type.setter
-    def preferred_mime_type(self, value):
-        self._preferred_mime_type = value
 
 # Create our encoder registry and pull methods off it for easy access.
 _registry = codecs.CodecRegistry(Encoder)
@@ -37,12 +26,14 @@ register = _registry.register
 
 def _chunk(data, chunk_size=16*1024):
     """Simple chunking function to easily make encoders into generators.
+
     Invocations of this should be replaced when more streaming-friendly
-    encoders are implemented."""
+    encoders are implemented.
+    """
     while True:
         buf = data[:chunk_size]
         data = data[chunk_size:]
-        if not len(buf):
+        if not buf:
             break
         yield buf
 

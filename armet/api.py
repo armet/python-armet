@@ -2,18 +2,6 @@ from . import decoders, encoders, http
 from armet import utils
 
 
-def _dasherize(text):
-    final = ''
-    for item in text:
-        if item.isupper():
-            final += "-" + item.lower()
-        else:
-            final += item
-    if final[0] == "-":
-        final = final[1:]
-    return final
-
-
 class Api:
 
     def __init__(self):
@@ -25,7 +13,7 @@ class Api:
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
-            name = utils._dasherize(handler.__name__)
+            name = utils.dasherize(handler.__name__)
 
             # Strip a trailing '-resource' from it
             if name.endswith("-resource"):
