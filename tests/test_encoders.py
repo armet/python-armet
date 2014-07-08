@@ -14,10 +14,10 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
+@mark.bench("encoders.register")
 class TestEncoderRegisterDecorator:
 
     def test_register(self):
-
         mime = 'application/test'
         args = {
             'names': ['test'],
@@ -43,13 +43,14 @@ class TestEncoderRegisterDecorator:
 
 
 class BaseEncoderTest:
+
     def encode(self, data):
         """Simple helper that makes encoder checking nicer."""
         encoded = reduce(operator.add, self.encoder(data, 'utf-8'))
         return encoded.decode('utf-8')
 
 
-@mark.bench('self.encode', iterations=10000)
+@mark.bench('self.encoder', iterations=10000)
 class TestURLEncoder(BaseEncoderTest):
 
     def setup(self):
@@ -70,7 +71,7 @@ class TestURLEncoder(BaseEncoderTest):
             self.encode([{'foo': 'bar'}])
 
 
-@mark.bench('self.encode', iterations=10000)
+@mark.bench('self.encoder', iterations=10000)
 class TestJSONEncoder(BaseEncoderTest):
 
     def setup(self):
@@ -109,7 +110,7 @@ class TestJSONEncoder(BaseEncoderTest):
             self.encode({'foo': range(10)})
 
 
-@mark.bench('self.encode', iterations=10000)
+@mark.bench('self.encoder', iterations=10000)
 class TestFormDataEncoder(BaseEncoderTest):
 
     def setup(self):
