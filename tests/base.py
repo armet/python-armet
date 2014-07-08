@@ -1,7 +1,5 @@
-from unittest import mock
 from armet import api
 import werkzeug.test
-import functools
 
 
 class RequestTest:
