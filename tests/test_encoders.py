@@ -112,6 +112,9 @@ class TestJSONEncoder(BaseEncoderTest):
 @mark.bench('self.encode', iterations=10000)
 class TestFormDataEncoder(BaseEncoderTest):
 
+    def setup(self):
+        self.encoder = encoders.find(name='form')
+
     def test_encode_normal(self):
         with mock.patch('armet.encoders.form.generate_boundary') as mocked:
             # Assert that the mocked function always returns the same value.
