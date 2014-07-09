@@ -19,17 +19,24 @@ class Api:
         self.trailing_slash = trailing_slash
 
     def redirect(self, request):
+        # Format an absolute path to the URI (adjusted to be canonical).
         location = "%s://%s%s%s%s" % (
             request.scheme,
             request.host,
             request.script_root,
             (request.path + '/' if self.trailing_slash else request.path[:-1]),
             ('?' + request.query_string if request.query_string else ''))
-        if request.method in ('GET', 'HEAD',):
-            status = http.client.MOVED_PERMANENTLY
+
+        # Select the appropriate status_code based on the request method.
+        # MOVED_PERMANENTLY (301) only works for a GET but is preferred
+        # as it is cacheable.
+        if request.method == "GET":
+            status_code = http.client.MOVED_PERMANENTLY
         else:
-            status = http.client.TEMPORARY_REDIRECT
-        return werkzeug.utils.redirect(location, status)
+            status_code = http.client.TEMPORARY_REDIRECT
+
+        # Build and return the redirection response.
+        return werkzeug.utils.redirect(location, status_code)
 
     def setup(self):
         """Called on request setup in the context of this API.
@@ -57,18 +64,25 @@ class Api:
         When a request comes in from a "client" this is the first place
         it goes after it is received by the "server" (uWSGI, nginx, etc.).
         """
-        # Create the request and response wrappers around the environ.
-        request = Request(environ)
-        response = Response()
 
+        # Create the request wrapper around the environment.
+        request = Request(environ)
+
+        # Test and decide if we need to redirect the client to
+        # the canonical representation of the given request path.
         if self.trailing_slash ^ request.path.endswith('/'):
-            return self.redirect(request)(environ, start_response)
+            response = self.redirect(request)
+            return response(environ, start_response)
 
         # Setup the request.
         self.setup()
 
-        # Route the request.. needs a better name for the function perhaps.
+        # Build an empty response object.
+        response = Response()
+
         try:
+            # Route the request.. needs a better name for the function
+            # perhaps.
             self.route(request, response)
 
         except exceptions.Base as ex:
@@ -88,9 +102,9 @@ class Api:
         # response.
         return response(environ, start_response)
 
-    def get_resource(self, path):
+    def find(self, name):
         try:
-            return self._registry[path]
+            return self._registry[name]
 
         except KeyError:
             raise exceptions.NotFound
@@ -141,7 +155,7 @@ class Api:
             slug = segments.pop(0)
 
             # Attempt to lookup the resource from the passed name.
-            resource_cls = self.get_resource(name)
+            resource_cls = self.find(name)
 
             # Instantiate the resource.
             resource = resource_cls(slug=slug, context=context)
@@ -155,7 +169,7 @@ class Api:
         slug = segments[1] if len(segments) > 1 else None
 
         # Attempt to lookup the resource from the passed name.
-        resource_cls = self.get_resource(name)
+        resource_cls = self.find(name)
 
         # Instantiate the resource.
         resource = resource_cls(slug=slug, context=context)
