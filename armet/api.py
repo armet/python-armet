@@ -1,12 +1,13 @@
-from . import decoders, encoders, http
-from armet.http import exceptions
+from . import decoders, encoders
+from armet.http import exceptions, Request, Response
+import http
 from armet import utils
 import traceback
 
 
 class Api:
 
-    def __init__(self, trailing_slash=True, debug=False):
+    def __init__(self, trailing_slash=False, debug=False):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
@@ -20,13 +21,25 @@ class Api:
         # canonical URI.
         self.trailing_slash = trailing_slash
 
-    def reroute(self, request, response):
-        """Reroute the user to the correct URI"""
-        response.headers['Location'] = request.path + "/"
-        if not request.method == "GET":
-            response.status_code = 301
-            return
-        response.status_code = 307
+    def redirect(self, request):
+        # Format an absolute path to the URI (adjusted to be canonical).
+        location = "%s://%s%s%s%s" % (
+            request.scheme,
+            request.host,
+            request.script_root,
+            (request.path + '/' if self.trailing_slash else request.path[:-1]),
+            ('?' + request.query_string if request.query_string else ''))
+
+        # Select the appropriate status_code based on the request method.
+        # MOVED_PERMANENTLY (301) only works for a GET but is preferred
+        # as it is cacheable.
+        if request.method == "GET":
+            status_code = http.client.MOVED_PERMANENTLY
+        else:
+            status_code = http.client.TEMPORARY_REDIRECT
+
+        # Build and return the redirection response.
+        return werkzeug.utils.redirect(location, status_code)
 
     def setup(self):
         """Called on request setup in the context of this API.
@@ -55,19 +68,21 @@ class Api:
         When a request comes in from a "client" this is the first place
         it goes after it is received by the "server" (uWSGI, nginx, etc.).
         """
-        # Create the request and response wrappers around the environ.
-        request = http.Request(environ)
-        response = http.Response()
 
-        if not self.trailing_slash:
-            self.reroute(request, response)
+        # Create the request wrapper around the environment.
+        request = Request(environ)
+
+        # Test and decide if we need to redirect the client to
+        # the canonical representation of the given request path.
+        if self.trailing_slash ^ request.path.endswith('/'):
+            response = self.redirect(request)
             return response(environ, start_response)
         # Setup the request.
         self.setup()
 
-        # Route the request.. needs a better name for the function perhaps.
-        # import ipdb; ipdb.set_trace()
-        # self.route(request, response)
+        # Build an empty response object.
+        response = Response()
+
         try:
             self.route(request, response)
 

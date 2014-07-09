@@ -44,3 +44,25 @@ class TestAPI(RequestTest):
         response = self.get('/test')
         assert response.status_code == 500
         assert dead_resource().read.called
+
+    def test_redirect_get(self):
+        response = self.get('/get/')
+        assert response.status_code == 301
+        assert response.headers["Location"].endswith("/get")
+
+    def test_redirect_get_inverse(self):
+        trailing_slash = self.app.trailing_slash
+        self.app.trailing_slash = True
+
+        response = self.get('/get/')
+        assert response.status_code == 404
+
+        response = self.get('/get')
+        assert response.status_code == 301
+
+        self.app.trailing_slash = trailing_slash
+
+    def test_redirect_post(self):
+        response = self.post('/post/')
+        assert response.status_code == 307
+        assert response.headers["Location"].endswith("/post")
