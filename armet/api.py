@@ -5,12 +5,22 @@ from armet import utils
 
 class Api:
 
-    def __init__(self):
+    def __init__(self, trailing_slash=True):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
+        self.trailing_slash = trailing_slash
 
-    def register(self, handler, *, expose=True, name=None): # noqa
+    def reroute(self, request, response):
+        """Reroute the user to the correct URI"""
+        response.headers['Location'] = request.path + "/"
+        if not request.method == "GET":
+            response.status_code = 301
+            return
+        response.status_code = 307
+
+    def register(self, handler, *, expose=True, name=None):  # noqa
+
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
@@ -33,6 +43,10 @@ class Api:
         # Create the request and response wrappers around the environ.
         request = http.Request(environ)
         response = http.Response()
+
+        if not self.trailing_slash:
+            self.reroute(request, response)
+            return response(environ, start_response)
 
         # Route the request.. needs a better name for the function perhaps.
         try:
