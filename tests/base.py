@@ -17,8 +17,6 @@ class RequestTest:
             path=path,
             **kwargs)
 
-        # import ipdb; ipdb.set_trace()
-
         return self.client.open(environ)
 
     # Helper functions!

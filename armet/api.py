@@ -1,12 +1,13 @@
-from . import decoders, encoders, http
-from armet.http import exceptions
+from . import decoders, encoders
+from armet.http import exceptions, Request, Response
+import http
 from armet import utils
 import werkzeug
 
 
 class Api:
 
-    def __init__(self, trailing_slash=True):
+    def __init__(self, trailing_slash=False):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
@@ -17,15 +18,13 @@ class Api:
         # canonical URI.
         self.trailing_slash = trailing_slash
 
-    def redirect(self, request, response):
-        path = request.path + '/' if self.trailing_slash else request.path[:-1]
+    def redirect(self, request):
         location = "%s://%s%s%s%s" % (
             request.scheme,
             request.host,
             request.script_root,
-            request.path,
-            ('?' + request.query_string
-             if request.query_string else ''))
+            (request.path + '/' if self.trailing_slash else request.path[:-1]),
+            ('?' + request.query_string if request.query_string else ''))
         if request.method in ('GET', 'HEAD',):
             status = http.client.MOVED_PERMANENTLY
         else:
@@ -59,13 +58,11 @@ class Api:
         it goes after it is received by the "server" (uWSGI, nginx, etc.).
         """
         # Create the request and response wrappers around the environ.
-        request = http.Request(environ)
-        response = http.Response()
+        request = Request(environ)
+        response = Response()
 
         if self.trailing_slash ^ request.path.endswith('/'):
-            # self.reroute(request, response)
-            return redirect(request, response)
-            # return response(environ, start_response)
+            return self.redirect(request)(environ, start_response)
 
         # Setup the request.
         self.setup()
