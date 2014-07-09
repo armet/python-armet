@@ -6,10 +6,13 @@ import traceback
 
 class Api:
 
-    def __init__(self, trailing_slash=True):
+    def __init__(self, trailing_slash=True, debug=False):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
+
+        # Set if we're in debugging mode.
+        self.debug = debug
 
         # Trailing slash handling.
         # The value indicates which URI is the canonical URI and the
@@ -33,7 +36,7 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None):  # noqa
+    def register(self, handler, *, expose=True, name=None):
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
@@ -64,21 +67,25 @@ class Api:
 
         # Route the request.. needs a better name for the function perhaps.
         # import ipdb; ipdb.set_trace()
+        # self.route(request, response)
         try:
             self.route(request, response)
 
         except exceptions.Base as ex:
             # If the exception raised was an error-like exception (4xx or 5xx)
             # then print the traceback as well.
-            if ex.status // 100 >= 4:
+            if self.debug and ex.code // 100 >= 4:
                 traceback.print_exc()
 
             # An HTTP/1.1 understood exception was raised from somewhere
-            # within the request cycle. We Pull the status and headers
-            # from the exception object.
-            response.headers.extend(ex.headers.items())
-            response.status_code = ex.status
-            response.set_data(b'')
+            # These exceptions can be invoked the same way that response
+            # objects can.
+            response = ex
+
+        except Exception:
+            if self.debug:
+                traceback.print_exc()
+            response = exceptions.InternalServerError()
 
         # Teardown the request.
         # FIXME: This should happen directly before closing the connection
@@ -119,7 +126,7 @@ class Api:
 
         # Attempt to lookup the resource from the passed name.
         if name not in self._registry:
-            raise exceptions.NotFound
+            raise exceptions.NotFound()
         resource_cls = self._registry[name]
 
         # Instantiate the resource.
@@ -172,7 +179,7 @@ class Api:
 
         except (KeyError, TypeError) as ex:
             # Failed to find a matching encoder.
-            raise exceptions.NotAcceptable from ex
+            raise exceptions.NotAcceptable() from ex
 
     def route(self, request, response):
         # TODO: We need a way to know the content-type here.. or the encoder
@@ -195,7 +202,7 @@ class Api:
             route = getattr(self, request.method.lower())
 
         except AttributeError:
-            raise exceptions.MethodNotAllowed
+            raise exceptions.MethodNotAllowed()
 
         # Dispatch the request.
         response_data = route(resource, request_data)

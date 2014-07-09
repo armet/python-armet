@@ -14,7 +14,7 @@ class TestAPI(RequestTest):
 
     def test_route_resource(self):
         # Create and register some resources. to test api routing.
-        retval = {'foo': 'bar'}
+        retval = [{'foo': 'bar'}]
 
         route_resource = mock.Mock(name='route_resource')
         get_resource = mock.Mock(name='get_resource')
