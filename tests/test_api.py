@@ -63,6 +63,7 @@ class TestAPI(RequestTest):
     def test_no_content(self):
 
         class TestResource(Resource):
+
             def read(self):
                 return None
 
@@ -71,4 +72,3 @@ class TestAPI(RequestTest):
         response = self.get('/test')
 
         assert response.status_code == 204
-
