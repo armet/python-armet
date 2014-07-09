@@ -10,9 +10,6 @@ def dasherize(text):
     if result[0] == "-":
         result = result[1:]
 
-    if result.endswith("-resource"):
-        result = result[:-9]
-
     return result
 
 

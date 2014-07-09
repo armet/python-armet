@@ -46,6 +46,9 @@ class Api:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
 
+            if name.endswith("-resource"):
+                name = name[:-9]
+
         # Insert the handler into the registry.
         self._registry[name] = handler
 
@@ -61,7 +64,7 @@ class Api:
 
         if self.trailing_slash ^ request.path.endswith('/'):
             # self.reroute(request, response)
-            return redirect("...", code)
+            return redirect(request, response)
             # return response(environ, start_response)
 
         # Setup the request.
