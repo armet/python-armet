@@ -55,8 +55,6 @@ class Api:
         if name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
-
-            # Strip a trailing '-resource' from it
             if name.endswith("-resource"):
                 name = name[:-9]
 
@@ -218,10 +216,13 @@ class Api:
             route = getattr(self, request.method.lower())
 
         except AttributeError:
-            raise exceptions.MethodNotAllowed()
+            raise exceptions.MethodNotAllowed(['get'])
 
         # Dispatch the request.
         response_data = route(resource, request_data)
+        if response_data is None:
+            response.status_code = 204
+            return
 
         # Write the response data into the response object
         self.encode(request, response, response_data)
@@ -232,6 +233,9 @@ class Api:
 
     def get(self, resource, data=None):
         items = resource.read()
+
+        if items is None:
+            return
 
         if resource.slug is not None:
             try:
