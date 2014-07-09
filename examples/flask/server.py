@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # Create an api that can contain this resource.
     # Note that apis are valid wsgi applications, so we can mount/remount them
     # as we would any other wsgi application.
-    api = Api()
+    api = Api(debug=True)
 
     # Registering the resource within the application implicitly defines
     # a route to the resource.  The default route name is determined from the
@@ -87,6 +87,8 @@ if __name__ == '__main__':
     application = DispatcherMiddleware(app, {
         '/api': api,
     })
+
+    app.debug = True
 
     from werkzeug.serving import run_simple
     run_simple(
