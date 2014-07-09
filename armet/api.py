@@ -10,6 +10,12 @@ class Api:
         #       That would give us the `remove` functionality easily
         self._registry = {}
 
+        # Trailing slash handling.
+        # The value indicates which URI is the canonical URI and the
+        # alternative URI is then made to redirect (with a 301) to the
+        # canonical URI.
+        self.trailing_slash = trailing_slash
+
     def reroute(self, request, response):
         """Reroute the user to the correct URI"""
         response.headers['Location'] = request.path + "/"
@@ -45,7 +51,6 @@ class Api:
         When a request comes in from a "client" this is the first place
         it goes after it is received by the "server" (uWSGI, nginx, etc.).
         """
-
         # Create the request and response wrappers around the environ.
         request = http.Request(environ)
         response = http.Response()
@@ -60,7 +65,11 @@ class Api:
         try:
             self.route(request, response)
 
-        except Exception as ex:
+        except exceptions.Base as ex:
+            # An HTTP/1.1 understood exception was raised from somewhere
+            # within the request cycle. We Pull the status and headers
+            # from the exception object.
+            response.headers.extend(ex.headers.items())
             response.status_code = ex.status
             response.set_data(b"")
 
@@ -74,7 +83,11 @@ class Api:
         return response(environ, start_response)
 
     def get_resource(self, path):
-        return self._registry[path]
+        try:
+            return self._registry[path]
+
+        except KeyError:
+            raise exceptions.NotFound
 
     def route(self, request, response):
         # TODO: We need a way to know the content-type here.. or the encoder
@@ -85,42 +98,9 @@ class Api:
         if request.path == "/":
             raise exceptions.NotFound()
 
-        name_slug_pair = utils.split_url(request.path)
-
-        # TODO: Iterate through each pair in the sequence
-
-        resource_classes = []
-
-        try:
-            # Attempt to find the resource through the initial path.
-            for pair in name_slug_pair:
-                # pair is a tuple containing the name and slug,
-                # ("poll", 3), (choice, '')
-                resource_classes.append(self.get_resource(pair[0]))
-
-        except KeyError:
-            # Return a 404; we don't know what the resource is.
-            raise exceptions.NotFound()
-
-        # Instantiate the resource classes.
-        for resource in resource_classes:
-            resource(request=request)
-
-            # Route the resource appropriately.
-            try:
-                route = getattr(resource, request.method.lower())
-
-            except AttributeError:
-                try:
-                    route = resource.route
-
-                except AttributeError:
-                    # Method is not allowed on the resource.
-                    raise exceptions.MethodNotAllowed()
-
         # Read in the request data.
         # TODO: Think of a way to expose this (just "content" or "data")
-        request_raw_data = request._handle.data
+        request_raw_data = request.data
         request_data = None
         if request_raw_data:
             # Find an available decoder.
@@ -146,8 +126,44 @@ class Api:
                 raise exceptions.UnsupportedMediaType()
                 return
 
+        # Attempt to find the resource through the initial path.
+        context = {}
+        segments = list(filter(None, request.path.split("/")))
+        while len(segments) > 2:
+            # Pop the (name, slug) pair from the segments list.
+            name = segments.pop(0)
+            slug = segments.pop(0)
+
+            # Attempt to lookup the resource from the passed name.
+            resource_cls = self.get_resource(name)
+
+            # Instantiate the resource.
+            resource = resource_cls(slug=slug, context=context)
+
+            # Invoke `.read` and store it in the context; we are not
+            # at the final segment in the url.
+            context[name] = resource.read()
+
+        # Grab the final (name, slug?) pair from the list.
+        name = segments[0]
+        slug = segments[1] if len(segments) > 1 else None
+
+        # Attempt to lookup the resource from the passed name.
+        resource_cls = self.get_resource(name)
+
+        # Instantiate the resource.
+        resource = resource_cls(slug=slug, context=context)
+
+        # We are at the final segment in the URL; we need to route this
+        # dependent on the HTTP/1.1 method.
+        try:
+            route = getattr(self, request.method.lower())
+
+        except AttributeError:
+            raise exceptions.MethodNotAllowed
+
         # Dispatch the request.
-        response_data = route(request_data)
+        response_data = route(resource, request_data)
 
         # Find an available encoder.
         media_range = request.headers.get("Accept", "application/json")
@@ -165,9 +181,11 @@ class Api:
 
         except (KeyError, TypeError):
             # Failed to find a matching encoder.
-            response.status_code = exceptions.NotAcceptable()
-            return
+            raise exceptions.NotAcceptable
 
         # Return a successful response.
         response.status_code = 200
         return
+
+    def get(self, resource, data=None):
+        return resource.prepare(resource.read())
