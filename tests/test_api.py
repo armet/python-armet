@@ -70,6 +70,5 @@ class TestAPI(RequestTest):
 
         response = self.get('/test')
 
-        import ipdb; ipdb.set_trace()
         assert response.status_code == 204
 
