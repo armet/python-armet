@@ -1,4 +1,5 @@
 from . import decoders, encoders, http
+from armet.http import exceptions
 from armet import utils
 
 
@@ -9,7 +10,7 @@ class Api:
         #       That would give us the `remove` functionality easily
         self._registry = {}
 
-    def register(self, handler, *, expose=True, name=None):
+    def register(self, handler, *, expose=True, name=None): # noqa
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
@@ -34,7 +35,10 @@ class Api:
         response = http.Response()
 
         # Route the request.. needs a better name for the function perhaps.
-        self.route(request, response)
+        try:
+            self.route(request, response)
+        except Exception as ex:
+            response.status_code = ex
 
         # Invoke the response wrapper to initiate the (possibly streaming)
         # response.
@@ -50,40 +54,40 @@ class Api:
         # Return an empty 404 if were accessed at "/" (
         # we don't handle this yet).
         if request.path == "/":
-            response.status_code = 404
-            return
+            raise exceptions.NotFound()
 
-        # TODO: Parse URI and break up into
-        # /poll/3/choice    => ("poll", "3",  "choice")
-        # /poll/3           => ("poll", "3")
-        # /poll             => ("poll")
+        name_slug_pair = utils.split_url(request.path)
 
         # TODO: Iterate through each pair in the sequence
 
+        resource_classes = []
+
         try:
             # Attempt to find the resource through the initial path.
-            resource_cls = self.get_resource(request.path[1:])
+            for pair in name_slug_pair:
+                # pair is a tuple containing the name and slug,
+                # ("poll", 3), (choice, '')
+                resource_classes.append(self.get_resource(pair[0]))
 
         except KeyError:
             # Return a 404; we don't know what the resource is.
-            response.status_code = 404
-            return
+            raise exceptions.NotFound()
 
-        # Instantiate the resource class.
-        resource = resource_cls(request=request)
+        # Instantiate the resource classes.
+        for resource in resource_classes:
+            resource(request=request)
 
-        # Route the resource appropriately.
-        try:
-            route = getattr(resource, request.method.lower())
-
-        except AttributeError:
+            # Route the resource appropriately.
             try:
-                route = resource.route
+                route = getattr(resource, request.method.lower())
 
             except AttributeError:
-                # Method is not allowed on the resource.
-                response.status_code = 405
-                return
+                try:
+                    route = resource.route
+
+                except AttributeError:
+                    # Method is not allowed on the resource.
+                    raise exceptions.MethodNotAllowed()
 
         # Read in the request data.
         # TODO: Think of a way to expose this (just "content" or "data")
@@ -94,8 +98,7 @@ class Api:
             content_type = request.headers.get("Content-Type")
             if not content_type:
                 # TODO: Handle content-type "detection"
-                response.status_code = 415
-                return
+                raise exceptions.UnsupportedMediaType()
 
             try:
                 # TODO: The content-type header could state more than just
@@ -111,7 +114,7 @@ class Api:
 
             except (KeyError, TypeError):
                 # Failed to find a matching encoder.
-                response.status_code = 415
+                raise exceptions.UnsupportedMediaType()
                 return
 
         # Dispatch the request.
@@ -133,7 +136,7 @@ class Api:
 
         except (KeyError, TypeError):
             # Failed to find a matching encoder.
-            response.status_code = 406
+            response.status_code = exceptions.NotAcceptable()
             return
 
         # Return a successful response.

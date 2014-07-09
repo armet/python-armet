@@ -2,7 +2,7 @@ from pytest import mark
 from armet import utils
 
 
-@mark.bench("utils.dasherize", iterations=100000)
+@mark.bench("utils.dasherize", iterations=1000000)
 class TestDasherize:
 
     def test_simple(self):
