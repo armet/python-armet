@@ -5,10 +5,10 @@ class Base(BaseException):
     status = None
 
     def __init__(self, content=None, headers=None):
-        #! Body of the exception message.
+        # Body of the exception message.
         self.content = content
 
-        #! Additional headers to place with the response.
+        # Additional headers to place with the response.
         self.headers = headers or {}
 
 
