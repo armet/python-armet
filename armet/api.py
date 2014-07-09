@@ -166,10 +166,13 @@ class Api:
             route = getattr(self, request.method.lower())
 
         except AttributeError:
-            raise exceptions.MethodNotAllowed
+            raise exceptions.MethodNotAllowed(['get'])
 
         # Dispatch the request.
         response_data = route(resource, request_data)
+        if response_data is None:
+            response.status_code = 204
+            return
 
         # Find an available encoder.
         media_range = request.headers.get("Accept", "application/json")
@@ -196,6 +199,9 @@ class Api:
 
     def get(self, resource, data=None):
         items = resource.read()
+
+        if items is None:
+            return
 
         if resource.slug is not None:
             try:

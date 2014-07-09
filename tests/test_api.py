@@ -1,4 +1,5 @@
 from .base import RequestTest
+from armet.resources import Resource
 from armet import encoders, decoders
 from unittest import mock
 
@@ -58,3 +59,17 @@ class TestAPI(RequestTest):
         response = self.post('/post/')
         assert response.status_code == 307
         assert response.headers["Location"].endswith("/post")
+
+    def test_no_content(self):
+
+        class TestResource(Resource):
+            def read(self):
+                return None
+
+        self.app.register(TestResource, name="test")
+
+        response = self.get('/test')
+
+        import ipdb; ipdb.set_trace()
+        assert response.status_code == 204
+
