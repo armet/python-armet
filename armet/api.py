@@ -1,8 +1,9 @@
 from . import decoders, encoders
+from armet import utils
 from armet.http import exceptions, Request, Response
 import http
-from armet import utils
 import traceback
+import werkzeug
 
 
 class Api:
@@ -111,7 +112,7 @@ class Api:
         # response.
         return response(environ, start_response)
 
-    def get_resource(self, path):
+    def find(self, path):
         """Uses the request path to instantiate and return the correct
         resource using the slug and context.
         """
@@ -209,7 +210,7 @@ class Api:
         request_data = self.decode(request)
 
         # Instantiate the correct resource with
-        resource = self.get_resource(request.path)
+        resource = self.find(request.path)
 
         # We are at the final segment in the URL; we need to route this
         # dependent on the HTTP/1.1 method.
