@@ -179,7 +179,8 @@ class Api:
             response.response = encoder(response_data, 'utf-8')
             response.headers['Content-Type'] = encoder.preferred_mime_type
 
-        except (KeyError, TypeError):
+        except (KeyError, TypeError) as ex:
+            print(ex)
             # Failed to find a matching encoder.
             raise exceptions.NotAcceptable
 
