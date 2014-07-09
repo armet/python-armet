@@ -1,11 +1,13 @@
-from . import decoders, encoders, http
-from armet.http import exceptions
+from . import decoders, encoders
+from armet.http import exceptions, Request, Response
+import http
 from armet import utils
+import werkzeug
 
 
 class Api:
 
-    def __init__(self, trailing_slash=True):
+    def __init__(self, trailing_slash=False):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
@@ -16,13 +18,18 @@ class Api:
         # canonical URI.
         self.trailing_slash = trailing_slash
 
-    def reroute(self, request, response):
-        """Reroute the user to the correct URI"""
-        response.headers['Location'] = request.path + "/"
-        if not request.method == "GET":
-            response.status_code = 301
-            return
-        response.status_code = 307
+    def redirect(self, request):
+        location = "%s://%s%s%s%s" % (
+            request.scheme,
+            request.host,
+            request.script_root,
+            (request.path + '/' if self.trailing_slash else request.path[:-1]),
+            ('?' + request.query_string if request.query_string else ''))
+        if request.method in ('GET', 'HEAD',):
+            status = http.client.MOVED_PERMANENTLY
+        else:
+            status = http.client.TEMPORARY_REDIRECT
+        return werkzeug.utils.redirect(location, status)
 
     def setup(self):
         """Called on request setup in the context of this API.
@@ -38,7 +45,6 @@ class Api:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
 
-            # Strip a trailing '-resource' from it
             if name.endswith("-resource"):
                 name = name[:-9]
 
@@ -52,12 +58,12 @@ class Api:
         it goes after it is received by the "server" (uWSGI, nginx, etc.).
         """
         # Create the request and response wrappers around the environ.
-        request = http.Request(environ)
-        response = http.Response()
+        request = Request(environ)
+        response = Response()
 
-        if not self.trailing_slash:
-            self.reroute(request, response)
-            return response(environ, start_response)
+        if self.trailing_slash ^ request.path.endswith('/'):
+            return self.redirect(request)(environ, start_response)
+
         # Setup the request.
         self.setup()
 
