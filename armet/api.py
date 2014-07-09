@@ -51,7 +51,6 @@ class Api:
         if name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
-
             if name.endswith("-resource"):
                 name = name[:-9]
 
