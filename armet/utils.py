@@ -11,15 +11,3 @@ def dasherize(text):
         result = result[1:]
 
     return result
-
-
-def split_url(path):
-    # We want to take the path, and split, then iterate into groups of two:
-    values = filter(None, path.split("/"))
-    iterator = iter(values)
-    while iterator:
-        name = next(iterator)
-        try:
-            yield (name, next(iterator))
-        except StopIteration:
-            yield (name, None)
