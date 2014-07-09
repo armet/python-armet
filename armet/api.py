@@ -26,7 +26,7 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None): # noqa
+    def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
@@ -62,7 +62,7 @@ class Api:
 
         except Exception as ex:
             response.status_code = ex.status
-			response.set_data(b"")
+            response.set_data(b"")
 
         # Teardown the request.
         # FIXME: This should happen directly before closing the connection
