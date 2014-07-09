@@ -16,14 +16,6 @@ class Api:
         # canonical URI.
         self.trailing_slash = trailing_slash
 
-    def reroute(self, request, response):
-        """Reroute the user to the correct URI"""
-        response.headers['Location'] = request.path + "/"
-        if not request.method == "GET":
-            response.status_code = 301
-            return
-        response.status_code = 307
-
     def setup(self):
         """Called on request setup in the context of this API.
         """
@@ -37,10 +29,6 @@ class Api:
         if name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
-
-            # Strip a trailing '-resource' from it
-            if name.endswith("-resource"):
-                name = name[:-9]
 
         # Insert the handler into the registry.
         self._registry[name] = handler
