@@ -9,7 +9,6 @@ class Api:
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
-        self.trailing_slash = trailing_slash
 
     def reroute(self, request, response):
         """Reroute the user to the correct URI"""
@@ -19,8 +18,15 @@ class Api:
             return
         response.status_code = 307
 
-    def register(self, handler, *, expose=True, name=None):  # noqa
+    def setup(self):
+        """Called on request setup in the context of this API.
+        """
 
+    def teardown(self):
+        """Called on request teardown in the context of this API.
+        """
+
+    def register(self, handler, *, expose=True, name=None): # noqa
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
@@ -47,12 +53,21 @@ class Api:
         if not self.trailing_slash:
             self.reroute(request, response)
             return response(environ, start_response)
+        # Setup the request.
+        self.setup()
 
         # Route the request.. needs a better name for the function perhaps.
         try:
             self.route(request, response)
+
         except Exception as ex:
-            response.status_code = ex
+            response.status_code = ex.status
+			response.set_data(b"")
+
+        # Teardown the request.
+        # FIXME: This should happen directly before closing the connection
+        #        with the user, not here.
+        self.teardown()
 
         # Invoke the response wrapper to initiate the (possibly streaming)
         # response.
