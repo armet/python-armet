@@ -32,6 +32,6 @@ class RequestTest:
     def delete(self, *args, **kwargs):
         return self.request(*args, method='DELETE', **kwargs)
 
-    def setup_class(cls):
+    def setup(cls):
         cls.app = api.Api()
         cls.client = werkzeug.test.Client(cls.app, werkzeug.Response)

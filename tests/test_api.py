@@ -6,6 +6,7 @@ from unittest import mock
 class TestAPI(RequestTest):
 
     def setup(self):
+        super().setup()
         # Register a dummy encoder and decoder.
         self.codec = mock.MagicMock()
         self.codec.return_value = b'test'
@@ -51,7 +52,6 @@ class TestAPI(RequestTest):
         assert response.headers["Location"].endswith("/get")
 
     def test_redirect_get_inverse(self):
-        trailing_slash = self.app.trailing_slash
         self.app.trailing_slash = True
 
         response = self.get('/get/')
@@ -59,8 +59,6 @@ class TestAPI(RequestTest):
 
         response = self.get('/get')
         assert response.status_code == 301
-
-        self.app.trailing_slash = trailing_slash
 
     def test_redirect_post(self):
         response = self.post('/post/')
