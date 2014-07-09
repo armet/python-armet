@@ -86,3 +86,47 @@ specific "method" (GET, POST, PUT, ..) on this resource.
 ===============================================================================
 
 [ ] Resource base class
+
+
+
+
+POST /poll/13/choice/5/vote
+
+>>> poll_res = PollResource(slug=13)
+>>> poll = poll_res.read()
+>>> choice_res = ChoiceResource(slug=5, context={"poll": poll})
+>>> choice = choice_res.read()
+>>> vote_res = VoteResource(context={"poll": poll, "choice": choice})
+>>> vote_res.create(data)
+
+POST /poll/choice/5/vote
+
+>>> poll_res = PollResource(slug="choice")
+>>> poll = poll_res.read()
+# raise or return None
+>>> poll_res = PollResource()
+>>> poll = poll_res.read()
+>>> choice_res = ChoiceResource(slug=5, context={"poll": poll})
+>>> choice = choice_res.read()
+>>> vote_res = VoteResource(context={"poll": poll, "choice": choice})
+>>> vote_res.create(data)
+
+POST /user/1/poll/choice/5/vote
+
+>>> user_res = UserResource(slug=1)
+>>> user = user_res.read()
+>>> poll_res = PollResource(slug="choice", context={"user": user})
+>>> poll = poll_res.read()
+# raise or return None
+>>> poll_res = PollResource(context={"user": user})
+>>> poll = poll_res.read()
+>>> choice_res = ChoiceResource(slug=5, context={"poll": poll, "user": user})
+>>> choice = choice_res.read()
+>>> vote_res = VoteResource(context={"poll": poll, "choice": choice, "user": user})
+>>> vote_res.create(data)
+
+
+GET /poll/1/choice/2/vote
+GET /choice/2/poll/vote
+
+/user/1/poll/5/user
