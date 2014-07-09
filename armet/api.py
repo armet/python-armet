@@ -1,6 +1,7 @@
 from . import decoders, encoders, http
 from armet.http import exceptions
 from armet import utils
+import traceback
 
 
 class Api:
@@ -62,16 +63,22 @@ class Api:
         self.setup()
 
         # Route the request.. needs a better name for the function perhaps.
+        # import ipdb; ipdb.set_trace()
         try:
             self.route(request, response)
 
         except exceptions.Base as ex:
+            # If the exception raised was an error-like exception (4xx or 5xx)
+            # then print the traceback as well.
+            if ex.status // 100 >= 4:
+                traceback.print_exc()
+
             # An HTTP/1.1 understood exception was raised from somewhere
             # within the request cycle. We Pull the status and headers
             # from the exception object.
             response.headers.extend(ex.headers.items())
             response.status_code = ex.status
-            response.set_data(b"")
+            response.set_data(b'')
 
         # Teardown the request.
         # FIXME: This should happen directly before closing the connection
@@ -83,25 +90,45 @@ class Api:
         return response(environ, start_response)
 
     def get_resource(self, path):
-        try:
-            return self._registry[path]
+        """Uses the request path to instantiate and return the correct
+        resource using the slug and context.
+        """
 
-        except KeyError:
+        # Attempt to find the resource through the initial path.
+        context = {}
+        # import ipdb; ipdb.set_trace()
+        segments = list(filter(None, path.split("/")))
+        while len(segments) > 2:
+            # Pop the (name, slug) pair from the segments list.
+            name = segments.pop(0)
+            slug = segments.pop(0)
+
+            # Attempt to lookup the resource from the passed name.
+            resource_cls = self._registry[path]
+
+            # Instantiate the resource.
+            resource = resource_cls(slug=slug, context=context)
+
+            # Invoke `.read` and store it in the context; we are not
+            # at the final segment in the url.
+            context[name] = resource.read()
+
+        # Grab the final (name, slug?) pair from the list.
+        name = segments[0]
+        slug = segments[1] if len(segments) > 1 else None
+
+        # Attempt to lookup the resource from the passed name.
+        if name not in self._registry:
             raise exceptions.NotFound
+        resource_cls = self._registry[name]
 
-    def route(self, request, response):
-        # TODO: We need a way to know the content-type here.. or the encoder
-        #       needs to handle pushing the content-type.
+        # Instantiate the resource.
+        return resource_cls(slug=slug, context=context)
 
-        # Return an empty 404 if were accessed at "/" (
-        # we don't handle this yet).
-        if request.path == "/":
-            raise exceptions.NotFound()
-
+    def decode(self, request):
         # Read in the request data.
         # TODO: Think of a way to expose this (just "content" or "data")
         request_raw_data = request.data
-        request_data = None
         if request_raw_data:
             # Find an available decoder.
             content_type = request.headers.get("Content-Type")
@@ -119,40 +146,48 @@ class Api:
                 # Decode the incoming request data.
                 # TODO: We should likely be sending the proper charset
                 #       to ".decode(..)"
-                request_data = decode(request_raw_data.decode("utf-8"))
+                return decode(request_raw_data.decode("utf-8"))
 
             except (KeyError, TypeError):
-                # Failed to find a matching encoder.
+                # Failed to find a matching decoder.
                 raise exceptions.UnsupportedMediaType()
-                return
 
-        # Attempt to find the resource through the initial path.
-        context = {}
-        segments = list(filter(None, request.path.split("/")))
-        while len(segments) > 2:
-            # Pop the (name, slug) pair from the segments list.
-            name = segments.pop(0)
-            slug = segments.pop(0)
+        # No request data
+        return None
 
-            # Attempt to lookup the resource from the passed name.
-            resource_cls = self.get_resource(name)
+    def encode(self, request, response, data):
+        # Find an available encoder.
+        media_range = request.headers.get("Accept", "application/json")
+        if media_range == "*/*":
+            media_range = "application/json"
 
-            # Instantiate the resource.
-            resource = resource_cls(slug=slug, context=context)
+        try:
+            encoder = encoders.find(media_range=media_range)
 
-            # Invoke `.read` and store it in the context; we are not
-            # at the final segment in the url.
-            context[name] = resource.read()
+            # Encode the data.
+            # TODO: We should be detecting the proper charset and using that
+            # instead.
+            response.response = encoder(data, 'utf-8')
+            response.headers['Content-Type'] = encoder.preferred_mime_type
 
-        # Grab the final (name, slug?) pair from the list.
-        name = segments[0]
-        slug = segments[1] if len(segments) > 1 else None
+        except (KeyError, TypeError) as ex:
+            # Failed to find a matching encoder.
+            raise exceptions.NotAcceptable from ex
 
-        # Attempt to lookup the resource from the passed name.
-        resource_cls = self.get_resource(name)
+    def route(self, request, response):
+        # TODO: We need a way to know the content-type here.. or the encoder
+        #       needs to handle pushing the content-type.
 
-        # Instantiate the resource.
-        resource = resource_cls(slug=slug, context=context)
+        # Return an empty 404 if were accessed at "/" (
+        # we don't handle this yet).
+        if request.path == "/":
+            raise exceptions.NotFound()
+
+        # Get the request data
+        request_data = self.decode(request)
+
+        # Instantiate the correct resource with
+        resource = self.get_resource(request.path)
 
         # We are at the final segment in the URL; we need to route this
         # dependent on the HTTP/1.1 method.
@@ -165,24 +200,8 @@ class Api:
         # Dispatch the request.
         response_data = route(resource, request_data)
 
-        # Find an available encoder.
-        media_range = request.headers.get("Accept", "application/json")
-        if media_range == "*/*":
-            media_range = "application/json"
-
-        try:
-            encoder = encoders.find(media_range=media_range)
-
-            # Encode the data.
-            # TODO: We should be detecting the proper charset and using that
-            # instead.
-            response.response = encoder(response_data, 'utf-8')
-            response.headers['Content-Type'] = encoder.preferred_mime_type
-
-        except (KeyError, TypeError) as ex:
-            print(ex)
-            # Failed to find a matching encoder.
-            raise exceptions.NotAcceptable
+        # Write the response data into the response object
+        self.encode(request, response, response_data)
 
         # Return a successful response.
         response.status_code = 200

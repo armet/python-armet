@@ -8,6 +8,12 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 
+@app.route('/hello')
+def flask_route():
+    # Flask routes still work.
+    return "Hello World!"
+
+
 class UserResource(Resource):
 
     # Data that this resource returns.
@@ -24,7 +30,7 @@ class UserResource(Resource):
             'username': 'joe',
             'email': 'joe@example.com',
             'password': 'hunter2',
-            'created_date': datetime.now()
+            'created_date': datetime.now(),
         }
     ]
 
@@ -63,12 +69,6 @@ def prepare_datetime(item, key, value):
     return value.isoformat()
 
 
-@app.route('/hello')
-def flask_route():
-    # Flask routes still work.
-    return "Hello World!"
-
-
 if __name__ == '__main__':
     # Create an api that can contain this resource.
     # Note that apis are valid wsgi applications, so we can mount/remount them
@@ -90,6 +90,6 @@ if __name__ == '__main__':
 
     from werkzeug.serving import run_simple
     run_simple(
-        '0.0.0.0', 5000, application,
+        'localhost', 5000, application,
         use_debugger=False,
         use_reloader=True)

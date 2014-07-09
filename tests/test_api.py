@@ -14,21 +14,33 @@ class TestAPI(RequestTest):
 
     def test_route_resource(self):
         # Create and register some resources. to test api routing.
+        retval = {'foo': 'bar'}
+
         route_resource = mock.Mock(name='route_resource')
         get_resource = mock.Mock(name='get_resource')
-        route_resource.route.return_value = {'foo': 'bar'}
-        get_resource.get.return_value = {'foo': 'bar'}
+        route_resource().route.return_value = retval
+        get_resource().read.return_value = retval
 
-        self.app.register(lambda *a, **kw: route_resource, name='route')
-        self.app.register(lambda *a, **kw: get_resource, name='get')
+        self.app.register(route_resource, name='route')
+        self.app.register(get_resource, name='read')
 
         # Test routing to those resources.
         headers = {'Accept': 'test/test', 'Content-Type': 'test/test'}
 
-        response = self.get('/get', headers=headers)
+        response = self.get('/read', headers=headers)
         assert response.status_code == 200
-        assert get_resource.read.called
+        assert get_resource().read.called
 
         response = self.get('/route', headers=headers)
         assert response.status_code == 200
-        assert route_resource.read.called
+        assert route_resource().read.called
+
+    def test_internal_server_error_raises_500(self):
+        dead_resource = mock.Mock()
+        dead_resource().read.side_effect = ValueError('DeadResourceException!')
+
+        self.app.register(dead_resource, name='test')
+
+        response = self.get('/test')
+        assert response.status_code == 500
+        assert dead_resource().read.called
