@@ -16,6 +16,20 @@ class Api:
         # canonical URI.
         self.trailing_slash = trailing_slash
 
+    def redirect(self, request, response):
+        path = request.path + '/' if self.trailing_slash else request.path[:-1]
+        response.headers['Location'] = "%s://%s%s%s%s" % (
+            request.scheme,
+            request.host,
+            request.script_root,
+            request.path,
+            ('?' + request.query
+             if request.query else ''))
+        if request.method in ('GET', 'HEAD',):
+            response.status = exceptions.MOVED_PERMANENTLY
+        else:
+            response.status = http.client.TEMPORARY_REDIRECT
+
     def setup(self):
         """Called on request setup in the context of this API.
         """
@@ -43,9 +57,10 @@ class Api:
         request = http.Request(environ)
         response = http.Response()
 
-        if not self.trailing_slash:
+        if self.trailing_slash ^ request.path.endswith('/'):
             self.reroute(request, response)
             return response(environ, start_response)
+
         # Setup the request.
         self.setup()
 
