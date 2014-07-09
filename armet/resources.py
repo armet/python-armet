@@ -1,10 +1,39 @@
+from collections import Iterable, Mapping, OrderedDict
+
+
+class CycleRegistry(dict):
+
+    def __init__(self, fallback=None):
+        super().__init__()
+
+        # A fallback dictionary to use if the key is not in this dictionary.
+        self._fallback = fallback
+
+    def __missing__(self, key):
+        # If the key is a "type" we should attempt to iterate back through
+        # its MRO to resolve it based on inheritance.
+        if isinstance(key, type):
+            for cls in key.__mro__:
+                if cls in self:
+                    # Cache this for the next lookup.
+                    self[key] = self[cls]
+
+                    # Return the result.
+                    return self[cls]
+
+        # If we have a fallback dictionary, use that.
+        if self._fallback:
+            return self._fallback[key]
+
+        # Raise a KeyError as we don't have this.
+        raise KeyError
 
 
 # Registry of preparation functions (by name and type)
-_prepares = {}
+_prepares = CycleRegistry()
 
 # Registry of cleaning functions (by name and type)
-_cleans = {}
+_cleans = CycleRegistry()
 
 
 class Resource:
@@ -28,34 +57,40 @@ class Resource:
         self.context = context or {}
 
     def prepare_item(self, item):
+        # data = OrderedDict()
         data = {}
         for name in self.attributes:
             try:
+                # Attempt to get the attribute from the item.
                 value = getattr(item, name)
 
             except AttributeError:
+                # Item does not have the attribute; just put `None`
+                # in the object.
+                data[name] = None
                 continue
 
-            # Attempt to use a preparation function, by name.
-            name_prepare = _prepares.get(name)
-            if name_prepare:
-                value = name_prepare(item, name, value)
+            try:
+                # Attempt to get a preparation function, by type.
+                prepare = _prepares[type(value)]
 
-            data[name] = value
+            except KeyError:
+                try:
+                    # Attempt to get a preparation function, by name.
+                    prepare = _prepares[name]
+
+                except KeyError:
+                    # No preparation function; continue.
+                    data[name] = value
+                    continue
+
+            # Prepare and push the attribute in the object.
+            data[name] = prepare(item, name, value)
 
         return data
 
     def prepare(self, items):
-        data = [self.prepare_item(item) for item in items]
-
-        if self.slug is None:
-            return data
-
-        try:
-            return data[0]
-
-        except IndexError:
-            raise exceptions.NotFound
+        return [self.prepare_item(item) for item in items]
 
 
 def prepares(*clauses):
@@ -89,13 +124,13 @@ def prepares(*clauses):
             def prepare_id(self, item, key, value):
                 return value.hex
     """
-    def decorator(fn):
+    def decorator(function):
         # Register this preparation function for each passed clause.
         for clause in clauses:
-            _prepares[clause] = fn
+            _prepares[clause] = function
 
         # Return the original function.
-        return fn
+        return function
 
     return decorator
 
@@ -127,3 +162,12 @@ def cleans(*clauses):
             def clean_id(self, key, value):
                 return UUID(value)
     """
+    def decorator(function):
+        # Register this preparation function for each passed clause.
+        for clause in clauses:
+            _cleans[clause] = function
+
+        # Return the original function.
+        return function
+
+    return decorator

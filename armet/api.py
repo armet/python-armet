@@ -189,4 +189,13 @@ class Api:
         return
 
     def get(self, resource, data=None):
-        return resource.prepare(resource.read())
+        items = resource.read()
+
+        if resource.slug is not None:
+            try:
+                return resource.prepare_item(items[0])
+
+            except TypeError:
+                return resource.prepare_item(items)
+
+        return resource.prepare(items)
