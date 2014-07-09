@@ -1,6 +1,7 @@
 from . import decoders, encoders, http
 from armet.http import exceptions
 from armet import utils
+import werkzeug
 
 
 class Api:
@@ -18,17 +19,18 @@ class Api:
 
     def redirect(self, request, response):
         path = request.path + '/' if self.trailing_slash else request.path[:-1]
-        response.headers['Location'] = "%s://%s%s%s%s" % (
+        location = "%s://%s%s%s%s" % (
             request.scheme,
             request.host,
             request.script_root,
             request.path,
-            ('?' + request.query
-             if request.query else ''))
+            ('?' + request.query_string
+             if request.query_string else ''))
         if request.method in ('GET', 'HEAD',):
-            response.status = exceptions.MOVED_PERMANENTLY
+            status = http.client.MOVED_PERMANENTLY
         else:
-            response.status = http.client.TEMPORARY_REDIRECT
+            status = http.client.TEMPORARY_REDIRECT
+        return werkzeug.utils.redirect(location, status)
 
     def setup(self):
         """Called on request setup in the context of this API.
@@ -58,8 +60,9 @@ class Api:
         response = http.Response()
 
         if self.trailing_slash ^ request.path.endswith('/'):
-            self.reroute(request, response)
-            return response(environ, start_response)
+            # self.reroute(request, response)
+            return redirect("...", code)
+            # return response(environ, start_response)
 
         # Setup the request.
         self.setup()
