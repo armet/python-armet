@@ -7,7 +7,6 @@ from unittest import mock
 class TestAPI(RequestTest):
 
     def setup(self):
-        super().setup()
         # Register a dummy encoder and decoder.
         self.codec = mock.MagicMock()
         self.codec.return_value = b'test'
