@@ -1,5 +1,6 @@
 from armet import api
 import werkzeug.test
+from pytest import fixture
 
 
 class RequestTest:
@@ -32,6 +33,8 @@ class RequestTest:
     def delete(self, *args, **kwargs):
         return self.request(*args, method='DELETE', **kwargs)
 
-    def setup(cls):
-        cls.app = api.Api()
-        cls.client = werkzeug.test.Client(cls.app, werkzeug.Response)
+    @fixture(autouse=True, scope="function")
+    def fixture_api(self, request):
+        inst = request.instance
+        inst.app = api.Api()
+        inst.client = werkzeug.test.Client(inst.app, werkzeug.Response)
