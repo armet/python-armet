@@ -1,7 +1,9 @@
 import mimeparse
+from collections import Iterable
 
 
 class Codec:
+
     """A wrapper for a codec entered into the CodecRegistry.
     """
 
@@ -24,7 +26,84 @@ class Codec:
             return NotImplemented
 
 
-class CodecRegistry:
+class GenericRegistry:
+
+    def __init__(self):
+        self._registry = {}
+
+    def register(self, obj, **kwargs):
+        """
+            A generic way to register attributes and their corrosponding
+            objects
+        """
+        #{}
+        value_mapping = {}
+        if not kwargs:
+            raise TypeError("Cannot register with a key of None")
+        for key, value in kwargs.items():
+
+            if type(value) not in (list, str):
+                raise TypeError(
+                    "Expected list or string, got %s" % type(value))
+            elif type(value) is list:
+                for name in value:
+
+                    value_mapping[name] = obj
+            else:
+                value_mapping[key] = {str(value): obj}
+
+            if self._registry.get(key):
+                value_mapping[key] = self._registry[key]
+                value_mapping[key][str(value)] = obj
+
+        self._registry[key] = value_mapping[key]
+
+    def find(self, **kwargs):
+
+        for key, value in kwargs.items():
+            if len(kwargs) > 1:
+                yield self._registry[key][value]
+
+            return self._registry[key][value]
+
+    def remove(self, *args, **kwargs):
+
+        _ex = []
+
+        if not len(args) < 2:
+            for x in args:
+                self.remove(x)
+
+        elif isinstance(args[0], Iterable):
+            for x in args[0]:
+                if isinstance(x, dict):
+                    raise TypeError("Improper type %S" % type(x))
+                self.remove(x)
+        elif len(args) is 1:
+            inverse = {}
+            for x, y in self._registry.items():
+                if isinstance(y, dict):
+                    for k, v in y.items():
+                        if args[0] is v:
+                            try:
+                                del self._registry[k]
+                            except IndexError as ex:
+                                _ex.append(ex)
+                                continue
+
+        for key, value in kwargs.items():
+            try:
+                self.remove(self._registry[key][value])
+            except IndexError as ex:
+                _ex.append(ex)
+
+        # Dunno what to do with all the exceptions
+        # Return em!
+        return _ex if _ex else None
+
+
+class CodecRegistry(GenericRegistry):
+
     """A registry used for registering and removing encoders and decoders.
     """
 
@@ -40,7 +119,7 @@ class CodecRegistry:
         # Invoking the wrapper should invoke the codec.
         self._Wrapper = Wrapper
 
-    def find(self, *, media_range=None, name=None, mime_type=None):
+    def find(self, *, media_range=None, name=None, mime_type=None):  # noqa
         """
         Attempt to find a compliant codec given either a mime_type or
         codec name.  Prioritize the mime-type, then name, then media_range.
