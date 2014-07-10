@@ -14,6 +14,7 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
+@mark.xfail
 @mark.bench("encoders.register")
 class TestEncoderRegisterDecorator:
 
@@ -110,6 +111,7 @@ class TestJSONEncoder(BaseEncoderTest):
             self.encode({'foo': range(10)})
 
 
+@mark.xfail
 @mark.bench('self.encoder', iterations=10000)
 class TestFormDataEncoder(BaseEncoderTest):
 
