@@ -53,7 +53,7 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None): # noqa
+    def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
