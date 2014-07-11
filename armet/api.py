@@ -8,23 +8,16 @@ import werkzeug
 
 class Api:
 
-<<<<<<< Updated upstream
-    def __init__(self, trailing_slash=False, debug=False):
-=======
-    def __init__(self, trailing_slash=False, debug=False, expose=True, name=None):
->>>>>>> Stashed changes
+    def __init__(self, trailing_slash=False, debug=False, expose=True,
+                 name=None):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
-
-<<<<<<< Updated upstream
-=======
         self.name = name
 
         # An attribute to disallow direct routing to a resource
         # default is true.
         self.expose = expose
->>>>>>> Stashed changes
         # Set if we're in debugging mode.
         self.debug = debug
 
@@ -62,7 +55,7 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None):
+    def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
         if handler.name is not None:
             name = handler.name
