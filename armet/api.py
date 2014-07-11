@@ -8,11 +8,14 @@ import werkzeug
 
 class Api:
 
-    def __init__(self, trailing_slash=False, debug=False):
+    def __init__(self, trailing_slash=False, debug=False, expose=True):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
 
+        # An attribute to disallow direct routing to a resource
+        # default is true.
+        self.expose = expose
         # Set if we're in debugging mode.
         self.debug = debug
 
@@ -50,7 +53,7 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None):
+    def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
         if name is None:
             # Convert the name of the handler to dash-case
