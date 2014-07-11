@@ -4,6 +4,8 @@ def dasherize(text):
     for item in text:
         if item.isupper():
             result += "-" + item.lower()
+        elif item == "_":
+            result += "-"
         else:
             result += item
 
