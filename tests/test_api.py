@@ -1,42 +1,63 @@
 from .base import RequestTest
 from armet.resources import Resource
-from armet import encoders, decoders
-from unittest import mock
-from pytest import mark
 
 
 class TestAPI(RequestTest):
 
-    @mark.xfail
-    def test_route_resource(self):
-        # Create and register some resources. to test api routing.
-        retval = [{'foo': 'bar'}]
+    def test_register_name_with_resource_attribute(self):
+        # Create an example resource to register in the API
+        class FooResource:
+            name = "bar"
 
-        route_resource = mock.Mock(name='route_resource')
-        get_resource = mock.Mock(name='get_resource')
-        route_resource().route.return_value = retval
-        get_resource().read.return_value = retval
+        resource = FooResource
 
-        self.app.register(route_resource, name='route')
-        self.app.register(get_resource, name='read')
+        self.app.register(resource)
 
-        response = self.get('/read')
-        assert response.status_code == 200
-        assert get_resource().read.called
+        assert self.app._registry['bar'] is resource
 
-        response = self.get('/route')
-        assert response.status_code == 200
-        assert route_resource().read.called
+    def test_register_name_with_class_name(self):
+        class FooResource:
+            pass
 
-    def test_internal_server_error_raises_500(self):
-        dead_resource = mock.Mock()
-        dead_resource().read.side_effect = ValueError('DeadResourceException!')
+        resource = FooResource
 
-        self.app.register(dead_resource, name='test')
+        self.app.register(resource)
+
+        assert self.app._registry['foo'] is resource
+
+    def test_register_name_with_kwargs(self):
+        class FooResource:
+            pass
+
+        resource = FooResource
+
+        self.app.register(resource, name="bar")
+
+        assert self.app._registry['bar'] is resource
+
+    def test_40x_exception_debug(self):
+
+        self.app.debug = True
+
+        response = self.get('/unknown-resource')
+
+        assert response.status_code == 404
+
+    def test_internal_server_error(self):
+
+        self.app.debug = True
+
+        class TestResource(Resource):
+
+            def read(self):
+                raise Exception("This test raises an exception, and"
+                                " prints to the console.")
+
+        self.app.register(TestResource, name="test")
 
         response = self.get('/test')
+
         assert response.status_code == 500
-        assert dead_resource().read.called
 
     def test_redirect_get(self):
         response = self.get('/get/')
@@ -69,3 +90,23 @@ class TestAPI(RequestTest):
         response = self.get('/test')
 
         assert response.status_code == 204
+
+    def test_route(self):
+
+        self.app.debug = True
+
+        class TestResource(Resource):
+
+            first_name = "Test"
+            last_name = "Testerson"
+
+            attributes = {'first_name', 'last_name'}
+
+            def read(self):
+                return {"first_name": self.first_name, "last_name": self.last_name}
+
+        self.app.register(TestResource, name="test")
+
+        response = self.get('/test')
+
+        assert response.status_code == 200

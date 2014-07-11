@@ -57,8 +57,8 @@ class Api:
 
     def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
-        if handler.name is not None:
-            name = handler.name
+        if hasattr(handler, "name"):
+            name = handler.name if handler.name else None
         elif name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
@@ -124,7 +124,6 @@ class Api:
 
         # Attempt to find the resource through the initial path.
         context = {}
-        # import ipdb; ipdb.set_trace()
         segments = list(filter(None, path.split("/")))
         while len(segments) > 2:
             # Pop the (name, slug) pair from the segments list.
