@@ -31,7 +31,7 @@ class Registry:
         # Just invoke the callback directly
         callback(obj)
 
-    def rfind(self, obj, key, limit=None):
+    def rfind(self, obj, key):
         """Lookup the values that `obj` was registered for `key`.
         """
         # TODO: Use a reverse lookup cache to optimize the retreival here.
@@ -44,8 +44,6 @@ class Registry:
         for value, item in self.map[key].items():
             if item == obj:
                 values.append(value)
-                if limit and len(values) >= limit:
-                    break
 
         return values
 
