@@ -131,7 +131,10 @@ class Api:
             slug = segments.pop(0)
 
             # Attempt to lookup the resource from the passed name.
-            resource_cls = self._registry[path]
+            resource_cls = self._registry.get(name)
+
+            if resource_cls is None:
+                raise exceptions.NotFound()
 
             # Instantiate the resource.
             resource = resource_cls(slug=slug, context=context)

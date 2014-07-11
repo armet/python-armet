@@ -114,10 +114,11 @@ class TestAPI(RequestTest):
             attributes = {'first_name', 'last_name'}
 
             def read(self):
-                return {"first_name": self.first_name, "last_name": self.last_name}
+                return [self.first_name, self.last_name]
 
         self.app.register(TestResource, name="test")
+        self.app.register(TestResource, name="test2")
 
-        response = self.get('/test')
+        response = self.get('/test/first_name/test2')
 
         assert response.status_code == 200
