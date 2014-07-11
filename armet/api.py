@@ -8,11 +8,23 @@ import werkzeug
 
 class Api:
 
+<<<<<<< Updated upstream
     def __init__(self, trailing_slash=False, debug=False):
+=======
+    def __init__(self, trailing_slash=False, debug=False, expose=True, name=None):
+>>>>>>> Stashed changes
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
 
+<<<<<<< Updated upstream
+=======
+        self.name = name
+
+        # An attribute to disallow direct routing to a resource
+        # default is true.
+        self.expose = expose
+>>>>>>> Stashed changes
         # Set if we're in debugging mode.
         self.debug = debug
 
@@ -52,7 +64,9 @@ class Api:
 
     def register(self, handler, *, expose=True, name=None):
         # Discern the name of the handler in order to register it.
-        if name is None:
+        if handler.name is not None:
+            name = handler.name
+        elif name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
             if name.endswith("-resource"):
