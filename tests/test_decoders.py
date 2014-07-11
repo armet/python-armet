@@ -51,7 +51,6 @@ class TestJSONDecoder:
             self.decode('fail')
 
 
-@mark.xfail
 @mark.bench('self.decode', iterations=10000)
 class TestFormDecoder:
 

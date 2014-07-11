@@ -4,8 +4,7 @@ from ..codecs import JSONCodec
 from . import register
 
 
-# @register(name="json", mime_types=JSONCodec.mime_types)
-@register(name="json", mime_type="application/json")
+@register(name="json", mime_type=JSONCodec.mime_types)
 def decode(text):
     try:
         return json.loads(text)

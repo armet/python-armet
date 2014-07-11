@@ -1,12 +1,10 @@
-import json
 from urllib.parse import parse_qs
 
 from ..codecs import URLCodec
 from . import register
 
 
-# @register(name="url", mime_type=URLCodec.mime_types)
-@register(name="url", mime_type=list(URLCodec.mime_types)[0])
+@register(name="url", mime_type=URLCodec.mime_types)
 def decode(text):
     try:
         data = parse_qs(text)

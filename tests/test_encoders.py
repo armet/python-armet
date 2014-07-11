@@ -14,35 +14,6 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
-@mark.xfail
-@mark.bench("encoders.register")
-class TestEncoderRegisterDecorator:
-
-    def test_register(self):
-        mime = 'application/test'
-        args = {
-            'names': ['test'],
-            'mime_types': [mime],
-            'preferred_mime_type': mime,
-        }
-
-        @encoders.register(**args)
-        def encoder_test(data, encoding):
-            yield json.dumps(data).encode(encoding)
-
-        encoder = encoders.find(name='test')
-        assert encoder == encoder_test
-        assert encoder.preferred_mime_type == mime
-
-    def test_preferred_mime_type_fallback(self):
-        @encoders.register(names=['test'])
-        def encoder_test(data, encoding):
-            yield json.dumps(data).encode(encoding)
-
-        encoder = encoders.find(name='test')
-        assert encoder.preferred_mime_type == 'text/plain'
-
-
 class BaseEncoderTest:
 
     def encode(self, data):
@@ -111,7 +82,6 @@ class TestJSONEncoder(BaseEncoderTest):
             self.encode({'foo': range(10)})
 
 
-@mark.xfail
 @mark.bench('self.encoder', iterations=10000)
 class TestFormDataEncoder(BaseEncoderTest):
 

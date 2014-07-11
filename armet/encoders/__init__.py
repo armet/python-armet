@@ -18,4 +18,4 @@ register = _registry.register
 
 
 # Import the builtin encoders (which can be overriden by a user).
-from . import json, url  # noqa
+from . import json, url, form  # noqa
