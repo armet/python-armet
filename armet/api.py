@@ -79,7 +79,7 @@ class Api:
 
         self._defers[name] = api
 
-    def register(self, handler, *, expose=True, name=None):
+    def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
         if hasattr(handler, "name"):
             name = handler.name if handler.name else None
@@ -228,7 +228,7 @@ class Api:
             # instead.
             response.response = encoder(data, 'utf-8')
             response.headers['Content-Type'] = encoders._registry.rfind(
-                encoder, "preferred_mime_type", limit=1)[0]
+                encoder, "preferred_mime_type")[0]
 
         except (KeyError, TypeError) as ex:
             # Failed to find a matching encoder.

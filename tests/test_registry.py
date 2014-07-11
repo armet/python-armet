@@ -21,6 +21,11 @@ class TestRegistry:
         with pytest.raises(TypeError):
             self.registry.register(name="not_valid")(None)
 
+    def test_rfind(self):
+        x = self.registry.rfind("obj_1", "name")[0]
+
+        assert x == "test_1"
+
     def test_find_multiple(self):
         with pytest.raises(TypeError):
             self.registry.find(name="this", multiple_kwargs="not_valid")
