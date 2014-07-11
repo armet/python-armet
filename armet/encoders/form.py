@@ -42,7 +42,8 @@ def segment_stream(cache, buf, segment_size=16*1024):
         yield value
 
 
-@register(name="form", mime_type=FormCodec.mime_types)
+@register(name="form", mime_type=FormCodec.mime_types,
+          preferred_mime_type=FormCodec.preferred_mime_type)
 def encode(data, encoding):
     """Expects to recieve a data structure of the following form:
     {name: value, name: [value1, value2]}
