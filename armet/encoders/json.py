@@ -1,4 +1,4 @@
-import json
+import ujson as json
 from collections import Iterable
 
 from ..codecs import JSONCodec
@@ -14,9 +14,8 @@ def encode(data, encoding):
     if isinstance(data, str) or not isinstance(data, Iterable):
         data = [data]
 
-    # Separators are used here to assert that no uneccesary spaces are
-    # added to the json.
-    data = json.dumps(data, separators=(',', ':'))
+    # Dump the json data.
+    data = json.dumps(data)
 
     # TODO: Replace this with real json streaming
     return chunk(data.encode(encoding))
