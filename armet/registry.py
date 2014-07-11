@@ -56,7 +56,7 @@ class Registry:
         for obj in args:
             for registry_name, registry in list(self.map.items()):
                 for name, item in list(registry.items()):
-                    if item is obj:
+                    if item == obj:
                         del registry[name]
 
                 if not registry:
@@ -68,5 +68,5 @@ class Registry:
             try:
                 self.remove(self.map[key][value])
 
-            except IndexError:
+            except KeyError:
                 pass
