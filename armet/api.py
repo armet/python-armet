@@ -8,10 +8,12 @@ import werkzeug
 
 class Api:
 
-    def __init__(self, trailing_slash=False, debug=False, expose=True):
+    def __init__(self, trailing_slash=False, debug=False, expose=True,
+                 name=None):
         # TODO: Should this be that `Registry` thing we were talking about?
         #       That would give us the `remove` functionality easily
         self._registry = {}
+        self.name = name
 
         # An attribute to disallow direct routing to a resource
         # default is true.
@@ -55,7 +57,9 @@ class Api:
 
     def register(self, handler, *, expose=True, name=None):  # noqa
         # Discern the name of the handler in order to register it.
-        if name is None:
+        if handler.name is not None:
+            name = handler.name
+        elif name is None:
             # Convert the name of the handler to dash-case
             name = utils.dasherize(handler.__name__)
             if name.endswith("-resource"):
