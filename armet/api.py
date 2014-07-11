@@ -1,4 +1,4 @@
-from . import decoders, encoders
+from . import decoders, encoders, registry
 from armet import utils
 from armet.http import exceptions, Request, Response
 import http
@@ -10,9 +10,8 @@ class Api:
 
     def __init__(self, trailing_slash=False, debug=False, expose=True,
                  name=None):
-        # TODO: Should this be that `Registry` thing we were talking about?
-        #       That would give us the `remove` functionality easily
-        self._registry = {}
+
+        self._registry = registry.Registry()
         self.name = name
 
         # An attribute to disallow direct routing to a resource
@@ -28,6 +27,8 @@ class Api:
         self.trailing_slash = trailing_slash
 
     def redirect(self, request):
+        if request.path == "/":
+            raise exceptions.NotFound()
         # Format an absolute path to the URI (adjusted to be canonical).
         location = "%s://%s%s%s%s" % (
             request.scheme,
@@ -66,7 +67,7 @@ class Api:
                 name = name[:-9]
 
         # Insert the handler into the registry.
-        self._registry[name] = handler
+        self._registry.register(handler, name=name)
 
     def __call__(self, environ, start_response):
         """Entry-point from the WSGI environment.
@@ -78,18 +79,18 @@ class Api:
         # Create the request wrapper around the environment.
         request = Request(environ)
 
-        # Test and decide if we need to redirect the client to
-        # the canonical representation of the given request path.
-        if self.trailing_slash ^ request.path.endswith('/'):
-            response = self.redirect(request)
-            return response(environ, start_response)
-        # Setup the request.
-        self.setup()
-
-        # Build an empty response object.
-        response = Response()
-
         try:
+            # Test and decide if we need to redirect the client to
+            # the canonical representation of the given request path.
+            if self.trailing_slash ^ request.path.endswith('/'):
+                response = self.redirect(request)
+                return response(environ, start_response)
+            # Setup the request.
+            self.setup()
+
+            # Build an empty response object.
+            response = Response()
+
             self.route(request, response)
 
         except exceptions.Base as ex:
@@ -130,7 +131,7 @@ class Api:
             name = segments.pop(0)
             slug = segments.pop(0)
 
-            resource_cls = self._registry.get(path)
+            resource_cls = self._registry.find(name=name)
             # Attempt to lookup the resource from the passed name.
 
             if resource_cls is None:
@@ -148,9 +149,9 @@ class Api:
         slug = segments[1] if len(segments) > 1 else None
 
         # Attempt to lookup the resource from the passed name.
-        if name not in self._registry:
+        resource_cls = self._registry.find(name=name)
+        if resource_cls is None:
             raise exceptions.NotFound()
-        resource_cls = self._registry[name]
 
         # Instantiate the resource.
         return resource_cls(slug=slug, context=context)
@@ -209,24 +210,18 @@ class Api:
         # TODO: We need a way to know the content-type here.. or the encoder
         #       needs to handle pushing the content-type.
 
-        # Return an empty 404 if were accessed at "/" (
-        # we don't handle this yet).
-        if request.path == "/":
-            raise exceptions.NotFound()
-
         # Get the request data
         request_data = self.decode(request)
 
         # Instantiate the correct resource with
         resource = self.find(request.path)
-
         # We are at the final segment in the URL; we need to route this
         # dependent on the HTTP/1.1 method.
         try:
             route = getattr(self, request.method.lower())
 
         except AttributeError:
-            raise exceptions.MethodNotAllowed(['get'])
+            raise exceptions.MethodNotAllowed([request.method])
 
         # Dispatch the request.
         response_data = route(resource, request_data)
