@@ -15,6 +15,13 @@ class Api:
         self._registry = {}
         self.name = name
 
+        # Dispatching registry used to delegate execution to other Api objects.
+        self._dispatcher = werkzeug.DispatcherMiddleware(self.wsgi)
+
+        # Pull out the mount array from the dispatcher so that we can
+        # manipulate it in this class when users add sub-apis.
+        self._defers = self._dispatcher.mounts
+
         # An attribute to disallow direct routing to a resource
         # default is true.
         self.expose = expose
@@ -55,7 +62,23 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register(self, handler, *, expose=True, name=None):  # noqa
+    def register_api(self, api, name=None):
+        if name is None:
+            name = getattr(api, 'name', None)
+
+            if name is None:
+                name = utils.dasherize(api.__class__.__name__)
+                if name.endswith('-api'):
+                    name = name[:-4]
+
+        # Assert that the name begins with a slash in order to play nice
+        # with the werkzeug dispatcher middleware.
+        if not name[0] == '/':
+            name = '/' + name
+
+        self._defers[name] = api
+
+    def register(self, handler, *, expose=True, name=None):
         # Discern the name of the handler in order to register it.
         if hasattr(handler, "name"):
             name = handler.name if handler.name else None
@@ -69,6 +92,11 @@ class Api:
         self._registry[name] = handler
 
     def __call__(self, environ, start_response):
+        """WSGI Hook used to route execution to the correct Api object.
+        """
+        return self._dispatcher(environ, start_response)
+
+    def wsgi(self, environ, start_response):
         """Entry-point from the WSGI environment.
 
         When a request comes in from a "client" this is the first place

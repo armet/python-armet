@@ -1,5 +1,6 @@
 from .base import RequestTest
 from armet.resources import Resource
+from armet.api import Api
 
 
 class TestAPI(RequestTest):
@@ -110,3 +111,30 @@ class TestAPI(RequestTest):
         response = self.get('/test')
 
         assert response.status_code == 200
+
+    def test_add_subapi(self):
+
+        class PersonalApi(Api):
+            pass
+
+        class SubResource(Resource):
+            attributes = {'success'}
+
+            def read(self):
+                return [{'success': True}]
+
+        # Assert that all methods of accessing an api via name work.
+        apis = [
+            (Api(expose=True), {'name': 'test'}),
+            (Api(expose=True, name='new_test'), {}),
+            (PersonalApi(expose=True), {}),
+        ]
+
+        for api, kwargs in apis:
+            api.register(SubResource, name='endpoint')
+            self.app.register_api(api, **kwargs)
+
+        # import ipdb; ipdb.set_trace()
+        assert self.get('/test/endpoint').status_code == 200
+        assert self.get('/new_test/endpoint').status_code == 200
+        assert self.get('/personal/endpoint').status_code == 200
