@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Iterable
 
 
 class Registry:
@@ -14,7 +14,12 @@ class Registry:
                                 type(obj).__name__)
 
             for key, value in kwargs.items():
-                self.map[key][value] = obj
+                if isinstance(value, Iterable) and not isinstance(value, str):
+                    for val in value:
+                        self.map[key][val] = obj
+
+                else:
+                    self.map[key][value] = obj
 
             return obj
 
