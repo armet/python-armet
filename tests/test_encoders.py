@@ -66,24 +66,17 @@ class TestJSONEncoder(BaseEncoderTest):
         assert json.loads(text) == data
 
     def test_encode_normal(self):
-        data = OrderedDict([
-            ('foo', 5),
-            ('bar', None),
-            ('baz', ['a', 'b', 'c']),
-            ('bang', {'buzz': 'boop'})])
+        data = {
+            'foo': 5,
+            'bar': None,
+            'baz': ['a', 'b', 'c'],
+            'bang': {'buzz': 'boop'}}
 
-        expected = ('{"foo":5,"bar":null,"baz":["a","b","c"],'
-                    '"bang":{"buzz":"boop"}}')
-
-        assert self.encode(data) == expected
-
-    def test_encode_failure(self):
-        with pytest.raises(TypeError):
-            self.encode({'foo': range(10)})
+        assert json.loads(self.encode(data)) == data
 
 
 @mark.bench('self.encoder', iterations=10000)
-class TestFormDataEncoder(BaseEncoderTest):
+class TestFormEncoder(BaseEncoderTest):
 
     def setup(self):
         self.encoder = encoders.find(name='form')

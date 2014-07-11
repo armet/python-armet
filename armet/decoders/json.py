@@ -1,4 +1,4 @@
-import json
+import ujson as json
 
 from ..codecs import JSONCodec
 from . import register
