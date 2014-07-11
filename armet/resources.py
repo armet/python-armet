@@ -1,4 +1,3 @@
-from collections import Iterable, Mapping, OrderedDict
 
 
 class CycleRegistry(dict):

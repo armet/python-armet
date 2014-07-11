@@ -1,4 +1,3 @@
-import json
 from itertools import chain, repeat
 from urllib.parse import urlencode
 

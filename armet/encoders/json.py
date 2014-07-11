@@ -6,8 +6,7 @@ from ..utils import chunk
 from . import register
 
 
-# @register(name="json", mime_types=JSONCodec.mime_types)
-@register(name="json", mime_type="application/json")
+@register(name="json", mime_type=JSONCodec.mime_types)
 def encode(data, encoding):
     # Ensure that the scalar data is wrapped in a list as
     # a valid JSON document be an object or a list.
