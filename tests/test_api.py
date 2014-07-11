@@ -16,7 +16,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource)
 
-        assert self.app._registry['bar'] is resource
+        assert self.app._registry.find(name='bar') is resource
 
     @mark.bench("self.app.register")
     def test_register_name_with_class_name(self):
@@ -27,7 +27,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource)
 
-        assert self.app._registry['foo'] is resource
+        assert self.app._registry.find(name='foo') is resource
 
     @mark.bench("self.app.register")
     def test_register_name_with_kwargs(self):
@@ -38,7 +38,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource, name="bar")
 
-        assert self.app._registry['bar'] is resource
+        assert self.app._registry.find(name='bar') is resource
 
     @mark.bench("self.app.__call__")
     def test_40x_exception_debug(self):
@@ -109,18 +109,27 @@ class TestAPI(RequestTest):
 
         class TestResource(Resource):
 
-            first_name = "Test"
-            last_name = "Testerson"
-
-            attributes = {'first_name', 'last_name'}
+            def prepare(self, item):
+                return item
 
             def read(self):
-                return [self.first_name, self.last_name]
+                return "data"
+
+        class Test2Resource(Resource):
+
+            def prepare(self, item):
+                return item
+
+            def read(self):
+                return "data2"
 
         self.app.register(TestResource, name="test")
-        self.app.register(TestResource, name="test2")
 
-        response = self.get('/test/first_name/test2')
+        self.app.register(Test2Resource, name="test2")
+
+        response = self.get('/test/1/test2')
+        # Json serializer is broken?
+        assert response.data == b'["data2"]'
 
         assert response.status_code == 200
 
@@ -150,3 +159,26 @@ class TestAPI(RequestTest):
         assert self.get('/test/endpoint').status_code == 200
         assert self.get('/new_test/endpoint').status_code == 200
         assert self.get('/personal/endpoint').status_code == 200
+
+    def test_multiname_route_with_invalid_resource(self):
+        """Test that we indeed get a 404 on a request with
+        2+ "names", i.e /name/slug/name"""
+
+        response = self.get('/name/slug/name')
+
+        assert response.status_code == 404
+
+    def test_get_on_root(self):
+        response = self.get('/')
+
+        assert response.status_code == 404
+
+    def test_method_not_allowed(self):
+        class FooResource(Resource):
+            pass
+
+        self.app.register(FooResource)
+
+        response = self.request('/foo', method="GARBAGE")
+
+        assert response.status_code == 405
