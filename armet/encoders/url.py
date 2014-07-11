@@ -6,8 +6,8 @@ from ..utils import chunk
 from . import register
 
 
-# @register(name="url", mime_type=URLCodec.mime_types)
-@register(name="url", mime_type=URLCodec.preferred_mime_type)
+@register(name="url", mime_type=URLCodec.mime_types,
+          preferred_mime_type=URLCodec.preferred_mime_type)
 def encode(data, encoding):
     try:
         # Normalize the encode so that users pay invoke using either

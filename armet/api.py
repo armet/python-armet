@@ -195,7 +195,8 @@ class Api:
             # TODO: We should be detecting the proper charset and using that
             # instead.
             response.response = encoder(data, 'utf-8')
-            response.headers['Content-Type'] = encoder.preferred_mime_type
+            response.headers['Content-Type'] = encoders._registry.rfind(
+                encoder, "preferred_mime_type", limit=1)[0]
 
         except (KeyError, TypeError) as ex:
             # Failed to find a matching encoder.
