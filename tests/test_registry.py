@@ -30,9 +30,13 @@ class TestRegistry:
         with pytest.raises(TypeError):
             self.registry.find(name="this", multiple_kwargs="not_valid")
 
-    def test_find_not_found(self):
+    def test_find_from_fallback(self):
         # Test the not-found exception in find, raises key-error, returns None.
-        assert self.registry.find(some_property="non_existant") is None
+        fallback = Registry()
+        fallback.register("fallback_obj", name="fallback")
+        self.registry.fallback = fallback
+
+        assert self.registry.find(name="fallback") == "fallback_obj"
 
     def test_remove_object(self):
         # Test removing with just the object

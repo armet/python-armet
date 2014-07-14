@@ -3,8 +3,12 @@ from collections import defaultdict, Iterable
 
 class Registry:
 
-    def __init__(self):
+    def __init__(self, registry=None):
+        """Generic registry for easy lookup, If the item is not found,
+           on find() And a "fallback" registry is provided, the item
+           requested will be searched through the fallback registry."""
         self.map = defaultdict(dict)
+        self.fallback = registry
 
     def register(self, obj=None, **kwargs):
 
@@ -69,7 +73,7 @@ class Registry:
 
         except KeyError:
             # If we don't find what they were looking for; return nothing.
-            return None
+            return self.fallback.find(**{key: value}) if self.fallback else None  # noqa
 
     def remove(self, *args, **kwargs):
         # For each passed object we need to iterate through each nested
