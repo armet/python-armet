@@ -10,7 +10,7 @@ Base = exceptions.HTTPException
 class Base(exceptions.HTTPException):
 
     def get_body(self, environ=None):
-        # There is no  body that needs to be returned for api exceptions.
+        # There is no body that needs to be returned for api exceptions.
         return ''
 
     def get_headers(self, environ=None):

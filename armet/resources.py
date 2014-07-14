@@ -41,6 +41,9 @@ class Resource:
     # from the `read` method.
     attributes = set()
 
+    # Set of resource names that can be traversed to from this resource.
+    relationships = set()
+
     def __init__(self, slug=None, context=None):
         """
         :param slug: Identifier that represents which item of the resource

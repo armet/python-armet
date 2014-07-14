@@ -14,7 +14,7 @@ def test_decoders_api_methods():
 class TestURLDecoder:
 
     def setup(self):
-        self.decode = decoders.find(name='url')
+        self.decode, _ = decoders.find(name='url')
 
     def test_decode_normal(self):
         data = 'foo=bar&bar=baz&fiz=buzz'
@@ -35,7 +35,7 @@ class TestURLDecoder:
 class TestJSONDecoder:
 
     def setup(self):
-        self.decode = decoders.find(name='json')
+        self.decode,  _ = decoders.find(name='json')
 
     def test_decode_normal(self):
         data = {
@@ -55,7 +55,7 @@ class TestJSONDecoder:
 class TestFormDecoder:
 
     def setup(self):
-        self.decode = decoders.find(name='form')
+        self.decode,  _ = decoders.find(name='form')
 
     def test_decode_normal(self):
         boundary = 'abc123'

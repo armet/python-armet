@@ -6,6 +6,10 @@ class CodecRegistry(Registry):
     """A registry used for registering and removing encoders and decoders.
     """
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("index", {"name", "mime_type"})
+        super().__init__(*args, **kwargs)
+
     def find_media_range(self, media_range):
         try:
             # best_match returns empty string on failure to find a match.
@@ -18,7 +22,7 @@ class CodecRegistry(Registry):
             raise KeyError('Malformed media range.')
 
         # Push the resolved mime_type into the `find` method.
-        return self.find(mime_type=found)
+        return self.find(mime_type=found)[0]
 
 
 class URLCodec:

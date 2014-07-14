@@ -16,7 +16,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource)
 
-        assert self.app._registry.find(name='bar') is resource
+        assert self.app._registry.find(name='bar')[0] is resource
 
     @mark.bench("self.app.register")
     def test_register_name_with_class_name(self):
@@ -27,7 +27,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource)
 
-        assert self.app._registry.find(name='foo') is resource
+        assert self.app._registry.find(name='foo')[0] is resource
 
     @mark.bench("self.app.register")
     def test_register_name_with_kwargs(self):
@@ -38,7 +38,7 @@ class TestAPI(RequestTest):
 
         self.app.register(resource, name="bar")
 
-        assert self.app._registry.find(name='bar') is resource
+        assert self.app._registry.find(name='bar')[0] is resource
 
     @mark.bench("self.app.__call__")
     def test_40x_exception_debug(self):
@@ -104,10 +104,11 @@ class TestAPI(RequestTest):
 
     @mark.bench("self.app.__call__")
     def test_route(self):
-
         self.app.debug = True
 
         class TestResource(Resource):
+
+            relationships = {"test2"}
 
             def prepare(self, item):
                 return item
@@ -124,15 +125,14 @@ class TestAPI(RequestTest):
                 return "data2"
 
         self.app.register(TestResource, name="test")
-
         self.app.register(Test2Resource, name="test2")
 
         response = self.get('/test/1/test2')
-        # Json serializer is broken?
-        assert response.data == b'["data2"]'
 
         assert response.status_code == 200
+        assert response.data == b'["data2"]'
 
+    # @mark.xfail
     def test_add_subapi(self):
 
         class PersonalApi(Api):
@@ -146,14 +146,14 @@ class TestAPI(RequestTest):
 
         # Assert that all methods of accessing an api via name work.
         apis = [
-            (Api(expose=True), {'name': 'test'}),
-            (Api(expose=True, name='new_test'), {}),
-            (PersonalApi(expose=True), {}),
+            (Api(), {'name': 'test'}),
+            (Api(name='new_test'), {}),
+            (PersonalApi(), {}),
         ]
 
         for api, kwargs in apis:
             api.register(SubResource, name='endpoint')
-            self.app.register_api(api, **kwargs)
+            self.app.register(api, **kwargs)
 
         # import ipdb; ipdb.set_trace()
         assert self.get('/test/endpoint').status_code == 200

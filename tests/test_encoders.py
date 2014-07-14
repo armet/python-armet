@@ -26,7 +26,7 @@ class BaseEncoderTest:
 class TestURLEncoder(BaseEncoderTest):
 
     def setup(self):
-        self.encoder = encoders.find(name='url')
+        self.encoder, _ = encoders.find(name='url')
 
     def test_encode_normal(self):
         data = OrderedDict((
@@ -47,7 +47,7 @@ class TestURLEncoder(BaseEncoderTest):
 class TestJSONEncoder(BaseEncoderTest):
 
     def setup(self):
-        self.encoder = encoders.find(name='json')
+        self.encoder, _ = encoders.find(name='json')
 
     def test_encode_scalar(self):
         data = False
@@ -79,7 +79,7 @@ class TestJSONEncoder(BaseEncoderTest):
 class TestFormEncoder(BaseEncoderTest):
 
     def setup(self):
-        self.encoder = encoders.find(name='form')
+        self.encoder, _ = encoders.find(name='form')
 
     def test_encode_normal(self):
         with mock.patch('armet.encoders.form.generate_boundary') as mocked:

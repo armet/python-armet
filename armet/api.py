@@ -8,23 +8,26 @@ import werkzeug
 
 class Api:
 
-    def __init__(self, trailing_slash=False, debug=False, expose=True,
-                 name=None):
+    def __init__(self, name=None, *, trailing_slash=False, debug=False):
+        # Resource registry that will contain any resources that could
+        # be exposed in this API context.
+        self._registry = registry.Registry(index={"name"})
 
-        self._registry = registry.Registry()
+        # The name that this may take if it is registered in another API.
         self.name = name
 
         # Dispatching registry used to delegate execution to other Api objects.
-        self._dispatcher = werkzeug.DispatcherMiddleware(self.wsgi)
+        self._dispatcher = werkzeug.wsgi.DispatcherMiddleware(self.wsgi)
+
+        # TODO: I don't like this but I liked the other thing less
 
         # Pull out the mount array from the dispatcher so that we can
         # manipulate it in this class when users add sub-apis.
-        self._defers = self._dispatcher.mounts
+        # self._defers = self._dispatcher.mounts
 
-        # An attribute to disallow direct routing to a resource
-        # default is true.
-        self.expose = expose
-        # Set if we're in debugging mode.
+        # Whether we're in debugging mode.
+        # This causes tracebacks to be sent with the response on
+        # a 5xx resposne.
         self.debug = debug
 
         # Trailing slash handling.
@@ -34,8 +37,6 @@ class Api:
         self.trailing_slash = trailing_slash
 
     def redirect(self, request):
-        if request.path == "/":
-            raise exceptions.NotFound()
         # Format an absolute path to the URI (adjusted to be canonical).
         location = "%s://%s%s%s%s" % (
             request.scheme,
@@ -63,38 +64,31 @@ class Api:
         """Called on request teardown in the context of this API.
         """
 
-    def register_api(self, api, name=None):
-        if name is None:
-            name = getattr(api, 'name', None)
-
-            if name is None:
-                name = utils.dasherize(api.__class__.__name__)
-                if name.endswith('-api'):
-                    name = name[:-4]
-
-        # Assert that the name begins with a slash in order to play nice
-        # with the werkzeug dispatcher middleware.
-        if not name[0] == '/':
-            name = '/' + name
-
-        self._defers[name] = api
-
-    def register(self, handler, *, expose=True, name=None):  # noqa
+    def register(self, handler, *, expose=True, name=None):
         # Discern the name of the handler in order to register it.
-        if hasattr(handler, "name"):
-            name = handler.name if handler.name else None
-        elif name is None:
-            # Convert the name of the handler to dash-case
-            name = utils.dasherize(handler.__name__)
-            if name.endswith("-resource"):
-                name = name[:-9]
+        if name is None:
+            if getattr(handler, "name", None):
+                name = handler.name
+            else:
+                # Convert the name of the handler to dash-case.
+                if isinstance(handler, Api):
+                    name = utils.dasherize(type(handler).__name__)
+                    if name.endswith("-api"):
+                        name = name[:-4]
+
+                else:
+                    name = utils.dasherize(handler.__name__)
+                    if name.endswith("-resource"):
+                        name = name[:-9]
 
         # Insert the handler into the registry.
-        self._registry.register(handler, name=name)
+        if isinstance(handler, Api):
+            self._dispatcher.mounts["/" + name] = handler
+
+        else:
+            self._registry.register(handler, name=name, expose=expose)
 
     def __call__(self, environ, start_response):
-        """WSGI Hook used to route execution to the correct Api object.
-        """
         return self._dispatcher(environ, start_response)
 
     def wsgi(self, environ, start_response):
@@ -108,20 +102,27 @@ class Api:
         request = Request(environ)
 
         try:
+            # TODO: We do not handle rendering an API index. We should.
+            if request.path == "/":
+                raise exceptions.NotFound()
+
             # Test and decide if we need to redirect the client to
             # the canonical representation of the given request path.
             if self.trailing_slash ^ request.path.endswith('/'):
                 response = self.redirect(request)
                 return response(environ, start_response)
+
             # Setup the request.
             self.setup()
 
             # Build an empty response object.
             response = Response()
 
+            # Dispatch the request.
             self.route(request, response)
 
         except exceptions.Base as ex:
+            # FIXME: Show the exception in the response not in stdout
             # If the exception raised was an error-like exception (4xx or 5xx)
             # then print the traceback as well.
             if self.debug and ex.code // 100 >= 4:
@@ -132,10 +133,11 @@ class Api:
             # objects can.
             response = ex
 
-        except Exception:
+        except Exception as ex:
+            print(ex)
+            response = exceptions.InternalServerError()
             if self.debug:
                 traceback.print_exc()
-            response = exceptions.InternalServerError()
 
         # Teardown the request.
         # FIXME: This should happen directly before closing the connection
@@ -146,24 +148,45 @@ class Api:
         # response.
         return response(environ, start_response)
 
-    def find(self, path):
-        """Uses the request path to instantiate and return the correct
-        resource using the slug and context.
-        """
+    def _find(self, path):
+        """Find and instantiate the right-most resource using path traversal.
 
+        Collects and forwards the resource context during traversal.
+        """
         # Attempt to find the resource through the initial path.
         context = {}
         segments = list(filter(None, path.split("/")))
+        count = 0
+        last_resource_cls = None
         while len(segments) > 2:
             # Pop the (name, slug) pair from the segments list.
             name = segments.pop(0)
             slug = segments.pop(0)
 
-            resource_cls = self._registry.find(name=name)
-            # Attempt to lookup the resource from the passed name.
+            try:
+                # Attempt to lookup the resource from the passed name.
+                resource_cls, metadata = self._registry.find(name=name)
 
-            if resource_cls is None:
+            except KeyError:
                 raise exceptions.NotFound()
+
+            if count == 0:
+                # If we are at the initial resource ..
+                # Check if this resource is allowed to be exposed.
+                if not metadata.get("expose"):
+                    # This resource is not exposed at "/"
+                    # NOTE: This resource -can- still be traversed to from
+                    #       another resource.
+                    raise exceptions.NotFound()
+
+            elif last_resource_cls is not None:
+                # Check if the last resource is allowed to traverse to this
+                # resource.
+                rels = getattr(last_resource_cls, "relationships", ())
+                if name not in rels:
+                    # This resource does not exist in context of the previous
+                    # resource.
+                    raise exceptions.NotFound()
 
             # Instantiate the resource.
             resource = resource_cls(slug=slug, context=context)
@@ -172,13 +195,32 @@ class Api:
             # at the final segment in the url.
             context[name] = resource.read()
 
+            # Update the `last_resource_cls` (keeps track of the
+            # immediate-left resource)
+            last_resource_cls = resource_cls
+
+            # Increment resource counter; keep track of how many resources
+            # have been traversed.
+            count += 1
+
         # Grab the final (name, slug?) pair from the list.
         name = segments[0]
         slug = segments[1] if len(segments) > 1 else None
 
-        # Attempt to lookup the resource from the passed name.
-        resource_cls = self._registry.find(name=name)
-        if resource_cls is None:
+        if last_resource_cls is not None:
+            # Check if the last resource is allowed to traverse to this
+            # resource.
+            rels = getattr(last_resource_cls, "relationships", ())
+            if name not in rels:
+                # This resource does not exist in context of the previous
+                # resource.
+                raise exceptions.NotFound()
+
+        try:
+            # Attempt to lookup the resource from the passed name.
+            resource_cls, _ = self._registry.find(name=name)
+
+        except KeyError:
             raise exceptions.NotFound()
 
         # Instantiate the resource.
@@ -200,7 +242,7 @@ class Api:
                 #       the mime_type (charset, etc.); think of how to deal
                 #       with it as media_range detection "works" with it but
                 #       mime_type would be faster.
-                decode = decoders.find(media_range=content_type)
+                decode, _ = decoders.find(media_range=content_type)
 
                 # Decode the incoming request data.
                 # TODO: We should likely be sending the proper charset
@@ -221,28 +263,27 @@ class Api:
             media_range = "application/json"
 
         try:
-            encoder = encoders.find(media_range=media_range)
+            encoder, metadata = encoders.find(media_range=media_range)
 
             # Encode the data.
             # TODO: We should be detecting the proper charset and using that
             # instead.
             response.response = encoder(data, 'utf-8')
-            response.headers['Content-Type'] = encoders._registry.rfind(
-                encoder, "preferred_mime_type")[0]
+            response.headers['Content-Type'] = metadata["preferred_mime_type"]
 
         except (KeyError, TypeError) as ex:
             # Failed to find a matching encoder.
             raise exceptions.NotAcceptable() from ex
 
     def route(self, request, response):
-        # TODO: We need a way to know the content-type here.. or the encoder
-        #       needs to handle pushing the content-type.
+        # Find and instantiate the right-most resource using path traversal.
+        resource = self._find(request.path)
 
         # Get the request data
         request_data = self.decode(request)
 
         # Instantiate the correct resource with
-        resource = self.find(request.path)
+        resource = self._find(request.path)
         # We are at the final segment in the URL; we need to route this
         # dependent on the HTTP/1.1 method.
         try:
