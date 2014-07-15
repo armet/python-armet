@@ -41,5 +41,9 @@ class Resource:
 
         return data
 
+    def filter(self, saquery, armetquery):
+        # TODO: Armet filtering here.
+        return saquery
+
     def prepare(self, items):
         return [self.prepare_item(item) for item in items]

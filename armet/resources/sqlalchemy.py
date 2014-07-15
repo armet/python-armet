@@ -9,15 +9,16 @@ class SQLAlchemyResource(Resource):
     # The session constructor used to build a session for this resource.
     session = None
 
-    def __new__(cls):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # This behaves as a hook to assert the set of attributes is ordered
         # and begins with the slug attribute
 
         # TODO: this is executed every time an instance is constructed.
         # move this to some kind of metaclass or metaclass hook.
-        attrs = set(cls.attributes)
-        attrs.discard(cls.slug_attribute)
-        cls.attributes = [cls.slug_attribute] + list(attrs)
+        attrs = set(self.attributes)
+        attrs.discard(self.slug_attribute)
+        self.attributes = [self.slug_attribute] + list(attrs)
 
     def read(self):
         """Return a sqlalchemy query object of columns."""
@@ -36,7 +37,7 @@ class SQLAlchemyResource(Resource):
 
     def prepare(self, items):
         # Turn models into dictionaries!
-        return [zip(self.attributes, x) for x in items]
+        return [self.prepare_item(x) for x in items]
 
     def prepare_item(self, item):
-        return zip(self.attributes, item)
+        return dict(zip(self.attributes, item))

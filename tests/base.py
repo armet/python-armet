@@ -1,6 +1,14 @@
 from armet import api
 import werkzeug.test
 from pytest import fixture
+import json
+
+
+class MyResponse(werkzeug.Response):
+
+    @property
+    def json(self):
+        return json.loads(self.data.decode('utf-8'))
 
 
 class RequestTest:
@@ -37,4 +45,4 @@ class RequestTest:
     def fixture_api(self, request):
         inst = request.instance
         inst.app = api.Api()
-        inst.client = werkzeug.test.Client(inst.app, werkzeug.Response)
+        inst.client = werkzeug.test.Client(inst.app, MyResponse)

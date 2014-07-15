@@ -306,7 +306,10 @@ class Api:
         return
 
     def get(self, resource, data=None):
-        items = resource.read()
+
+        # TODO: When armet queries are implemented, pass the query here.
+        # instead of None
+        items = resource.filter(resource.read(), None)
 
         if items is None:
             return
