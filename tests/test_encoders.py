@@ -36,7 +36,6 @@ def example_encoders(registry):
     return example, counter
 
 
-@pytest.mark.usefixtures('example_encoders')
 def test_lookup_by_media_range(registry, example_encoders):
     example, counter = example_encoders
 
