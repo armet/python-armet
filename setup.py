@@ -1,7 +1,43 @@
 #! /usr/bin/env python
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
 from imp import load_source
+import subprocess
 
+
+class PyTest(Command):
+    # user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+    user_options = []
+
+    def initialize_options(self):
+        # super().initialize_options()
+        self.pytest_args = [
+            '--verbose',
+            '--pep8',
+            '--cov', 'armet'
+        ]
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        errno = subprocess.call(['py.test'] + self.pytest_args)
+        raise SystemExit(errno)
+
+
+extras_require = {
+    'test': [
+        'SQLAlchemy'
+    ]
+}
+
+# Note: Should be ordered in reverse dependency order (why?)
+tests_require = [
+    'pytest-pep8',
+    'pytest-cov',
+    'pytest-bench',
+    'python-mimeparse',
+    'pytest',
+]
 
 setup(
     name='armet',
@@ -12,9 +48,9 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
-        'Framework :: Bottle',
-        'Framework :: Flask',
-        'Framework :: Django',
+        # 'Framework :: Bottle',
+        # 'Framework :: Flask',
+        # 'Framework :: Django',
         # 'Framework :: CherryPy',
         # 'Framework :: Twisted',
         # 'Framework :: Pylons',
@@ -33,11 +69,9 @@ setup(
     packages=find_packages('.'),
     install_requires=[
         'ujson',
-        'pytest',
-        'pytest-pep8',
-        'pytest-cov',
-        'pytest-bench',
-        'python-mimeparse',
         'werkzeug'
     ],
+    cmdclass={'test': PyTest},
+    extras_require=extras_require,
+    tests_require=tests_require,
 )
