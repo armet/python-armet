@@ -7,6 +7,9 @@ from . import register
 
 
 # FIXME: Should use the make_boundary function from the stdlib
+# COUNTER: make_boundary is no longer part of the standard library.  It was
+# removed in python3  The implementation is still there, but it is private
+# and therefore we should not be using it.
 def generate_boundary():
     """http://xkcd.com/221/"""
     return uuid.uuid4().hex

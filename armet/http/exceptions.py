@@ -1,6 +1,6 @@
 from werkzeug import exceptions
 from http import client
-from collections import OrderedDict
+from armet import utils
 
 # Mirrors to werkzeug exceptions in the event we need to overload
 # these ourselves.
@@ -9,17 +9,22 @@ Base = exceptions.HTTPException
 
 class Base(exceptions.HTTPException):
 
+    @property
+    def message(self):
+        """Convenient accessor for any message provided for this exception."""
+        return self.description
+
     def get_body(self, environ=None):
-        # There is no body that needs to be returned for api exceptions.
+        # Api exceptions have an optional content parameter.
         return ''
 
     def get_headers(self, environ=None):
         # Because we're no longer returning html, our content type is no
         # longer text/html
         # return [('Content-Type', 'text/plain')]
-        headers = OrderedDict(super().get_headers(environ))
-        headers['Content-Type'] = 'text/plain'
-        return headers.items()
+        headers = super().get_headers(environ)
+        content = [('Content-Type', 'text/plain')]
+        return utils.merge_headers(content, headers)
 
 
 # The following exceptions are already implemented in werkzeug  Wrap them

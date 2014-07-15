@@ -1,3 +1,6 @@
+from collections import OrderedDict
+import itertools
+
 
 def dasherize(text):
     result = ''
@@ -27,3 +30,19 @@ def chunk(data, chunk_size=16*1024):
         if not buf:
             break
         yield buf
+
+
+def merge_headers(*headers):
+    """Merge lists of headers into a new list of headers.
+
+    Headers are merged prioritizing attributes from the leftmost list of
+    headers.  That is to say that the first list keeps all of its headers.
+    """
+
+    exist = set()
+    new = []
+    for entry in itertools.chain.from_iterable(headers):
+        if entry[0] not in exist:
+            exist.add(entry[0])
+            new.append(entry)
+    return new

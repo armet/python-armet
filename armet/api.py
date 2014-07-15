@@ -115,11 +115,9 @@ class Api:
             # Setup the request.
             self.setup()
 
-            # Build an empty response object.
-            response = Response()
-
-            # Dispatch the request.
-            self.route(request, response)
+            # Dispatch the request with an empty response object.  Return
+            # the response in the event a new one was generated during routing.
+            response = self.route(request, Response())
 
         except exceptions.Base as ex:
             # FIXME: Show the exception in the response not in stdout
@@ -128,13 +126,10 @@ class Api:
             if self.debug and ex.code // 100 >= 4:
                 traceback.print_exc()
 
-            # An HTTP/1.1 understood exception was raised from somewhere
-            # These exceptions can be invoked the same way that response
-            # objects can.
+            # Exceptions also double as response objects.  Just use that.
             response = ex
 
         except Exception as ex:
-            print(ex)
             response = exceptions.InternalServerError()
             if self.debug:
                 traceback.print_exc()
@@ -292,18 +287,38 @@ class Api:
         except AttributeError:
             raise exceptions.MethodNotAllowed([request.method])
 
-        # Dispatch the request.
-        response_data = route(resource, request_data)
-        if response_data is None:
-            response.status_code = 204
-            return
+        try:
+
+            # Dispatch the request.
+            response_data = route(resource, request_data)
+            if response_data is None:
+                response.status_code = 204
+                return response
+
+        except exceptions.Base as ex:
+            # An HTTP/1.1 understood exception was raised from somewhere
+            # These exceptions can be invoked the same way that response
+            # objects can.
+
+            # If these exceptions have a message associated with them,
+            # then continue as if that was the response data.  Otherwise,
+            # just continue tossing it up the stack.
+            response_data = ex.message
+            if not response_data:
+                raise
+
+            # Generate a new response based on the exception tossed.
+            # This response will still go through the encoding cycle to encode
+            # any error messages.
+            response = ex.get_response()
+        else:
+            # Return a successful response.
+            response.status_code = 200
 
         # Write the response data into the response object
         self.encode(request, response, response_data)
 
-        # Return a successful response.
-        response.status_code = 200
-        return
+        return response
 
     def get(self, resource, data=None):
 

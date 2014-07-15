@@ -1,39 +1,63 @@
 import pytest
 import armet
-from .base import RequestTest
+import sqlalchemy as sa
 
 
-@pytest.mark.usefixtures('users_fixture', 'request')
-class TestSqlalchemyResource(RequestTest):
+@pytest.fixture(autouse=True, scope="function")
+def User(db):
+    class UserModel(db.Base):
+        __tablename__ = 'user'
+        id = sa.Column(sa.Integer, autoincrement=True, primary_key=True)
+        name = sa.Column(sa.Unicode, nullable=False, default='')
+
+    db.create_all()
+    return UserModel
+
+
+@pytest.fixture(autouse=True, scope="function")
+def users_fixture(request, db, User, session):
+    # 10 users.
+    request.instance.names = names = [
+        'joe', 'jerry', 'jon', 'jane', 'jim',
+        'jack', 'jeff', 'jay', 'james', 'johansen']
+
+    for name in names:
+        session.add(User(name=name))
+
+    session.commit()
+
+
+@pytest.mark.usefixtures('users_fixture')
+class TestSqlalchemyResource:
 
     @pytest.fixture(autouse=True)
-    def setup_resource(self, User, db):
+    def setup_resource(self, User, db, http):
         class UserResource(armet.resources.SQLAlchemyResource):
             model = User
             session = db.Session
             slug_attribute = 'id'
             attributes = {'id', 'name'}
 
-        self.app.register(UserResource, name='test')
+        http.app.register(UserResource, name='test')
 
-    def test_read_all_success(self):
-        response = self.get('/test')
+    def test_read_all_success(self, http):
+        response = http.get('/test')
 
         assert response.status_code == 200
 
-    def test_read_all_return_all_data(self):
-        response = self.get('/test')
+    def test_read_all_return_all_data(self, http):
+        response = http.get('/test')
 
         assert response.status_code == 200
 
         assert len(response.json) == 10
 
-    def test_read_item_uses_slug_attribute(self):
-        slugs = range(1, 11)
+    def test_read_item_uses_slug_attribute(self, http):
+        slugs = range(1, len(self.names) + 1)
 
-        responses = [self.get('/test/{}'.format(x)) for x in slugs]
+        responses = [http.get('/test/{}'.format(x)) for x in slugs]
 
-        self.app.debug = True
+        http.app.debug = True
 
         for response, slug in zip(responses, slugs):
             assert response.status_code == 200
