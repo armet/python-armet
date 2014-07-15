@@ -1,5 +1,5 @@
 from .registry import CycleRegistry, prepares, cleans
-from .base import Resource
+from .base import Resource, ResourceMeta
 from .sqlalchemy import SQLAlchemyResource
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     'prepares',
     'cleans',
     'SQLAlchemyResource',
+    'ResourceMeta',
 ]
