@@ -26,11 +26,12 @@ def db():
 @pytest.yield_fixture(scope='function')
 def session(request, db):
     """Adds a sqlalchemy session object to the test."""
-    request.instance.session = db.Session()
+    request.instance.session = session = db.Session()
 
     yield request.instance.session
 
-    request.instance.session.close()
+    session.rollback()
+    session.close()
 
 
 class MyResponse(werkzeug.Response):
