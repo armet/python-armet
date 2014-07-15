@@ -35,14 +35,33 @@ _prepares = CycleRegistry()
 _cleans = CycleRegistry()
 
 
-class Resource:
+class BaseResource(type):
+
+    def __init__(self, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+
+        metadata = {}
+
+        for base in bases:
+            metadata.update(getattr(base, "_meta", {}))
+
+        meta = attrs.get("Meta")
+        if meta:
+            for name, value in vars(meta).items():
+                if not name.startswith("_"):
+                    metadata[name] = value
+
+
+class Resource(metaclass=BaseResource):
 
     # Set of named attributes to faclitiate from the `item` returned
     # from the `read` method.
     attributes = set()
-
-    # Set of resource names that can be traversed to from this resource.
     relationships = set()
+
+    class Meta:
+        # options = ()
+        pass
 
     def __init__(self, slug=None, context=None):
         """
@@ -59,7 +78,6 @@ class Resource:
         self.context = context or {}
 
     def prepare_item(self, item):
-        # data = OrderedDict()
         data = {}
         for name in self.attributes:
             try:
