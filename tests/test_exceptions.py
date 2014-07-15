@@ -28,3 +28,4 @@ class TestExceptions:
 
         assert response.status_code == 500
         assert response.headers['Content-Type'] == 'text/plain'
+        assert len(response.data) == 0

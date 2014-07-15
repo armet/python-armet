@@ -14,6 +14,45 @@ def test_encoders_api_methods():
     assert encoders.remove
 
 
+@pytest.fixture(scope='function')
+def registry():
+    return encoders.CodecRegistry()
+
+
+@pytest.fixture(scope='function')
+def example_encoders(registry):
+    # Create some example objects that can operate as encoders.  This works
+    # Becuase the registry is just in charge of registering and returning
+    # things (no introspection)
+    example = type('example', (), {})
+    counter = type('example', (), {})
+
+    registry.register(
+        name=['test', 'example'],
+        mime_type=['application/octet-stream', 'test/test'])(example)
+    registry.register(
+        mime_type=['application/xbel+xml', 'example/xml'])(counter)
+
+    return example, counter
+
+
+@pytest.mark.usefixtures('example_encoders')
+def test_lookup_by_media_range(registry, example_encoders):
+    example, counter = example_encoders
+
+    mime = 'example/*;q=0.5,*/*; q=0.1'
+    assert registry.find(media_range=mime)[0] == counter
+
+    mime = 'test/*;q=0.5,*/*; q=0.1'
+    assert registry.find(media_range=mime)[0] == example
+
+
+@pytest.mark.usefixtures('example_encoders')
+def test_malformed_media_range(registry):
+    with pytest.raises(KeyError):
+        registry.find(media_range='asdf')
+
+
 class BaseEncoderTest:
 
     def encode(self, data):
