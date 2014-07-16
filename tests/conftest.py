@@ -38,7 +38,7 @@ class MyResponse(werkzeug.Response):
 
     @property
     def json(self):
-        return json.loads(self.data.decode('utf-8'))
+        return json.loads(self.data.decode(self.charset))
 
 
 class HTTP:
