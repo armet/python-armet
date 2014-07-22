@@ -35,7 +35,6 @@ tests_require = [
     'pytest-pep8',
     'pytest-cov',
     'pytest-bench',
-    'python-mimeparse',
     'pytest',
 ]
 
@@ -69,7 +68,8 @@ setup(
     packages=find_packages('.'),
     install_requires=[
         'ujson',
-        'werkzeug'
+        'werkzeug',
+        'python-mimeparse'
     ],
     cmdclass={'test': PyTest},
     extras_require=extras_require,

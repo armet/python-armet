@@ -188,7 +188,7 @@ class Api:
 
             # Invoke `.read` and store it in the context; we are not
             # at the final segment in the url.
-            context[name] = resource.read()
+            context[name] = resource.filter(resource.read(), None)
 
             # Update the `last_resource_cls` (keeps track of the
             # immediate-left resource)
