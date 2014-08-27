@@ -1,4 +1,5 @@
 from .registry import _prepare
+import collections
 
 
 class ResourceMeta(type):
@@ -6,10 +7,17 @@ class ResourceMeta(type):
     def __init__(self, name, bases, attrs):
         super().__init__(name, bases, attrs)
 
+        # Collect `Meta` information and store on `_meta`
+        # This aggregates all base class `Meta` information
         metadata = {}
 
         for base in bases:
-            metadata.update(getattr(base, "_meta", {}))
+            _meta = getattr(base, "_meta", None)
+            if _meta is None:
+                _meta = {}
+            else:
+                _meta = vars(_meta)
+            metadata.update(_meta)
 
         meta = attrs.get("Meta")
         if meta:
@@ -17,17 +25,17 @@ class ResourceMeta(type):
                 if not name.startswith("_"):
                     metadata[name] = value
 
+        # Create and store the metadata as `_meta`
+        self._meta = type("Meta", (), metadata)
+
 
 class Resource(metaclass=ResourceMeta):
 
-    # Set of named attributes to faclitiate from the `item` returned
-    # from the `read` method.
-    attributes = set()
-    relationships = set()
-
     class Meta:
-        # options = ()
-        pass
+        # Set of named attributes to faclitiate from the `item` returned
+        # from the `read` method.
+        attributes = set()
+        relationships = set()
 
     def __init__(self, slug=None, context=None):
         """
@@ -43,9 +51,11 @@ class Resource(metaclass=ResourceMeta):
         self.slug = slug
         self.context = context or {}
 
-    def prepare_item(self, item):
-        data = {}
-        for name in self.attributes:
+    @classmethod
+    def prepare_item(cls, item):
+        # data = {}
+        data = collections.OrderedDict()
+        for name in cls.attributes:
             try:
                 # Attempt to get the attribute from the item.
                 value = getattr(item, name)
@@ -63,9 +73,11 @@ class Resource(metaclass=ResourceMeta):
 
         return data
 
-    def filter(self, saquery, armetquery):
-        # TODO: Armet filtering here.
-        return saquery
+    def filter(self, items, query):
+        # TODO: Apply `slug` filtering
+        # TODO: Apply `context` filtering
+        # TODO: Apply `query` filtering
+        return query
 
     def prepare(self, items):
         return [self.prepare_item(item) for item in items]

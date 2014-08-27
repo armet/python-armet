@@ -1,4 +1,5 @@
-import ujson as json
+# import ujson as json
+import json
 from collections import Iterable
 
 from ..codecs import JSONCodec

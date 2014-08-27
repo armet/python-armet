@@ -1,6 +1,6 @@
-from collections import OrderedDict
+import functools
 import itertools
-
+import warnings
 
 def dasherize(text):
     result = ''
@@ -46,3 +46,27 @@ def merge_headers(*headers):
             exist.add(entry[0])
             new.append(entry)
     return new
+
+
+def memoize(obj):
+    cache = obj.cache = {}
+
+    @functools.wraps(obj)
+    def memoizer(*args, **kwargs):
+        key = str(args) + str(kwargs)
+        if key not in cache:
+            cache[key] = obj(*args, **kwargs)
+        return cache[key]
+
+    return memoizer
+
+
+class classproperty(object):
+    """Declares a read-only `property` that acts on the class object.
+    """
+
+    def __init__(self, getter):
+        self.getter = getter
+
+    def __get__(self, obj, cls):
+        return self.getter(cls)
