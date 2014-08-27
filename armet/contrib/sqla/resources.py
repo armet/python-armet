@@ -2,6 +2,8 @@ import sqlalchemy as sa
 from armet.resources.base import Resource, ResourceMeta
 from armet.utils import classproperty, memoize
 from sqlalchemy.orm import ColumnProperty, RelationshipProperty
+from sqlalchemy.orm.interfaces import MapperProperty
+from sqlalchemy.ext.associationproxy import AssociationProxy
 
 # Mapping of 'Model' classes to canonical 'Resources'
 _resources = {}
@@ -24,23 +26,6 @@ class SQLAlchemyResourceMeta(ResourceMeta):
         if hasattr(self._meta, "attributes"):
             self.attributes = attrs = list(self._meta.attributes)
 
-            # if self._meta.model is not None:
-            #     # Cache the column set that will be fetched
-            #     self._columns = []
-            #     self._paths = []
-            #     for name in attrs:
-            #         path = name.split(".")
-            #         attr = getattr(self._meta.model, path[0])
-            #         if attr.impl is not None:
-            #             if len(path) == 1 and attr.impl.accepts_scalar_loader:
-            #                 # This is a scalar column and can be easily fetched
-            #                 self._columns.append(attr)
-            #
-            #             else:
-            #                 # This is a "relationship" attribute or path
-            #                 # that is to be embedded
-            #                 self._paths.append(path)
-
 
 class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
 
@@ -56,56 +41,64 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
 
     @classproperty
     @memoize
-    def _paths(cls):
-        paths = []
-        for name in cls.attributes:
-            path = name.split(".")
-            attr = getattr(cls._meta.model, path[0])
-            if len(path) > 1 or not isinstance(
-                    attr.property, ColumnProperty):
-                # This is /not/ a scalar column attribute
-                paths.append(path)
-
-        return paths
-
-    @classproperty
-    @memoize
-    def _columns(cls):
+    def _segment_attributes(cls):
         columns = []
+        rels = []
+        calculated = []
         for name in cls.attributes:
-            path = name.split(".")
-            attr = getattr(cls._meta.model, path[0])
-            if len(path) == 1 and isinstance(attr.property, ColumnProperty):
+            attr = getattr(cls._meta.model, name)
+            if (hasattr(attr, "property")
+                    and isinstance(attr.property, ColumnProperty)):
                 # This is a scalar column and can be easily fetched
                 columns.append(attr)
+            elif (hasattr(attr, "property")
+                    and isinstance(attr.property, MapperProperty)):
+                # This is /not/ a scalar column attribute
+                # but is stil sqlalchemy-y
+                rels.append(name)
+            else:
+                calculated.append(name)
 
-        return columns
+        return columns, rels, calculated
+
+    @classproperty
+    def _calculated(cls):
+        return cls._segment_attributes[2]
+
+    @classproperty
+    def _relationships(cls):
+        return cls._segment_attributes[1]
+
+    @classproperty
+    def _columns(cls):
+        return cls._segmented_attributes[0]
 
     def read(self):
         # Build the base queryset (over each scalar column)
-        queryset = self._meta.session().query(*self._columns)
+        queryset = self._meta.session().query(self._meta.model)
 
-        # Iterate each `path`
+        # Iterate each `relationship`
         entities = []
-        for path in self._paths:
+        for rel in self._relationships:
             # Build the selectable for the end-result and join the
             # neccessary table(s) to get there
-            selectable = None
-            entity = True
-            for segment in path:
-                attr = getattr(self._meta.model, segment)
-
+            attr = getattr(self._meta.model, rel)
+            direction = attr.property.direction.name
+            if direction == "MANYTOONE":
                 # Get the `target_table` and `target` and make that
                 # the selectable
                 target_table = attr.property.target
                 target = _models[target_table]
-                selectable = target
 
                 # Join the table to us in our quest to get this attribute
                 queryset = queryset.outerjoin(target, attr.expression)
 
-            if entity:
-                queryset = queryset.add_entity(selectable)
+            else:
+                # TO-MANY attributes are added later
+                continue
+
+            # Add the 'enttiy' to the queryset
+            queryset = queryset.add_entity(target)
 
         return queryset
 
@@ -116,24 +109,54 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
                 self._meta.model, self._meta.slug_attribute)
             queryset = queryset.filter(slug_column == self.slug)
 
-
         return queryset
 
     @classmethod
     def prepare_item(cls, item):
+        # If we didn't get a (tuple,) ...
+        if not isinstance(item, tuple):
+            item = (item,)
+
+        # Check to see if we need to polymorphically
+        # apply a different resource
+        if type(item[0]) is not cls._meta.model:
+            resource = _resources.get(type(item[0]))
+            if resource is not None:
+                return resource.prepare_item(item)
+
         # Prepare the initial (scalar) dataset
-        data = super().prepare_item(item)
+        data = super().prepare_item(item[0])
 
         # Iterate through our relationships (and prepare and embed)
-        # cnt = len(cls._columns)
-        # for idx, path in enumerate(cls._paths):
-        # data[path[-1]] = item[cnt + idx]
-        # attr = getattr(cls._meta.model, key)
-        # target_table = attr.property.target
-        # target = _models[target_table]
-        # resource = _resources[target]
-        # value = getattr(item, target.__name__, None)
-        # if value is not None:
-        #     data[key] = resource.prepare_item(value)
+        for idx, rel in enumerate(cls._relationships):
+
+            # FIXME: This could be calculated in `read`
+            attr = getattr(cls._meta.model, rel)
+            direction = attr.property.direction.name
+            target_table = attr.property.target
+            target = _models[target_table]
+
+            resource = _resources[target]
+
+            if direction == "MANYTOONE":
+                # Get the value and prepare it appropriately
+                value = item[1 + idx]
+
+                if value is not None:
+                    cls._set_item(data, rel, resource.prepare_item(value))
+
+                else:
+                    cls._set_item(data, rel, None)
+
+            elif direction == "ONETOMANY":
+                # Get the values
+                values = getattr(item[0], rel)
+
+                # Prepare each value and add to the data
+                cls._set_item(data, rel, resource.prepare(values))
+
+        # Apply calculated attributes
+        for name in cls._calculated:
+            cls._set_item(data, name, getattr(item[0], name))
 
         return data

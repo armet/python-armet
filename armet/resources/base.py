@@ -1,5 +1,4 @@
 from .registry import _prepare
-import collections
 
 
 class ResourceMeta(type):
@@ -35,6 +34,7 @@ class Resource(metaclass=ResourceMeta):
         # Set of named attributes to faclitiate from the `item` returned
         # from the `read` method.
         attributes = set()
+        attribute_labels = {}
         relationships = set()
 
     def __init__(self, slug=None, context=None):
@@ -53,8 +53,7 @@ class Resource(metaclass=ResourceMeta):
 
     @classmethod
     def prepare_item(cls, item):
-        # data = {}
-        data = collections.OrderedDict()
+        data = {}
         for name in cls.attributes:
             try:
                 # Attempt to get the attribute from the item.
@@ -69,9 +68,17 @@ class Resource(metaclass=ResourceMeta):
                 value = None
                 continue
 
-            data[name] = value
+            cls._set_item(data, name, value)
 
         return data
+
+    @classmethod
+    def _set_item(cls, data, name, value):
+        if name in cls._meta.attribute_labels:
+            data[cls._meta.attribute_labels[name]] = value
+
+        else:
+            data[name] = value
 
     def filter(self, items, query):
         # TODO: Apply `slug` filtering
@@ -79,5 +86,6 @@ class Resource(metaclass=ResourceMeta):
         # TODO: Apply `query` filtering
         return query
 
-    def prepare(self, items):
-        return [self.prepare_item(item) for item in items]
+    @classmethod
+    def prepare(cls, items):
+        return [cls.prepare_item(item) for item in items]
