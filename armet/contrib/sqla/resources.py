@@ -160,3 +160,14 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
             cls._set_item(data, name, getattr(item[0], name))
 
         return data
+
+    def create(self, data):
+        target = self._meta.model(**data)
+
+        self._meta.session().add(target)
+        self._meta.session().commit()
+
+        return target
+
+    def slug_for(self, item):
+        return getattr(item, self._meta.slug_attribute)

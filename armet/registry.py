@@ -48,6 +48,13 @@ class Registry:
         # Just invoke the callback directly
         callback(obj)
 
+    def rfind(self, value):
+        # FIXME: Implement a cache on the value
+        for key_name, registry in self.map.items():
+            for key, test in registry.items():
+                if test is value:
+                    return key
+
     def find(self, **kwargs):
         if len(kwargs) > 1:
             raise TypeError(

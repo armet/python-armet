@@ -271,6 +271,10 @@ class Api:
             raise exceptions.NotAcceptable() from ex
 
     def route(self, request, response):
+        # Store both the request and response on `self`
+        self.request = request
+        self.response = response
+
         # Find and instantiate the right-most resource using path traversal.
         resource = self._find(request.path)
 
@@ -288,10 +292,13 @@ class Api:
             raise exceptions.MethodNotAllowed([request.method])
 
         try:
-
             # Dispatch the request.
             response_data = route(resource, request_data)
-            if response_data is None:
+            status_code = 200
+            if isinstance(response_data, tuple):
+                response_data, status_code = response_data
+
+            elif response_data is None:
                 response.status_code = 204
                 return response
 
@@ -311,12 +318,14 @@ class Api:
             # This response will still go through the encoding cycle to encode
             # any error messages.
             response = ex.get_response()
+
         else:
             # Return a successful response.
-            response.status_code = 200
+            response.status_code = status_code
 
-        # Write the response data into the response object
-        self.encode(request, response, response_data)
+        if response_data is not None:
+            # Write the response data into the response object
+            self.encode(request, response, response_data)
 
         return response
 
@@ -333,7 +342,34 @@ class Api:
             try:
                 return resource.prepare_item(items[0])
 
+            except IndexError:
+                raise exceptions.NotFound()
+
             except TypeError:
                 return resource.prepare_item(items)
 
         return resource.prepare(items)
+
+    def post(self, resource, data):
+        try:
+            # Ask the resource to `create` (should return the new item)
+            item = resource.create(data)
+            slug = resource.slug_for(item)
+
+        except AttributeError:
+            raise exceptions.NotImplemented()
+
+        # Set the `Location` header to indicate where we created the item
+        self.response.headers["Location"] = self.url_for(
+            resource, slug=slug)
+
+        # Return nothing and a 201 to indicate creation
+        return None, 201
+
+    def url_for(self, resource, slug=None):
+        name = self._registry.rfind(type(resource))
+        slug = "/%s" % slug if slug else ""
+        return "{}/{}{slug}".format(
+            self.request.script_root,
+            name,
+            slug=slug)
