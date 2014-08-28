@@ -50,7 +50,7 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
             if (hasattr(attr, "property")
                     and isinstance(attr.property, ColumnProperty)):
                 # This is a scalar column and can be easily fetched
-                columns.append(attr)
+                columns.append(name)
             elif (hasattr(attr, "property")
                     and isinstance(attr.property, MapperProperty)):
                 # This is /not/ a scalar column attribute
@@ -71,7 +71,7 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
 
     @classproperty
     def _columns(cls):
-        return cls._segmented_attributes[0]
+        return cls._segment_attributes[0]
 
     def read(self):
         # Build the base queryset (over each scalar column)
@@ -161,13 +161,27 @@ class SQLAlchemyResource(Resource, metaclass=SQLAlchemyResourceMeta):
 
         return data
 
+    def slug_for(self, item):
+        return getattr(item, self._meta.slug_attribute)
+
     def create(self, data):
         target = self._meta.model(**data)
 
+        # Add the new model to the session (and flush)
         self._meta.session().add(target)
+        self._meta.session().flush()
+
+        # Finalize the transaction
         self._meta.session().commit()
 
         return target
 
-    def slug_for(self, item):
-        return getattr(item, self._meta.slug_attribute)
+    def update(self, item, data):
+        # Set the simple (scalar) attributes
+        for name in self._columns:
+            value = data.get(name)
+            if value:
+                setattr(item, name, value)
+
+        # Finalize the transaction
+        self._meta.session().commit()

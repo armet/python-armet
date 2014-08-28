@@ -350,6 +350,14 @@ class Api:
 
         return resource.prepare(items)
 
+    def url_for(self, resource, slug=None):
+        name = self._registry.rfind(type(resource))
+        slug = "/%s" % slug if slug else ""
+        return "{}/{}{slug}".format(
+            self.request.script_root,
+            name,
+            slug=slug)
+
     def post(self, resource, data):
         try:
             # Ask the resource to `create` (should return the new item)
@@ -366,10 +374,25 @@ class Api:
         # Return nothing and a 201 to indicate creation
         return None, 201
 
-    def url_for(self, resource, slug=None):
-        name = self._registry.rfind(type(resource))
-        slug = "/%s" % slug if slug else ""
-        return "{}/{}{slug}".format(
-            self.request.script_root,
-            name,
-            slug=slug)
+    def patch(self, resource, data):
+        if resource.slug is None:
+            # We don't support mass-updates (yet)
+            raise exceptions.NotImplemented()
+
+        # Fetch the item to update
+        items = resource.filter(resource.read(), None)
+        try:
+            item = items[0]
+
+        except IndexError:
+            raise exceptions.NotFound()
+
+        try:
+            # Ask the resource to `update`
+            resource.update(item, data)
+
+        except AttributeError:
+            raise exceptions.NotImplemented()
+
+        # Return nothing to indicate success
+        return None
