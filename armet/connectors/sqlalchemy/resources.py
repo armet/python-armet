@@ -24,8 +24,8 @@ class ModelResourceOptions(object):
 
 def iequal_helper(x, y):
     # String values should use ILIKE queries.
-    if isinstance(type(y), six.string_types):
-        return x.ilike(y)
+    if isinstance(y, six.string_types) and not isinstance(x.type, sa.Enum):
+        return x.ilike("%" + y + "%")
     else:
         return operator.eq(x, y)
 
