@@ -57,6 +57,7 @@ setup(
     name='armet',
     version=load_source('', 'armet/_version.py').__version__,
     description='Clean and modern framework for creating RESTful APIs.',
+    license='MIT',
     author='Concordus Applications',
     author_email='support@concordusapps.com',
     classifiers=[
